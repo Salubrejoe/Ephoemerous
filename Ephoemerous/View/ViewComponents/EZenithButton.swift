@@ -10,7 +10,7 @@ struct EZenithButton: View {
             let z   = state.observerZenith
             let lat = asin(max(-1.0, min(1.0, z.z)))
             let lon = atan2(z.y, z.x)
-            state.setOrigin(lat: lat, lon: lon)
+            state.setOrigin(lat: .radians(lat), lon: .radians(lon))
         } label: {
             Image(systemName: "location.north.fill")
                 .font(.title3)
@@ -18,5 +18,6 @@ struct EZenithButton: View {
                 .padding(.horizontal)
         }
         .help("Centre on zenith")
+        .disabled(true)
     }
 }

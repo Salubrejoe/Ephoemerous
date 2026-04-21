@@ -9,7 +9,7 @@ import simd
 /// Accuracy: ~0.01° (Meeus low-precision solar formula).
 ///
 /// Add to ECanvasView.layers to activate.
-struct ESunLayer: EGridLayer {
+struct ENSSunLayer: EGridLayer {
 
     // MARK: - State tracking
 
@@ -21,29 +21,30 @@ struct ESunLayer: EGridLayer {
 
         let date = dc.state.observationDate
 
-        let lambda = Self.sunEclipticLongitude(for: date)
+        let lambda = Self.sunEclipticLongitude(for: date) 
         let (sunRA, sunDec) = Self.equatorialCoords(lambda: lambda)
 
         // ── Log on date change ──
         if abs(date.timeIntervalSince(Self.lastLoggedDate)) > 0.5 {
             Self.lastLoggedDate = date
             logPipeline(date: date, lambda: lambda, ra: sunRA, dec: sunDec,
-                        siderealOffset: dc.state.siderealOffset)
+                        siderealOffset: dc.state.precessedSiderealOffset)
         }
 
         // ── Project ──
-        let θ = -dc.state.siderealOffset
+        let θ = dc.state.precessedSiderealOffset.radians
         let (c, s) = (cos(θ), sin(θ))
 
         // eclipticPoint already converts ecliptic → equatorial (rotates by ε about X)
-        let eq = EProjection.eclipticPoint(lambda: lambda)
+        let eq = SIMD3.eclipticPoint(lambda: lambda)
         let Q  = SIMD3(eq.x * c - eq.y * s,
                        eq.x * s + eq.y * c,
                        eq.z)
 
+//        guard let proj = EProjection.project(Q, appState: dc.state) else { return }
         guard let proj = EProjection.project(Q,
-                                             origin: dc.state.originVector,
-                                             plane:  dc.state.planeVector) else { return }
+                                             origin: dc.state.nsProjection.origin,
+                                             plane:  dc.state.nsProjection.plane) else { return }
         let sc = dc.toScreen(proj)
 
         // ── Draw ──
@@ -75,8 +76,8 @@ struct ESunLayer: EGridLayer {
     // MARK: - Solar position (Meeus, low-precision)
 
     /// Apparent ecliptic longitude of the Sun in radians.
-    static func sunEclipticLongitude(for date: Date) -> Double {
-        let T = ECalAndTransManager.julianCenturies(from: date)
+    static func sunEclipticLongitude(for date: Date) -> Angle {
+        let T = EPrecession.julianCenturies(from: date)
 
         // Geometric mean longitude (deg)
         let L0 = (280.46646 + 36000.76983 * T + 0.0003032 * T * T)
@@ -100,37 +101,37 @@ struct ESunLayer: EGridLayer {
         let omegaRad = omega * .pi / 180
         let lambda   = sunLon - 0.00569 - 0.00478 * sin(omegaRad)
 
-        return lambda * .pi / 180   // radians
+        return Angle.radians(lambda * .pi / 180)   // radians
     }
-
+        
     /// RA and Dec of the Sun in radians from its ecliptic longitude.
-    static func equatorialCoords(lambda: Double) -> (ra: Double, dec: Double) {
-        let ε = EProjection.obliquity
-        let ra  = atan2(cos(ε) * sin(lambda), cos(lambda))
-        let dec = asin(sin(ε) * sin(lambda))
-        return (ra < 0 ? ra + 2 * .pi : ra, dec)
+    static func equatorialCoords(lambda: Angle) -> (ra: Angle, dec: Angle) {
+        let ε = Angle.earthTilt.radians
+        let ra  = atan2(cos(ε) * sin(lambda.radians), cos(lambda.radians))
+        let dec = asin(sin(ε) * sin(lambda.radians))
+        let returnedRA = Angle.radians(ra > 0 ? ra : ra + .twoPi)
+        return (ra: returnedRA, dec: .radians(dec))
     }
 
     // MARK: - Logging
 
-    private func logPipeline(date: Date, lambda: Double,
-                             ra: Double, dec: Double, siderealOffset: Double) {
+    private func logPipeline(date: Date, lambda: Angle,
+                             ra: Angle, dec: Angle, siderealOffset: Angle) {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime]
 
         print("\n── Sun diagnostic @ \(iso.string(from: date)) ──")
 
-        let lambdaDeg = lambda * 180 / .pi
         print("  [Ecliptic]")
-        print("    λ (apparent)  \(String(format: "%.4f", lambdaDeg))°")
+        print("    λ (apparent)  \(String(format: "%.4f", lambda.degrees))°")
 
         print("  [Equatorial — computed]")
-        print("    RA  \(raString(ra))  (\(String(format: "%.4f", ra * 180 / .pi))°)")
-        print("    Dec \(decString(dec))  (\(String(format: "%.4f", dec * 180 / .pi))°)")
+        print("    RA  \(raString(ra.degrees))  (\(String(format: "%.4f", ra.degrees))°)")
+        print("    Dec \(decString(dec.degrees))  (\(String(format: "%.4f", dec.degrees))°)")
 
-        let gmstH = (siderealOffset * 180 / .pi) / 15
+        let gmstH = (siderealOffset.degrees) / 15
         print("  [Sidereal]")
-        print("    GMST  \(raString(siderealOffset))  (\(String(format: "%.4f", gmstH))h)")
+        print("    GMST  \(raString(siderealOffset.degrees))  (\(String(format: "%.4f", gmstH))h)")
         print("──────────────────────────────────────")
     }
 

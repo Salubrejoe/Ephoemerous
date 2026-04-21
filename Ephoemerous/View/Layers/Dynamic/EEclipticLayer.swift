@@ -2,35 +2,13 @@ import SwiftUI
 import simd
 
 
-
 struct EEclipticLayer: EGridLayer {
+    let artist = EArtist.shared
     
     func draw(in dc: inout EGraphicContext) {
-        let O = dc.state.originVector
-        let P = dc.state.planeVector
-        let θ = -dc.state.siderealOffset
-        let (c, s) = (cos(θ), sin(θ))
-        let ε = 23.43928 * .pi / 180.0   // obliquity of the ecliptic
         
-        // Ecliptic (β = 0)
-        let eclipticPts = EProjection.sampleCurve(steps: 360, origin: O, plane: P) { t in
-            let λ = t * 2 * .pi
-            let β = 0.0
-            let cb = cos(β), sb = sin(β)
-            let cl = cos(λ), sl = sin(λ)
-            // Ecliptic Cartesian
-            let xe = cb * cl
-            let ye = cb * sl
-            let ze = sb
-            // Rotate to equatorial by ε about x-axis
-            let yq = ye * cos(ε) - ze * sin(ε)
-            let zq = ye * sin(ε) + ze * cos(ε)
-            let xq = xe
-            // Rotate by sidereal angle about z-axis
-            return SIMD3(xq * c - yq * s, xq * s + yq * c, zq)
-        }
-        dc.strokeCurve(eclipticPts, color: .yellow.opacity(0.5), width: 4)
-        
+        let eclPts = EProjection.sampleEcliptic(appState: dc.state)
+        dc.strokeCurve(eclPts, color: artist.eclColor, width: artist.eclWidth)
     }
 }
 

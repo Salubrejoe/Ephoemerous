@@ -6,13 +6,17 @@ struct MainView: View {
     
     var body: some View {
         NavigationStack {
-            ECanvasView()
+            ZStack {
+                ESkyCanvaView()
+                WatchCrown()
+                    .offset(y: -91)
+            }
                 .toolbar {
                     
-                    ToolbarItem(placement: .bottomBar) {
-                        EProjectionModePicker(state: state)
-                            .frame(width: 55, height: 55)
-                    }
+//                    ToolbarItem(placement: .bottomBar) {
+//                        EProjectionModePicker(state: state)
+//                            .frame(width: 55, height: 55)
+//                    }
                     
                     ToolbarItem(placement: .status) {
                         Button {
@@ -24,14 +28,13 @@ struct MainView: View {
                                     .padding()
                             }
                         }
-                        .tint(.pink)
                         .frame(height: 55)
                     }
                     
-                    ToolbarItem(placement: .bottomBar) {
-                        EZenithButton(state: state)
-                            .frame(width: 55, height: 55)
-                    }
+//                    ToolbarItem(placement: .bottomBar) {
+//                        EZenithButton(state: state)
+//                            .frame(width: 55, height: 55)
+//                    }
                 }
                 .navigationTitle("Ephemerous")
                 .navigationBarTitleDisplayMode(.inline)

@@ -21,14 +21,11 @@ struct EGraphicContext {
             y: size.height / 2 - p.y * state.scale + state.offset.x
         )
     }
-
-    func sidereallyRotated(_ v: SIMD3<Double>) -> SIMD3<Double> {
-        let θ = -state.siderealOffset
-        let (c, s) = (cos(θ), sin(θ))
-        return SIMD3(v.x * c - v.y * s,
-                     v.x * s + v.y * c,
-                     v.z)
-    }
+//
+//    func sidereallyRotated(_ v: SIMD3<Double>) -> SIMD3<Double> {
+////        let θ = state.siderealPlusDynOffset
+//        return v.siderealyRotated(by: θ)
+//    }
 
     func onScreen(_ p: CGPoint, margin: CGFloat = 8) -> Bool {
         p.x > margin && p.x < size.width  - margin &&
@@ -82,6 +79,7 @@ struct EGraphicContext {
             prev = sc
         }
         ctx.fill(path, with: .color(color))
+        ctx.clip(to: path)
     }
     
     mutating func fillDot(at sc: CGPoint, radius: CGFloat, color: Color) {
@@ -104,8 +102,9 @@ struct EGraphicContext {
         
         ctx.draw(
             Text(text)
-                .font(.system(size: 5))
-                .foregroundStyle(Color.secondary.opacity(0.55))
+                .font(.footnote)
+                .fontDesign(.monospaced)
+                .foregroundStyle(Color.secondary)
             ,
             at: point,
             anchor: .leading
