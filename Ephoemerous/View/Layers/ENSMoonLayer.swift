@@ -44,7 +44,7 @@ enum EMoonPosition {
     }
 }
 
-struct EMoonLayer: EGridLayer {
+struct ENSMoonLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, ra, dec) = EMoonPosition.vector(
             for: dc.state.observationDate,
@@ -60,6 +60,7 @@ struct EMoonLayer: EGridLayer {
         
         let sc = dc.toScreen(projected)
         guard dc.onScreen(sc, margin: 40) else { return }
+        dc.state.moonScreenPosition = sc
         let fraction = EMoonPosition.illuminatedFraction(for: dc.state.observationDate)
         let baseRadius: CGFloat = 5
         let glowRadius: CGFloat = baseRadius * 3.5

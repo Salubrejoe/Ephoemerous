@@ -211,7 +211,7 @@ enum EPlanetPosition {
 
 // MARK: - Layer
 
-struct EPlanetsLayer: EGridLayer {
+struct ENSPlanetsLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         let pairs = EPlanetPosition.allVectors(

@@ -33,7 +33,7 @@ struct ENSStarsLayer: EGridLayer {
                 guard artist.starPointFallsWithinMarigin(screenPoint, in: dc) else { continue }
                 
                 let r = artist.starRadius(star, in: dc)
-                dc.fillDot(at: screenPoint, radius: r, color: star.spectralClass.color)
+                dc.fillDot(at: screenPoint, radius: r/2, color: star.spectralClass.color)
             }
         }
     }

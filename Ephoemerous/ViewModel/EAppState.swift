@@ -9,6 +9,10 @@ import simd
 class EAppState {
     
     var selectedStar: EStar?
+    var showSunInfo:  Bool = false
+    var showMoonInfo: Bool = false
+    var sunScreenPosition:  CGPoint? = nil
+    var moonScreenPosition: CGPoint? = nil
     
     var origin : Origin
     var plane  : Plane

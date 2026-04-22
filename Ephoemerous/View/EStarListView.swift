@@ -57,7 +57,6 @@ struct EStarListView: View {
                         NavigationLink(value: star) {
                             EStarRowView(star: star)
                         }
-//                        .listRowBackground(Color.secondary)
                     }
                 } header: {
                     Text("Recently Viewed")
@@ -73,7 +72,6 @@ struct EStarListView: View {
                     NavigationLink(value: star) {
                         EStarRowView(star: star)
                     }
-//                    .listRowBackground(Color.secondary)
                 }
             } header: {
                 if searchText.isEmpty && !recentDisplayed.isEmpty {
@@ -85,9 +83,10 @@ struct EStarListView: View {
             }
         }
         .navigationTitle("Stars")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "Name, constellation, class...")
         .scrollContentBackground(.hidden)
+        .preferredColorScheme(.dark)
         .navigationDestination(for: EStar.self) { star in
             EStarDetailView(star: star)
                 .onAppear { state.recordViewed(star) }
@@ -170,7 +169,6 @@ private struct ESortFilterSheet: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(.black)
             .navigationTitle("Sort & Filter")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -181,20 +179,24 @@ private struct ESortFilterSheet: View {
 
 private struct EStarRowView: View {
     @Environment(\.colorScheme) var colorScheme
+    @Environment(EAppState.self) var state
     let star: EStar
 
     var body: some View {
         HStack(spacing: 12) {
             let r = max(4.0, min(14.0, (6.5 - star.magnitude) * 2.2))
-            Circle()
-                .fill(star.spectralClass.color)
-                .frame(width: r, height: r)
-                .shadow(color: star.spectralClass.color.opacity(0.8), radius: 4)
-                .shadow(
-                    color: colorScheme == .dark ? .clear : .secondary.opacity(0.8),
-                    radius: 8
-                )
-                .frame(width: 18, height: 18)
+//            Circle()
+//                .fill(star.spectralClass.color)
+           
+            Button {
+                state.selectedStar = star
+            } label: {
+                Image(systemName: state.selectedStar == star ? "target" : "circle.fill")
+                    .foregroundStyle(star.spectralClass.color)
+                    .padding(9)
+            }
+            .glassEffect(.clear.tint(star.spectralClass.color.opacity(0.2)).interactive(), in: .circle)
+            
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(star.displayName)

@@ -29,23 +29,17 @@ struct ESkyCanvaView: View {
         ENSEclipticLayer(),
         ENSSunLayer(),
         ESelectedStarLayer(),
-        EMoonLayer(),
-//        ENSMoonLayer(),
+        ENSMoonLayer(),
+        ENSPlanetsLayer(),
+//        EUserHorizonLayer(),
         ENSStarsLayer(),
-        EPlanetsLayer(),
         EUserHorizonLayer(),
     ]
 
     // Layers drawn outside the clip circle (crown ring)
     private let outerLayers: [any EGridLayer] = [
-//        ENSGlobeLayer(),
-//        ENSEclipticLayer(),
-//        ENSSunLayer(),
         ENSStarsLayer(),
-        EMoonLayer(),
-//        EPlanetsLayer(),
-//        EUserGlobeLayer(),
-//        ENSWatchCrownLayer(),
+//        ENSMoonLayer(),
     ]
 
     // MARK: - Body
@@ -55,14 +49,12 @@ struct ESkyCanvaView: View {
             
             Color(uiColor: .secondarySystemBackground)
                 .ignoresSafeArea()
-//            LinearGradient(colors: [.blue.opacity(0.5), Color(uiColor: .secondarySystemBackground)], startPoint: .top, endPoint: .bottom)
-//                .ignoresSafeArea()
             
             Group {
                 TimelineView(.animation) { timeline in
                     Canvas { ctx, size in
                         // Avoid mutating state directly for type inference issues; update via separate modifier if needed
-                        // state.animationTime = timeline.date.timeIntervalSinceReferenceDate
+//                         state.animationTime = timeline.date.timeIntervalSinceReferenceDate
                         
                         // Clip circle matching the crown's inner edge (dec = -30°)
                         let cx = size.width  / 2 + state.offset.y
@@ -78,14 +70,15 @@ struct ESkyCanvaView: View {
                         for layer in innerLayers { layer.draw(in: &innerDC) }
                         
                     }
+                    
                 }
                 
                 Canvas { ctx, size in
                     var topDC = EGraphicContext(ctx: ctx, size: size, state: state)
-                    // ... draw your top layer
                     for layer in outerLayers { layer.draw(in: &topDC) }
                 }
-                .blur(radius: 2)
+                .brightness(1)
+                .blur(radius: 0)
                 
                 Canvas { ctx, size in
                     var sunDC = EGraphicContext(ctx: ctx, size: size, state: state)
@@ -94,9 +87,31 @@ struct ESkyCanvaView: View {
                 .brightness(1)
                 .blur(radius: 2)
             }
-            .ignoresSafeArea()
             .gesture(dragGesture)
             .simultaneousGesture(pinchGesture)
+            // Precise hit-test overlay — transparent circles over Sun & Moon
+            GeometryReader { _ in
+                ZStack {
+                    if let sunPt = state.sunScreenPosition {
+                        Circle()
+                            .fill(Color.clear)
+                            .contentShape(Circle())
+                            .frame(width: 44, height: 44)
+                            .position(sunPt)
+                            .onTapGesture { state.showSunInfo = true }
+                    }
+                    if let moonPt = state.moonScreenPosition {
+                        Circle()
+                            .fill(Color.clear)
+                            .contentShape(Circle())
+                            .frame(width: 44, height: 44)
+                            .position(moonPt)
+                            .onTapGesture { state.showMoonInfo = true }
+                    }
+                }
+            }
+            .allowsHitTesting(true)
+            .ignoresSafeArea()
             .onChange(of: Date.now) { _, _ in
                 state.animationTime = Date().timeIntervalSinceReferenceDate
             }

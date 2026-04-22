@@ -4,7 +4,29 @@
     {
       "layers" : [
         {
-          "blend-mode" : "lighten",
+          "blend-mode" : "normal",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:1.00000,0.78726,0.98797,1.00000",
+              "display-p3:0.44525,0.61960,0.96783,1.00000"
+            ],
+            "orientation" : {
+              "start" : {
+                "x" : 0.5,
+                "y" : 0
+              },
+              "stop" : {
+                "x" : 0.5,
+                "y" : 0.7
+              }
+            }
+          },
+          "glass" : true,
+          "image-name" : "ArmillarySphere.svg",
+          "name" : "ArmillarySphere"
+        },
+        {
+          "blend-mode" : "screen",
           "fill" : {
             "linear-gradient" : [
               "display-p3:1.00000,0.91669,0.23317,1.00000",

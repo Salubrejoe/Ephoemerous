@@ -12,7 +12,7 @@ struct EArtist {
     let eclColor    : Color   = .yellow.opacity(0.2)
     let eclWidth    : Double = 2
     
-    let horColor    : Color   = .green.opacity(0.2)
+    let horColor    : Color   = .green.opacity(1)
     let horWidth    : Double = 0.5
     
     

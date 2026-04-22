@@ -9,34 +9,17 @@ struct EStarDetailView: View {
         ScrollView {
             VStack(spacing: 32) {
 
-                // Hero glow
-                ZStack {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [star.spectralClass.color.opacity(0.4), .clear],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 80
-                            )
-                        )
-                        .frame(width: 160, height: 160)
+                // ── Spectral header ───────────────────────────────────────
+                EStarHeader(star: star)
+                    .padding(.top, 8)
 
-                    let r = max(12.0, min(36.0, (6.5 - star.magnitude) * 6.0))
-                    Circle()
-                        .fill(star.spectralClass.color)
-                        .frame(width: r, height: r)
-                        .shadow(color: star.spectralClass.color, radius: 12)
-                }
-                .padding(.top, 8)
-                
-                // Coordinates card
+                // ── Coordinates ───────────────────────────────────────────
                 EDetailCard(title: "Coordinates") {
                     EDetailRow(label: "Right Ascension", value: star.rightAscension.hmsString)
                     EDetailRow(label: "Declination",     value: star.declination.dmsString)
                 }
 
-                // Physical card
+                // ── Physical ──────────────────────────────────────────────
                 EDetailCard(title: "Physical") {
                     if let dist = star.distanceLY {
                         EDetailRow(label: "Distance",
@@ -50,7 +33,7 @@ struct EStarDetailView: View {
                     }
                 }
 
-                // Proper motion card
+                // ── Proper Motion ─────────────────────────────────────────
                 EDetailCard(title: "Proper Motion") {
                     EDetailRow(label: "RA  (mas/yr)", value: String(format: "%.3f", star.pmRA))
                     EDetailRow(label: "Dec (mas/yr)", value: String(format: "%.3f", star.pmDE))
@@ -60,20 +43,136 @@ struct EStarDetailView: View {
             .padding(.bottom, 32)
         }
         .navigationTitle(star.displayName)
-        .navigationBarTitleDisplayMode(.large)
-        .background(.black)
-        .preferredColorScheme(.dark)
+        .navigationBarTitleDisplayMode(.inline)
+        .background(
+            LinearGradient(stops: [
+                .init(color: color.opacity(0.4), location: 0.0),
+                .init(color: color.opacity(0.1), location: 0.5),
+                //                .init(color: star.spectralClass.color, location: -0.1),
+            ], startPoint: .topTrailing, endPoint: .bottomLeading)
+        )
+        .presentationDetents([.medium, .large])
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .automatic) {
                 Button {
-                    state.selectedStar = star
-                    dismiss()
+                    if state.selectedStar == star {
+                        state.selectedStar = nil
+                    } else {
+                        state.selectedStar = star
+                    }
                 } label: {
-                    Image(systemName: "target")
-                        .frame(height: 55)
-                        .frame(maxWidth: .infinity)
+                    Image(systemName: state.selectedStar == star ? "target" : "circle")
+                }
+                .foregroundStyle(color)
+            }
+            .sharedBackgroundVisibility(.hidden)
+        }
+    }
+    
+    var color: Color {
+        if state.selectedStar == star {
+            star.spectralClass.color
+        } else {
+            star.spectralClass.color.opacity(0.2)
+        }
+    }
+}
+
+// MARK: - Spectral header
+
+private struct EStarHeader: View {
+    @Environment(EAppState.self) var state
+    let star: EStar
+    
+    var color: Color {
+        if state.selectedStar == star {
+            star.spectralClass.color
+        } else {
+            star.spectralClass.color.opacity(0.2)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+
+            // Gradient colour bar
+            ZStack(alignment: .center) {
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [
+                            color.opacity(0.8),
+                            color.opacity(0.15),
+                            .clear
+                        ],
+                        startPoint: .topTrailing,
+                        endPoint: .bottomLeading
+                    ))
+                    .frame(height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                HStack(alignment: .bottom, spacing: 12) {
+                    // Magnitude dot
+                    let r = max(10.0, min(28.0, (6.5 - star.magnitude) * 4.5))
+                    ZStack {
+                        Circle()
+                            .fill(RadialGradient(
+                                colors: [.white, star.spectralClass.color],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: r))
+                            .frame(width: r, height: r)
+                            .shadow(color: star.spectralClass.color, radius: 8)
+                        Circle()
+                            .strokeBorder(.white.opacity(0.4), lineWidth: 0.5)
+                            .frame(width: r, height: r)
+                    }
+                    .padding(.leading, 16)
+                    .padding(.bottom, 14)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(star.constellation.fullName)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.6))
+                        Text(star.properName != nil ? star.name : "")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+                    .padding(.bottom, 12)
+
+                    Spacer()
+
+                    // Spectral class chip
+                    Text(star.spectralClass.rawValue)
+                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(star.spectralClass.color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(.black.opacity(0.4))
+                                .overlay(Capsule()
+                                    .strokeBorder(star.spectralClass.color.opacity(0.6),
+                                                  lineWidth: 0.5))
+                        )
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 14)
                 }
             }
+
+            // Magnitude label strip
+            HStack {
+                Text(String(format: "mag %.2f", star.magnitude))
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let d = star.distanceLY {
+                    Text(String(format: "%.0f ly", d))
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 6)
         }
     }
 }
@@ -91,7 +190,6 @@ private struct EDetailCard<Content: View>: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 6)
-
             VStack(spacing: 0) {
                 content()
             }
@@ -128,27 +226,28 @@ private struct EDetailRow: View {
 // MARK: - Angle helpers
 
 private extension Angle {
-    var hmsString: String {
-        let totalSec = radians * (12.0 / Double.pi) * 3600
-        let h = Int(totalSec / 3600)
-        let m = Int(totalSec.truncatingRemainder(dividingBy: 3600) / 60)
-        let s = totalSec.truncatingRemainder(dividingBy: 60)
-        return String(format: "%02dh %02dm %05.2fs", h, m, s)
-    }
-    var dmsString: String {
-        let deg = degrees
-        let sign = deg >= 0 ? "+" : "-"
-        let abs  = Swift.abs(deg)
-        let d = Int(abs)
-        let m = Int((abs - Double(d)) * 60)
-        let s = (abs - Double(d) - Double(m)/60) * 3600
-        return String(format: "%@%02d\u{00b0} %02d\u{2019} %05.2f\u{201d}", sign, d, m, s)
-    }
+//    var hmsString: String {
+//        let totalSec = radians * (12.0 / Double.pi) * 3600
+//        let h = Int(totalSec / 3600)
+//        let m = Int(totalSec.truncatingRemainder(dividingBy: 3600) / 60)
+//        let s = totalSec.truncatingRemainder(dividingBy: 60)
+//        return String(format: "%02dh %02dm %05.2fs", h, m, s)
+//    }
+//    var dmsString: String {
+//        let deg = degrees
+//        let sign = deg >= 0 ? "+" : "-"
+//        let a = Swift.abs(deg)
+//        let d = Int(a)
+//        let m = Int((a - Double(d)) * 60)
+//        let s = (a - Double(d) - Double(m) / 60) * 3600
+//        return String(format: "%@%02d\u{00b0} %02d\u{2019} %05.2f\u{201d}", sign, d, m, s)
+//    }
 }
 
 #Preview {
     NavigationStack {
         EStarDetailView(star: EStar.mockStars[0])
     }
+    .environment(EAppState())
     .preferredColorScheme(.dark)
 }

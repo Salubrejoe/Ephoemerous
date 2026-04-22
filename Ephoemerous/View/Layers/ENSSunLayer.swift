@@ -46,6 +46,7 @@ struct ENSSunLayer: EGridLayer {
                                              origin: dc.state.nsProjection.origin,
                                              plane:  dc.state.nsProjection.plane) else { return }
         let sc = dc.toScreen(proj)
+        dc.state.sunScreenPosition = sc
 
         // ── Draw ──
         drawSunSymbol(at: sc, in: &dc)

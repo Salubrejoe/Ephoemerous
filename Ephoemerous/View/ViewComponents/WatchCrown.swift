@@ -20,6 +20,7 @@ struct WatchCrown: View {
             ForEach(0..<24) { index in
                 VStack(spacing: 12) {
                     Text("\(index)")
+                        .shadow(color: .secondary, radius: 4, x: 0, y: 0)
                 }
                 .font(hourMarkerFont)
                 .offset(y: -dialOffset)
