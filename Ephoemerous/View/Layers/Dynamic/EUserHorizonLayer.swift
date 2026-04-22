@@ -3,7 +3,7 @@ import simd
 import CoreLocation
 
 
-struct EUserGlobeLayer: EGridLayer {
+struct EUserHorizonLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in ctx: inout EGraphicContext) {
@@ -59,6 +59,18 @@ struct EUserGlobeLayer: EGridLayer {
     
     private func drawParallels(in dc: inout EGraphicContext) {
         
+        for decl in Angle.sunsets {
+            let pts = EProjection.sampleCurve(appState: dc.state) { t in
+                EPrecession
+                    .equatorialVector(
+                        ra: .radians(t * .twoPi),
+                        dec: decl
+                    )
+                    .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+            }
+            dc.strokeCurve(pts, color: artist.horColor, width: artist.horWidth)
+        }
+        
         let userLocPts = EProjection.sampleCurve(appState: dc.state) { t in
             EPrecession
                 .equatorialVector(
@@ -67,7 +79,9 @@ struct EUserGlobeLayer: EGridLayer {
                 )
                 .sidereallyRotated(by: dc.state.precessedSiderealOffset)
         }
-        dc.fillCurve(userLocPts, color: .green.opacity(0.75))
+        dc.fillCurve(userLocPts, color: artist.horColor.opacity(0.5))
+        
+        
         
         /*
         for parallel in EKnownParallels.allCases {

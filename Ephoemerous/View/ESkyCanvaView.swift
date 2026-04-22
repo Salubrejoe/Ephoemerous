@@ -25,19 +25,25 @@ struct ESkyCanvaView: View {
 
     // Layers drawn inside the clip circle, back → front
     private let innerLayers: [any EGridLayer] = [
-//        ENSGlobeLayer(),
-//        ENSStarsLayer(),
-//        ENSEclipticLayer(),
-//        ENSSunLayer(),
-        EUserGlobeLayer(),
+        ENSGlobeLayer(),
+        ENSEclipticLayer(),
+        ENSSunLayer(),
+        ESelectedStarLayer(),
+        EMoonLayer(),
+//        ENSMoonLayer(),
+        ENSStarsLayer(),
+        EPlanetsLayer(),
+        EUserHorizonLayer(),
     ]
 
     // Layers drawn outside the clip circle (crown ring)
     private let outerLayers: [any EGridLayer] = [
-        ENSEclipticLayer(),
-        ENSSunLayer(),
+//        ENSGlobeLayer(),
+//        ENSEclipticLayer(),
+//        ENSSunLayer(),
         ENSStarsLayer(),
-        ENSGlobeLayer(),
+        EMoonLayer(),
+//        EPlanetsLayer(),
 //        EUserGlobeLayer(),
 //        ENSWatchCrownLayer(),
     ]
@@ -47,35 +53,53 @@ struct ESkyCanvaView: View {
     var body: some View {
         ZStack {
             
-            Color(uiColor: .tertiarySystemBackground)
+            Color(uiColor: .secondarySystemBackground)
                 .ignoresSafeArea()
+//            LinearGradient(colors: [.blue.opacity(0.5), Color(uiColor: .secondarySystemBackground)], startPoint: .top, endPoint: .bottom)
+//                .ignoresSafeArea()
             
-            TimelineView(.animation) { timeline in
-                Canvas { ctx, size in
-                    state.animationTime = timeline.date.timeIntervalSinceReferenceDate
-
-                    // Clip circle matching the crown's inner edge (dec = -30°)
-                    let cx = size.width  / 2 + state.offset.y
-                    let cy = size.height / 2 + state.offset.x
-                    let r  = ENSWatchCrownLayer.clipRadius * state.scale
-                    let clipPath = Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
-                                                         width: 2 * r, height: 2 * r))
-
-                    // Inner layers — drawn inside the clipped projection disk
-                    var clippedCtx = ctx
-                    clippedCtx.clip(to: clipPath)
-                    var innerDC = EGraphicContext(ctx: clippedCtx, size: size, state: state)
-                    for layer in innerLayers { layer.draw(in: &innerDC) }
-
-                    // Outer layers — drawn on top, no clip (the crown ring)
-                    var outerDC = EGraphicContext(ctx: ctx, size: size, state: state)
-                    for layer in outerLayers { layer.draw(in: &outerDC) }
-//                    var innerDC = EGraphicContext(ctx: ctx, size: size, state: state)
+            Group {
+                TimelineView(.animation) { timeline in
+                    Canvas { ctx, size in
+                        // Avoid mutating state directly for type inference issues; update via separate modifier if needed
+                        // state.animationTime = timeline.date.timeIntervalSinceReferenceDate
+                        
+                        // Clip circle matching the crown's inner edge (dec = -30°)
+                        let cx = size.width  / 2 + state.offset.y
+                        let cy = size.height / 2 + state.offset.x
+                        let r  = ENSWatchCrownLayer.clipRadius * state.scale
+                        let clipPath = Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
+                                                              width: 2 * r, height: 2 * r))
+                        
+                        // Inner layers — drawn inside the clipped projection disk
+                        var clippedCtx = ctx
+                        clippedCtx.clip(to: clipPath)
+                        var innerDC = EGraphicContext(ctx: clippedCtx, size: size, state: state)
+                        for layer in innerLayers { layer.draw(in: &innerDC) }
+                        
+                    }
                 }
+                
+                Canvas { ctx, size in
+                    var topDC = EGraphicContext(ctx: ctx, size: size, state: state)
+                    // ... draw your top layer
+                    for layer in outerLayers { layer.draw(in: &topDC) }
+                }
+                .blur(radius: 2)
+                
+                Canvas { ctx, size in
+                    var sunDC = EGraphicContext(ctx: ctx, size: size, state: state)
+                    ENSSunLayer().draw(in: &sunDC)
+                }
+                .brightness(1)
+                .blur(radius: 2)
             }
             .ignoresSafeArea()
             .gesture(dragGesture)
             .simultaneousGesture(pinchGesture)
+            .onChange(of: Date.now) { _, _ in
+                state.animationTime = Date().timeIntervalSinceReferenceDate
+            }
         }
         
     }
@@ -132,4 +156,6 @@ private extension Double {
 
 #Preview {
     ESkyCanvaView()
+        .environment(EAppState())
 }
+

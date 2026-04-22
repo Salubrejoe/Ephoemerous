@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct MainView: View {
-    
+
     @Environment(EAppState.self) var state
-    
+    @State private var showStarList = false
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -11,41 +12,47 @@ struct MainView: View {
                 WatchCrown()
                     .offset(y: -91)
             }
-                .toolbar {
-                    
-//                    ToolbarItem(placement: .bottomBar) {
-//                        EProjectionModePicker(state: state)
-//                            .frame(width: 55, height: 55)
-//                    }
-                    
-                    ToolbarItem(placement: .status) {
-                        Button {
-                            state.isEditingDate.toggle()
-                        } label: {
-                            HStack {
-                                Text(state.observationDate.formatted(.dateTime))
-                                    .bold()
-                                    .padding()
-                            }
-                        }
-                        .frame(height: 55)
+
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    Button {
+                        showStarList = true
+                    } label: {
+                        Label("Stars", systemImage: "magnifyingglass")
                     }
-                    
-//                    ToolbarItem(placement: .bottomBar) {
-//                        EZenithButton(state: state)
-//                            .frame(width: 55, height: 55)
-//                    }
                 }
-                .navigationTitle("Ephemerous")
-                .navigationBarTitleDisplayMode(.inline)
-                .overlay {
-                    EDatePicker()
+
+                ToolbarItem(placement: .status) {
+                    Button {
+                        state.isEditingDate.toggle()
+                    } label: {
+                        HStack {
+                            Text(state.observationDate, style: .time)
+                                .bold()
+                                .padding()
+                        }
+                    }
+//                    .frame(height: 55)
                 }
+            }
+
+            .navigationTitle("Ephemerous")
+            .navigationBarTitleDisplayMode(.inline)
+            .overlay {
+                EDatePicker()
+            }
+            .sheet(isPresented: $showStarList) {
+                NavigationStack {
+                    EStarListView()
+                }
+                .environment(state)
+//                .preferredColorScheme(.dark)
+            }
         }
     }
 }
 
 #Preview {
     MainView()
+        .environment(EAppState())
 }
-

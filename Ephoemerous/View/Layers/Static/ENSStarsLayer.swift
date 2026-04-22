@@ -6,8 +6,8 @@ import SwiftUI
 struct ENSStarsLayer: EGridLayer {
     let artist = EArtist.shared
     let stars: [EStar] = StarDatabase.shared.workableStars .filter {
-        ($0.magnitude < 4.5)
-        && ($0.constellation.isCool)
+        ($0.magnitude < 5.5)
+//        && ($0.constellation.isCool)
 //        && ($0.constellation.isZodiacSign)
     }
     

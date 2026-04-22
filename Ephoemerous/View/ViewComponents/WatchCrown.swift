@@ -45,13 +45,13 @@ struct WatchCrown: View {
 // MARK: - Helpers
 extension WatchCrown {
     
-    var hourMarkerFont: Font { .system(size: scale / 5, weight: .bold) }
-//    var hourMarkerFont: Font { .system(size: state.scale / 10, weight: .bold) }
-    var fifteenMinuteMarkerFont: Font { .system(size: scale / 20, weight: .semibold) }
+    var hourMarkerFont: Font { .system(size: 50 / 5, weight: .bold) }
+//    var hourMarkerFont: Font { .system(size: state.scale / 5, weight: .bold) }
+    var fifteenMinuteMarkerFont: Font { .system(size: 50 / 20, weight: .semibold) }
 //    var fifteenMinuteMarkerFont: Font { .system(size: state.scale / 20, weight: .semibold) }
     
-//    var scale: Double { state.scale }
-    var scale: Double { 50.0 }
+    var scale: Double { state.scale }
+//    var scale: Double { 50.0 }
     
     var dialOffset: Double { scale * 3.4 }
     

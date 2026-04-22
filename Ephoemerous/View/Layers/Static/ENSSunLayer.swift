@@ -49,28 +49,37 @@ struct ENSSunLayer: EGridLayer {
 
         // ── Draw ──
         drawSunSymbol(at: sc, in: &dc)
-        dc.gridLabel(at: CGPoint(x: sc.x + 13, y: sc.y - 4), text: "Sun")
+//        dc.gridLabel(at: CGPoint(x: sc.x + 13, y: sc.y - 4), text: "Sun")
     }
 
     // MARK: - Sun symbol (filled circle + 8 short rays)
 
     private func drawSunSymbol(at sc: CGPoint, in dc: inout EGraphicContext) {
+        
+        let d = 20.0
         // Core disc
-        let disc = Path(ellipseIn: CGRect(x: sc.x - 6, y: sc.y - 6, width: 12, height: 12))
+        let disc = Path(
+            ellipseIn: CGRect(
+                x: sc.x - d/2,
+                y: sc.y - d/2,
+                width: d,
+                height: d
+            )
+        )
         dc.ctx.fill(disc, with: .color(.yellow))
 
-        // Rays
-        var rays = Path()
-        for i in 0..<8 {
-            let angle = Double(i) * .pi / 4
-            let inner: CGFloat = 8
-            let outer: CGFloat = 13
-            rays.move(to: CGPoint(x: sc.x + inner * cos(angle),
-                                  y: sc.y + inner * sin(angle)))
-            rays.addLine(to: CGPoint(x: sc.x + outer * cos(angle),
-                                     y: sc.y + outer * sin(angle)))
-        }
-        dc.ctx.stroke(rays, with: .color(.yellow), lineWidth: 1.5)
+//        // Rays
+//        var rays = Path()
+//        for i in 0..<8 {
+//            let angle = Double(i) * .pi / 4
+//            let inner: CGFloat = 8
+//            let outer: CGFloat = 13
+//            rays.move(to: CGPoint(x: sc.x + inner * cos(angle),
+//                                  y: sc.y + inner * sin(angle)))
+//            rays.addLine(to: CGPoint(x: sc.x + outer * cos(angle),
+//                                     y: sc.y + outer * sin(angle)))
+//        }
+//        dc.ctx.stroke(rays, with: .color(.yellow), lineWidth: 1.5)
     }
 
     // MARK: - Solar position (Meeus, low-precision)

@@ -15,6 +15,7 @@ struct EphoemerousApp: App {
         WindowGroup {
             MainView()
                 .environment(state)
+//            TestView()
         }
     }
 }
