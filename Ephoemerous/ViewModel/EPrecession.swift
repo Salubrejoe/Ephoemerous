@@ -13,41 +13,52 @@ enum EPrecession {
     }()
 
     static func julianDate(from date: Date) -> Seconds {
-        date.timeIntervalSince1970 / 86400.0 + 2_440_587.5
+        date.timeIntervalSince1970 / AstroConstants.secondsPerDay + AstroConstants.julianUnixEpoch
     }
 
     static func julianCenturies(from date: Date) -> Seconds {
-        (julianDate(from: date) - 2_451_545.0) / 36_525.0
+        (julianDate(from: date) - AstroConstants.julianJ2000) / AstroConstants.julianDaysPerCentury
     }
 
     static func gmst(for date: Date) -> Angle {
         let T = julianCenturies(from: date)
-        let gmst0 = 24110.54841
-                  + 8640184.812866 * T
-                  + 0.093104       * T * T
-                  - 6.2e-6         * T * T * T
+        let gmst0 = AstroConstants.gmst_c0
+                  + AstroConstants.gmst_c1 * T
+                  + AstroConstants.gmst_c2 * T * T
+                  + AstroConstants.gmst_c3 * T * T * T
         let utc = TimeZone(identifier: "UTC")!
         let comps = Calendar(identifier: .gregorian).dateComponents(in: utc, from: date)
-        let secondsSinceMidnight = Double((comps.hour ?? 0) * 3600
+        let secondsSinceMidnight = Double((comps.hour   ?? 0) * 3600
                                        + (comps.minute ?? 0) * 60
                                        + (comps.second ?? 0))
-        let totalSeconds = gmst0 + secondsSinceMidnight * 1.00273790935
-        let radians = (totalSeconds / 86400.0) * 2.0 * Double.pi
+        let totalSeconds = gmst0 + secondsSinceMidnight * AstroConstants.siderealRatio
+        let radians = (totalSeconds / AstroConstants.secondsPerDay) * 2.0 * Double.pi
         return Angle(radians: radians)
     }
 
     static func lst(for date: Date, longitude: Angle) -> Angle {
-        let g = gmst(for: date)
-        return g + longitude
+        gmst(for: date) + longitude
     }
 
     static func precess(ra: Angle, dec: Angle, to date: Date) -> (ra: Angle, dec: Angle) {
         let T = julianCenturies(from: date)
         guard abs(T) > 1e-6 else { return (ra, dec) }
-        let k = Double.pi / (180.0 * 3600.0)
-        let zeta  = ((2306.2181 + 1.39656*T - 0.000139*T*T)*T + (0.30188 - 0.000344*T)*T*T + 0.017998*T*T*T) * k
-        let z     = ((2306.2181 + 1.39656*T - 0.000139*T*T)*T + (1.09468 + 0.000066*T)*T*T + 0.018203*T*T*T) * k
-        let theta = ((2004.3109 - 0.85330*T - 0.000217*T*T)*T - (0.42665 + 0.000217*T)*T*T - 0.041775*T*T*T) * k
+        let k = Double.pi / (180.0 * 3600.0) // arc-seconds → radians
+
+        let c0 = AstroConstants.prec_zeta_c0, c1 = AstroConstants.prec_zeta_c1
+        let c2 = AstroConstants.prec_zeta_c2, c3 = AstroConstants.prec_zeta_c3
+        let c4 = AstroConstants.prec_zeta_c4, c5 = AstroConstants.prec_zeta_c5
+
+        let zeta  = ((c0 + c1*T + c2*T*T)*T + (c3 + c4*T)*T*T + c5*T*T*T) * k
+        let z     = ((c0 + c1*T + c2*T*T)*T
+                  + (AstroConstants.prec_z_c3 + AstroConstants.prec_z_c4*T)*T*T
+                  +  AstroConstants.prec_z_c5*T*T*T) * k
+
+        let t0 = AstroConstants.prec_theta_c0, t1 = AstroConstants.prec_theta_c1
+        let t2 = AstroConstants.prec_theta_c2, t3 = AstroConstants.prec_theta_c3
+        let t5 = AstroConstants.prec_theta_c5
+        let theta = ((t0 + t1*T + t2*T*T)*T - (t3 + t2*T)*T*T - t5*T*T*T) * k
+
         let A = cos(dec.radians) * sin(ra.radians + zeta)
         let B = cos(theta) * cos(dec.radians) * cos(ra.radians + zeta) - sin(theta) * sin(dec.radians)
         let C = sin(theta) * cos(dec.radians) * cos(ra.radians + zeta) + cos(theta) * sin(dec.radians)
@@ -66,5 +77,25 @@ enum EPrecession {
 
     static func gmstSiderealOffset(for date: Date) -> Angle {
         gmst(for: date)
+    }
+
+    static func eclipticVector(atStep t: Double, siderealOffset: Angle) -> SIMD3<Double> {
+        let λ = t * 2 * .pi
+        let β = 0.0
+        let θ = siderealOffset.radians
+        let ε = AstroConstants.obliquity.radians
+        let cb = cos(β), sb = sin(β)
+        let cl = cos(λ), sl = sin(λ)
+        let xe = cb * cl
+        let ye = cb * sl
+        let ze = sb
+        let yq = ye * cos(ε) - ze * sin(ε)
+        let zq = ye * sin(ε) + ze * cos(ε)
+        let xq = xe
+        return SIMD3(
+            xq * cos(θ) - yq * sin(θ),
+            xq * sin(θ) + yq * cos(θ),
+            zq
+        )
     }
 }

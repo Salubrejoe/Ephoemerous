@@ -13,9 +13,13 @@ struct EphoemerousApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainView()
-                .environment(state)
-//            TestView()
+            NavigationStack {
+                MainView()
+                    .navigationTitle("👋 Hello")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .environment(state)
+            }
         }
     }
 }
+

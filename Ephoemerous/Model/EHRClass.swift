@@ -3,6 +3,7 @@ import SwiftUI
 
 
 enum EHRClass: String, CaseIterable {
+    
   
   case O, B, A, F, G, K, M, unknown
   

@@ -44,24 +44,24 @@ struct EStarDetailView: View {
         }
         .navigationTitle(star.displayName)
         .navigationBarTitleDisplayMode(.inline)
-        .background(
-            LinearGradient(stops: [
-                .init(color: color.opacity(0.4), location: 0.0),
-                .init(color: color.opacity(0.1), location: 0.5),
-                //                .init(color: star.spectralClass.color, location: -0.1),
-            ], startPoint: .topTrailing, endPoint: .bottomLeading)
-        )
-        .presentationDetents([.medium, .large])
+        .background(background())
+        
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Button {
-                    if state.selectedStar == star {
-                        state.selectedStar = nil
+                    if state.selectedStars.contains(star) {
+                        state.selectedStars.removeAll { $0.id == star.id }
                     } else {
-                        state.selectedStar = star
+                        state.selectedStars.append(star)
                     }
                 } label: {
-                    Image(systemName: state.selectedStar == star ? "target" : "circle")
+                    ZStack {
+                        Image(symbol: state.selectedStars.contains(star) ? .target : .circle)
+                            .shadow(
+                                color: state.selectedStars.contains(star) ? star.spectralClass.color : .clear,
+                                radius: 5
+                            )
+                    }
                 }
                 .foregroundStyle(color)
             }
@@ -70,11 +70,28 @@ struct EStarDetailView: View {
     }
     
     var color: Color {
-        if state.selectedStar == star {
+        if state.selectedStars.contains(star) {
             star.spectralClass.color
         } else {
             star.spectralClass.color.opacity(0.2)
         }
+    }
+    
+    @ViewBuilder
+    private func background() -> some View {
+        ZStack {
+            Circle()
+                .fill(state.selectedStars.contains(star) ? star.spectralClass.color : .clear)
+                .frame(width: 50, height: 50)
+                .blur(radius: 30)
+                .padding(25)
+        }
+        .ignoresSafeArea()
+        .frame(
+            maxWidth: .infinity,
+            maxHeight: .infinity,
+            alignment: .topTrailing
+        )
     }
 }
 
@@ -85,7 +102,7 @@ private struct EStarHeader: View {
     let star: EStar
     
     var color: Color {
-        if state.selectedStar == star {
+        if state.selectedStars.contains(star) {
             star.spectralClass.color
         } else {
             star.spectralClass.color.opacity(0.2)
@@ -100,7 +117,7 @@ private struct EStarHeader: View {
                 Rectangle()
                     .fill(LinearGradient(
                         colors: [
-                            color.opacity(0.8),
+                            color.opacity(0.5),
                             color.opacity(0.15),
                             .clear
                         ],

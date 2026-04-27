@@ -10,23 +10,9 @@
 		7C51B0DD2F8F8C2600B39A8A /* Ephoemerous.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ephoemerous.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		7C8EEC8C2F96797E0046DDDE /* Exceptions for "Ephoemerous" folder in "Ephoemerous" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				xxxDeprecated/xxxEPHEclipticLayer.swift,
-				xxxDeprecated/xxxEPHHorizonLayer.swift,
-			);
-			target = 7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7C51B0DF2F8F8C2600B39A8A /* Ephoemerous */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				7C8EEC8C2F96797E0046DDDE /* Exceptions for "Ephoemerous" folder in "Ephoemerous" target */,
-			);
 			path = Ephoemerous;
 			sourceTree = "<group>";
 		};

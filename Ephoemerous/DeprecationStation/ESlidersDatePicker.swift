@@ -1,7 +1,8 @@
 import SwiftUI
 import os
 
-struct EDatePicker: View {
+/*
+struct ESlidersDatePicker: View {
     
     @Environment(EAppState.self) var state
     
@@ -11,17 +12,11 @@ struct EDatePicker: View {
             let bindableState = Bindable(state)
             if state.isEditingDate {
                 EDateSliders(state: bindableState)
-//                DatePicker("", selection: bindableState.observationDate, displayedComponents: [.date, .hourAndMinute])
-                    
                     .monospaced()
                     .pickerStyle(.wheel)
                     .padding(.vertical, 16)
                     .padding(.horizontal, 32)
                     .glassEffect(.regular.interactive(), in: .containerRelative)
-//                    .background(
-//                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-//                            .fill(.ultraThinMaterial)
-//                    )
             }
         }
         .padding()
@@ -131,4 +126,4 @@ final class EDatePickerViewModel {
     }
 }
 
-
+*/

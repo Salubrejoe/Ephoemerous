@@ -3,12 +3,12 @@ import simd
 
 // MARK: - Planet data
 
-struct EPlanet {
-    let name: String
-    let color: Color
-    /// Approximate visual magnitude at mean distance (used to size the dot)
-    let baseMagnitude: Double
-}
+//struct EPlanet {
+//    let name: String
+//    let color: Color
+//    /// Approximate visual magnitude at mean distance (used to size the dot)
+//    let baseMagnitude: Double
+//}
 
 // MARK: - VSOP87 truncated heliocentric longitude/latitude (Meeus Ch 31-36)
 // L, B in radians; R in AU. Accuracy ~1 arc-minute for bright planets.
@@ -190,15 +190,8 @@ enum EPlanetPosition {
         let T = EPrecession.julianCenturies(from: date)
         let (eLon, eR) = earth(T)
         let eB = 0.0
-        let planetData: [(EPlanet, (Double, Double, Double))] = [
-            (EPlanet(name: "Mercury", color: .gray,                    baseMagnitude: -0.5), mercury(T)),
-            (EPlanet(name: "Venus",   color: Color(red:1,green:0.97,blue:0.85), baseMagnitude: -4.0), venus(T)),
-            (EPlanet(name: "Mars",    color: Color(red:1,green:0.35,blue:0.2),  baseMagnitude: -2.0), mars(T)),
-            (EPlanet(name: "Jupiter", color: Color(red:1,green:0.87,blue:0.7),  baseMagnitude: -2.5), jupiter(T)),
-            (EPlanet(name: "Saturn",  color: Color(red:0.95,green:0.87,blue:0.6), baseMagnitude:  0.7), saturn(T)),
-            (EPlanet(name: "Uranus",  color: Color(red:0.6,green:0.9,blue:0.95), baseMagnitude:  5.7), uranus(T)),
-            (EPlanet(name: "Neptune", color: Color(red:0.4,green:0.55,blue:1.0), baseMagnitude:  8.0), neptune(T)),
-        ]
+        let heliocentric = [mercury(T), venus(T), mars(T), jupiter(T), saturn(T), uranus(T), neptune(T)]
+        let planetData = zip(EPlanet.all, heliocentric).map { ($0, $1) }
         var result: [(EPlanet, SIMD3<Double>, Double, Double)] = []
         for (planet, (pL, pB, pR)) in planetData {
             let (gL, gB) = geocentric(Lp: pL, Bp: pB, Rp: pR, Ls: eLon, Rs: eR)
@@ -223,8 +216,8 @@ struct ENSPlanetsLayer: EGridLayer {
             print(String(format: "%-8@  RA: %6.2fh  Dec: %+7.2fdeg", planet.name as CVarArg, raH, dec))
             guard let projected = EProjection.project(
                 vec,
-                origin: dc.state.nsProjection.origin,
-                plane: dc.state.nsProjection.plane
+                appState: dc.state,
+                mode: .northSouth
             ) else { continue }
             let sc = dc.toScreen(projected)
             guard dc.onScreen(sc, margin: 30) else { continue }

@@ -2,49 +2,81 @@ import SwiftUI
 import simd
 
 enum EMoonPosition {
+
     static func vector(for date: Date, siderealOffset: Angle) -> (vec: SIMD3<Double>, ra: Double, dec: Double) {
         let T = EPrecession.julianCenturies(from: date)
-        let deg = Double.pi / 180.0
-        let L0 = (218.3164477 + 481267.88123421 * T).truncatingRemainder(dividingBy: 360) * deg
-        let M  = (134.9633964 + 477198.8676313  * T).truncatingRemainder(dividingBy: 360) * deg
-        let Ms = (357.5291092 +  35999.0502909  * T).truncatingRemainder(dividingBy: 360) * deg
-        let F  = (93.2720950  + 483202.0175233  * T).truncatingRemainder(dividingBy: 360) * deg
-        let D  = (297.8501921 + 445267.1114034  * T).truncatingRemainder(dividingBy: 360) * deg
-        var lam = L0 / deg
-        lam += 6.288774 * sin(M);    lam += 1.274027 * sin(2*D - M)
-        lam += 0.658314 * sin(2*D);  lam += 0.213618 * sin(2*M)
-        lam -= 0.185116 * sin(Ms);   lam -= 0.114332 * sin(2*F)
-        lam += 0.058793 * sin(2*D - 2*M); lam += 0.057066 * sin(2*D - Ms - M)
-        lam += 0.053322 * sin(2*D + M);   lam += 0.045758 * sin(2*D - Ms)
-        lam -= 0.040923 * sin(Ms - M);    lam -= 0.034720 * sin(D)
-        lam -= 0.030383 * sin(Ms + M)
+        let AC = AstroConstants.self
+
+        // ── Fundamental arguments (radians) ──────────────────────────────────
+        let L0 = Angle.degrees((AC.moon_L0_base.degrees + AC.moon_L0_c1 * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+        let M  = Angle.degrees((AC.moon_M_base.degrees  + AC.moon_M_c1  * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+        let Ms = Angle.degrees((AC.moon_Ms_base.degrees + AC.moon_Ms_c1 * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+        let F  = Angle.degrees((AC.moon_F_base.degrees  + AC.moon_F_c1  * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+        let D  = Angle.degrees((AC.moon_D_base.degrees  + AC.moon_D_c1  * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+
+        // ── Ecliptic longitude perturbations (deg) ────────────────────────────
+        var lam = L0 / (.pi / 180)   // back to degrees for accumulation
+        lam += AC.moon_lam_ev  * sin(M);          lam += AC.moon_lam_var * sin(2*D - M)
+        lam += AC.moon_lam_ann * sin(2*D);        lam += AC.moon_lam_A3  * sin(2*M)
+        lam -= AC.moon_lam_A4  * sin(Ms);         lam -= AC.moon_lam_A5  * sin(2*F)
+        lam += AC.moon_lam_A6  * sin(2*D - 2*M); lam += AC.moon_lam_A7  * sin(2*D - Ms - M)
+        lam += AC.moon_lam_A8  * sin(2*D + M);   lam += AC.moon_lam_A9  * sin(2*D - Ms)
+        lam -= AC.moon_lam_A10 * sin(Ms - M);    lam -= AC.moon_lam_A11 * sin(D)
+        lam -= AC.moon_lam_A12 * sin(Ms + M)
+
+        // ── Ecliptic latitude perturbations (deg) ─────────────────────────────
         var bet = 0.0
-        bet += 5.128122 * sin(F);    bet += 0.280602 * sin(M + F)
-        bet += 0.277693 * sin(M - F); bet += 0.173237 * sin(2*D - F)
-        bet += 0.055413 * sin(2*D + F - M); bet += 0.046271 * sin(2*D - F - M)
-        bet += 0.032573 * sin(2*D + F)
-        let lr = lam * deg; let br = bet * deg; let eps = 23.4393 * deg
+        bet += AC.moon_bet_B1 * sin(F);           bet += AC.moon_bet_B2 * sin(M + F)
+        bet += AC.moon_bet_B3 * sin(M - F);       bet += AC.moon_bet_B4 * sin(2*D - F)
+        bet += AC.moon_bet_B5 * sin(2*D + F - M); bet += AC.moon_bet_B6 * sin(2*D - F - M)
+        bet += AC.moon_bet_B7 * sin(2*D + F)
+
+        // ── Ecliptic → equatorial ─────────────────────────────────────────────
+        let lr  = Angle.degrees(lam).radians
+        let br  = Angle.degrees(bet).radians
+        let eps = AC.obliquity.radians
+
         let x = cos(br) * cos(lr)
         let y = cos(br) * sin(lr) * cos(eps) - sin(br) * sin(eps)
         let z = cos(br) * sin(lr) * sin(eps) + sin(br) * cos(eps)
-        // RA / Dec before sidereal rotation
+
         let ra  = atan2(y, x) * 180.0 / .pi
         let dec = asin(max(-1, min(1, z))) * 180.0 / .pi
         let vec = SIMD3<Double>(x, y, z).sidereallyRotated(by: siderealOffset)
         return (vec, ra < 0 ? ra + 360 : ra, dec)
     }
+
     static func illuminatedFraction(for date: Date) -> Double {
-        let T = EPrecession.julianCenturies(from: date)
-        let deg = Double.pi / 180.0
-        let D  = (297.8501921 + 445267.1114034 * T).truncatingRemainder(dividingBy: 360) * deg
-        let M  = (134.9633964 + 477198.8676313 * T).truncatingRemainder(dividingBy: 360) * deg
-        let Ms = (357.5291092 +  35999.0502909 * T).truncatingRemainder(dividingBy: 360) * deg
-        let i  = 180.0 - D/deg - 6.289*sin(M) + 2.100*sin(Ms) - 1.274*sin(2*D-M) - 0.658*sin(2*D) - 0.214*sin(2*M) - 0.110*sin(D)
-        return (1.0 + cos(i * deg)) / 2.0
+        let T  = EPrecession.julianCenturies(from: date)
+        let AC = AstroConstants.self
+
+        let D  = Angle.degrees((AC.moon_D_base.degrees  + AC.moon_D_c1  * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+        let M  = Angle.degrees((AC.moon_M_base.degrees  + AC.moon_M_c1  * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+        let Ms = Angle.degrees((AC.moon_Ms_base.degrees + AC.moon_Ms_c1 * T)
+                    .truncatingRemainder(dividingBy: 360)).radians
+
+        let i = 180.0
+            - D / (.pi / 180)
+            - AC.moon_phase_c1 * sin(M)
+            + AC.moon_phase_c2 * sin(Ms)
+            - AC.moon_phase_c3 * sin(2*D - M)
+            - AC.moon_phase_c4 * sin(2*D)
+            - AC.moon_phase_c5 * sin(2*M)
+            - AC.moon_phase_c6 * sin(D)
+
+        return (1.0 + cos(Angle.degrees(i).radians)) / 2.0
     }
 }
 
 struct ENSMoonLayer: EGridLayer {
+
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, ra, dec) = EMoonPosition.vector(
             for: dc.state.observationDate,
@@ -52,27 +84,58 @@ struct ENSMoonLayer: EGridLayer {
         )
         let raH = ra / 15.0
         print(String(format: "Moon   RA: %6.2fh  Dec: %+7.2fdeg", raH, dec))
+
         guard let projected = EProjection.project(
             moonVec,
-            origin: dc.state.nsProjection.origin,
-            plane: dc.state.nsProjection.plane
+            appState: dc.state,
+            mode: .northSouth
         ) else { return }
-        
+
         let sc = dc.toScreen(projected)
         guard dc.onScreen(sc, margin: 40) else { return }
         dc.state.moonScreenPosition = sc
-        let fraction = EMoonPosition.illuminatedFraction(for: dc.state.observationDate)
-        let baseRadius: CGFloat = 5
-        let glowRadius: CGFloat = baseRadius * 3.5
-        dc.ctx.fill(Path(ellipseIn: CGRect(x: sc.x-glowRadius, y: sc.y-glowRadius, width: glowRadius*2, height: glowRadius*2)),
-            with: .radialGradient(Gradient(stops: [.init(color: .white.opacity(0.25*fraction), location: 0), .init(color: .white.opacity(0), location: 1)]), center: sc, startRadius: 0, endRadius: glowRadius))
-        dc.ctx.fill(Path(ellipseIn: CGRect(x: sc.x-baseRadius, y: sc.y-baseRadius, width: baseRadius*2, height: baseRadius*2)), with: .color(.gray.opacity(0.55)))
+
+        let fraction   = EMoonPosition.illuminatedFraction(for: dc.state.observationDate)
+        let baseRadius = CGFloat(AstroConstants.moonBaseRadius)
+        let glowRadius = baseRadius * AstroConstants.moonGlowRatio
+
+        // ── Glow ──
+        dc.ctx.fill(
+            Path(ellipseIn: CGRect(x: sc.x - glowRadius, y: sc.y - glowRadius,
+                                   width: glowRadius * 2, height: glowRadius * 2)),
+            with: .radialGradient(
+                Gradient(stops: [
+                    .init(color: .white.opacity(AstroConstants.moonGlowOpacity * fraction), location: 0),
+                    .init(color: .white.opacity(0), location: 1)
+                ]),
+                center: sc, startRadius: 0, endRadius: glowRadius
+            )
+        )
+
+        // ── Dark body ──
+        dc.ctx.fill(
+            Path(ellipseIn: CGRect(x: sc.x - baseRadius, y: sc.y - baseRadius,
+                                   width: baseRadius * 2, height: baseRadius * 2)),
+            with: .color(.gray.opacity(0.55))
+        )
+
+        // ── Lit crescent ──
         let shift = baseRadius * CGFloat(1.0 - 2.0 * fraction)
         var clipped = dc.ctx
-        clipped.clip(to: Path(ellipseIn: CGRect(x: sc.x-baseRadius, y: sc.y-baseRadius, width: baseRadius*2, height: baseRadius*2)))
-        clipped.fill(Path(ellipseIn: CGRect(x: sc.x-baseRadius+shift, y: sc.y-baseRadius, width: baseRadius*2, height: baseRadius*2)), with: .color(.white.opacity(0.92)))
-        dc.ctx.stroke(Path(ellipseIn: CGRect(x: sc.x-baseRadius, y: sc.y-baseRadius, width: baseRadius*2, height: baseRadius*2)), with: .color(.white.opacity(0.4)), lineWidth: 0.5)
-        let label = Text("Moon").font(.system(size: 9, weight: .medium)).foregroundStyle(Color.white.opacity(0.6))
-//        dc.ctx.draw(label, at: CGPoint(x: sc.x+baseRadius+5, y: sc.y), anchor: .leading)
+        clipped.clip(to: Path(ellipseIn: CGRect(x: sc.x - baseRadius, y: sc.y - baseRadius,
+                                                 width: baseRadius * 2, height: baseRadius * 2)))
+        clipped.fill(
+            Path(ellipseIn: CGRect(x: sc.x - baseRadius + shift, y: sc.y - baseRadius,
+                                   width: baseRadius * 2, height: baseRadius * 2)),
+            with: .color(.white.opacity(AstroConstants.moonLimbOpacity))
+        )
+
+        // ── Rim ──
+        dc.ctx.stroke(
+            Path(ellipseIn: CGRect(x: sc.x - baseRadius, y: sc.y - baseRadius,
+                                   width: baseRadius * 2, height: baseRadius * 2)),
+            with: .color(.white.opacity(AstroConstants.moonRimOpacity)),
+            lineWidth: 0.5
+        )
     }
 }

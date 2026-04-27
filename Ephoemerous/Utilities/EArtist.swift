@@ -12,7 +12,7 @@ struct EArtist {
     let eclColor    : Color   = .yellow.opacity(0.2)
     let eclWidth    : Double = 2
     
-    let horColor    : Color   = .green.opacity(1)
+    let horColor    : Color   = .baseOrange.opacity(0.85)
     let horWidth    : Double = 0.5
     
     
@@ -26,9 +26,9 @@ struct EArtist {
     func starRadius(_ star: EStar, in dc: EGraphicContext) -> Double {
         let ra  = star.rightAscension.radians
         let dec = star.declination.radians
-        let phase   = ra * 17.3 + dec * 7.9
-        let twinkle = 1.0 + 0.2 * sin(dc.state.animationTime * 2.5 + phase)
-        let r = max(0.6, (6.0 - star.magnitude) * 0.55) * twinkle
-        return r/2
+        let phase   = ra * AstroConstants.twinklePhaseRA + dec * AstroConstants.twinklePhaseDec
+        let twinkle = 1.0 + AstroConstants.twinkleAmplitude * sin(dc.state.animationTime * AstroConstants.twinkleFrequency + phase)
+        let r = max(AstroConstants.dotMinRadius, (AstroConstants.dotScale - star.magnitude) * AstroConstants.dotFactor) * twinkle
+        return r
     }
 }

@@ -2,12 +2,12 @@ import SwiftUI
 import simd
 
 
-struct EEclipticLayer: EGridLayer {
+struct EULEclipticLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in dc: inout EGraphicContext) {
         
-        let eclPts = EProjection.sampleEcliptic(appState: dc.state)
+        let eclPts = EProjection.sampleEcliptic(appState: dc.state, mode: .userLocation)
         dc.strokeCurve(eclPts, color: artist.eclColor, width: artist.eclWidth)
     }
 }

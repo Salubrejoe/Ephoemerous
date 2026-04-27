@@ -3,64 +3,35 @@ import simd
 import CoreLocation
 
 
-struct EUserHorizonLayer: EGridLayer {
+struct EULHorizonLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in ctx: inout EGraphicContext) {
-        drawMeridians(in: &ctx)
-        drawParallels(in: &ctx)
+        drawHorizons(in: &ctx)
     }
     
-    private func drawMeridians(in dc: inout EGraphicContext) {
+    private func drawHorizons(in dc: inout EGraphicContext) {
         
-        for ra in stride(from: 0, to: .twoPi, by: .pi / 8) {
-            
-            let pts = EProjection.sampleCurve(appState: dc.state) { t in
-                EPrecession
-                    .equatorialVector(
-                        ra: .radians(ra),
-                        dec: .radians((t - 0.5) * .pi)
-                    )
-                    .sidereallyRotated(by: dc.state.precessedSiderealOffset)
-            }
-            dc.strokeCurve(
-                pts,
-                color: artist.color,
-                width: artist.width
-//                width: ra == 0 ? artist.thickWidth : artist.width
-            )
-            
-            /*
-             // Label at the equator crossing (dec = 0)
-             let eq = Vector3D(
-             cos(ra) * cosθ - sin(ra) * sinθ,
-             cos(ra) * sinθ + sin(ra) * cosθ,
-             0.0
-             )
-             
-             if let proj = EProjection.project(
-             eq,
-             origin : O,
-             plane  : P
-             ) {
-             let sc = ctx.toScreen(proj)
-             if ctx.onScreen(sc) {
-             ctx.gridLabel(
-             at: sc.applying(.init(translationX: 0, y: 0)),
-             text: "\(h)h"
-             )
-             }
-             }
-             
-             */
-            
+        let horizon = EProjection.sampleCurve(
+            appState: dc.state,
+            mode: .userLocation
+        ) { step in
+            EPrecession
+                .equatorialVector(
+                    ra: .radians(step * .twoPi),
+                    dec: .zero
+                )
+                .sidereallyRotated(by: dc.state.precessedSiderealOffset)
         }
-    }
-    
-    private func drawParallels(in dc: inout EGraphicContext) {
+        dc.fillCurve(horizon, color: artist.horColor)
         
+        
+        /// SUNSETS
         for decl in Angle.sunsets {
-            let pts = EProjection.sampleCurve(appState: dc.state) { t in
+            let pts = EProjection.sampleCurve(
+                appState: dc.state,
+                mode: .userLocation
+            ) { t in
                 EPrecession
                     .equatorialVector(
                         ra: .radians(t * .twoPi),
@@ -71,15 +42,7 @@ struct EUserHorizonLayer: EGridLayer {
             dc.strokeCurve(pts, color: artist.horColor, width: artist.horWidth)
         }
         
-        let userLocPts = EProjection.sampleCurve(appState: dc.state) { t in
-            EPrecession
-                .equatorialVector(
-                    ra: .radians(t * .twoPi),
-                    dec: .zero
-                )
-                .sidereallyRotated(by: dc.state.precessedSiderealOffset)
-        }
-        dc.fillCurve(userLocPts, color: artist.horColor.opacity(0.5))
+        
         
         
         
@@ -102,6 +65,56 @@ struct EUserHorizonLayer: EGridLayer {
          */
     }
 }
+
+
+/*
+ private func drawMeridians(in dc: inout EGraphicContext) {
+ 
+ for ra in stride(from: 0, to: .twoPi, by: .pi / 8) {
+ 
+ let pts = EProjection.sampleCurve(appState: dc.state) { t in
+ EPrecession
+ .equatorialVector(
+ ra: .radians(ra),
+ dec: .radians((t - 0.5) * .pi)
+ )
+ .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+ }
+ dc.strokeCurve(
+ pts,
+ color: artist.color,
+ width: artist.width
+ //                width: ra == 0 ? artist.thickWidth : artist.width
+ )
+ 
+ /*
+  // Label at the equator crossing (dec = 0)
+  let eq = Vector3D(
+  cos(ra) * cosθ - sin(ra) * sinθ,
+  cos(ra) * sinθ + sin(ra) * cosθ,
+  0.0
+  )
+  
+  if let proj = EProjection.project(
+  eq,
+  origin : O,
+  plane  : P
+  ) {
+  let sc = ctx.toScreen(proj)
+  if ctx.onScreen(sc) {
+  ctx.gridLabel(
+  at: sc.applying(.init(translationX: 0, y: 0)),
+  text: "\(h)h"
+  )
+  }
+  }
+  
+  */
+ 
+ }
+ }
+ */
+
 
 
 

@@ -13,7 +13,7 @@ extension SIMD3 where Scalar == Double {
     }
     
     static func eclipticPoint(lambda: Angle) -> SIMD3 {
-        let obliquity: Angle = .degrees(23.4393)
+        let obliquity = AstroConstants.obliquity
         return SIMD3(
             cos(lambda.radians),
             sin(lambda.radians) * cos(obliquity.radians),

@@ -7,9 +7,11 @@ struct ENSEclipticLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in dc: inout EGraphicContext) {
-        let proj = dc.state.nsProjection
-
-        let eclPts = proj.makeEclipticPoints()
+        let eclPts = EProjection.sampleEcliptic(
+            appState: dc.state,
+            mode: .northSouth
+        )
+        
         dc.strokeCurve(eclPts, color: artist.eclColor, width: artist.eclWidth)
     }
 }

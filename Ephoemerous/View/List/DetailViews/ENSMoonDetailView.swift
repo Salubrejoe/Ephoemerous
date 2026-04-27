@@ -100,16 +100,6 @@ struct ENSMoonDetailView: View {
         }
         .navigationTitle("Moon")
         .navigationBarTitleDisplayMode(.inline)
-        .background(
-            LinearGradient(stops: [
-                .init(color: .gray.opacity(0.5), location: 0.0),
-                .init(color: .gray.opacity(0.1), location: 0.8),
-                //                .init(color: star.spectralClass.color, location: -0.1),
-            ], startPoint: .topTrailing, endPoint: .bottomLeading)
-        )
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .preferredColorScheme(.dark)
         .task(id: "\(lat),\(lon),\(state.observationDate)") {
             await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
         }

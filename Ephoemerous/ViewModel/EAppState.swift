@@ -8,9 +8,15 @@ import simd
 @Observable
 class EAppState {
     
-    var selectedStar: EStar?
+    enum ProjectionFrame {
+        case northSouth
+        case userLocation
+    }
+    
+    var selectedStars: [EStar] = []
     var showSunInfo:  Bool = false
     var showMoonInfo: Bool = false
+    var showStarList: Bool = false
     var sunScreenPosition:  CGPoint? = nil
     var moonScreenPosition: CGPoint? = nil
     
@@ -22,20 +28,42 @@ class EAppState {
         self.plane  = .init()
     }
     
-    var nsProjection: ENSProjection {
-        ENSProjection(siderealOffset: precessedSiderealOffset)
-    }
-    
     var projectionMode: ProjectionMode = .coupled
     
-    var isEditingDate: Bool = false
-
+    var isShowingDatePicker: Bool = false
+    var magnitudeFilter: Double = 5.5
+    var stars: [EStar] {
+        let zenith = observerZenith // SIMD3<Double>, expected to be unit length
+        return StarDatabase.shared.workableStars
+            .filter { s in
+            // Precess RA/Dec to the observation date
+            let precessed = EPrecession.precess(
+                ra: s.rightAscension,
+                dec: s.declination,
+                to: observationDate
+            )
+            // Convert to a unit vector in the same frame as observerZenith
+            let starVec = Angle.spherePoint(
+                latitude: precessed.dec,
+                longitude: precessed.ra
+            )
+            // Above horizon if dot(star, zenith) > 0
+            return simd_dot(starVec, zenith) > 0.0
+        }
+            .filter {
+                $0.name != "Unknown"
+            }
+            .filter {
+                $0.magnitude < magnitudeFilter
+            }
+    }
+    
     var scale:  Double  = 50.0
     var offset: CGPoint = .init(x: -80, y: 0)
-
+    
     var observationDate: Date    = .now
     var animationTime: Double    = 0.0
-
+    
     var originVector: SIMD3<Double> {
         Angle.spherePoint(latitude: origin.latitude, longitude: origin.longitude)
     }
@@ -54,7 +82,7 @@ class EAppState {
         )
         return Angle.spherePoint(latitude: origin.latitude, longitude: lst)
     }
-
+    
     func setOrigin(lat: Angle, lon: Angle) {
         origin.latitude  = lat
         origin.longitude = lon
@@ -85,13 +113,13 @@ class EAppState {
 enum ProjectionMode: String, CaseIterable {
     case coupled = "Coupled"
     case origin  = "Origin"
-//    case plane   = "Plane"
+    //    case plane   = "Plane"
     
     var symbol: String {
         switch self {
-            case .coupled: "globe"
-            case .origin:   "figure.walk.motion"
-//            case .plane:    "figure.climbing"
+        case .coupled: "globe"
+        case .origin:   "figure.walk.motion"
+            //            case .plane:    "figure.climbing"
         }
     }
 }
@@ -99,14 +127,14 @@ enum ProjectionMode: String, CaseIterable {
 
 
 
-struct Origin {
+struct Origin: Equatable {
     var latitude : Angle = .degrees(51)
     var longitude: Angle = .zero
 }
 
-struct Plane {
+struct Plane: Equatable {
     var latitude : Angle = .degrees(51+180)
     var longitude: Angle = .zero
-
+    
     
 }

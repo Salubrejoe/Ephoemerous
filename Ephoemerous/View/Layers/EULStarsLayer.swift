@@ -3,17 +3,12 @@ import CoreLocation
 import simd
 
 
-struct EStarsLayer: EGridLayer {
+struct EULStarsLayer: EGridLayer {
+    @Environment(\.colorScheme) var colorScheme
     let artist = EArtist.shared
-    private static let stars: [EStar] =
-    StarDatabase.shared.workableStars .filter {
-        ($0.magnitude < 6.5)
-//        && ($0.constellation.isZodiacSign)
-    }
-    
     func draw(in dc: inout EGraphicContext) {
         
-        for star in Self.stars {
+        for star in dc.state.stars {
             
             let (pRA, pDec) = EPrecession.precess(
                 ra  : star.rightAscension,
@@ -23,14 +18,18 @@ struct EStarsLayer: EGridLayer {
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
                 .sidereallyRotated(by: dc.state.precessedSiderealOffset)
             
-            if let projPoint = EProjection.project(Q, appState: dc.state) {
+            if let projPoint = EProjection.project(Q, appState: dc.state, mode: .userLocation) {
                 
                 let screenPoint = dc.toScreen(projPoint)
                 
                 guard artist.starPointFallsWithinMarigin(screenPoint, in: dc) else { continue }
                 
                 let r = artist.starRadius(star, in: dc)
-                dc.fillDot(at: screenPoint, radius: r, color: star.spectralClass.color)
+                dc.fillDot(
+                    at: screenPoint,
+                    radius: r,
+                    color: .black
+                )
             }
         }
     }
