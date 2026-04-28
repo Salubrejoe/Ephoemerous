@@ -1,7 +1,21 @@
 import SwiftUI
 
-// MARK: - Sort model
+// MARK: - Tab model
+enum EListTab: String, CaseIterable, Identifiable {
+    case solarSystem    = "Solar System"
+    case constellations = "Constellations"
+    case stars          = "Stars"
+    var id: String { rawValue }
+    var symbol: String {
+        switch self {
+        case .solarSystem:    return "sun.and.horizon"
+        case .constellations: return "sparkles"
+        case .stars:          return "star"
+        }
+    }
+}
 
+// MARK: - Sort model
 enum EStarSort: String, CaseIterable, Identifiable {
     case magnitude     = "Magnitude"
     case constellation = "Constellation"
@@ -9,15 +23,13 @@ enum EStarSort: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-
 // MARK: - Search Results
 extension EListView {
     private var baseStars: [EStar] {
         StarDatabase.shared.workableStars.filter { $0.name != "Unknown" }
     }
     private var solarSystemResults: [ESkyObject] {
-        let all: [ESkyObject] = [.sun, .moon] + EPlanet.all
-            .map { .planet($0) }
+        let all: [ESkyObject] = [.sun, .moon] + EPlanet.all.map { .planet($0) }
         guard !searchText.isEmpty else { return all }
         let q = searchText.lowercased()
         return all.filter { $0.searchTokens.contains(q) }
@@ -32,20 +44,12 @@ extension EListView {
         return all.filter { $0.searchTokens.contains(q) }
     }
     private var displayedStars: [EStar] {
-        var result = baseStars
-            .filter { $0.magnitude <= state.magnitudeFilter }
+        var result = baseStars.filter { $0.magnitude <= state.magnitudeFilter }
         if !searchText.isEmpty {
             let q = searchText.lowercased()
             result = result.filter { ESkyObject.star($0).searchTokens.contains(q) }
         }
-        switch sortOrder {
-        case .magnitude:
-            result.sort { $0.magnitude < $1.magnitude }
-        case .constellation:
-            result.sort { $0.constellation.fullName < $1.constellation.fullName }
-        case .name:
-            result.sort { $0.name < $1.name }
-        }
+        result.sort { $0.magnitude < $1.magnitude }
         return result
     }
     private var recentDisplayed: [EStar] {
@@ -53,29 +57,18 @@ extension EListView {
     }
 }
 
-// MARK: - Components
-extension EListView {
-
-    
-}
-
-
-
 // MARK: - Main list
-
 struct EListView: View {
     @Environment(EAppState.self) var state
     @Environment(\.dismiss) var dismiss
-
     @State private var searchText    = ""
-    @State private var sortOrder     = EStarSort.magnitude
     @State private var showSortSheet = false
-
+    @State private var activeTab     = EListTab.solarSystem
     private let magnitudeRange = -2.0...8.0
 
     var body: some View {
         List {
-            
+            // Recent -- always on top regardless of tab
             if searchText.isEmpty && !recentDisplayed.isEmpty {
                 Section {
                     ForEach(recentDisplayed) { star in
@@ -83,51 +76,67 @@ struct EListView: View {
                     }
                 } header: { header(title: .recentlyViewed) }
             }
-            if searchText.isEmpty || solarSystemResults.count > 0 {
+
+            // Tab content
+            switch activeTab {
+            case .solarSystem:
                 Section {
                     ForEach(solarSystemResults) { obj in
                         NavigationLink(value: obj) { ESkyObjectRow(obj: obj) }
                     }
                 } header: { header(title: .solarSystem) }
-            }
-            if searchText.isEmpty || constellationResults.count > 0 {
+
+            case .constellations:
                 Section {
                     ForEach(constellationResults) { obj in
                         NavigationLink(value: obj) { ESkyObjectRow(obj: obj) }
                     }
                 } header: { header(title: .constellations) }
+
+            case .stars:
+                Section {
+                    ForEach(displayedStars) { star in
+                        NavigationLink(value: ESkyObject.star(star)) { EStarRowView(star: star) }
+                    }
+                } header: { header(title: .allStars) }
             }
-            
-            Section {
-                ForEach(displayedStars) { star in
-                    NavigationLink(value: ESkyObject.star(star)) { EStarRowView(star: star) }
-                }
-            } header: { if searchText.isEmpty { header(title: .allStars) } }
         }
-        
         .navigationDestination(for: ESkyObject.self) { obj in
             switch obj {
             case .star(let s):
                 EStarDetailView(star: s)
                     .onAppear { state.recordViewed(s) }
-            case .sun:
-                ENSSunDetailView()
-            case .moon:
-                ENSMoonDetailView()
-            case .planet(let p):
-                ENSPlanetDetailView(planet: p)
-            case .constellation(let c):
-                EConstellationDetailView(constellation: c)
+            case .sun:                ENSSunDetailView()
+            case .moon:               ENSMoonDetailView()
+            case .planet(let p):      ENSPlanetDetailView(planet: p)
+            case .constellation(let c): EConstellationDetailView(constellation: c)
             }
         }
-        
-        // SEARCH
         .searchable(text: $searchText, prompt: Strings.Prompts.searchBar)
-        
-        // SORT FILTER SHEET
+        .onChange(of: searchText) {
+            // If searching, jump to the tab most likely to have results
+            guard !searchText.isEmpty else { return }
+            if !displayedStars.isEmpty         { activeTab = .stars }
+            else if !constellationResults.isEmpty { activeTab = .constellations }
+            else if !solarSystemResults.isEmpty  { activeTab = .solarSystem }
+        }
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if activeTab == .stars {
+                    Button { showSortSheet = true } label: { Image(symbol: .sort) }
+                }
+            }
+            ToolbarItem(placement: .principal) {
+                Picker("", selection: $activeTab) {
+                    ForEach(EListTab.allCases) { tab in
+                        Image(systemName: tab.symbol).tag(tab)
+                            .font(.footnote)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                Button { showSortSheet = true } label: { Image(symbol: .sort) }
+                Button { dismiss() } label: { Image(symbol: .xmark) }
             }
         }
         .bottomSheet(
@@ -135,7 +144,6 @@ struct EListView: View {
             isPresented: $showSortSheet,
             content: {
                 ESortFilterSheet(
-                    sortOrder: $sortOrder,
                     magnitudeCap: Bindable(state).magnitudeFilter,
                     magnitudeRange: magnitudeRange,
                     starCount: displayedStars.count
@@ -148,9 +156,6 @@ struct EListView: View {
         Text(title.rawValue).font(.footnote.weight(.semibold)).foregroundStyle(.secondary).textCase(nil)
     }
 }
-
-
-
 
 #Preview {
     NavigationStack { EListView() }.environment(EAppState())

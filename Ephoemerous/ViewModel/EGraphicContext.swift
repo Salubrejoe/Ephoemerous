@@ -17,8 +17,8 @@ struct EGraphicContext {
 
     func toScreen(_ p: CGPoint) -> CGPoint {
         CGPoint(
-            x: size.width  / 2 + p.x * state.scale + state.offset.y,
-            y: size.height / 2 - p.y * state.scale + state.offset.x
+            x: size.width  / 2 + p.x * state.renderedScale + state.renderedOffset.y,
+            y: size.height / 2 - p.y * state.renderedScale + state.renderedOffset.x
         )
     }
 //
@@ -93,8 +93,8 @@ struct EGraphicContext {
                     height : 2 * radius
                 )
             ),
-            with: .radialGradient(.init(colors: [color, .white]), center: sc, startRadius: 3, endRadius: 0)
-//            with: .foreground
+//            with: .radialGradient(.init(colors: [color, .white]), center: sc, startRadius: 3, endRadius: 0)
+            with: .color(color)
         )
     }
 
@@ -104,7 +104,7 @@ struct EGraphicContext {
             Text(text)
                 .font(.footnote)
                 .fontDesign(.monospaced)
-                .foregroundStyle(Color.secondary)
+                .foregroundStyle(Color.primary)
             ,
             at: point,
             anchor: .leading

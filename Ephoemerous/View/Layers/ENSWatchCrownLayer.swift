@@ -12,9 +12,9 @@ struct ENSWatchCrownLayer: EGridLayer {
     private let minorTickLen : Double = 4
 
     func draw(in dc: inout EGraphicContext) {
-        let cx     = dc.size.width  / 2 + dc.state.offset.y
-        let cy     = dc.size.height / 2 + dc.state.offset.x
-        let innerR = dc.state.scale * Self.clipRadius
+        let cx     = dc.size.width  / 2 + dc.state.renderedOffset.y
+        let cy     = dc.size.height / 2 + dc.state.renderedOffset.x
+        let innerR = dc.state.renderedScale * Self.clipRadius
         let outerR = innerR + crownWidth
         // Fixed orientation: RA=0h at bottom, RA=12h at top. Never rotates.
         let θ: Double = -.pi / 2

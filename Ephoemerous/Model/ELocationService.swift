@@ -34,7 +34,7 @@ final class ELocationService: NSObject, CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("ELocationService error: \(error.localizedDescription)")
+        ELogger.location("ELocationService error: \(error.localizedDescription)")
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

@@ -18,6 +18,7 @@ struct EphoemerousApp: App {
                     .navigationTitle("👋 Hello")
                     .navigationBarTitleDisplayMode(.inline)
                     .environment(state)
+                    .onAppear { ECloudSync.shared.start(appState: state) }
             }
         }
     }

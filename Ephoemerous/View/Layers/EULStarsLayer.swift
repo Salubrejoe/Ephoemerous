@@ -13,7 +13,7 @@ struct EULStarsLayer: EGridLayer {
             let (pRA, pDec) = EPrecession.precess(
                 ra  : star.rightAscension,
                 dec : star.declination,
-                to  : dc.state.observationDate
+                to  : dc.state.renderedObservationDate
             )
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
                 .sidereallyRotated(by: dc.state.precessedSiderealOffset)

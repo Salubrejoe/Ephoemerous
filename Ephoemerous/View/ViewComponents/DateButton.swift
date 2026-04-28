@@ -6,18 +6,21 @@ struct DateButton: View {
     
     var body: some View {
         
-        HStack {
-            if state.isShowingDatePicker {
-                
-                ObservationDatePicker()
-                DismissPickerXmark()
-                
-            } else {
-                CalendarButton()
-            }
-            
+        HStack(spacing: 4) {
             if dateValueChanged {
                 ResetDateButton()
+                    .padding(.leading, 4)
+            }
+            
+            if state.isShowingDatePicker {
+                ObservationDatePicker()
+                    .padding(.horizontal, dateValueChanged ? 4 : 0)
+                DismissPickerXmark()
+                    .padding(.trailing, 4)
+            }
+            else {
+                CalendarButton()
+                    .padding(.horizontal, dateValueChanged ? 4 : 0)
             }
         }
     }
@@ -29,16 +32,40 @@ extension DateButton {
     
     @ViewBuilder
     private func ObservationDatePicker() -> some View {
-        let bindableState = Bindable(state)
+        let binding = Binding<Date>(
+            get: { state.observationDate },
+            set: { newDate in
+                let old = state.observationDate
+                let cal = Calendar.current
+                let onlyTimeChanged = cal.isDate(old, inSameDayAs: newDate)
+                if onlyTimeChanged {
+                    state.setObservationDate(newDate)
+                } else {
+                    state._dateTransition = nil
+                    state.observationDate  = newDate
+                }
+                state.applyTimeOfDayPreset()
+            }
+        )
         DatePicker("",
-                   selection: bindableState.observationDate,
+                   selection: binding,
                    displayedComponents: [.date, .hourAndMinute]
         )
+        
     }
     
     @ViewBuilder
     private func CalendarButton() -> some View {
         Button {
+            if !state.isShowingDatePicker {
+                state.apply(EViewPreset(
+                    id: "_default",
+                    name: "Default",
+                    symbol: "circle",
+                    scale: 50.0,
+                    offset: CGPoint(x: -80, y: 0)
+                ))
+            }
             state.isShowingDatePicker.toggle()
         } label: {
             Image(symbol: .calendar)
@@ -48,9 +75,10 @@ extension DateButton {
     @ViewBuilder
     private func ResetDateButton() -> some View {
         Button {
-            state.observationDate = .now
+            state.setObservationDate(.now)
         } label: {
             Image(symbol: .resetClock)
+                .foregroundStyle(.pink)
         }
     }
     
@@ -59,7 +87,8 @@ extension DateButton {
         Button {
             state.isShowingDatePicker.toggle()
         } label: {
-            Image(symbol: .xmark)
+            Image(symbol: .xmarkCircle)
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -69,7 +98,9 @@ extension DateButton {
 extension DateButton {
     
     private var dateValueChanged: Bool {
-        hourValueChanged || minuteValueChanged || isNotToday
+        hourValueChanged
+        || minuteValueChanged
+//        || isNotToday
     }
     
     private var isNotToday: Bool {

@@ -4,19 +4,54 @@ import SwiftUI
 
 struct SunMoonTrackingOverlay: View {
     @Environment(EAppState.self) var state
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var showStarView : Bool = false
+    @State private var selectedStar : EStar?
     
     var body: some View {
         GeometryReader { _ in
             ZStack {
                 if let sunPt = state.sunScreenPosition {
                     ClearCircle(at: sunPt)
-                        .onTapGesture { state.showSunInfo = true }
+                        .onTapGesture {
+                            state.showStarList = false
+                            state.applySunTracking()
+                            state.showSunInfo = true
+                        }
                 }
                 if let moonPt = state.moonScreenPosition {
                     ClearCircle(at: moonPt)
-                        .onTapGesture { state.showMoonInfo = true }
+                        .onTapGesture {
+                            state.showStarList = false
+                            state.applyMoonTracking()
+                            state.showMoonInfo = true
+                        }
+                }
+                ForEach(state.selectedStars, id: \.name) { star in
+                    if let pt = state.selectedStarPositions[star.name] {
+                        ClearCircle(at: pt)
+                            .onTapGesture {
+                                state.showStarList = false
+                                state.applyStarTracking(star)
+                                selectedStar = star
+                                showStarView = true
+                                
+                            }
+                    }
                 }
             }
+            .bottomSheet(
+                .allStars,
+                isPresented: $showStarView,
+                content: {
+                    Group {
+                        if let star = selectedStar {
+                            EStarDetailView(star: star)
+                        }
+                    }
+                }
+            )
         }
         .allowsHitTesting(true)
     }
@@ -30,3 +65,4 @@ struct SunMoonTrackingOverlay: View {
             .position(point)
     }
 }
+

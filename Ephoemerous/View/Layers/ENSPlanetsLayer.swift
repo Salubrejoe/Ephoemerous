@@ -208,12 +208,12 @@ struct ENSPlanetsLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         let pairs = EPlanetPosition.allVectors(
-            for: dc.state.observationDate,
+            for: dc.state.renderedObservationDate,
             siderealOffset: dc.state.precessedSiderealOffset
         )
         for (planet, vec, ra, dec) in pairs {
             let raH = ra / 15.0
-            print(String(format: "%-8@  RA: %6.2fh  Dec: %+7.2fdeg", planet.name as CVarArg, raH, dec))
+            ELogger.planet(String(format: "%-8@  RA: %6.2fh  Dec: %+7.2fdeg", planet.name as CVarArg, raH, dec))
             guard let projected = EProjection.project(
                 vec,
                 appState: dc.state,
@@ -237,9 +237,11 @@ struct ENSPlanetsLayer: EGridLayer {
                 Path(ellipseIn: CGRect(x: sc.x-r, y: sc.y-r, width: r*2, height: r*2)),
                 with: .color(planet.color))
             // Label
-//            dc.ctx.draw(
-//                Text(planet.name).font(.system(size: 8, weight: .medium)).foregroundStyle(planet.color.opacity(0.8)),
-//                at: CGPoint(x: sc.x + r + 4, y: sc.y), anchor: .leading)
+            if dc.state.scale >= 90 {
+                dc.ctx.draw(
+                    Text(planet.name).font(.system(size: 8, weight: .medium)).foregroundStyle(planet.color.opacity(0.8)),
+                    at: CGPoint(x: sc.x + r + 4, y: sc.y), anchor: .leading)
+            }
         }
     }
 }

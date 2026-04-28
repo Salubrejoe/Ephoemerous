@@ -11,7 +11,7 @@ struct ENSSelectedStarsLayer: EGridLayer {
             let (pRA, pDec) = EPrecession.precess(
                 ra: star.rightAscension,
                 dec: star.declination,
-                to: dc.state.observationDate
+                to: dc.state.renderedObservationDate
             )
             let θ = dc.state.precessedSiderealOffset.radians
             let (c, s) = (cos(θ), sin(θ))
@@ -24,13 +24,16 @@ struct ENSSelectedStarsLayer: EGridLayer {
                 mode: .northSouth
             ) else { return }
             let sc = dc.toScreen(proj)
+            let name = star.name; let pos = sc; let state = dc.state; DispatchQueue.main.async { state.selectedStarPositions[name] = pos }
             
             // Ring
             let ring = Path(ellipseIn: CGRect(x: sc.x - 9, y: sc.y - 9, width: 18, height: 18))
             dc.ctx.stroke(ring, with: .color(star.spectralClass.color), lineWidth: 1.5)
             
             // Label
-            dc.gridLabel(at: CGPoint(x: sc.x + 12, y: sc.y - 4), text: star.displayName)
+            if dc.state.scale >= 90 {
+                dc.gridLabel(at: CGPoint(x: sc.x + 12, y: sc.y - 4), text: star.displayName)
+            }
         }
     }
 }

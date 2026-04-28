@@ -48,7 +48,7 @@ extension ZenithButton {
             return .red
         case .authorizedWhenInUse, .authorizedAlways:
             if isAcquiring  { return .yellow }
-            if isAtUserLocation { return EArtist.shared.horColor }
+            if isAtUserLocation { return .baseOrange }
             return .primary.opacity(0.7)
         default:
             return .secondary

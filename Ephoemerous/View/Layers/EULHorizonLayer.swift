@@ -39,7 +39,7 @@ struct EULHorizonLayer: EGridLayer {
                     )
                     .sidereallyRotated(by: dc.state.precessedSiderealOffset)
             }
-            dc.strokeCurve(pts, color: artist.horColor, width: artist.horWidth)
+            dc.strokeCurve(pts, color: .baseOrange, width: artist.horWidth)
         }
         
         

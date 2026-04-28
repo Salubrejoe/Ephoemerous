@@ -79,11 +79,11 @@ struct ENSMoonLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, ra, dec) = EMoonPosition.vector(
-            for: dc.state.observationDate,
+            for: dc.state.renderedObservationDate,
             siderealOffset: dc.state.precessedSiderealOffset
         )
         let raH = ra / 15.0
-        print(String(format: "Moon   RA: %6.2fh  Dec: %+7.2fdeg", raH, dec))
+        ELogger.moon(String(format: "Moon   RA: %6.2fh  Dec: %+7.2fdeg", raH, dec))
 
         guard let projected = EProjection.project(
             moonVec,
@@ -93,9 +93,9 @@ struct ENSMoonLayer: EGridLayer {
 
         let sc = dc.toScreen(projected)
         guard dc.onScreen(sc, margin: 40) else { return }
-        dc.state.moonScreenPosition = sc
+        let pos = sc; let state = dc.state; DispatchQueue.main.async { state.moonScreenPosition = pos }
 
-        let fraction   = EMoonPosition.illuminatedFraction(for: dc.state.observationDate)
+        let fraction   = EMoonPosition.illuminatedFraction(for: dc.state.renderedObservationDate)
         let baseRadius = CGFloat(AstroConstants.moonBaseRadius)
         let glowRadius = baseRadius * AstroConstants.moonGlowRatio
 

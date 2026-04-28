@@ -12,18 +12,18 @@ struct CelestialCanva: View {
     private let innerLayers: [any EGridLayer] = [
         //        ENSEquatorTropicsLayer(),
         //        ENSEclipticLayer(),
-        ENSSunLayer(),
-        ENSMoonLayer(),
-        ENSPlanetsLayer(),
         EULHorizonLayer(),
-        ENSSelectedStarsLayer(),
         ENSWatchCrownLayer()
     ]
     
     // Layers drawn outside the clip circle (crown ring)
     private let outerLayers: [any EGridLayer] = [
-        ENSWatchCrownLayer(),
         ENSStarsLayer(),
+        ENSSunLayer(),
+        ENSMoonLayer(),
+        ENSPlanetsLayer(),
+        ENSWatchCrownLayer(),
+        ENSSelectedStarsLayer(),
     ]
     
     // Drag state
@@ -44,7 +44,7 @@ struct CelestialCanva: View {
                 ZStack {
                 Canvas { ctx, size in
             /// Avoid mutating state directly for type inference issues; update via separate modifier if needed
-                    state.animationTime = timeline.date.timeIntervalSinceReferenceDate
+                    state.animationTime = timeline.date.timeIntervalSinceReferenceDate; if state.canvasSize != size { DispatchQueue.main.async { state.canvasSize = size } }
                     
                     var innerDC = innerDC(ctx: ctx, size: size)
                     for layer in innerLayers { layer.draw(in: &innerDC) }
@@ -69,6 +69,11 @@ extension CelestialCanva {
             .onChanged { v in
                 if !isDragging {
                     isDragging   = true
+                    // Snap from animated position so there is no jump
+                    if state._activeTransition != nil {
+                        state.offset = state.renderedOffset
+                        state._activeTransition = nil
+                    }
                     dragStartLat = state.offset.x
                     dragStartLon = state.offset.y
                 }
@@ -87,14 +92,21 @@ extension CelestialCanva {
                 //                }
                 
             }
-            .onEnded { _ in isDragging = false }
+            .onEnded { _ in isDragging = false
+                ELogger.sun("drag ended offset: \(state.offset) scale: \(state.scale)")
+            }
     }
     
     private var pinchGesture: some Gesture {
         MagnifyGesture()
             .onChanged { v in
                 if !isPinching {
-                    isPinching      = true
+                    isPinching = true
+                    // Snap from animated scale so there is no jump
+                    if state._activeTransition != nil {
+                        state.scale = state.renderedScale
+                        state._activeTransition = nil
+                    }
                     pinchStartScale = state.scale
                 }
                 state.scale = (pinchStartScale * Double(v.magnification))
@@ -109,9 +121,9 @@ extension CelestialCanva {
 extension CelestialCanva {
     private func innerDC(ctx: GraphicsContext, size: CGSize) -> EGraphicContext {
         // Clip circle matching the crown's inner edge (dec = -30°)
-        let cx = size.width  / 2 + state.offset.y
-        let cy = size.height / 2 + state.offset.x
-        let r  = 2 * sqrt(3) * state.scale
+        let cx = size.width  / 2 + state.renderedOffset.y
+        let cy = size.height / 2 + state.renderedOffset.x
+        let r  = 2 * sqrt(3) * state.renderedScale
         let clipPath = Path(
             ellipseIn:
                 CGRect(

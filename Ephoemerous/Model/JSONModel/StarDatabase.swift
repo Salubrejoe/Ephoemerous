@@ -8,7 +8,7 @@ class StarDatabase {
   
   var workableStars: [EStar] {
       let workable: [EStar] = stars.map { .init(from: $0) }
-      print(workable.count)
+      ELogger.starDatabase(workable.count.description)
       return workable
   }
   
@@ -28,7 +28,7 @@ class StarDatabase {
   
   private func loadStars() {
     guard let url = Bundle.main.url(forResource: "bsc5", withExtension: "json") else {
-      print("JSON file not found")
+      ELogger.starDatabase("JSON file not found")
       return
     }
     
@@ -37,7 +37,7 @@ class StarDatabase {
       let decodedStars = try JSONDecoder().decode([StarData].self, from: data)
       self.stars = decodedStars
     } catch {
-      print("Error decoding JSON: \(error)")
+      ELogger.starDatabase("Error decoding JSON: \(error)")
     }
   }
   

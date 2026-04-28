@@ -23,7 +23,7 @@ struct Strings {
     
     // MARK: - Prompts
     struct Prompts {
-        static let searchBar   = "Search the sky"
+        static let searchBar   = "Search, filter, follow..."
         static let searchBar2  = "Name, constellation, class..."
     }
     
@@ -75,6 +75,7 @@ struct Strings {
         case flame         = "flame"
         case location      = "location"
         case locationFill  = "location.fill"
+        case magnitudeIcon = "slider.horizontal.below.sun.max"
         case plus          = "plus"
         case record        = "smallcircle.filled.circle"
         case reset         = "arrow.counterclockwise"
@@ -92,6 +93,7 @@ struct Strings {
         case thumbsup      = "hand.thumbsup"
         case warning       = "exclamationmark.triangle.fill"
         case xmark         = "xmark"
+        case xmarkCircle   = "xmark.circle"
         
         var description: String { self.rawValue }
         

@@ -220,13 +220,13 @@ enum AstroConstants {
     static let planetDotMinR:     Double = 1.5
     static let planetGlowRatio:   Double = 3.0   // glowR = r × ratio
     /// Moon canvas dot
-    static let moonBaseRadius:    Double = 5.0
+    static let moonBaseRadius:    Double = 9.0
     static let moonGlowRatio:     Double = 3.5   // glowR = base × ratio
     static let moonGlowOpacity:   Double = 0.25  // scaled by illumination fraction
     static let moonLimbOpacity:   Double = 0.92  // lit hemisphere fill
     static let moonRimOpacity:    Double = 0.40  // stroke
     /// Sun canvas disc diameter
-    static let sunDiscDiameter:   Double = 20.0
+    static let sunDiscDiameter:   Double = 32.0
     /// List row dot: max(listDotMin, min(listDotMax, (listDotScale − mag) × listFactor))
     static let listDotMin:        Double =  4.0
     static let listDotMax:        Double = 14.0

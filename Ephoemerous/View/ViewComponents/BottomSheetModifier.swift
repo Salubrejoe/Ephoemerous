@@ -20,6 +20,7 @@ extension View {
 
 
 struct BottomSheetModifier<SheetView: View>: ViewModifier {
+    @Environment(\.dismiss) var dismiss
     
     let title     : String
     let condition : Binding<Bool>
@@ -30,8 +31,10 @@ struct BottomSheetModifier<SheetView: View>: ViewModifier {
             .sheet(isPresented: condition) {
                 NavigationStack {
                     sheetView()
-                        .navigationTitle(title)
-                        .navigationBarTitleDisplayMode(.inline)
+                        .presentationBackground(.clear)
+                        .presentationBackgroundInteraction(.enabled)
+//                        .navigationTitle(title)
+//                        .navigationBarTitleDisplayMode(.large)
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)
                 }

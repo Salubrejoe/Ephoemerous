@@ -29,7 +29,7 @@ struct ESiriusLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
 
-        let date = dc.state.observationDate
+        let date = dc.state.renderedObservationDate
 
         // ── 1. Pull Sirius out of the model to expose what EStar stores ──
         let modelStar: EStar? = StarDatabase.shared.workableStars.min {

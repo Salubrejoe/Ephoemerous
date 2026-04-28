@@ -17,7 +17,7 @@ struct ENSSunLayer: EGridLayer {
     // MARK: - Draw
 
     func draw(in dc: inout EGraphicContext) {
-        let date   = dc.state.observationDate
+        let date   = dc.state.renderedObservationDate
         let lambda = Self.sunEclipticLongitude(for: date)
         let (sunRA, sunDec) = Self.equatorialCoords(lambda: lambda)
 
@@ -41,7 +41,7 @@ struct ENSSunLayer: EGridLayer {
                                              appState: dc.state,
                                              mode: .northSouth) else { return }
         let sc = dc.toScreen(proj)
-        dc.state.sunScreenPosition = sc
+        let pos = sc; let state = dc.state; DispatchQueue.main.async { state.sunScreenPosition = pos }
 
         // ── Draw ──
         drawSunSymbol(at: sc, in: &dc)
@@ -50,9 +50,17 @@ struct ENSSunLayer: EGridLayer {
     // MARK: - Sun symbol
 
     private func drawSunSymbol(at sc: CGPoint, in dc: inout EGraphicContext) {
-        let d = AstroConstants.sunDiscDiameter
-        let disc = Path(ellipseIn: CGRect(x: sc.x - d/2, y: sc.y - d/2,
-                                          width: d, height: d))
+        let r = AstroConstants.sunDiscDiameter/2
+        let disc = Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
+                                          width: 2*r, height: 2*r))
+        
+        // Soft glow behind the star
+        var glow = dc.ctx
+        glow.addFilter(.blur(radius: r * 5.2))
+        glow.fill(
+            disc,
+            with: .color(.yellow.opacity(1))
+        )
         dc.ctx.fill(disc, with: .color(.yellow))
     }
 
@@ -113,16 +121,16 @@ struct ENSSunLayer: EGridLayer {
                              ra: Angle, dec: Angle, siderealOffset: Angle) {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime]
-        print("\n── Sun diagnostic @ \(iso.string(from: date)) ──")
-        print("  [Ecliptic]")
-        print("    λ (apparent)  \(String(format: "%.4f", lambda.degrees))°")
-        print("  [Equatorial — computed]")
-        print("    RA  \(raString(ra.degrees))  (\(String(format: "%.4f", ra.degrees))°)")
-        print("    Dec \(decString(dec.degrees))  (\(String(format: "%.4f", dec.degrees))°)")
+        ELogger.sun("\n── Sun diagnostic @ \(iso.string(from: date)) ──")
+        ELogger.sun("  [Ecliptic]")
+        ELogger.sun("    λ (apparent)  \(String(format: "%.4f", lambda.degrees))°")
+        ELogger.sun("  [Equatorial — computed]")
+        ELogger.sun("    RA  \(raString(ra.degrees))  (\(String(format: "%.4f", ra.degrees))°)")
+        ELogger.sun("    Dec \(decString(dec.degrees))  (\(String(format: "%.4f", dec.degrees))°)")
         let gmstH = siderealOffset.degrees / 15
-        print("  [Sidereal]")
-        print("    GMST  \(raString(siderealOffset.degrees))  (\(String(format: "%.4f", gmstH))h)")
-        print("──────────────────────────────────────")
+        ELogger.sun("  [Sidereal]")
+        ELogger.sun("    GMST  \(raString(siderealOffset.degrees))  (\(String(format: "%.4f", gmstH))h)")
+        ELogger.sun("──────────────────────────────────────")
     }
 
     // MARK: - Formatters
