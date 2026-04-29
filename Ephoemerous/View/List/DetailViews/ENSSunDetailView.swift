@@ -13,76 +13,55 @@ struct ENSSunDetailView: View {
     private var lon: Double { state.origin.longitude.degrees }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-
-                // ── Hero ──────────────────────────────────────────────────
-//                ZStack {
-//                    Circle()
-//                        .fill(RadialGradient(
-//                            colors: [Color.yellow.opacity(0.45), .clear],
-//                            center: .center, startRadius: 0, endRadius: 90))
-//                        .frame(width: 180, height: 180)
-//                    Circle()
-//                        .fill(RadialGradient(
-//                            colors: [.white, .yellow, Color(red: 1, green: 0.6, blue: 0)],
-//                            center: .center, startRadius: 0, endRadius: 30))
-//                        .frame(width: 54, height: 54)
-//                        .shadow(color: .yellow, radius: 16)
-//                }
-//                .padding(.top, 8)
-
-                // ── Sun Events ────────────────────────────────────────────
-                ENSBodyCard(title: "Sun Events") {
-                    if weather.isLoading {
-                        ENSBodyRow(label: "Fetching…", value: "")
-                    } else if let e = weather.sunEvents {
-                        if let v = e.civilDawn  { ENSBodyRow(label: "Civil Dawn",  value: v.timeString) }
-                        if let v = e.sunrise    { ENSBodyRow(label: "Sunrise",     value: v.timeString) }
-                        if let v = e.solarNoon  { ENSBodyRow(label: "Solar Noon",  value: v.timeString) }
-                        if let v = e.sunset     { ENSBodyRow(label: "Sunset",      value: v.timeString) }
-                        if let v = e.civilDusk  { ENSBodyRow(label: "Civil Dusk",  value: v.timeString) }
-                    } else if let err = weather.error {
-                        ENSBodyRow(label: "Error", value: err)
-                    } else {
-                        ENSBodyRow(label: "Unavailable", value: "")
+            ScrollView {
+                VStack(spacing: 32) {
+                    
+                    // ── Sun Events ────────────────────────────────────────────
+                    ENSBodyCard(title: "Sun Events") {
+                        if weather.isLoading {
+                            ENSBodyRow(label: "Fetching…", value: "")
+                        } else if let e = weather.sunEvents {
+                            if let v = e.civilDawn  { ENSBodyRow(label: "Civil Dawn",  value: v.timeString) }
+                            if let v = e.sunrise    { ENSBodyRow(label: "Sunrise",     value: v.timeString) }
+                            if let v = e.solarNoon  { ENSBodyRow(label: "Solar Noon",  value: v.timeString) }
+                            if let v = e.sunset     { ENSBodyRow(label: "Sunset",      value: v.timeString) }
+                            if let v = e.civilDusk  { ENSBodyRow(label: "Civil Dusk",  value: v.timeString) }
+                        } else if let err = weather.error {
+                            ENSBodyRow(label: "Error", value: err)
+                        } else {
+                            ENSBodyRow(label: "Unavailable", value: "")
+                        }
+                    }
+                    
+                    // ── Coordinates ───────────────────────────────────────────
+                    ENSBodyCard(title: "Coordinates") {
+                        ENSBodyRow(label: "Right Ascension",    value: coords.ra.hmsString)
+                        ENSBodyRow(label: "Declination",        value: coords.dec.dmsString)
+                        ENSBodyRow(label: "Ecliptic longitude", value: String(format: "%.3f°", lambda.degrees))
+                    }
+                    
+                    // ── Physical ──────────────────────────────────────────────
+                    ENSBodyCard(title: "Physical") {
+                        ENSBodyRow(label: "Type",        value: "G-type main-sequence")
+                        ENSBodyRow(label: "Distance",    value: "1.000 AU")
+                        ENSBodyRow(label: "Magnitude",   value: "-26.74")
+                        ENSBodyRow(label: "Temperature", value: "5,778 K")
+                        ENSBodyRow(label: "Radius",      value: "696,000 km")
                     }
                 }
-
-                // ── Coordinates ───────────────────────────────────────────
-                ENSBodyCard(title: "Coordinates") {
-                    ENSBodyRow(label: "Right Ascension",    value: coords.ra.hmsString)
-                    ENSBodyRow(label: "Declination",        value: coords.dec.dmsString)
-                    ENSBodyRow(label: "Ecliptic longitude", value: String(format: "%.3f°", lambda.degrees))
-                }
-
-                // ── Physical ──────────────────────────────────────────────
-                ENSBodyCard(title: "Physical") {
-                    ENSBodyRow(label: "Type",        value: "G-type main-sequence")
-                    ENSBodyRow(label: "Distance",    value: "1.000 AU")
-                    ENSBodyRow(label: "Magnitude",   value: "-26.74")
-                    ENSBodyRow(label: "Temperature", value: "5,778 K")
-                    ENSBodyRow(label: "Radius",      value: "696,000 km")
-                }
+                .padding(.horizontal)
+                .padding(.vertical, 32)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 32)
-        }
-        .navigationTitle("Sun")
-        .navigationBarTitleDisplayMode(.inline)
-        .background(
-            LinearGradient(stops: [
-                .init(color: .yellow.opacity(0.5), location: 0.0),
-                .init(color: .yellow.opacity(0.1), location: 0.9),
-                //                .init(color: star.spectralClass.color, location: -0.1),
-            ], startPoint: .topTrailing, endPoint: .bottomLeading)
-        )
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-//        .preferredColorScheme(.dark)
-        .task(id: "\(lat),\(lon),\(state.observationDate)") {
-            await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
-        }
+            .navigationTitle("Sun")
+            .navigationBarTitleDisplayMode(.large)
+            .background(.yellow.opacity(0.65))
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .preferredColorScheme(.light)
+            .task(id: "\(lat),\(lon),\(state.observationDate)") {
+                await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
+            }
+        
     }
 }
 

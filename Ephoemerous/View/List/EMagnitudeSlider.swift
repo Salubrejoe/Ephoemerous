@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ESortFilterSheet: View {
+struct EMagnitudeSlider: View {
     @Binding var magnitudeCap: Double
     let magnitudeRange: ClosedRange<Double>
     let starCount: Int
@@ -28,5 +28,5 @@ struct ESortFilterSheet: View {
 }
 
 #Preview {
-    ESortFilterSheet(magnitudeCap: .constant(5.5), magnitudeRange: -2...8, starCount: 1234)
+    EMagnitudeSlider(magnitudeCap: .constant(5.5), magnitudeRange: -2...8, starCount: 1234)
 }

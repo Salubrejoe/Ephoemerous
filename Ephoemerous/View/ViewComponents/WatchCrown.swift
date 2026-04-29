@@ -54,7 +54,7 @@ extension WatchCrown {
     var scale: Double { state.scale }
 //    var scale: Double { 50.0 }
     
-    var dialOffset: Double { scale * 3.4 }
+    var dialOffset: Double { scale * AstroConstants.watchCrownDialRatio }
     
     
     func angleForHourMarker(_ index: Int) -> Angle {

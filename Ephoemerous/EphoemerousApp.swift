@@ -15,11 +15,13 @@ struct EphoemerousApp: App {
         WindowGroup {
             NavigationStack {
                 MainView()
-                    .navigationTitle("👋 Hello")
-                    .navigationBarTitleDisplayMode(.inline)
+//                    .navigationTitle("👋 Hello")
+//                    .navigationBarTitleDisplayMode(.inline)
                     .environment(state)
                     .onAppear { ECloudSync.shared.start(appState: state) }
+                    
             }
+            .preferredColorScheme(.dark)
         }
     }
 }

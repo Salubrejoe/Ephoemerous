@@ -5,12 +5,12 @@ import SwiftUI
 extension Angle {
     
     init(hours h: Double, minutes m: Double = 0, seconds s: Double = 0) {
-        self = .degrees((h + m / 60.0 + s / 3_600.0) * 15.0)
+        self = .degrees((h + m / AstroConstants.minutesPerDegree + s / AstroConstants.secondsPerDegree) * AstroConstants.degreesPerHour)
     }
     
     func hoursMinSec() -> (hours: Double, minutes: Double, seconds: Double) {
-        let hour = (self.degrees / 15.0).rounded(.down)
-        let minute = (self.degrees.truncatingRemainder(dividingBy: 15.0) * 60.0).rounded()
+        let hour = (self.degrees / AstroConstants.degreesPerHour).rounded(.down)
+        let minute = (self.degrees.truncatingRemainder(dividingBy: AstroConstants.degreesPerHour) * AstroConstants.minutesPerDegree).rounded()
         let second = ((self.degrees.truncatingRemainder(dividingBy: 1.0) * 3600.0).truncatingRemainder(dividingBy: 60.0)).rounded()
         return (hour, minute, second)
     }
@@ -19,7 +19,7 @@ extension Angle {
     static let horizon      : Angle = .zero
     static let civil        : Angle = .radians(-0.1)
     static let naval        : Angle = .radians(-0.2)
-    static let astronomical : Angle = .radians(-0.31)
+    static let astronomical : Angle = .radians(-AstroConstants.civilTwilightRad)
     
     static let sunsets: [Angle] = [
         .goldenHor,
@@ -42,7 +42,7 @@ extension Angle {
     }
     
     static var earthTilt: Angle {
-        .degrees(23.44)
+        .degrees(AstroConstants.obliquity.degrees)
     }
     
     static func spherePoint(latitude lat: Angle, longitude lon: Angle) -> SIMD3<Double> {

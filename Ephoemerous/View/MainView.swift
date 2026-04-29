@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MainView: View {
-    
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) var colorScheme
     @Environment(EAppState.self) var state
     @State private var showStarList    = false
@@ -36,20 +36,18 @@ struct MainView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Button {
-                    state.scale = 50.0
-                    state.offset = .init(x: -80, y: 0)
+                    state.scale = AstroConstants.defaultScale
+                    state.offset = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
                 } label: {
                     Image(symbol: .circle)
                 }
-                .disabled(!(state.scale != 50.0 || state.offset != .init(x: -80, y: 0)))
+                .disabled(!(state.scale != 50.0 || state.offset != .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)))
             }
             
             ToolbarItem(placement: .bottomBar) {
                 DateButton()
             }
-            ToolbarItem(placement: .cancellationAction) {
-                Button { showMagnFilter = true } label: { Image(symbol: .magnitudeIcon) }
-            }
+            
             ToolbarItem(placement: .bottomBar) {
                 if !state.isShowingDatePicker || state.showStarList {
                     ZenithButton(state: state)
@@ -64,43 +62,40 @@ struct MainView: View {
         }
         
         // LIST
-        .bottomSheet(
-            .listTitle,
-            isPresented: Bindable(state).showStarList,
-            content: {
+        .sheet(isPresented: Bindable(state).showStarList) {
+            NavigationStack {
                 EListView()
                     .scrollContentBackground(.hidden)
+                    .presentationDetents([.medium, .large])
+                    .presentationBackgroundInteraction(.enabled)
             }
-        )
-        
-        .sheet(isPresented: Bindable(state).showStarList) {
-            EListView()
-                .scrollContentBackground(.hidden)
-                .presentationDetents([.medium, .large])
-                .presentationBackgroundInteraction(.enabled)
         }
-//        .sheet(isPresented: $showMagnFilter) {
-//            ESortFilterSheet(
-//                magnitudeCap: Bindable(state).magnitudeFilter,
-//                magnitudeRange: -2.0...8.0,
-//                starCount: StarDatabase.shared.workableStars.filter { $0.magnitude <= state.magnitudeFilter && $0.name != "Unknown" }.count
-//            )
-//            .presentationDetents([.height(78)])
-//            .presentationDragIndicator(.visible)
-//        }
+        .sheet(isPresented: $showMagnFilter) {
+            EMagnitudeSlider(
+                magnitudeCap: Bindable(state).magnitudeFilter,
+                magnitudeRange: -2.0...8.0,
+                starCount: StarDatabase.shared.workableStars.filter { $0.magnitude <= state.magnitudeFilter && $0.name != "Unknown" }.count
+            )
+            .presentationDetents([.height(78)])
+            .presentationDragIndicator(.visible)
+        }
         
         .sheet(isPresented: Bindable(state).showSunInfo) {
-            ENSSunDetailView()
-                .scrollContentBackground(.hidden)
-                .presentationDetents([.medium, .large])
-                .presentationBackgroundInteraction(.enabled)
+            NavigationStack {
+                ENSSunDetailView()
+                    .scrollContentBackground(.hidden)
+                    .presentationDetents([.medium, .large])
+                    .presentationBackgroundInteraction(.enabled)
+            }
         }
         
         .sheet(isPresented: Bindable(state).showMoonInfo) {
-            ENSMoonDetailView()
-                .scrollContentBackground(.hidden)
-                .presentationDetents([.medium, .large])
-                .presentationBackgroundInteraction(.enabled)
+            NavigationStack {
+                ENSMoonDetailView()
+                    .scrollContentBackground(.hidden)
+                    .presentationDetents([.medium, .large])
+                    .presentationBackgroundInteraction(.enabled)
+            }
         }
     }
 }

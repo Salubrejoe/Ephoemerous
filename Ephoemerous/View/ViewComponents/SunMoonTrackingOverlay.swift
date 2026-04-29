@@ -28,7 +28,7 @@ struct SunMoonTrackingOverlay: View {
                             state.showMoonInfo = true
                         }
                 }
-                ForEach(state.selectedStars, id: \.name) { star in
+                ForEach(state.selectedStars.uniqued(by: \.name), id: \.name) { star in
                     if let pt = state.selectedStarPositions[star.name] {
                         ClearCircle(at: pt)
                             .onTapGesture {
@@ -45,7 +45,7 @@ struct SunMoonTrackingOverlay: View {
                 .allStars,
                 isPresented: $showStarView,
                 content: {
-                    Group {
+                    NavigationStack {
                         if let star = selectedStar {
                             EStarDetailView(star: star)
                         }

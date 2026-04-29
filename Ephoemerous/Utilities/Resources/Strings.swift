@@ -253,4 +253,60 @@ struct Strings {
     struct StarList {
         static func starsShown(_ count: Int) -> String { "\(count) stars shown" }
     }
+
+
+    // MARK: - Planets
+    struct Planets {
+        static let mercury        = "Mercury"
+        static let venus          = "Venus"
+        static let mars           = "Mars"
+        static let jupiter        = "Jupiter"
+        static let saturn         = "Saturn"
+        static let uranus         = "Uranus"
+        static let neptune        = "Neptune"
+        static let solarPlanet    = "Solar system planet"
+        static let meanMagnitude  = "Mean magnitude"
+    }
+    // MARK: - Moon phases
+    struct MoonPhase {
+        static let newMoon        = "New Moon"
+        static let waxingCrescent = "Waxing Crescent"
+        static let firstQuarter   = "First Quarter"
+        static let waxingGibbous  = "Waxing Gibbous"
+        static let fullMoon       = "Full Moon"
+        static let waningGibbous  = "Waning Gibbous"
+        static let lastQuarter    = "Last Quarter"
+        static let waningCrescent = "Waning Crescent"
+        static let unknown        = "New Moon"  // fallback
+    }
+    // MARK: - Constellation detail
+    struct ConstellationDetail {
+        static let identity       = "Identity"
+        static let abbreviation   = "Abbreviation"
+        static let fullName       = "Full name"
+        static let zodiac         = "Zodiac"
+    }
+    // MARK: - Projection modes
+    struct Projection {
+        static let coupled        = "Coupled"
+        static let origin         = "Origin"
+        static let globeSymbol    = "globe"
+        static let walkSymbol     = "figure.walk.motion"
+    }
+    // MARK: - Preset names
+    struct Preset {
+        static let morning        = "Morning"
+        static let day            = "Day"
+        static let afternoon      = "Afternoon"
+        static let night          = "Night"
+        static let trackSun       = "Track Sun"
+        static let trackMoon      = "Track Moon"
+        static let trackStar      = "Track Star"
+        static let defaultPreset  = "Default"
+    }
+    // MARK: - Search tokens
+    struct SearchTokens {
+        static let moonToken      = "moon"
+        static let moonFullToken  = "moon lunar satellite"
+    }
 }

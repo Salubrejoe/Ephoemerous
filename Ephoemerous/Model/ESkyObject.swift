@@ -13,7 +13,7 @@ enum ESkyObject: Identifiable, Hashable {
         switch self {
         case .star(let s):          return "star_\(s.id)"
         case .sun:                  return "sun"
-        case .moon:                 return "moon"
+        case .moon:                 return Strings.SearchTokens.moonToken
         case .planet(let p):        return "planet_\(p.id)"
         case .constellation(let c): return "constellation_\(c.rawValue)"
         }
@@ -36,7 +36,7 @@ enum ESkyObject: Identifiable, Hashable {
         case .sun:
             return "sun solar g-type star"
         case .moon:
-            return "moon lunar satellite"
+            return Strings.SearchTokens.moonFullToken
         case .planet(let p):
             return "\(p.name) planet".lowercased()
         case .constellation(let c):

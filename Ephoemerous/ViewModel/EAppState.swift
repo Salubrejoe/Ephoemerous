@@ -39,7 +39,7 @@ class EAppState {
     var projectionMode: ProjectionMode = .coupled
     
     var isShowingDatePicker: Bool = false
-    var magnitudeFilter: Double = 5.5
+    var magnitudeFilter: Double = AstroConstants.defaultMagCap
     var stars: [EStar] {
         let zenith = observerZenith // SIMD3<Double>, expected to be unit length
         return StarDatabase.shared.workableStars
@@ -66,8 +66,8 @@ class EAppState {
             }
     }
     
-    var scale:  Double  = 50.0
-    var offset: CGPoint = .init(x: -80, y: 0)
+    var scale:  Double  = AstroConstants.defaultScale
+    var offset: CGPoint = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
     
     var observationDate: Date    = .now
     var animationTime: Double    = 0.0
@@ -119,8 +119,8 @@ class EAppState {
 }
 
 enum ProjectionMode: String, CaseIterable {
-    case coupled = "Coupled"
-    case origin  = "Origin"
+    case coupled = "coupled"
+    case origin  = "origin"
     //    case plane   = "Plane"
     
     var symbol: String {
@@ -185,7 +185,7 @@ extension EAppState {
         _dateTransition = EDateTransition(
             fromInterval: renderedObservationDate.timeIntervalSinceReferenceDate,
             toInterval:   newDate.timeIntervalSinceReferenceDate,
-            startTime:    animationTime,
+            startTime:    Date.now.timeIntervalSinceReferenceDate,
             duration:     0.7
         )
         observationDate = newDate

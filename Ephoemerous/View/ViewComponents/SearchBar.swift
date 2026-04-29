@@ -17,5 +17,6 @@ struct SearchBar: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
+        .animation(.bouncy, value: showStarList)
     }
 }

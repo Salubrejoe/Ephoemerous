@@ -240,4 +240,79 @@ enum AstroConstants {
     static let defaultMagCap:     Double =  6.5
     static let magRangeMin:       Double = -2.0
     static let magRangeMax:       Double =  8.0
+
+
+
+    // -------------------------------------------------------------------------
+    // MARK: Default viewport
+    // -------------------------------------------------------------------------
+    static let defaultScale:      Double  = 50.0
+    static let defaultOffsetX:    Double  = -80.0
+    static let defaultOffsetY:    Double  = 0.0
+
+    // -------------------------------------------------------------------------
+    // MARK: Spectral class colours (RGB components)
+    // -------------------------------------------------------------------------
+    static let specA_blue:        Double  = 0.85   // Class A: white-blue
+    static let specA_green:       Double  = 0.9
+    static let specF_blue:        Double  = 0.95   // Class F: yellow-white
+    static let specK_green:       Double  = 0.85   // Class K: orange
+
+    // -------------------------------------------------------------------------
+    // MARK: Moon phase thresholds (illuminated fraction 0-1)
+    // -------------------------------------------------------------------------
+    static let phaseNewMoon:          Double = 0.02
+    static let phaseWaxingCrescent:   Double = 0.24
+    static let phaseFirstQuarter:     Double = 0.26
+    static let phaseWaxingGibbous:    Double = 0.49
+    static let phaseFullMoon:         Double = 0.51
+    static let phaseWaningGibbous:    Double = 0.74
+    static let phaseLastQuarter:      Double = 0.76
+    static let phaseWaningCrescent:   Double = 0.98
+
+    // -------------------------------------------------------------------------
+    // MARK: Planet physical facts
+    // -------------------------------------------------------------------------
+    static let mercuryDistAU:     Double = 0.39
+    static let venusDistAU:       Double = 0.72
+    static let marsDistAU:        Double = 1.52
+    static let jupiterDistAU:     Double = 5.20
+    static let saturnDistAU:      Double = 9.58
+    static let uranusDistAU:      Double = 19.2
+    static let neptuneDistAU:     Double = 30.1
+    static let jupiterPeriodYrs:  Double = 11.9
+    static let saturnPeriodYrs:   Double = 29.5
+    static let uranusPeriodYrs:   Double = 84.0
+    static let neptunePeriodYrs:  Double = 164.8
+    static let uranusMagApprox:   Double = 5.7
+    static let neptuneMagApprox:  Double = 8.0
+
+    // -------------------------------------------------------------------------
+    // MARK: Angle conversion
+    // -------------------------------------------------------------------------
+    /// Degrees per hour of RA (360/24)
+    static let degreesPerHour:    Double = 15.0
+    static let minutesPerDegree:  Double = 60.0
+    static let secondsPerDegree:  Double = 3_600.0
+
+    // -------------------------------------------------------------------------
+    // MARK: Twilight / horizon angles (radians)
+    // -------------------------------------------------------------------------
+    /// Civil twilight: sun 6 deg below horizon (approx 0.10 rad)
+    static let civilTwilightRad:      Double = 0.31
+    /// Ecliptic / tropics latitude in radians (~23.44 deg)
+    static let tropicLatRad:          Double = 0.41
+    /// Arctic / antarctic circle latitude in radians (~66 deg)
+    static let arcticCircleRad:       Double = 1.15
+
+    // -------------------------------------------------------------------------
+    // MARK: UI rendering
+    // -------------------------------------------------------------------------
+    static let starGlowBlurRatio: Double = 2.2   // glow blur = r * ratio
+    static let watchCrownDialRatio: Double = 3.4  // dialOffset = scale * ratio
+    static let zenithPulseScale:  Double = 1.25  // pulsing scale effect
+    static let moonPeriodDays:    Double = 27.3
+    static let moonSunMagnitude:  Double = -12.6
+    static let transitionDuration: Double = 0.55
+    static let dateTansitionDuration: Double = 0.7
 }

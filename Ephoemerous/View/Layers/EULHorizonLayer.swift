@@ -168,7 +168,7 @@ struct EParallelsLayer: EGridLayer {
             plane: P
         ) { t in
             let ra = t * 2 * .pi
-            let v  = EPrecession.equatorialVector(ra: ra, dec: 0.41)
+            let v  = EPrecession.equatorialVector(ra: ra, dec: AstroConstants.tropicLatRad)
             return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
         }
         dc.strokeCurve(can, color: color, width: thickWidth)
@@ -179,7 +179,7 @@ struct EParallelsLayer: EGridLayer {
             plane: P
         ) { t in
             let ra = t * 2 * .pi
-            let v  = EPrecession.equatorialVector(ra: ra, dec: -0.41)
+            let v  = EPrecession.equatorialVector(ra: ra, dec: -AstroConstants.tropicLatRad)
             return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
         }
         dc.strokeCurve(cap, color: color, width: thickWidth)
@@ -190,7 +190,7 @@ struct EParallelsLayer: EGridLayer {
             plane: P
         ) { t in
             let ra = t * 2 * .pi
-            let v  = EPrecession.equatorialVector(ra: ra, dec: 1.15)
+            let v  = EPrecession.equatorialVector(ra: ra, dec: AstroConstants.arcticCircleRad)
             return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
         }
         //        ctx.strokeCurve(art, color: color, width: thickWidth)
@@ -201,7 +201,7 @@ struct EParallelsLayer: EGridLayer {
             plane: P
         ) { t in
             let ra = t * 2 * .pi
-            let v  = EPrecession.equatorialVector(ra: ra, dec: -1.15)
+            let v  = EPrecession.equatorialVector(ra: ra, dec: -AstroConstants.arcticCircleRad)
             return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
         }
         //        ctx.strokeCurve(cap, color: color, width: thickWidth)
@@ -319,7 +319,7 @@ struct EParallelsLayer: EGridLayer {
  plane: P
  ) { t in
  let ra = t * 2 * .pi
- let v  = EPrecession.equatorialVector(ra: ra, dec: 0.41)
+ let v  = EPrecession.equatorialVector(ra: ra, dec: AstroConstants.tropicLatRad)
  return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
  }
  dc.strokeCurve(can, color: color, width: thickWidth)
@@ -330,7 +330,7 @@ struct EParallelsLayer: EGridLayer {
  plane: P
  ) { t in
  let ra = t * 2 * .pi
- let v  = EPrecession.equatorialVector(ra: ra, dec: -0.41)
+ let v  = EPrecession.equatorialVector(ra: ra, dec: -AstroConstants.tropicLatRad)
  return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
  }
  dc.strokeCurve(cap, color: color, width: thickWidth)
@@ -341,7 +341,7 @@ struct EParallelsLayer: EGridLayer {
  plane: P
  ) { t in
  let ra = t * 2 * .pi
- let v  = EPrecession.equatorialVector(ra: ra, dec: 1.15)
+ let v  = EPrecession.equatorialVector(ra: ra, dec: AstroConstants.arcticCircleRad)
  return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
  }
  //        ctx.strokeCurve(art, color: color, width: thickWidth)
@@ -352,7 +352,7 @@ struct EParallelsLayer: EGridLayer {
  plane: P
  ) { t in
  let ra = t * 2 * .pi
- let v  = EPrecession.equatorialVector(ra: ra, dec: -1.15)
+ let v  = EPrecession.equatorialVector(ra: ra, dec: -AstroConstants.arcticCircleRad)
  return SIMD3(v.x * cos(θ) - v.y * sin(θ), v.x * sin(θ) + v.y * cos(θ), v.z)
  }
  //        ctx.strokeCurve(cap, color: color, width: thickWidth)

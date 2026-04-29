@@ -14,16 +14,13 @@ struct EConstellationDetailView: View {
         ScrollView {
             VStack(spacing: 32) {
                 
-                // ── Hero ──────────────────────────────────────────────────
-                EConstellationHero(constellation: constellation)
-                    .padding(.top, 8)
                 
                 // ── Info ──────────────────────────────────────────────────
-                ENSBodyCard(title: "Identity") {
-                    ENSBodyRow(label: "Abbreviation", value: constellation.rawValue)
-                    ENSBodyRow(label: "Full name",    value: constellation.fullName)
+                ENSBodyCard(title: Strings.ConstellationDetail.identity) {
+                    ENSBodyRow(label: Strings.ConstellationDetail.abbreviation, value: constellation.rawValue)
+                    ENSBodyRow(label: Strings.ConstellationDetail.fullName,    value: constellation.fullName)
                     if constellation.isZodiacSign {
-                        ENSBodyRow(label: "Zodiac",   value: "Yes")
+                        ENSBodyRow(label: Strings.ConstellationDetail.zodiac,   value: "Yes")
                     }
                 }
                 
@@ -48,8 +45,6 @@ struct EConstellationDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .navigationDestination(for: EStar.self)  { s in EStarDetailView(star: s).onAppear { state.recordViewed(s) }
         }
-        .background(.black)
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -73,7 +68,7 @@ private struct EConstellationHero: View {
                     .foregroundStyle(.white)
 
                 if constellation.isZodiacSign {
-                    Text("Zodiac")
+                    Text(Strings.ConstellationDetail.zodiac)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.yellow.opacity(0.8))
                         .padding(.horizontal, 10)

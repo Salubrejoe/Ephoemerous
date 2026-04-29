@@ -20,15 +20,15 @@ struct ENSMoonDetailView: View {
     private var calculatedPhaseName: String {
         let f = moonData.fraction
         switch f {
-        case ..<0.02:  return "New Moon"
-        case ..<0.24:  return "Waxing Crescent"
-        case ..<0.26:  return "First Quarter"
-        case ..<0.49:  return "Waxing Gibbous"
-        case ..<0.51:  return "Full Moon"
-        case ..<0.74:  return "Waning Gibbous"
-        case ..<0.76:  return "Last Quarter"
-        case ..<0.98:  return "Waning Crescent"
-        default:       return "New Moon"
+        case ..<AstroConstants.phaseNewMoon:       return Strings.MoonPhase.newMoon
+        case ..<AstroConstants.phaseWaxingCrescent: return Strings.MoonPhase.waxingCrescent
+        case ..<AstroConstants.phaseFirstQuarter:  return Strings.MoonPhase.firstQuarter
+        case ..<AstroConstants.phaseWaxingGibbous: return Strings.MoonPhase.waxingGibbous
+        case ..<AstroConstants.phaseFullMoon:      return Strings.MoonPhase.fullMoon
+        case ..<AstroConstants.phaseWaningGibbous: return Strings.MoonPhase.waningGibbous
+        case ..<AstroConstants.phaseLastQuarter:   return Strings.MoonPhase.lastQuarter
+        case ..<AstroConstants.phaseWaningCrescent: return Strings.MoonPhase.waningCrescent
+        default:       return Strings.MoonPhase.unknown
         }
     }
 
@@ -83,7 +83,7 @@ struct ENSMoonDetailView: View {
 
                 ENSBodyCard(title: "Coordinates") {
                     ENSBodyRow(label: "Right Ascension",
-                               value: String(format: "%.2fh", moonData.ra / 15.0))
+                               value: String(format: "%.2fh", moonData.ra / AstroConstants.degreesPerHour))
                     ENSBodyRow(label: "Declination",
                                value: String(format: "%+.2f°", moonData.dec))
                 }
@@ -92,14 +92,14 @@ struct ENSMoonDetailView: View {
                     ENSBodyRow(label: "Type",     value: "Natural satellite")
                     ENSBodyRow(label: "Diameter", value: "3,474 km")
                     ENSBodyRow(label: "Distance", value: "~384,400 km")
-                    ENSBodyRow(label: "Period",   value: "27.3 days")
+                    ENSBodyRow(label: "Period",   value: String(AstroConstants.moonPeriodDays) + " days")
                 }
             }
             .padding(.horizontal)
             .padding(.vertical, 32)
         }
         .navigationTitle("Moon")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .task(id: "\(lat),\(lon),\(state.observationDate)") {
             await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
         }

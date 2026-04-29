@@ -49,6 +49,12 @@ final class ECloudSync {
     private func resolve(key: String) -> [EStar] {
         guard let names = store.array(forKey: key) as? [String] else { return [] }
         let all = db.workableStars
-        return names.compactMap { name in all.first { $0.name == name } }
+        var seen = Set<String>()
+        return names.compactMap { name -> EStar? in
+            guard !seen.contains(name), let star = all.first(where: { $0.name == name })
+            else { return nil }
+            seen.insert(name)
+            return star
+        }
     }
 }

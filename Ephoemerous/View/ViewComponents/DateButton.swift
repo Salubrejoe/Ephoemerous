@@ -23,6 +23,8 @@ struct DateButton: View {
                     .padding(.horizontal, dateValueChanged ? 4 : 0)
             }
         }
+        .animation(.bouncy, value: state.isShowingDatePicker)
+        .animation(.bouncy, value: dateValueChanged)
     }
 }
 
@@ -51,6 +53,8 @@ extension DateButton {
                    selection: binding,
                    displayedComponents: [.date, .hourAndMinute]
         )
+        .pickerStyle(.wheel)
+        .labelsHidden()
         
     }
     
@@ -60,10 +64,10 @@ extension DateButton {
             if !state.isShowingDatePicker {
                 state.apply(EViewPreset(
                     id: "_default",
-                    name: "Default",
+                    name: Strings.Preset.defaultPreset,
                     symbol: "circle",
-                    scale: 50.0,
-                    offset: CGPoint(x: -80, y: 0)
+                    scale: AstroConstants.defaultScale,
+                    offset: CGPoint(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
                 ))
             }
             state.isShowingDatePicker.toggle()

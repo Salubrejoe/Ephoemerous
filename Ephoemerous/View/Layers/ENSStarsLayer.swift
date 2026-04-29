@@ -32,7 +32,7 @@ struct ENSStarsLayer: EGridLayer {
                 let r = artist.starRadius(star, in: dc)
                 // Soft glow behind the star
                 var glow = dc.ctx
-                glow.addFilter(.blur(radius: r * 2.2))
+                glow.addFilter(.blur(radius: r * AstroConstants.starGlowBlurRatio))
 //                glow.addFilter(.shadow(color: .secondary, radius: 4, options: .shadowOnly))
                 glow.fill(
                     Path(ellipseIn: CGRect(x: screenPoint.x - r, y: screenPoint.y - r, width: r * 2, height: r * 2)),

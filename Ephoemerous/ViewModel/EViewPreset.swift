@@ -16,36 +16,36 @@ struct EViewPreset: Identifiable, Equatable {
     // MARK: - Built-in presets
     static let morningTime = EViewPreset(
         id: "morningTime",
-        name: "Morning",
+        name: Strings.Preset.morning,
         symbol: "sunrise",
         scale: 90,
         offset: CGPoint(x: 12, y: 155)
     )
     static let daytime = EViewPreset(
         id: "daytime",
-        name: "Day",
+        name: Strings.Preset.day,
         symbol: "sun.max",
         scale: 90,
         offset: CGPoint(x: 12, y: 0)
     )
     static let afternoonTime = EViewPreset(
         id: "afternoonTime",
-        name: "Afternoon",
+        name: Strings.Preset.afternoon,
         symbol: "sunset",
         scale: 90,
         offset: CGPoint(x: 12, y: -155)
     )
     static let nightTime = EViewPreset(
         id: "nightTime",
-        name: "Night",
+        name: Strings.Preset.night,
         symbol: "moon.stars",
         scale: 90,
         offset: CGPoint(x: -50, y: 0)
     )
 
-    static let trackSun = EViewPreset(id: "trackSun", name: "Track Sun", symbol: "scope", scale: 0, offset: .zero)
-    static let trackMoon = EViewPreset(id: "trackMoon", name: "Track Moon", symbol: "moon.circle", scale: 0, offset: .zero)
-    static let trackStar = EViewPreset(id: "trackStar", name: "Track Star", symbol: "star.circle", scale: 0, offset: .zero)
+    static let trackSun = EViewPreset(id: "trackSun", name: Strings.Preset.trackSun, symbol: "scope", scale: 0, offset: .zero)
+    static let trackMoon = EViewPreset(id: "trackMoon", name: Strings.Preset.trackMoon, symbol: "moon.circle", scale: 0, offset: .zero)
+    static let trackStar = EViewPreset(id: "trackStar", name: Strings.Preset.trackStar, symbol: "star.circle", scale: 0, offset: .zero)
     static let all: [EViewPreset] = [morningTime, daytime, afternoonTime, nightTime, trackSun, trackMoon, trackStar]
 }
 
@@ -128,8 +128,8 @@ extension EAppState {
             fromOffset: renderedOffset,
             toScale:    preset.scale,
             toOffset:   preset.offset,
-            startTime:  animationTime,
-            duration:   0.55
+            startTime:  Date.now.timeIntervalSinceReferenceDate,
+            duration:   AstroConstants.transitionDuration
         )
         scale  = preset.scale
         offset = preset.offset
@@ -158,8 +158,8 @@ extension EAppState {
             fromOffset: renderedOffset,
             toScale:    scale,
             toOffset:   newOffset,
-            startTime:  animationTime,
-            duration:   0.55
+            startTime:  Date.now.timeIntervalSinceReferenceDate,
+            duration:   AstroConstants.transitionDuration
         )
         offset = newOffset
         ELogger.sun("trackSun: offset set to " + newOffset.debugDescription)
@@ -211,8 +211,8 @@ extension EAppState {
             fromOffset: renderedOffset,
             toScale:    scale,
             toOffset:   newOffset,
-            startTime:  animationTime,
-            duration:   0.55
+            startTime:  Date.now.timeIntervalSinceReferenceDate,
+            duration:   AstroConstants.transitionDuration
         )
         offset = newOffset
         ELogger.moon("trackMoon: offset set to " + newOffset.debugDescription)
@@ -238,8 +238,8 @@ extension EAppState {
             fromOffset: renderedOffset,
             toScale:    scale,
             toOffset:   newOffset,
-            startTime:  animationTime,
-            duration:   0.55
+            startTime:  Date.now.timeIntervalSinceReferenceDate,
+            duration:   AstroConstants.transitionDuration
         )
         offset = newOffset
         ELogger.selectedStars("trackStar: " + star.name + " -> " + newOffset.debugDescription)

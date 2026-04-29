@@ -14,7 +14,7 @@ struct ZenithButton: View {
         } label: {
             Image(symbol: isAtUserLocation ? .locationFill : .location)
                 .foregroundStyle(iconColor)
-                .scaleEffect(pulsing ? 1.25 : 1.0)
+                .scaleEffect(pulsing ? AstroConstants.zenithPulseScale : 1.0)
                 .opacity(pulsing ? 0.5 : 1.0)
         }
         .help(helpText)

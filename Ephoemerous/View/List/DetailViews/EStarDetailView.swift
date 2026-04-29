@@ -49,16 +49,16 @@ struct EStarDetailView: View {
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Button {
-                    if state.selectedStars.contains(star) {
-                        state.selectedStars.removeAll { $0.id == star.id }
+                    if state.selectedStars.contains(where: { $0.name == star.name }) {
+                        state.selectedStars.removeAll { $0.name == star.name }
                     } else {
-                        state.selectedStars.append(star)
+                        if !state.selectedStars.contains(where: { $0.name == star.name }) { state.selectedStars.append(star) }
                     }
                 } label: {
                     ZStack {
-                        Image(symbol: state.selectedStars.contains(star) ? .target : .circle)
+                        Image(symbol: state.selectedStars.contains(where: { $0.name == star.name }) ? .target : .circle)
                             .shadow(
-                                color: state.selectedStars.contains(star) ? star.spectralClass.color : .clear,
+                                color: state.selectedStars.contains(where: { $0.name == star.name }) ? star.spectralClass.color : .clear,
                                 radius: 5
                             )
                     }
@@ -70,7 +70,7 @@ struct EStarDetailView: View {
     }
     
     var color: Color {
-        if state.selectedStars.contains(star) {
+        if state.selectedStars.contains(where: { $0.name == star.name }) {
             star.spectralClass.color
         } else {
             star.spectralClass.color.opacity(0.2)
@@ -81,7 +81,7 @@ struct EStarDetailView: View {
     private func background() -> some View {
         ZStack {
             Circle()
-                .fill(state.selectedStars.contains(star) ? star.spectralClass.color : .clear)
+                .fill(state.selectedStars.contains(where: { $0.name == star.name }) ? star.spectralClass.color : .clear)
                 .frame(width: 50, height: 50)
                 .blur(radius: 30)
                 .padding(25)
@@ -102,7 +102,7 @@ private struct EStarHeader: View {
     let star: EStar
     
     var color: Color {
-        if state.selectedStars.contains(star) {
+        if state.selectedStars.contains(where: { $0.name == star.name }) {
             star.spectralClass.color
         } else {
             star.spectralClass.color.opacity(0.2)
