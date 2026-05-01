@@ -103,8 +103,6 @@ struct EGraphicContext {
         ctx.draw(
             Text(text)
                 .font(.footnote)
-                .fontDesign(.monospaced)
-                .foregroundStyle(Color.primary)
             ,
             at: point,
             anchor: .leading

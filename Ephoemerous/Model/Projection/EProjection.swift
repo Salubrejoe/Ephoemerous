@@ -36,7 +36,7 @@ enum EProjection {
         if mode == .northSouth {
             project(
                 Q,
-                origin: .north,
+                origin: appState.northSouthOrigin,
                 plane: .south
             )
         } else {
@@ -74,7 +74,7 @@ enum EProjection {
             let t = Double(i) / Double(steps)
             let Q = EPrecession.eclipticVector(
                 atStep: t,
-                siderealOffset: appState.precessedSiderealOffset
+                siderealOffset: appState.localSiderealOffset
             )
             return EProjection.project(
                 Q,

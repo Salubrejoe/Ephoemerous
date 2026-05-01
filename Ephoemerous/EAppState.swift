@@ -7,7 +7,10 @@ import simd
 
 @Observable
 class EAppState {
+    
     var _dateTransition: EDateTransition? = nil
+    var _originTransition: EOriginTransition? = nil
+    
     enum ProjectionFrame {
         case northSouth
         case userLocation
@@ -28,18 +31,29 @@ class EAppState {
     var canvasSize:         CGSize   = .zero
     var moonScreenPosition: CGPoint? = nil
     
-    var origin : Origin
-    var plane  : Plane
+    var origin  : Origin
+    var plane   : Plane
     
     init() {
-        self.origin = .init()
-        self.plane  = .init()
+        self.origin   = .init()
+        self.plane    = .init()
     }
     
-    var projectionMode: ProjectionMode = .coupled
+    // MARK: - Layer visibility
+    var showEquatorTropics  : Bool = true
+    var showEcliptic        : Bool = true
+    var showNSMeridians     : Bool = true
+    var showULMeridians     : Bool = true
+    var showHorizon         : Bool = true
+    var showStars           : Bool = true
+    var showPlanets         : Bool = true
+    var showSelectedStars   : Bool = true
+    var appMode: EAppMode          = .clock
+    var projectionMode: ProjectionMode = .drag
     
     var isShowingDatePicker: Bool = false
     var magnitudeFilter: Double = AstroConstants.defaultMagCap
+    
     var stars: [EStar] {
         let zenith = observerZenith // SIMD3<Double>, expected to be unit length
         return StarDatabase.shared.workableStars
@@ -66,6 +80,9 @@ class EAppState {
             }
     }
     
+    var currentlyDisplayedStar: EStar?
+    var currentlyDisplayedConstellation: EConstellation?
+    
     var scale:  Double  = AstroConstants.defaultScale
     var offset: CGPoint = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
     
@@ -75,13 +92,22 @@ class EAppState {
     // Backing store for the running preset transition (set by EViewPreset extension)
     var _activeTransition: EPresetTransition? = nil
     
+    // In .origin mode both projections move their origin with the observer, planes stay fixed.
+    var northSouthOrigin: SIMD3<Double> { .north }
+
     var originVector: SIMD3<Double> {
         Angle.spherePoint(latitude: origin.latitude, longitude: origin.longitude)
     }
+
     var planeVector: SIMD3<Double> {
         Angle.spherePoint(latitude: plane.latitude, longitude: plane.longitude)
     }
     
+    // LST = GMST + longitude -- the sidereal phase at the observer location
+    var localSiderealOffset: Angle {
+        -EPrecession.lst(for: renderedObservationDate, longitude: origin.longitude)
+    }
+
     var precessedSiderealOffset: Angle {
         -EPrecession.gmstSiderealOffset(for: renderedObservationDate)
     }
@@ -98,7 +124,7 @@ class EAppState {
         origin.latitude  = lat
         origin.longitude = lon
         if projectionMode == .coupled {
-            plane.latitude = -lat
+            plane.latitude  = -lat
             plane.longitude = lon + Angle.pi
         }
     }
@@ -112,28 +138,41 @@ class EAppState {
     func recordViewed(_ star: EStar) {
         var updated = recentStars.filter { $0.id != star.id }
         updated.insert(star, at: 0)
-        if updated.count > 5 { updated = Array(updated.prefix(5)) }
+        if updated.count > 10 { updated = Array(updated.prefix(10)) }
         recentStars = updated
         ECloudSync.shared.saveRecentStars(updated)
     }
 }
 
+
 enum ProjectionMode: String, CaseIterable {
+    case drag    = "drag"
     case coupled = "coupled"
     case origin  = "origin"
-    //    case plane   = "Plane"
     
     var symbol: String {
         switch self {
-        case .coupled: "globe"
-        case .origin:   "figure.walk.motion"
-            //            case .plane:    "figure.climbing"
+        case .drag:    return "arrow.up.and.down.and.arrow.left.and.right"
+        case .coupled: return "arcade.stick.and.arrow.up.and.arrow.down"
+        case .origin:  return "figure.walk.motion"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .drag:    return .primary
+        case .coupled: return .baseOrange
+        case .origin:  return .baseCoral
         }
     }
 }
-
-
-
+enum EAppMode {
+    case clock, travel
+    
+    mutating func toggle() {
+        self = self == .clock ? .travel: .clock
+    }
+}
 
 struct Origin: Equatable {
     var latitude : Angle = .degrees(51)

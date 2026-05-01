@@ -2,12 +2,11 @@
 import SwiftUI
 
 
-struct SunMoonTrackingOverlay: View {
+struct ObjectsTrackingOverlay: View {
     @Environment(EAppState.self) var state
     @Environment(\.dismiss) var dismiss
     
     @State private var showStarView : Bool = false
-    @State private var selectedStar : EStar?
     
     var body: some View {
         GeometryReader { _ in
@@ -34,24 +33,22 @@ struct SunMoonTrackingOverlay: View {
                             .onTapGesture {
                                 state.showStarList = false
                                 state.applyStarTracking(star)
-                                selectedStar = star
+                                state.currentlyDisplayedStar = star
                                 showStarView = true
-                                
                             }
                     }
                 }
             }
-            .bottomSheet(
-                .allStars,
-                isPresented: $showStarView,
-                content: {
-                    NavigationStack {
-                        if let star = selectedStar {
-                            EStarDetailView(star: star)
-                        }
+            .sheet(isPresented: $showStarView) {
+                NavigationStack {
+                    if let star = state.currentlyDisplayedStar {
+                        EStarDetailView(star: star)
                     }
                 }
-            )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackgroundInteraction(.enabled)
+            }
         }
         .allowsHitTesting(true)
     }

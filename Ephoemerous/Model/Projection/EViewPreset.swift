@@ -14,6 +14,18 @@ struct EViewPreset: Identifiable, Equatable {
     }
 
     // MARK: - Built-in presets
+    
+    static let defaultPreset = EViewPreset(
+        id: "default",
+        name: "Default",
+        symbol: "circle",
+        scale: AstroConstants.defaultScale,
+        offset: .init(
+            x: AstroConstants.defaultOffsetX,
+            y: AstroConstants.defaultOffsetY
+        )
+    )
+    
     static let morningTime = EViewPreset(
         id: "morningTime",
         name: Strings.Preset.morning,
@@ -177,9 +189,9 @@ extension EAppState {
     var timeOfDayPreset: EViewPreset {
         let hour = Calendar.current.component(.hour, from: observationDate)
         switch hour {
-        case 4..<10:  return .morningTime
-        case 10..<14: return .daytime
-        case 14..<20: return .afternoonTime
+        case 4..<11:  return .morningTime
+        case 11..<14: return .daytime
+        case 14..<21: return .afternoonTime
         default:      return .nightTime
         }
     }
@@ -223,8 +235,15 @@ extension EAppState {
 extension EAppState {
 
     func applyStarTracking(_ star: EStar) {
-        guard let pt = selectedStarPositions[star.name] else {
-            ELogger.selectedStars("trackStar: no screen position for " + star.name)
+        // Prefer the cached screen position (already drawn this frame).
+        // If not yet available (first tap), compute it directly from the projection pipeline.
+        let pt: CGPoint
+        if let cached = selectedStarPositions[star.name] {
+            pt = cached
+        } else if let computed = screenPosition(of: star) {
+            pt = computed
+        } else {
+            ELogger.selectedStars("trackStar: could not compute position for " + star.name)
             return
         }
         let targetScreenX = canvasSize.width  / 2
@@ -233,6 +252,7 @@ extension EAppState {
             x: offset.x + (targetScreenY - pt.y),
             y: offset.y + (targetScreenX - pt.x)
         )
+        
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
@@ -242,6 +262,68 @@ extension EAppState {
             duration:   AstroConstants.transitionDuration
         )
         offset = newOffset
+        
+        
         ELogger.selectedStars("trackStar: " + star.name + " -> " + newOffset.debugDescription)
+    }
+}
+
+// MARK: - Screen position helper
+extension EAppState {
+
+    // Computes the screen position of a star without relying on the cached selectedStarPositions.
+    // Uses the same projection pipeline as ENSSelectedStarsLayer.
+    func screenPosition(of star: EStar) -> CGPoint? {
+        guard canvasSize != .zero else { return nil }
+        let (pRA, pDec) = EPrecession.precess(
+            ra:  star.rightAscension,
+            dec: star.declination,
+            to:  renderedObservationDate
+        )
+        let th = localSiderealOffset.radians
+        let (c, s) = (cos(th), sin(th))
+        let v = EPrecession.equatorialVector(ra: pRA, dec: pDec)
+        let Q = SIMD3(v.x * c - v.y * s, v.x * s + v.y * c, v.z)
+        guard let proj = EProjection.project(Q, appState: self, mode: .northSouth) else { return nil }
+        let sx = canvasSize.width  / 2 + proj.x * renderedScale + renderedOffset.y
+        let sy = canvasSize.height / 2 - proj.y * renderedScale + renderedOffset.x
+        return CGPoint(x: sx, y: sy)
+    }
+}
+
+// MARK: - Origin transition
+struct EOriginTransition {
+    let fromLat:   Double  // radians
+    let fromLon:   Double
+    let toLat:     Double
+    let toLon:     Double
+    let startTime: Double
+    let duration:  Double
+
+    private static func smoothStep(_ t: Double) -> Double {
+        let t = max(0, min(1, t))
+        return t * t * (3 - 2 * t)
+    }
+
+    func interpolated(at time: Double) -> (lat: Double, lon: Double) {
+        let t = Self.smoothStep((time - startTime) / duration)
+        return (fromLat + (toLat - fromLat) * t, fromLon + (toLon - fromLon) * t)
+    }
+
+    func isFinished(at time: Double) -> Bool { time >= startTime + duration }
+}
+
+extension EAppState {
+    
+
+    func animateOrigin(to lat: Angle, lon: Angle, duration: Double = 0.6) {
+        _originTransition = EOriginTransition(
+            fromLat:   origin.latitude.radians,
+            fromLon:   origin.longitude.radians,
+            toLat:     lat.radians,
+            toLon:     lon.radians,
+            startTime: Date.now.timeIntervalSinceReferenceDate,
+            duration:  duration
+        )
     }
 }

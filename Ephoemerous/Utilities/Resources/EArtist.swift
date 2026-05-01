@@ -26,7 +26,7 @@ struct EArtist {
     func starRadius(_ star: EStar, in dc: EGraphicContext) -> Double {
         let ra  = star.rightAscension.radians
         let dec = star.declination.radians
-        let phase   = ra * AstroConstants.twinklePhaseRA + dec * AstroConstants.twinklePhaseDec
+        let phase   = ra * AstroConstants.twinklePhaseRA + dec * AstroConstants.twinklePhaseDec + .random(in: -1.5...1.5)
         let twinkle = 1.0 + AstroConstants.twinkleAmplitude * sin(dc.state.animationTime * AstroConstants.twinkleFrequency + phase)
         let r = max(AstroConstants.dotMinRadius, (AstroConstants.dotScale - star.magnitude) * AstroConstants.dotFactor) * twinkle
         return r
