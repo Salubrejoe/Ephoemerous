@@ -1,15 +1,27 @@
 {
-  "fill" : "automatic",
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.91373,0.82745,0.50196,1.00000",
+      "display-p3:0.65098,0.49412,0.12157,1.00000"
+    ],
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 1
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.3
+      }
+    }
+  },
   "groups" : [
     {
       "layers" : [
         {
-          "blend-mode" : "normal",
+          "blend-mode" : "screen",
           "fill" : {
-            "linear-gradient" : [
-              "display-p3:1.00000,0.78726,0.98797,1.00000",
-              "display-p3:0.44525,0.61960,0.96783,1.00000"
-            ],
+            "automatic-gradient" : "display-p3:0.99677,1.00000,0.96390,1.00000",
             "orientation" : {
               "start" : {
                 "x" : 0.5,
@@ -26,7 +38,7 @@
           "name" : "ArmillarySphere"
         },
         {
-          "blend-mode" : "screen",
+          "blend-mode" : "lighten",
           "fill" : {
             "linear-gradient" : [
               "display-p3:1.00000,0.91669,0.23317,1.00000",
@@ -44,6 +56,7 @@
             }
           },
           "glass" : true,
+          "hidden" : false,
           "image-name" : "ArmillarySphere.svg",
           "name" : "ArmillarySphere"
         },

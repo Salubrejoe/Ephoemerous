@@ -7,7 +7,7 @@ struct ENSWatchCrownLayer: EGridLayer {
     static let clipRadius: Double = 2 * sqrt(3)
 
     // Crown geometry (fixed screen points, independent of scale)
-    private let crownWidth   : Double = 27
+    private let crownWidth   : Double = 25
     private let majorTickLen : Double = 4
     private let minorTickLen : Double = 4
 
@@ -15,7 +15,7 @@ struct ENSWatchCrownLayer: EGridLayer {
         let cx     = dc.size.width  / 2 + dc.state.renderedOffset.y
         let cy     = dc.size.height / 2 + dc.state.renderedOffset.x
         let innerR = dc.state.renderedScale * Self.clipRadius
-        let outerR = innerR + crownWidth
+        let outerR = (innerR + crownWidth)
         // Fixed orientation: RA=0h at bottom, RA=12h at top. Never rotates.
         let θ: Double = -.pi / 2
 
@@ -66,8 +66,8 @@ struct ENSWatchCrownLayer: EGridLayer {
                     height: 2 * innerR
                 )
             ),
-            with: .color(.white),
-            lineWidth: 4,
+            with: .color(.white.opacity(0.85)),
+            lineWidth: 2,
             
         )
 //        for r in [innerR] {
@@ -99,7 +99,7 @@ struct ENSWatchCrownLayer: EGridLayer {
                 cy: cy,
                 angle: angle,
                 fromR: innerR - minorTickLen,
-                toR: innerR,
+                toR: innerR + minorTickLen,
                 width: 0.1,
                 in: &dc
             )
@@ -111,6 +111,7 @@ struct ENSWatchCrownLayer: EGridLayer {
     private func drawHours(cx: Double, cy: Double, innerR: Double, outerR: Double,
                            θ: Double, in dc: inout EGraphicContext) {
         let midR = (innerR + outerR) / 2
+        let tzOffset = TimeZone.current.secondsFromGMT(for: dc.state.observationDate) / 3600
 
         for h in 0..<24 {
             let angle = θ - Double(h) * .pi / 12.0
@@ -131,17 +132,19 @@ struct ENSWatchCrownLayer: EGridLayer {
             
             let margin = 0.0
             dc.ctx.draw(
-                Text("\(h)")
-                    .font(isCurrentHour(h) ? .caption.bold() : .caption2)
-                    .foregroundStyle(isCurrentHour(h) ? .yellow : .primary),
+                Text("\((h + tzOffset + 24) % 24)")
+                    .font(isCurrentHour(h, tzOffset: tzOffset) ? .largeTitle : .title3)
+                    .bold()
+                    .fontDesign(.serif)
+                    .foregroundStyle(isCurrentHour(h, tzOffset: tzOffset) ? .yellow : .primary),
                 at: CGPoint(x: lx + margin, y: ly + margin),
                 anchor: .center
             )
         }
     }
     
-    private func isCurrentHour(_ hour: Int) -> Bool {
-        Calendar.current.component(.hour, from: Date()) == hour
+    private func isCurrentHour(_ hour: Int, tzOffset: Int) -> Bool {
+        (Calendar.current.component(.hour, from: Date())) == (hour + tzOffset + 24) % 24
     }
 
     // MARK: - Tick helper

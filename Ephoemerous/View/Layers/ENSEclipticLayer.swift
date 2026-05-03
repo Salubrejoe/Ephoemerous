@@ -7,6 +7,7 @@ struct ENSEclipticLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in dc: inout EGraphicContext) {
+        guard dc.state.showEcliptic else { return }
         let eclPts = EProjection.sampleEcliptic(
             appState: dc.state,
             mode: .northSouth

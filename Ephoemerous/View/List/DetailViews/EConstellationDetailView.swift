@@ -11,22 +11,10 @@ struct EConstellationDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                
-                
-                // ── Info ──────────────────────────────────────────────────
-                ENSBodyCard(title: Strings.ConstellationDetail.identity) {
-                    ENSBodyRow(label: Strings.ConstellationDetail.abbreviation, value: constellation.rawValue)
-                    ENSBodyRow(label: Strings.ConstellationDetail.fullName,    value: constellation.fullName)
-                    if constellation.isZodiacSign {
-                        ENSBodyRow(label: Strings.ConstellationDetail.zodiac,   value: "Yes")
-                    }
-                }
-                
+            List {
                 // ── Notable stars ─────────────────────────────────────────
-                if !stars.isEmpty {
-                    ENSBodyCard(title: "Stars  (\(stars.count))") {
+                Section {
+                    if !stars.isEmpty {
                         ForEach(stars.prefix(12)) { star in
                             NavigationLink(value: star) {
                                 EConstellationStarRow(star: star)
@@ -38,13 +26,25 @@ struct EConstellationDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal)
-            .padding(.bottom, 32)
-        }
+//            .padding(.horizontal)
+        
         .navigationTitle(constellation.fullName)
         .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            state.currentlyDisplayedConstellation = constellation
+            if let brightest = brightestStar {
+                state.applyStarTracking(brightest)
+            }
+        }
+        .onDisappear {
+            state.currentlyDisplayedConstellation = nil
+        }
         .navigationDestination(for: EStar.self)  { s in EStarDetailView(star: s).onAppear { state.recordViewed(s) }
         }
+    }
+    
+    var brightestStar: EStar? {
+        stars.first
     }
 }
 
@@ -67,15 +67,15 @@ private struct EConstellationHero: View {
                     .font(.system(size: 52, weight: .thin, design: .serif))
                     .foregroundStyle(.white)
 
-                if constellation.isZodiacSign {
-                    Text(Strings.ConstellationDetail.zodiac)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.yellow.opacity(0.8))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 3)
-                        .background(Capsule().fill(.yellow.opacity(0.15)))
-                        .overlay(Capsule().strokeBorder(.yellow.opacity(0.3), lineWidth: 0.5))
-                }
+//                if constellation.isZodiacSign {
+//                    Text(Strings.ConstellationDetail.zodiac)
+//                        .font(.caption2.weight(.semibold))
+//                        .foregroundStyle(.yellow.opacity(0.8))
+//                        .padding(.horizontal, 10)
+//                        .padding(.vertical, 3)
+//                        .background(Capsule().fill(.yellow.opacity(0.15)))
+//                        .overlay(Capsule().strokeBorder(.yellow.opacity(0.3), lineWidth: 0.5))
+//                }
             }
         }
     }
@@ -88,24 +88,13 @@ private struct EConstellationStarRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            let r = max(4.0, min(12.0, (AstroConstants.listDotScale - star.magnitude) * AstroConstants.listDotFactor))
-            Circle()
-                .fill(star.spectralClass.color)
-                .frame(width: r, height: r)
-
-            Text(star.displayName)
-                .font(.headline.monospacedDigit())
-//                .foregroundStyle(.primary)
-
-            Spacer()
-
-            Text(String(format: "%.2f mag", star.magnitude))
-                .font(.headline.monospacedDigit())
-//                .foregroundStyle(.primary)
+            SelectStarButton(star: star)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(star.displayName).font(.body.weight(.semibold))
+                Text("@\(star.constellation.fullName)").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text(String(format: "%.1f mag", star.magnitude)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        Divider().opacity(0.3).padding(.horizontal, 16)
     }
 }

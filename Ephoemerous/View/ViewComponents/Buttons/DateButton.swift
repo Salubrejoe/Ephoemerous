@@ -104,11 +104,11 @@ extension DateButton {
     private var dateValueChanged: Bool {
         hourValueChanged
         || minuteValueChanged
-//        || isNotToday
+        || isNotToday
     }
     
     private var isNotToday: Bool {
-        Calendar.current.isDateInToday(state.observationDate)
+        !Calendar.current.isDateInToday(state.observationDate)
     }
     
     private var hourValueChanged: Bool {
@@ -116,7 +116,7 @@ extension DateButton {
     }
     
     private var minuteValueChanged: Bool {
-        currentHour != observationHour
+        currentMinute != observationMinute
     }
     
     private var currentHour: Int {
@@ -131,7 +131,7 @@ extension DateButton {
         Calendar.current.component(.minute, from: .now)
     }
     
-    private var observationHMinute: Int {
+    private var observationMinute: Int {
         Calendar.current.component(.minute, from: state.observationDate)
     }
 }

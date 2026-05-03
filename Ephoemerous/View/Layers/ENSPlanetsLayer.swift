@@ -207,9 +207,10 @@ enum EPlanetPosition {
 struct ENSPlanetsLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
+        guard dc.state.showPlanets else { return }
         let pairs = EPlanetPosition.allVectors(
             for: dc.state.renderedObservationDate,
-            siderealOffset: dc.state.precessedSiderealOffset
+            siderealOffset: dc.state.localSiderealOffset
         )
         for (planet, vec, ra, dec) in pairs {
             let raH = ra / 15.0

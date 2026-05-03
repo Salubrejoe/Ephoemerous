@@ -8,13 +8,11 @@ import simd
 @Observable
 class EAppState {
     
+    var haptics: Bool = false
+    
     var _dateTransition: EDateTransition? = nil
     var _originTransition: EOriginTransition? = nil
-    
-    enum ProjectionFrame {
-        case northSouth
-        case userLocation
-    }
+    var _inertiaTransition: EInertiaTransition? = nil
     
     var selectedStars: [EStar] = [] {
         didSet {
@@ -26,10 +24,12 @@ class EAppState {
     var showSunInfo:  Bool = false
     var showMoonInfo: Bool = false
     var showStarList: Bool = false
-    var sunScreenPosition:         CGPoint? = nil
-    var selectedStarPositions:    [String: CGPoint] = [:]
-    var canvasSize:         CGSize   = .zero
-    var moonScreenPosition: CGPoint? = nil
+    
+    
+    var canvasSize            : CGSize   = .zero
+    var sunScreenPosition     : CGPoint? = nil
+    var moonScreenPosition    : CGPoint? = nil
+    var selectedStarPositions : [String: CGPoint] = [:]
     
     var origin  : Origin
     var plane   : Plane
@@ -48,36 +48,50 @@ class EAppState {
     var showStars           : Bool = true
     var showPlanets         : Bool = true
     var showSelectedStars   : Bool = true
+    
+    
     var appMode: EAppMode          = .clock
     var projectionMode: ProjectionMode = .drag
     
+    var showMagnFilter: Bool = false
     var isShowingDatePicker: Bool = false
-    var magnitudeFilter: Double = AstroConstants.defaultMagCap
+    var magnitudeFilter: Double = AstroConstants.defaultMagCap {
+        didSet { invalidateStarCache() }
+    }
     
+    // TODO: Perf - recomputed on every canvas frame; consider caching when observationDate and origin have not changed
+    // MARK: - Cached star collections
+    // Invalidated whenever the filtering dependencies change.
+    private var _starsCache:       [EStar]? = nil
+    private var _travelStarsCache: [EStar]? = nil
+
+    func invalidateStarCache() {
+        _starsCache       = nil
+        _travelStarsCache = nil
+    }
+
+    // Clock mode: above-horizon stars filtered by magnitude
     var stars: [EStar] {
-        let zenith = observerZenith // SIMD3<Double>, expected to be unit length
-        return StarDatabase.shared.workableStars
+        if let cached = _starsCache { return cached }
+        let zenith = observerZenith
+        let result = StarDatabase.shared.workableStars
             .filter { s in
-            // Precess RA/Dec to the observation date
-            let precessed = EPrecession.precess(
-                ra: s.rightAscension,
-                dec: s.declination,
-                to: observationDate
-            )
-            // Convert to a unit vector in the same frame as observerZenith
-            let starVec = Angle.spherePoint(
-                latitude: precessed.dec,
-                longitude: precessed.ra
-            )
-            // Above horizon if dot(star, zenith) > 0
-            return simd_dot(starVec, zenith) > 0.0
-        }
-            .filter {
-                $0.name != "Unknown"
+                let precessed = EPrecession.precess(ra: s.rightAscension, dec: s.declination, to: observationDate)
+                let starVec = Angle.spherePoint(latitude: precessed.dec, longitude: precessed.ra)
+                return simd_dot(starVec, zenith) > 0.0
             }
-            .filter {
-                $0.magnitude < magnitudeFilter
-            }
+            .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
+        _starsCache = result
+        return result
+    }
+
+    // Travel mode: all visible stars (no horizon filter) filtered by magnitude
+    var travelStars: [EStar] {
+        if let cached = _travelStarsCache { return cached }
+        let result = StarDatabase.shared.workableStars
+            .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
+        _travelStarsCache = result
+        return result
     }
     
     var currentlyDisplayedStar: EStar?
@@ -86,14 +100,14 @@ class EAppState {
     var scale:  Double  = AstroConstants.defaultScale
     var offset: CGPoint = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
     
-    var observationDate: Date    = .now
+    var observationDate: Date    = .now {
+        didSet { invalidateStarCache() }
+    }
     var animationTime: Double    = 0.0
 
     // Backing store for the running preset transition (set by EViewPreset extension)
-    var _activeTransition: EPresetTransition? = nil
+    var _activeTransition:  EPresetTransition?  = nil
     
-    // In .origin mode both projections move their origin with the observer, planes stay fixed.
-    var northSouthOrigin: SIMD3<Double> { .north }
 
     var originVector: SIMD3<Double> {
         Angle.spherePoint(latitude: origin.latitude, longitude: origin.longitude)
@@ -108,6 +122,7 @@ class EAppState {
         -EPrecession.lst(for: renderedObservationDate, longitude: origin.longitude)
     }
 
+    // TODO: Audit - only used by detail views (ENSMoonDetailView, ENSPlanetDetailView), consider passing date directly instead
     var precessedSiderealOffset: Angle {
         -EPrecession.gmstSiderealOffset(for: renderedObservationDate)
     }
@@ -123,6 +138,7 @@ class EAppState {
     func setOrigin(lat: Angle, lon: Angle) {
         origin.latitude  = lat
         origin.longitude = lon
+        invalidateStarCache()
         if projectionMode == .coupled {
             plane.latitude  = -lat
             plane.longitude = lon + Angle.pi

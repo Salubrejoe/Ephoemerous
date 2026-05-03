@@ -80,7 +80,7 @@ struct ENSMoonLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, ra, dec) = EMoonPosition.vector(
             for: dc.state.renderedObservationDate,
-            siderealOffset: dc.state.precessedSiderealOffset
+            siderealOffset: dc.state.localSiderealOffset
         )
         let raH = ra / 15.0
         ELogger.moon(String(format: "Moon   RA: %6.2fh  Dec: %+7.2fdeg", raH, dec))
@@ -137,5 +137,10 @@ struct ENSMoonLayer: EGridLayer {
             with: .color(.white.opacity(AstroConstants.moonRimOpacity)),
             lineWidth: 0.5
         )
+        
+        // Ring
+        let size = (AstroConstants.moonBaseRadius + 18)
+        let ring = Path(ellipseIn: CGRect(x: sc.x - size/2, y: sc.y - size/2, width: size, height: size))
+        dc.ctx.stroke(ring, with: .color(.gray.opacity(0.9)), lineWidth: 1.5)
     }
 }

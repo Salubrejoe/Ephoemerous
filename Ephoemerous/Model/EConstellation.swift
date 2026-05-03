@@ -239,9 +239,10 @@ enum EConstellation: String, CaseIterable {
   public var stars: [EStar] {
     StarDatabase.shared.workableStars.filter {
       $0.constellation.rawValue == self.rawValue
-    }.filter {
-      $0.declination.degrees <= 30
     }
+//    .filter {
+//      $0.declination.degrees <= 30
+//    }
   }
   
   public var indexedStars: [EStar] {

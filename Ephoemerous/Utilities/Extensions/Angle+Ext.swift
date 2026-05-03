@@ -52,6 +52,22 @@ extension Angle {
             sin(lat.radians)
         )
     }
+    
+    // HMS / DMS string formatting
+    var hmsString: String {
+        let t = radians * (12.0 / Double.pi) * 3600
+        let h = Int(t / 3600)
+        let m = Int(t.truncatingRemainder(dividingBy: 3600) / 60)
+        let s = t.truncatingRemainder(dividingBy: 60)
+        return String(format: "%02dh %02dm %05.2fs", h, m, s)
+    }
+    var dmsString: String {
+        let d = degrees; let sign = d >= 0 ? "+" : "-"
+        let a = Swift.abs(d); let dd = Int(a)
+        let mm = Int((a - Double(dd)) * 60)
+        let ss = (a - Double(dd) - Double(mm) / 60) * 3600
+        return String(format: "%@%02d° %02d′ %05.2f″", sign, dd, mm, ss)
+    }
 }
 
 extension Double {
@@ -70,4 +86,6 @@ extension Double {
     static var piSixth: Double {
         (.pi * 0.15)
     }
+
+    
 }

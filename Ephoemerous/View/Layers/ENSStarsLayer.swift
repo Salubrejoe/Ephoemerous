@@ -7,6 +7,7 @@ struct ENSStarsLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in dc: inout EGraphicContext) {
+        guard dc.state.showStars else { return }
         
         for star in dc.state.stars {
             
@@ -17,7 +18,7 @@ struct ENSStarsLayer: EGridLayer {
             )
             
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
-                .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+                .sidereallyRotated(by: dc.state.localSiderealOffset)
             
             if let projPoint = EProjection.project(
                 Q,
@@ -33,16 +34,16 @@ struct ENSStarsLayer: EGridLayer {
                 // Soft glow behind the star
                 var glow = dc.ctx
                 glow.addFilter(.blur(radius: r * AstroConstants.starGlowBlurRatio))
-//                glow.addFilter(.shadow(color: .secondary, radius: 4, options: .shadowOnly))
                 glow.fill(
                     Path(ellipseIn: CGRect(x: screenPoint.x - r, y: screenPoint.y - r, width: r * 2, height: r * 2)),
-                    with: .color(star.spectralClass.color.opacity(0.45))
+                    with: .color(star.spectralClass.color.opacity(1))
                 )
-
+//
+//                dc.ctx.addFilter(.shadow(color: star.spectralClass.color, radius: r * AstroConstants.starGlowBlurRatio))
                 dc.fillDot(
                     at: screenPoint,
                     radius: r,
-                    color: star.spectralClass.color
+                    color: star.spectralClass.color.opacity(0.65).exposureAdjust(.piHalf)
                 )
             }
         }

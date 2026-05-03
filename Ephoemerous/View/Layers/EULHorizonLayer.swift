@@ -7,6 +7,7 @@ struct EULHorizonLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in ctx: inout EGraphicContext) {
+        guard ctx.state.showHorizon else { return }
         drawHorizons(in: &ctx)
     }
     
@@ -21,9 +22,9 @@ struct EULHorizonLayer: EGridLayer {
                     ra: .radians(step * .twoPi),
                     dec: .zero
                 )
-                .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+                .sidereallyRotated(by: dc.state.localSiderealOffset)
         }
-        dc.fillCurve(horizon, color: artist.horColor)
+        dc.fillCurve(horizon, color: .tertiaryLabel)
         
         
         /// SUNSETS
@@ -37,9 +38,9 @@ struct EULHorizonLayer: EGridLayer {
                         ra: .radians(t * .twoPi),
                         dec: decl
                     )
-                    .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+                    .sidereallyRotated(by: dc.state.localSiderealOffset)
             }
-            dc.strokeCurve(pts, color: .baseOrange, width: artist.horWidth)
+            dc.strokeCurve(pts, color: .baseOrange.opacity(1), width: 2)
         }
         
         
@@ -54,7 +55,7 @@ struct EULHorizonLayer: EGridLayer {
                         ra: .radians(t * .twoPi),
                         dec: parallel.declination
                     )
-                    .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+                    .sidereallyRotated(by: dc.state.localSiderealOffset)
             }
             dc.strokeCurve(
                 pts,
@@ -68,7 +69,8 @@ struct EULHorizonLayer: EGridLayer {
 
 
 /*
- private func drawMeridians(in dc: inout EGraphicContext) {
+ // TODO: Remove - drawMeridians leftover from when meridians lived here; now in EULMeridiansLayer
+    private func drawMeridians(in dc: inout EGraphicContext) {
  
  for ra in stride(from: 0, to: .twoPi, by: .pi / 8) {
  
@@ -78,7 +80,7 @@ struct EULHorizonLayer: EGridLayer {
  ra: .radians(ra),
  dec: .radians((t - 0.5) * .pi)
  )
- .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+ .sidereallyRotated(by: dc.state.localSiderealOffset)
  }
  dc.strokeCurve(
  pts,
@@ -129,7 +131,7 @@ struct EParallelsLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let O = dc.state.originVector
         let P = dc.state.planeVector
-        let θ = dc.state.precessedSiderealOffset
+        let θ = dc.state.localSiderealOffset
         
         // Home
         let home = EProjection.sampleCurve(

@@ -1,9 +1,10 @@
 
 import SwiftUI
+// TODO: Audit - SearchBar takes @Binding<Bool> but EAppState already owns showStarList; consider @Environment instead
 
 
 struct SearchBar: View {
-    @Binding var showStarList: Bool
+    @Environment(EAppState.self) var state
     
     var body: some View {
         Button {
@@ -17,6 +18,7 @@ struct SearchBar: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
+        .padding(.horizontal)
         .animation(.bouncy, value: showStarList)
     }
 }

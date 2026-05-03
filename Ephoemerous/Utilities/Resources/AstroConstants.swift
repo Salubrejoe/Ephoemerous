@@ -226,7 +226,7 @@ enum AstroConstants {
     static let moonLimbOpacity:   Double = 0.92  // lit hemisphere fill
     static let moonRimOpacity:    Double = 0.40  // stroke
     /// Sun canvas disc diameter
-    static let sunDiscDiameter:   Double = 32.0
+    static let sunDiscDiameter:   Double = 24.0
     /// List row dot: max(listDotMin, min(listDotMax, (listDotScale − mag) × listFactor))
     static let listDotMin:        Double =  4.0
     static let listDotMax:        Double = 14.0
@@ -246,7 +246,7 @@ enum AstroConstants {
     // -------------------------------------------------------------------------
     // MARK: Default viewport
     // -------------------------------------------------------------------------
-    static let defaultScale:      Double  = 50.0
+    static let defaultScale:      Double  = 45
     static let defaultOffsetX:    Double  = -80.0
     static let defaultOffsetY:    Double  = 0.0
 

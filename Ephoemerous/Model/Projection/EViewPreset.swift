@@ -55,6 +55,7 @@ struct EViewPreset: Identifiable, Equatable {
         offset: CGPoint(x: -50, y: 0)
     )
 
+    // TODO: Refactor - scale:0 / offset:.zero is a magic sentinel meaning "tracking preset, ignore scale/offset"; model this explicitly
     static let trackSun = EViewPreset(id: "trackSun", name: Strings.Preset.trackSun, symbol: "scope", scale: 0, offset: .zero)
     static let trackMoon = EViewPreset(id: "trackMoon", name: Strings.Preset.trackMoon, symbol: "moon.circle", scale: 0, offset: .zero)
     static let trackStar = EViewPreset(id: "trackStar", name: Strings.Preset.trackStar, symbol: "star.circle", scale: 0, offset: .zero)
@@ -325,5 +326,22 @@ extension EAppState {
             startTime: Date.now.timeIntervalSinceReferenceDate,
             duration:  duration
         )
+    }
+}
+
+// MARK: - Inertia transition
+struct EInertiaTransition {
+    var velX:      Double
+    var velY:      Double
+    let startTime: Double
+    let decay:     Double = 8.0  // tune: higher = faster stop, lower = longer glide
+
+    // Returns (dx, dy, isFinished) for the current frame.
+    // Exponential velocity decay: v(t) = v0 * e^(-decay * t)
+    func tick(at time: Double) -> (Double, Double, Bool) {
+        let t      = time - startTime
+        let dt     = 1.0 / 60.0
+        let factor = exp(-decay * t)
+        return (velX * factor * dt, velY * factor * dt, factor < 1)
     }
 }

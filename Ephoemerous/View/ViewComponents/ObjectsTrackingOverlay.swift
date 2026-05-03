@@ -8,13 +8,18 @@ struct ObjectsTrackingOverlay: View {
     
     @State private var showStarView : Bool = false
     
+    
+    
     var body: some View {
-        GeometryReader { _ in
+        GeometryReader { geo in
             ZStack {
+                
                 if let sunPt = state.sunScreenPosition {
                     ClearCircle(at: sunPt)
                         .onTapGesture {
                             state.showStarList = false
+                            state.showMoonInfo = false
+                            showStarView = false
                             state.applySunTracking()
                             state.showSunInfo = true
                         }
@@ -23,6 +28,8 @@ struct ObjectsTrackingOverlay: View {
                     ClearCircle(at: moonPt)
                         .onTapGesture {
                             state.showStarList = false
+                            state.showSunInfo = false
+                            showStarView = false
                             state.applyMoonTracking()
                             state.showMoonInfo = true
                         }
@@ -32,6 +39,8 @@ struct ObjectsTrackingOverlay: View {
                         ClearCircle(at: pt)
                             .onTapGesture {
                                 state.showStarList = false
+                                state.showSunInfo = false
+                                state.showMoonInfo = false
                                 state.applyStarTracking(star)
                                 state.currentlyDisplayedStar = star
                                 showStarView = true
@@ -43,6 +52,9 @@ struct ObjectsTrackingOverlay: View {
                 NavigationStack {
                     if let star = state.currentlyDisplayedStar {
                         EStarDetailView(star: star)
+                            .onDisappear {
+                                state.currentlyDisplayedStar = nil
+                            }
                     }
                 }
                 .presentationDetents([.medium, .large])
@@ -51,6 +63,7 @@ struct ObjectsTrackingOverlay: View {
             }
         }
         .allowsHitTesting(true)
+        .ignoresSafeArea()
     }
     
     @ViewBuilder

@@ -17,22 +17,6 @@ struct ENSPlanetDetailView: View {
         ScrollView {
             VStack(spacing: 32) {
 
-                // ── Hero ──────────────────────────────────────────────────
-//                ZStack {
-//                    Circle()
-//                        .fill(RadialGradient(
-//                            colors: [planet.color.opacity(0.35), .clear],
-//                            center: .center, startRadius: 0, endRadius: 90))
-//                        .frame(width: 180, height: 180)
-//                    Circle()
-//                        .fill(RadialGradient(
-//                            colors: [.white.opacity(0.9), planet.color],
-//                            center: .center, startRadius: 0, endRadius: 22))
-//                        .frame(width: 44, height: 44)
-//                        .shadow(color: planet.color, radius: 12)
-//                }
-//                .padding(.top, 8)
-
                 // ── Coordinates ───────────────────────────────────────────
                 ENSBodyCard(title: "Coordinates") {
                     if let pos = position {

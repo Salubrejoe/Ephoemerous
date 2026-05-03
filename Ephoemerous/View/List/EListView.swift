@@ -3,9 +3,9 @@ import SwiftUI
 // MARK: - Tab model
 enum EListTab: String, CaseIterable, Identifiable {
     case recents        = "Recents"
-    case solarSystem    = "Solar System"
     case constellations = "Constellations"
     case stars          = "Stars"
+    case solarSystem    = "Solar System"
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -62,7 +62,7 @@ extension EListView {
     }
 
     private var displayedStars: [EStar] {
-        var result = StarDatabase.shared.workableStars
+        var result = StarDatabase.shared.listableStars
             .filter { $0.name != "Unknown" && $0.magnitude <= state.magnitudeFilter }
         if isSearching {
             let q = searchText.lowercased()
@@ -88,7 +88,7 @@ struct EListView: View {
     @State private var searchText    = ""
     @State private var showSortSheet = false
     @State private var sortOrder     = EStarSort.magnitude
-    @State private var activeTab     = EListTab.solarSystem
+    @State private var activeTab     = EListTab.recents
     private let magnitudeRange = -2.0...8.0
 
     private var navTitle: String { isSearching ? "Search" : activeTab.rawValue }
@@ -164,8 +164,10 @@ struct EListView: View {
                             Button {
                                 sortOrder = order
                             } label: {
-                                Label(order.rawValue, systemImage: order.symbol)
-                                if sortOrder == order { Image(systemName: "checkmark") }
+                                HStack {
+                                    Label(order.rawValue, systemImage: order.symbol)
+                                    if sortOrder == order { Image(systemName: "checkmark") }
+                                }
                             }
                         }
                     } label: {
@@ -187,12 +189,12 @@ struct EListView: View {
             
         }
         .sheet(isPresented: $showSortSheet) {
-            EMagnitudeSlider(
+            FilterView(
                 magnitudeCap: Bindable(state).magnitudeFilter,
                 magnitudeRange: -2.0...8.0,
                 starCount: displayedStars.count
             )
-            .presentationDetents([.height(78)])
+            .presentationDetents([.height(320)])
             .presentationDragIndicator(.visible)
         }
     }

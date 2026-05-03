@@ -6,6 +6,7 @@ struct ENSEquatorTropicsLayer: EGridLayer {
     let artist = EArtist.shared
     
     func draw(in ctx: inout EGraphicContext) {
+        guard ctx.state.showEquatorTropics else { return }
         drawEquatorAndTropics(in: &ctx)
     }
     
@@ -19,7 +20,7 @@ struct ENSEquatorTropicsLayer: EGridLayer {
                 ra: .radians(.twoPi * step),
                 dec: EKnownParallels.equator.declination
             )
-            .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+            .sidereallyRotated(by: dc.state.localSiderealOffset)
         }
         
         let trCancer  = EProjection.sampleCurve(
@@ -30,7 +31,7 @@ struct ENSEquatorTropicsLayer: EGridLayer {
                 ra: .radians(.twoPi * step),
                 dec: EKnownParallels.trCancer.declination
             )
-            .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+            .sidereallyRotated(by: dc.state.localSiderealOffset)
         }
         let trCapr  = EProjection.sampleCurve(
             appState: dc.state,
@@ -40,7 +41,7 @@ struct ENSEquatorTropicsLayer: EGridLayer {
                 ra: .radians(.twoPi * step),
                 dec: EKnownParallels.trCapr.declination
             )
-            .sidereallyRotated(by: dc.state.precessedSiderealOffset)
+            .sidereallyRotated(by: dc.state.localSiderealOffset)
         }
 
         dc.strokeCurve(
@@ -65,7 +66,7 @@ struct ENSEquatorTropicsLayer: EGridLayer {
 
 
 
-//        drawMeridians(in: &ctx)
+//        drawMeridians(in: &ctx) // TODO: Remove - meridians moved to dedicated ENSMeridiansLayer
 /*
  for decDeg in stride(from: -90, through: 90, by: 30) {
  let dec = Angle.degrees(Double(decDeg))

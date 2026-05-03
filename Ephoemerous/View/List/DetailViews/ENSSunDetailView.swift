@@ -2,130 +2,207 @@ import SwiftUI
 
 struct ENSSunDetailView: View {
     @Environment(EAppState.self) var state
-
     private let weather = EWeatherService.shared
-
     private var lambda: Angle { ENSSunLayer.sunEclipticLongitude(for: state.observationDate) }
     private var coords: (ra: Angle, dec: Angle) { ENSSunLayer.equatorialCoords(lambda: lambda) }
-
-    // Degrees from EAppState.origin
     private var lat: Double { state.origin.latitude.degrees }
     private var lon: Double { state.origin.longitude.degrees }
-
+    private let accent = Color.yellow
+    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
     var body: some View {
-            ScrollView {
-                VStack(spacing: 32) {
-                    
-                    // ── Sun Events ────────────────────────────────────────────
-                    ENSBodyCard(title: "Sun Events") {
-                        if weather.isLoading {
-                            ENSBodyRow(label: "Fetching…", value: "")
-                        } else if let e = weather.sunEvents {
-                            if let v = e.civilDawn  { ENSBodyRow(label: "Civil Dawn",  value: v.timeString) }
-                            if let v = e.sunrise    { ENSBodyRow(label: "Sunrise",     value: v.timeString) }
-                            if let v = e.solarNoon  { ENSBodyRow(label: "Solar Noon",  value: v.timeString) }
-                            if let v = e.sunset     { ENSBodyRow(label: "Sunset",      value: v.timeString) }
-                            if let v = e.civilDusk  { ENSBodyRow(label: "Civil Dusk",  value: v.timeString) }
-                        } else if let err = weather.error {
-                            ENSBodyRow(label: "Error", value: err)
-                        } else {
-                            ENSBodyRow(label: "Unavailable", value: "")
-                        }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Sol")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .padding(.leading, 4)
+                HStack {
+                    HStack(spacing: 8) {
+                        Image(symbol: .rightAscension)
+                        Text("\(coords.ra.hmsString)")
                     }
-                    
-                    // ── Coordinates ───────────────────────────────────────────
-                    ENSBodyCard(title: "Coordinates") {
-                        ENSBodyRow(label: "Right Ascension",    value: coords.ra.hmsString)
-                        ENSBodyRow(label: "Declination",        value: coords.dec.dmsString)
-                        ENSBodyRow(label: "Ecliptic longitude", value: String(format: "%.3f°", lambda.degrees))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule().fill(.regularMaterial)
+                    )
+                    HStack(spacing: 8) {
+                        Image(symbol: .declination)
+                        Text("\(coords.dec.dmsString)")
                     }
-                    
-                    // ── Physical ──────────────────────────────────────────────
-                    ENSBodyCard(title: "Physical") {
-                        ENSBodyRow(label: "Type",        value: "G-type main-sequence")
-                        ENSBodyRow(label: "Distance",    value: "1.000 AU")
-                        ENSBodyRow(label: "Magnitude",   value: "-26.74")
-                        ENSBodyRow(label: "Temperature", value: "5,778 K")
-                        ENSBodyRow(label: "Radius",      value: "696,000 km")
-                    }
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule().fill(.regularMaterial)
+                    )
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 32)
+                .font(.footnote)
+                .monospaced()
+                .foregroundStyle(.secondary)
+                .padding(.bottom)
+                LazyVGrid(columns: cols, spacing: 12) {
+                    ENSTile(
+                        label: "Ecliptic Longitude",
+                        value: String(format: "%.3f°", lambda.degrees),
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                    ENSTile(
+                        label: "Spectral Class",
+                        value: "G",
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                    ENSTile(
+                        label: "Magnitude",
+                        value: "-26.74",
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                    ENSTile(
+                        label: "Distance",
+                        value: "1.000 AU",
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                    ENSTile(
+                        label: "Temperature",
+                        value: "5,778 K",
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                    ENSTile(
+                        label: "Radius",
+                        value: "696,000 km",
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                }
+                ENSSunEventsGrid(weather: weather, accent: accent)
             }
-            .navigationTitle("Sun")
-            .navigationBarTitleDisplayMode(.large)
-            .background(.yellow.opacity(0.65))
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-            .preferredColorScheme(.light)
-            .task(id: "\(lat),\(lon),\(state.observationDate)") {
-                await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
-            }
-        
+            .padding(.horizontal, 24)
+            .padding(.top, 28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+//        .navigationTitle("Sun")
+//        .navigationBarTitleDisplayMode(.large)
+        .task(id: "\(lat),\(lon),\(state.observationDate)") {
+            await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
+        }
     }
 }
 
-// MARK: - Shared card / row components
+private struct ENSSunEventsGrid: View {
+    let weather: EWeatherService
+    let accent: Color
+    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    var body: some View {
+        if weather.isLoading {
+            ENSTile(label: "Events", value: "Fetching…", accent: accent, symbol: .calendar)
+        } else if let e = weather.sunEvents {
+            LazyVGrid(columns: cols, spacing: 12) {
+                if let v = e.civilDawn {
+                    ENSTile(
+                        label: "Civil Dawn",
+                        value: v.timeString,
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                }
+                if let v = e.sunrise   {
+                    ENSTile(
+                        label: "Sunrise",
+                        value: v.timeString,
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                }
+                if let v = e.solarNoon {
+                    ENSTile(
+                        label: "Solar Noon",
+                        value: v.timeString,
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                }
+                if let v = e.sunset    {
+                    ENSTile(
+                        label: "Sunset",
+                        value: v.timeString,
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                }
+                if let v = e.civilDusk {
+                    ENSTile(
+                        label: "Civil Dusk",
+                        value: v.timeString,
+                        accent: accent,
+                        symbol: .calendar
+                    )
+                }
+            }
+        } else if let err = weather.error {
+            ENSTile(label: "Error", value: err, accent: accent, symbol: .warning)
+        }
+    }
+}
+
+struct ENSTile: View {
+    let label: String
+    let value: String
+    let accent: Color
+    let symbol: Strings.Symbols
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Image(symbol: symbol)
+                    .imageScale(.small)
+                Text(label)
+            }
+            .font(.footnote)
+            .foregroundStyle(accent.opacity(0.8))
+            .lineLimit(1)
+            Spacer(minLength: 0)
+            Text(value)
+                .font(.title3.bold())
+                .monospaced()
+                .foregroundStyle(.primary)
+                .minimumScaleFactor(0.3)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, minHeight:  66, alignment: .topLeading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(accent.opacity(0.07))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(accent.opacity(0.2), lineWidth: 0.5)
+                )
+        )
+    }
+}
 
 struct ENSBodyCard<Content: View>: View {
     let title: String
     @ViewBuilder let content: () -> Content
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title)
-                .font(.caption).foregroundStyle(.secondary)
+            Text(title).font(.caption).foregroundStyle(.secondary)
                 .padding(.horizontal, 16).padding(.bottom, 6)
             VStack(spacing: 0) { content() }
                 .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12)
-                    .stroke(.white.opacity(0.08), lineWidth: 0.5))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.08), lineWidth: 0.5))
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
-
 struct ENSBodyRow: View {
-    let label: String
-    let value: String
-
+    let label: String; let value: String
     var body: some View {
-        HStack {
-            Text(label).font(.callout).foregroundStyle(.secondary)
-            Spacer()
-            Text(value).font(.callout.monospacedDigit()).foregroundStyle(.primary)
-        }
+        HStack { Text(label).font(.callout).foregroundStyle(.secondary); Spacer(); Text(value).font(.callout.monospacedDigit()).foregroundStyle(.primary) }
         .padding(.horizontal, 16).padding(.vertical, 12)
         Divider().opacity(0.3).padding(.horizontal, 16)
-    }
-}
-
-// MARK: - Angle helpers
-
-extension Angle {
-    var hmsString: String {
-        let t = radians * (12.0 / Double.pi) * 3600
-        let h = Int(t / 3600)
-        let m = Int(t.truncatingRemainder(dividingBy: 3600) / 60)
-        let s = t.truncatingRemainder(dividingBy: 60)
-        return String(format: "%02dh %02dm %05.2fs", h, m, s)
-    }
-    var dmsString: String {
-        let d = degrees; let sign = d >= 0 ? "+" : "-"
-        let a = Swift.abs(d); let dd = Int(a)
-        let mm = Int((a - Double(dd)) * 60)
-        let ss = (a - Double(dd) - Double(mm) / 60) * 3600
-        return String(format: "%@%02d° %02d′ %05.2f″", sign, dd, mm, ss)
-    }
-}
-
-// MARK: - Date time helper
-
-extension Date {
-    var timeString: String {
-        let f = DateFormatter()
-        f.timeStyle = .short
-        f.dateStyle = .none
-        return f.string(from: self)
     }
 }

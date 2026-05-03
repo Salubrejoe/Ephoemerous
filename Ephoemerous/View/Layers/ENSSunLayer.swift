@@ -25,11 +25,11 @@ struct ENSSunLayer: EGridLayer {
         if abs(date.timeIntervalSince(Self.lastLoggedDate)) > 0.5 {
             Self.lastLoggedDate = date
             logPipeline(date: date, lambda: lambda, ra: sunRA, dec: sunDec,
-                        siderealOffset: dc.state.precessedSiderealOffset)
+                        siderealOffset: dc.state.localSiderealOffset)
         }
 
         // ── Project ──
-        let θ = dc.state.precessedSiderealOffset.radians
+        let θ = dc.state.localSiderealOffset.radians
         let (c, s) = (cos(θ), sin(θ))
         // eclipticPoint already converts ecliptic → equatorial (rotates by ε about X)
         let eq = SIMD3.eclipticPoint(lambda: lambda)
@@ -45,6 +45,11 @@ struct ENSSunLayer: EGridLayer {
 
         // ── Draw ──
         drawSunSymbol(at: sc, in: &dc)
+        
+        // Ring
+        let size = (AstroConstants.sunDiscDiameter + 10)
+        let ring = Path(ellipseIn: CGRect(x: sc.x - size/2, y: sc.y - size/2, width: size, height: size))
+        dc.ctx.stroke(ring, with: .color(.yellow.opacity(0.9)), lineWidth: 1.5)
     }
 
     // MARK: - Sun symbol

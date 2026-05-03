@@ -1,4 +1,3 @@
-
 import Foundation
 
 
@@ -9,8 +8,19 @@ class StarDatabase {
   var workableStars: [EStar] {
       let workable: [EStar] = stars.map { .init(from: $0) }
       ELogger.starDatabase(workable.count.description)
-      return workable
+      return workable.filter { $0.displayName != "Unknown"}
   }
+    
+    var listableStars: [EStar] {
+        workableStars
+            .filter { star in
+                // Keep stars whose displayName starts with a Greek letter
+                let name = star.displayName
+                guard let first = name.first else { return false }
+                let greekLetters = "αβγδεζηθικλμνξοπρστυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ"
+                return greekLetters.contains(first) || star.properName != nil
+            }
+    }
   
   func stars(for constellations: [EConstellation]) -> [EStar] {
     var stars = [EStar]()
@@ -45,3 +55,4 @@ class StarDatabase {
     return stars.first { $0.name?.lowercased() == starName.lowercased() }
   }
 }
+

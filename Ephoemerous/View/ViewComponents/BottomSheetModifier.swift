@@ -33,7 +33,7 @@ struct BottomSheetModifier<SheetView: View>: ViewModifier {
                     sheetView()
                         .presentationBackground(.clear)
                         .presentationBackgroundInteraction(.enabled)
-//                        .navigationTitle(title)
+//                        .navigationTitle(title) // TODO: Decide - re-enable or remove, sheet already has its own nav title
 //                        .navigationBarTitleDisplayMode(.large)
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)

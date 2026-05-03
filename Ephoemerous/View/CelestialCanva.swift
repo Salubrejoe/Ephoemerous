@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CoreLocation
 
 
@@ -9,15 +10,17 @@ struct CelestialCanva: View {
     
     // MARK: - Layers
     // Layers drawn inside the clip circle, back → front
-    private let innerLayers: [any EGridLayer] = [
-        //        ENSEquatorTropicsLayer(),
-        //        ENSEclipticLayer(),
-        EULHorizonLayer(),
-        ENSWatchCrownLayer()
+    private let clockInnerLayers: [any EGridLayer] = [
+        
+        ENSEquatorTropicsLayer(),
+        ENSEclipticLayer(),
+        ENSMeridiansLayer(),
+        EULMeridiansLayer(),
+        EULHorizonLayer()
+        
     ]
-    
-    // Layers drawn outside the clip circle (crown ring)
-    private let outerLayers: [any EGridLayer] = [
+    private let clockOuterLayers: [any EGridLayer] = [
+//        ENSMilkyWayLayer(),
         ENSStarsLayer(),
         ENSSunLayer(),
         ENSMoonLayer(),
@@ -25,6 +28,24 @@ struct CelestialCanva: View {
         ENSWatchCrownLayer(),
         ENSSelectedStarsLayer(),
     ]
+    // Travel mode: UL layers, no horizon/crown
+    private let travelInnerLayers: [any EGridLayer] = [
+//        EULMilkyWayLayer(),
+        //
+    ]
+    private let travelOuterLayers: [any EGridLayer] = [
+        EULEquatorTropicsLayer(),
+        EULEclipticLayer(),
+        EULMeridiansLayer(),
+        EULStarsLayer(),
+        EULSunLayer(),
+        EULMoonLayer(),
+        EULPlanetsLayer(),
+        EULSelectedStarsLayer(),
+//        EULHorizonLayer(),
+    ]
+    private var innerLayers: [any EGridLayer] { state.appMode == .clock ? clockInnerLayers : travelInnerLayers }
+    private var outerLayers: [any EGridLayer] { state.appMode == .clock ? clockOuterLayers : travelOuterLayers }
     
     // Drag state
     @State private var isDragging    = false
@@ -33,13 +54,13 @@ struct CelestialCanva: View {
     
     // Schedule invalidation -- bump to wake the TimelineView immediately
     @State private var scheduleID: Int = 0
-
+    
     // Pinch state
     @State private var isPinching       = false
     @State private var pinchStartScale:  Double   = 50
     @State private var pinchStartOffset: CGPoint  = .zero
     @State private var pinchSkyAnchor:   CGPoint  = .zero
-
+    
     
     
     // MARK: - Body
@@ -50,7 +71,24 @@ struct CelestialCanva: View {
         TimelineView(schedule) { timeline in
             ZStack {
                 Canvas { ctx, size in
-                    state.animationTime = timeline.date.timeIntervalSinceReferenceDate; if state.canvasSize != size { DispatchQueue.main.async { state.canvasSize = size } }
+                    state.animationTime = timeline.date.timeIntervalSinceReferenceDate
+                    if let t = state._inertiaTransition {
+                        let (dx, dy, finished) = t.tick(at: state.animationTime)
+                        DispatchQueue.main.async {
+                            state.offset.x += dx
+                            state.offset.y += dy
+                            if finished { state._inertiaTransition = nil }
+                        }
+                    }
+                    
+                    if let t = state._originTransition {
+                        let (lat, lon) = t.interpolated(at: state.animationTime)
+                        let finished = t.isFinished(at: state.animationTime)
+                        DispatchQueue.main.async {
+                            state.setOrigin(lat: .radians(lat), lon: .radians(lon))
+                            if finished { state._originTransition = nil }
+                        }
+                    }; if state.canvasSize != size { DispatchQueue.main.async { state.canvasSize = size } }
                     
                     var innerDC = innerDC(ctx: ctx, size: size)
                     for layer in innerLayers { layer.draw(in: &innerDC) }
@@ -62,10 +100,11 @@ struct CelestialCanva: View {
                 }
             }
         }
-                        .id(scheduleID)
+        .animation(.default, value: state.appMode)
+        .id(scheduleID)
         .gesture(dragGesture)
         .simultaneousGesture(pinchGesture)
-        .onChange(of: state._dateTransition != nil || state._activeTransition != nil) {
+        .onChange(of: state._dateTransition != nil || state._activeTransition != nil || state._originTransition != nil || state._inertiaTransition != nil) {
             scheduleID &+= 1  // wake TimelineView immediately when transition starts
         }
     }
@@ -87,12 +126,53 @@ extension CelestialCanva {
                     dragStartLat = state.offset.x
                     dragStartLon = state.offset.y
                 }
-                state.offset.x = dragStartLat + v.translation.height
-                state.offset.y = dragStartLon + v.translation.width
+                
+                switch state.projectionMode {
+                case .drag:
+                    state.offset.x = dragStartLat + v.translation.height
+                    state.offset.y = dragStartLon + v.translation.width
+                case .coupled:
+                    coupledAction(v)
+                case .origin:
+                    let sensitivity = 0.0001
+                    let rawLat = state.origin.latitude  - .radians(v.translation.height * sensitivity)
+                    let newLat = Angle.radians(rawLat.radians.clamped(to: -.pi/2 ... .pi/2))
+                    let rawLon = state.origin.longitude - .radians(v.translation.width  * sensitivity)
+                    let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
+                    state.origin.latitude  = newLat
+                    state.origin.longitude = newLon
+                }
             }
-            .onEnded { _ in isDragging = false }
+                                    .onEnded { v in
+                isDragging = false
+//                guard state.projectionMode == .drag else { return }
+//                let velX = v.velocity.height
+//                let velY = v.velocity.width
+//                guard hypot(velX, velY) > 50 else { return }
+//                state._inertiaTransition = EInertiaTransition(
+//                    velX: velX, velY: velY,
+//                    startTime: Date.now.timeIntervalSinceReferenceDate
+//                )
+            }
     }
-
+    
+    func coupledAction(_ v: DragGesture.Value) {
+        // Move the observer -- sensitivity tuned so 1pt ~ 0.1 deg
+        let sensitivity = 0.0001
+        let rawLat = state.origin.latitude  - .radians(v.translation.height * sensitivity)
+        let newLat = Angle.radians(rawLat.radians.clamped(to: 0.1 ... .pi / 2 - 0.1))
+        let rawLon = state.origin.longitude - .radians(v.translation.width  * sensitivity)
+        let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
+        // Haptic ticks on whole-degree crossings
+        if Int(newLat.degrees) != Int(state.origin.latitude.degrees) {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+        if Int(newLon.degrees) != Int(state.origin.longitude.degrees) {
+            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        }
+        state.setOrigin(lat: newLat, lon: newLon)
+    }
+    
     private var pinchGesture: some Gesture {
         MagnifyGesture()
             .onChanged { v in
@@ -133,11 +213,11 @@ extension CelestialCanva {
 // Switches between 60fps (gestures/transitions) and 1-per-minute (idle).
 struct ECanvasSchedule: TimelineSchedule {
     let isAnimating: Bool
-
+    
     func entries(from start: Date, mode: Mode) -> Entries {
         Entries(isAnimating: isAnimating, start: start)
     }
-
+    
     struct Entries: Sequence, IteratorProtocol {
         let isAnimating: Bool
         var next_date: Date
@@ -148,8 +228,8 @@ struct ECanvasSchedule: TimelineSchedule {
         mutating func next() -> Date? {
             let current   = next_date
             next_date     = isAnimating
-                ? current.addingTimeInterval(1.0 / 60.0)
-                : current.addingTimeInterval(60)
+            ? current.addingTimeInterval(1.0 / 60.0)
+            : current.addingTimeInterval(60)
             return current
         }
     }
@@ -159,7 +239,8 @@ extension CelestialCanva {
     private var isAnimating: Bool {
         isPinching               ||
         state._activeTransition != nil ||
-        state._dateTransition   != nil
+        state._dateTransition    != nil ||
+        state._originTransition != nil
     }
     private var schedule: ECanvasSchedule { ECanvasSchedule(isAnimating: isAnimating) }
 }
@@ -196,4 +277,5 @@ extension CelestialCanva {
     CelestialCanva()
         .environment(EAppState())
 }
+
 

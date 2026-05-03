@@ -36,7 +36,7 @@ enum EProjection {
         if mode == .northSouth {
             project(
                 Q,
-                origin: appState.northSouthOrigin,
+                origin: .north,
                 plane: .south
             )
         } else {

@@ -1,4 +1,5 @@
 import Foundation
+// TODO: Audit - TimeFormatter appears unused in the codebase; remove if confirmed
 
 struct TimeFormatter {
 

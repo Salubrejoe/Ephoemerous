@@ -68,39 +68,35 @@ struct EStar: Identifiable, Hashable {
 private extension EStar {
     
     static func calculateName(from starData: StarData) -> String {
-        guard var name = starData.name else { return "Unknown" }
-        
-        // Replace numbers with superscript
-        name = name
-            .replacingOccurrences(of: "1", with: "")
-            .replacingOccurrences(of: "2", with: "")
-            .replacingOccurrences(of: "3", with: "")
-            .replacingOccurrences(of: "4", with: "")
-            .replacingOccurrences(of: "5", with: "")
-            .replacingOccurrences(of: "6", with: "")
-            .replacingOccurrences(of: "7", with: "")
-            .replacingOccurrences(of: "8", with: "")
-            .replacingOccurrences(of: "9", with: "")
-            .replacingOccurrences(of: "0", with: "")
-        
-        //     Replace Greek letters with Unicode characters
-        
-        
-        let last3Char = String(name.suffix(3))
-        name = name.replacingOccurrences(of: last3Char, with: "").trimmingCharacters(in: .whitespaces)
-        
-        for (spelling, symbol) in EStar.greekLetterMap {
-            name = name.replacingOccurrences(of: spelling, with: "\(symbol) ")
+        guard let input = starData.name else { return "Unknown" }
+        let last3 = String(input.suffix(3))
+        guard let constellation = EConstellation(rawValue: last3) else { return "Unknown" }
+        var prefix = String(input.dropLast(3)).trimmingCharacters(in: .whitespaces)
+        // Detect Flamsteed number: digits before a space when no Greek abbrev present
+        var flamsteed = ""
+        let hasGreek = greekLetterMap.keys.contains(where: { prefix.contains($0) })
+        if !hasGreek, let spaceIdx = prefix.firstIndex(of: " ") {
+            let maybeNum = String(prefix[prefix.startIndex..<spaceIdx])
+            if maybeNum.allSatisfy({ $0.isNumber }) {
+                flamsteed = maybeNum
+                prefix = String(prefix[prefix.index(after: spaceIdx)...])
+            }
         }
-        
-        if let constellation = EConstellation(rawValue: last3Char) {
-            name = name + constellation.rawValue
+        // Strip disambiguation digits, then map Greek abbreviations to symbols
+        prefix = prefix.filter { !$0.isNumber }
+        for (spelling, symbol) in greekLetterMap {
+            prefix = prefix.replacingOccurrences(of: spelling, with: symbol)
         }
-        
-        return name
+        prefix = prefix.trimmingCharacters(in: .whitespaces)
+        var parts: [String] = []
+        if !flamsteed.isEmpty { parts.append(flamsteed) }
+        if !prefix.isEmpty    { parts.append(prefix)    }
+        parts.append(constellation.rawValue)
+        return parts.joined(separator: " ")
     }
     
-    static func calculateRA(from starData: StarData) -> Angle {
+
+static func calculateRA(from starData: StarData) -> Angle {
         let hours   = Double(starData.rightAscensionHours) ?? 0
         let minutes = Double(starData.rightAscensionMinutes) ?? 0
         let seconds = Double(starData.rightAscensionSeconds) ?? 0
