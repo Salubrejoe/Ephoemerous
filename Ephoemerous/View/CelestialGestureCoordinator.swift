@@ -51,6 +51,8 @@ final class CelestialGestureCoordinator {
     private let tapMaxDuration:         Double = 0.30   // s: longer (still) isn't a tap
     private let zoomDragSensitivity:    Double = 0.005  // scale e-fold per pt dragged
     private let maximumScale:           Double = 300    // hard zoom-in ceiling, all gestures
+    private let rubberC:                Double = 0.55   // iOS scroll rubber-band constant
+    private let scaleOvershootFraction: Double = 0.12   // damped zoom-past-ceiling room
 
     // MARK: - Primary one-finger gesture
     // One DragGesture(minimumDistance: 0) classifies the touch: a quick tap,
@@ -96,16 +98,29 @@ final class CelestialGestureCoordinator {
 
                 switch self.phase {
                 case .zoomDragging:
-                    // Second tap with no drag → discrete step zoom; with a
-                    // drag → continuous zoom already applied live. Either
-                    // way the zoom centres on the FIRST tap of the series.
-                    if wasTap { self.zoomToward(point: self.lastTapPoint, state: state) }
+                    // No drag → discrete step zoom (its own clamped
+                    // transition). Drag → continuous zoom was applied live,
+                    // so spring any rubber overshoot back to the limits.
+                    // Either way the zoom centres on the FIRST tap.
+                    if wasTap {
+                        self.zoomToward(point: self.lastTapPoint, state: state)
+                    } else {
+                        self.settleWithinBounds(state: state)
+                    }
                     self.lastTapEndedAt = .distantPast      // double-tap consumed
                     self.isZoomDragging = false
 
                 case .panning:
                     if state.projectionMode == .drag {
-                        self.startInertiaIfFlung(state: state, velocity: value.velocity)
+                        let clamped = state.hardClampedOffset(state.offset,
+                                                              atScale: state.scale)
+                        let outOfBounds = hypot(clamped.x - state.offset.x,
+                                                clamped.y - state.offset.y) > 0.5
+                        if outOfBounds {
+                            self.settleWithinBounds(state: state)   // spring back, no fling
+                        } else {
+                            self.startInertiaIfFlung(state: state, velocity: value.velocity)
+                        }
                     }
                     self.endPan(state: state)
                     self.lastTapEndedAt = .distantPast      // a pan cancels a pending tap
@@ -159,12 +174,15 @@ final class CelestialGestureCoordinator {
         guard size.width > 0, size.height > 0 else { return }
         // Drag down (translation.height > 0) → zoom in; up → zoom out.
         let factor   = exp(value.translation.height * zoomDragSensitivity)
-        let newScale = clampScale(zoomDragStartScale * factor, state: state)
+        let newScale = rubberScale(zoomDragStartScale * factor, state: state)
 
         // Same reprojection as zoomAroundFingers — keep the tap point fixed.
-        state.scale    = newScale
-        state.offset.y = zoomDragAnchorScreen.x - size.width  / 2 - zoomDragAnchorSky.x * newScale
-        state.offset.x = zoomDragAnchorScreen.y - size.height / 2 + zoomDragAnchorSky.y * newScale
+        state.scale = newScale
+        let raw = CGPoint(
+            x: zoomDragAnchorScreen.y - size.height / 2 + zoomDragAnchorSky.y * newScale,
+            y: zoomDragAnchorScreen.x - size.width  / 2 - zoomDragAnchorSky.x * newScale
+        )
+        state.offset = rubberOffset(raw, state: state, scale: newScale)
     }
 
     // MARK: - Pinch to zoom
@@ -177,7 +195,10 @@ final class CelestialGestureCoordinator {
                 self.beginPinchIfNeeded(state: state, at: value.startAnchor)
                 self.zoomAroundFingers(state: state, value: value)
             }
-            .onEnded { _ in self.endPinch() }
+            .onEnded { _ in
+                self.endPinch()
+                self.settleWithinBounds(state: state)   // spring back from overshoot
+            }
     }
 
     // MARK: - Discrete step zoom (quick double-tap, no drag)
@@ -205,10 +226,12 @@ final class CelestialGestureCoordinator {
             ? floor
             : Swift.min(state.scale * doubleTapZoomFactor, ceiling)
 
-        // Same reprojection as zoomAroundFingers, so the tap stays fixed.
+        // Same reprojection as zoomAroundFingers, so the tap stays fixed,
+        // then clamp into the map-like bounds at the target scale.
         var newOffset = CGPoint.zero
         newOffset.y = point.x - size.width  / 2 - anchorX * target
         newOffset.x = point.y - size.height / 2 + anchorY * target
+        newOffset   = state.hardClampedOffset(newOffset, atScale: target)
 
         state._activeTransition = EPresetTransition(
             fromScale:  state.renderedScale,
@@ -233,6 +256,65 @@ final class CelestialGestureCoordinator {
         return Swift.min(Swift.max(candidate, floor), maximumScale)
     }
 
+    // MARK: - Rubber-band (offset & scale boundaries)
+
+    // iOS UIScrollView damping: past `limit`, each extra point of pull
+    // yields progressively less travel, asymptotic to `limit + dim`.
+    private func rubber(_ v: Double, limit: Double, dim: Double) -> Double {
+        let a = abs(v)
+        guard a > limit, dim > 0 else { return v }
+        let over   = a - limit
+        let damped = (1 - 1 / (over * rubberC / dim + 1)) * dim
+        return (v < 0 ? -1.0 : 1.0) * (limit + damped)
+    }
+
+    // Offset with rubber resistance past the map-like disc limits.
+    private func rubberOffset(_ raw: CGPoint, state: EAppState, scale s: Double) -> CGPoint {
+        guard let lim = state.viewportOffsetLimits(forScale: s) else { return raw }
+        return CGPoint(
+            x: rubber(raw.x, limit: lim.x, dim: state.canvasSize.height),
+            y: rubber(raw.y, limit: lim.y, dim: state.canvasSize.width)
+        )
+    }
+
+    // Scale with damped overshoot past floor / ceiling (springs back on release).
+    private func rubberScale(_ raw: Double, state: EAppState) -> Double {
+        let ceiling = maximumScale
+        let floor   = state.defaultScale.isFinite
+            ? Swift.min(state.defaultScale, ceiling) : 1
+        guard raw.isFinite else { return floor }
+        if raw > ceiling {
+            let over = raw - ceiling
+            return ceiling + (1 - 1 / (over * rubberC / ceiling + 1)) * (ceiling * scaleOvershootFraction)
+        }
+        if raw < floor {
+            let over = floor - raw
+            return floor - (1 - 1 / (over * rubberC / floor + 1)) * (floor * 0.45)
+        }
+        return raw
+    }
+
+    // On gesture end: if scale/offset overshot, spring back to the exact
+    // limits via the shared preset transition (its bounce reads as "edge").
+    private func settleWithinBounds(state: EAppState) {
+        let targetScale  = clampScale(state.scale, state: state)
+        let targetOffset = state.hardClampedOffset(state.offset, atScale: targetScale)
+        let dScale  = abs(targetScale - state.scale)
+        let dOffset = hypot(targetOffset.x - state.offset.x,
+                            targetOffset.y - state.offset.y)
+        guard dScale > 0.01 || dOffset > 0.5 else { return }
+        state._activeTransition = EPresetTransition(
+            fromScale:  state.renderedScale,
+            fromOffset: state.renderedOffset,
+            toScale:    targetScale,
+            toOffset:   targetOffset,
+            startTime:  Date.now.timeIntervalSinceReferenceDate,
+            duration:   AstroConstants.transitionDuration
+        )
+        state.scale  = targetScale
+        state.offset = targetOffset
+    }
+
     // MARK: - Pan: viewport (.drag mode)
 
     private func beginPanIfNeeded(state: EAppState) {
@@ -242,8 +324,9 @@ final class CelestialGestureCoordinator {
     }
 
     private func panViewport(state: EAppState, by translation: CGSize) {
-        state.offset.x = viewportOffsetAtPanStart.x + translation.height
-        state.offset.y = viewportOffsetAtPanStart.y + translation.width
+        let raw = CGPoint(x: viewportOffsetAtPanStart.x + translation.height,
+                          y: viewportOffsetAtPanStart.y + translation.width)
+        state.offset = rubberOffset(raw, state: state, scale: state.scale)
     }
 
     private func endPan(state: EAppState) {
@@ -311,14 +394,17 @@ final class CelestialGestureCoordinator {
 
     private func zoomAroundFingers(state: EAppState, value: MagnifyGesture.Value) {
         let size = state.canvasSize
-        let newScale = clampScale(scaleAtPinchStart * Double(value.magnification),
-                                  state: state)
+        let newScale = rubberScale(scaleAtPinchStart * Double(value.magnification),
+                                   state: state)
 
         let mx = value.startAnchor.x * size.width
         let my = value.startAnchor.y * size.height
-        state.scale    = newScale
-        state.offset.y = mx - size.width  / 2 - skyAnchorUnderFingers.x * newScale
-        state.offset.x = my - size.height / 2 + skyAnchorUnderFingers.y * newScale
+        state.scale = newScale
+        let raw = CGPoint(
+            x: my - size.height / 2 + skyAnchorUnderFingers.y * newScale,
+            y: mx - size.width  / 2 - skyAnchorUnderFingers.x * newScale
+        )
+        state.offset = rubberOffset(raw, state: state, scale: newScale)
     }
 
     private func endPinch() {

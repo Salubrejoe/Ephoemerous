@@ -22,9 +22,13 @@ extension EAppState {
         let (dx, dy, finished) = transition.advance(to: time)
         let advanced = transition
         DispatchQueue.main.async {
-            self.offset.x += dx
-            self.offset.y += dy
-            self._inertiaTransition = finished ? nil : advanced
+            let proposed = CGPoint(x: self.offset.x + dx, y: self.offset.y + dy)
+            let clamped  = self.hardClampedOffset(proposed)
+            let hitEdge  = abs(clamped.x - proposed.x) > 0.5
+                        || abs(clamped.y - proposed.y) > 0.5
+            self.offset = clamped
+            // Stop the glide when it reaches the disc edge (no rubber on a fling).
+            self._inertiaTransition = (finished || hitEdge) ? nil : advanced
         }
     }
 
