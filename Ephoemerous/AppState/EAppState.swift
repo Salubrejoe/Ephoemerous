@@ -18,7 +18,14 @@ class EAppState {
 
     // MARK: - Canvas feedback
     // Written by canvas layers each frame; read by tracking presets.
-    var canvasSize:             CGSize             = .zero
+    var canvasSize: CGSize = .zero {
+        didSet {
+            if oldValue == .zero && canvasSize != .zero {
+                scale  = defaultScale
+                offset = defaultOffset
+            }
+        }
+    }
     var sunScreenPosition:      CGPoint?           = nil
     var moonScreenPosition:     CGPoint?           = nil
     var selectedStarPositions:  [String: CGPoint]  = [:]
@@ -51,7 +58,8 @@ class EAppState {
             ECloudSync.shared.saveSelectedStars(selectedStars)
         }
     }
-    private(set) var recentStars:            [EStar]        = []
+    
+    var recentStars:                         [EStar]        = []
     var currentlyDisplayedStar:              EStar?
     var currentlyDisplayedConstellation:     EConstellation?
     var _starsCache:                         [EStar]?        = nil
@@ -81,14 +89,16 @@ class EAppState {
     // MARK: - Init
     init() {
         if let loc = ELocationService.shared.location {
-            var o = Origin()
-            o.latitude  = .degrees(loc.coordinate.latitude)
-            o.longitude = .degrees(loc.coordinate.longitude)
+            let lat = Angle.degrees(loc.coordinate.latitude)
+            let lon = Angle.degrees(loc.coordinate.longitude)
+            var o = Origin(); o.latitude = lat; o.longitude = lon
+            var p = Plane();  p.latitude = -lat; p.longitude = lon + .pi
             self.origin = o
+            self.plane  = p
         } else {
             self.origin = .init()
+            self.plane  = .init()
         }
-        self.plane = .init()
     }
 }
 

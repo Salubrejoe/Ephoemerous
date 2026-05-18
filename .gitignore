@@ -26,3 +26,6 @@ xcuserdata/
 
 # CocoaPods
 Pods/
+
+# Claude Code tooling / linked worktrees
+.claude/

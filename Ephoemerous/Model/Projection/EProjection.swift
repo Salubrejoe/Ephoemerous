@@ -23,8 +23,10 @@ enum EProjection {
         guard t > 0 else { return nil }
         let intersection = O + t * (Q - O)
         let delta = intersection - P
-        let (e1, e2) = P.baseVectors()
-        //        let (e1, e2) = tangentBasis(P)
+        var (e1, e2) = P.baseVectors()
+//        // Pin e2 so it always points toward the same celestial hemisphere as O,
+//        // preventing a sign flip when P crosses low latitudes during a drag.
+//        if simd_dot(e2, O) < 0 { e2 = -e2 }
         let u = simd_dot(delta, e1)
         let v = simd_dot(delta, e2)
         return CGPoint(x: v, y: u)
@@ -41,7 +43,7 @@ enum EProjection {
             )
         } else {
             project(
-                Q,
+                -Q,
                 origin: appState.originVector,
                 plane: appState.planeVector
             )

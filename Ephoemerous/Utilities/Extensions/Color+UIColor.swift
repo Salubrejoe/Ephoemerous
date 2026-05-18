@@ -110,7 +110,10 @@ extension Color {
     static let baseRose     = Color(hex: "#B55179")
     static let basePlum     = Color(hex: "#7D5487")
     static let baseIndigo   = Color(hex: "#475279")
-    static let baseSlate    = Color(hex: "#2F4858")
+//    static let baseSlate    = Color.systemPink.opacity(0.2)
+    static let baseSlate    = Color.tertiarySystemBackground
+//    static let baseSlate    = Color(hex: "#2F4858")
+//    static let baseSlate    = Color(hex: "#003285")
 
     // Matching Gradient
     static let gradOrange   = Color(hex: "#D3801E")

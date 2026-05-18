@@ -2,8 +2,9 @@ import SwiftUI
 
 
 struct ENSWatchCrownLayer: EGridLayer {
+    let artist = EArtist.shared
 
-    // Clip boundary: dec = -30° → r = 2√3 in NS projection units
+    // Clip boundary: dec = -30deg -> r = 2sqrt3 in NS projection units
     static let clipRadius: Double = 2 * sqrt(3)
 
     // Crown geometry (fixed screen points, independent of scale)
@@ -17,12 +18,12 @@ struct ENSWatchCrownLayer: EGridLayer {
         let innerR = dc.state.renderedScale * Self.clipRadius
         let outerR = (innerR + crownWidth)
         // Fixed orientation: RA=0h at bottom, RA=12h at top. Never rotates.
-        let θ: Double = -.pi / 2
+        let theta: Double = -.pi / 2
 
 //        drawRing    (cx: cx, cy: cy, innerR: innerR, outerR: outerR, in: &dc)
         drawBorders (cx: cx, cy: cy, innerR: innerR, outerR: outerR, in: &dc)
-//        drawMinorTicks(cx: cx, cy: cy, innerR: innerR, θ: θ, in: &dc)
-        drawHours   (cx: cx, cy: cy, innerR: innerR, outerR: outerR, θ: θ, in: &dc)
+//        drawMinorTicks(cx: cx, cy: cy, innerR: innerR, theta: theta, in: &dc)
+        drawHours   (cx: cx, cy: cy, innerR: innerR, outerR: outerR, theta: theta, in: &dc)
     }
 
     // MARK: - Ring background (even-odd fill punches the inner hole)
@@ -66,8 +67,8 @@ struct ENSWatchCrownLayer: EGridLayer {
                     height: 2 * innerR
                 )
             ),
-            with: .color(.white.opacity(0.85)),
-            lineWidth: 2,
+            with: .color(artist.crownBorderColor),
+            lineWidth: artist.crownBorderWidth,
             
         )
 //        for r in [innerR] {
@@ -90,10 +91,10 @@ struct ENSWatchCrownLayer: EGridLayer {
     // MARK: - Minor ticks (30-minute marks, 48 positions total, skip hour positions)
 
     private func drawMinorTicks(cx: Double, cy: Double, innerR: Double,
-                                θ: Double, in dc: inout EGraphicContext) {
+                                theta: Double, in dc: inout EGraphicContext) {
         for i in 0..<48 {
             guard i % 2 != 0 else { continue }      // even i = hour mark, skip
-            let angle = θ - Double(i) * .pi / 24.0
+            let angle = theta - Double(i) * .pi / 24.0
             drawTick(
                 cx: cx,
                 cy: cy,
@@ -109,12 +110,12 @@ struct ENSWatchCrownLayer: EGridLayer {
     // MARK: - Major ticks and hour labels
 
     private func drawHours(cx: Double, cy: Double, innerR: Double, outerR: Double,
-                           θ: Double, in dc: inout EGraphicContext) {
+                           theta: Double, in dc: inout EGraphicContext) {
         let midR = (innerR + outerR) / 2
         let tzOffset = TimeZone.current.secondsFromGMT(for: dc.state.observationDate) / 3600
 
         for h in 0..<24 {
-            let angle = θ - Double(h) * .pi / 12.0
+            let angle = theta - Double(h) * .pi / 12.0
 
 //            drawTick(
 //                cx: cx,
@@ -133,8 +134,8 @@ struct ENSWatchCrownLayer: EGridLayer {
             let margin = 0.0
             dc.ctx.draw(
                 Text("\((h + tzOffset + 24) % 24)")
-                    .font(isCurrentHour(h, tzOffset: tzOffset) ? .largeTitle : .title3)
-                    .bold()
+//                    .font(isCurrentHour(h, tzOffset: tzOffset) ? .largeTitle : .title3)
+//                    .bold()
                     .fontDesign(.serif)
                     .foregroundStyle(isCurrentHour(h, tzOffset: tzOffset) ? .yellow : .primary),
                 at: CGPoint(x: lx + margin, y: ly + margin),

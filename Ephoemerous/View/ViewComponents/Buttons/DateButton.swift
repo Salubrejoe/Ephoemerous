@@ -4,10 +4,12 @@ import SwiftUI
 struct DateButton: View {
     @Environment(EAppState.self) var state
     
+    @State private var dateChanged : Bool = false
+    
     var body: some View {
         
         HStack(spacing: 4) {
-            if dateValueChanged {
+            if dateChanged {
                 ResetDateButton()
                     .padding(.leading, 4)
             }
@@ -25,6 +27,8 @@ struct DateButton: View {
         }
         .animation(.bouncy, value: state.isShowingDatePicker)
         .animation(.bouncy, value: dateValueChanged)
+        .onAppear(perform: checkDate)
+        .onChange(of: state.observationDate) { checkDate() }
     }
 }
 
@@ -40,20 +44,25 @@ extension DateButton {
                 let old = state.observationDate
                 let cal = Calendar.current
                 let onlyTimeChanged = cal.isDate(old, inSameDayAs: newDate)
+                let projMode = state.projectionMode
                 if onlyTimeChanged {
                     state.setObservationDate(newDate)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                        state.projectionMode = projMode
+                    }
                 } else {
                     state._dateTransition = nil
                     state.observationDate  = newDate
                 }
-                state.applyTimeOfDayPreset()
+                state.projectionMode = .coupled
+                
             }
         )
         DatePicker("",
                    selection: binding,
                    displayedComponents: [.date, .hourAndMinute]
         )
-        .pickerStyle(.wheel)
+//        .pickerStyle(.menu)
         .labelsHidden()
         
     }
@@ -62,13 +71,7 @@ extension DateButton {
     private func CalendarButton() -> some View {
         Button {
             if !state.isShowingDatePicker {
-                state.apply(EViewPreset(
-                    id: "_default",
-                    name: Strings.Preset.defaultPreset,
-                    symbol: "circle",
-                    scale: AstroConstants.defaultScale,
-                    offset: CGPoint(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
-                ))
+                state.resetView()
             }
             state.isShowingDatePicker.toggle()
         } label: {
@@ -82,7 +85,7 @@ extension DateButton {
             state.setObservationDate(.now)
         } label: {
             Image(symbol: .resetClock)
-                .foregroundStyle(.pink)
+                .foregroundStyle(.blue)
         }
     }
     
@@ -100,6 +103,10 @@ extension DateButton {
 
 // MARK: - Helpers
 extension DateButton {
+    
+    private func checkDate() {
+        dateChanged = dateValueChanged
+    }
     
     private var dateValueChanged: Bool {
         hourValueChanged

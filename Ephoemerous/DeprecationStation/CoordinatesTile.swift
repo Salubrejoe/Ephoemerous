@@ -1,8 +1,8 @@
 import SwiftUI
-// TODO: Merge or remove - CoordinatesTile and ELocationTile are identical; pick one name and delete the other
 
 struct CoordinatesTile: View {
     let origin: Origin
+    @Environment(EAppState.self) private var state
 
     private var latStr: String {
         let d = origin.latitude.degrees
@@ -14,18 +14,28 @@ struct CoordinatesTile: View {
         return String(format: "%@%.2f°", d >= 0 ? "E " : "W ", abs(d))
     }
 
+    private var latActive: Bool { state.coupledAxis == .vertical }
+    private var lonActive: Bool { state.coupledAxis == .horizontal }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(latStr)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.primary)
+                .font(.system(size: latActive ? 14 : 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(latActive ? Color.orange : .white)
+                .animation(.spring(response: 0.25), value: latActive)
             Text(lonStr)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .font(.system(size: lonActive ? 14 : 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(lonActive ? Color.orange : .white)
+                .animation(.spring(response: 0.25), value: lonActive)
         }
+        .environment(\.colorScheme, .dark)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .opacity(0.5)
+        )
     }
 }
 

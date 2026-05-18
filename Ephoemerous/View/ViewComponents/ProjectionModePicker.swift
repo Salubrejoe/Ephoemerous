@@ -7,24 +7,13 @@ struct ProjectionModePicker: View {
         Picker("", selection: Bindable(state).projectionMode) {
             ForEach(visibleModes, id: \.self) { mode in
                 Image(systemName: mode.symbol)
-                    .foregroundStyle(mode.color)
                     .tag(mode)
             }
         }
+        .environment(\.colorScheme, .dark)
         .pickerStyle(.segmented)
         .animation(.easeInOut(duration: 0.3), value: state.appMode)
-        .background(
-            HStack(spacing:2) {
-                Capsule().fill(.clear)
-                Capsule().fill(color1)
-                    .shadow(color: color1, radius: 2)
-                if state.appMode == .travel {
-                    Capsule().fill(color2)
-                        .shadow(color: color2, radius: 2)
-                }
-            }
-                .padding([.top, .horizontal], 1)
-        )
+        .background(highlights())
     }
 
     private var visibleModes: [ProjectionMode] {
@@ -37,6 +26,20 @@ struct ProjectionModePicker: View {
     
     private var color2 : Color {
         state.projectionMode == .origin ? .baseCoral : .clear
+    }
+    
+    @ViewBuilder
+    private func highlights() -> some View {
+        HStack(spacing:2) {
+            Capsule().fill(.clear)
+            Capsule()
+                .stroke(color1)
+            if state.appMode == .travel {
+                Capsule()
+                    .stroke(color2)
+            }
+        }
+        .padding([.top, .horizontal], 1)
     }
 }
 

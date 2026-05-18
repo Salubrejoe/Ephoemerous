@@ -6,82 +6,67 @@ struct MainView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(colors: [.blue.opacity(0.1), .blue.opacity(0.2)], startPoint: .bottom, endPoint: .top)
+            
+            if state.appMode == .clock {
+                
+//                ESkyBackground()
+                LinearGradient(colors: [
+                    Color.darkIndigo,
+                    Color.darkBerry,
+                ], startPoint: .top, endPoint: .bottom)
+                    .mask(
+                        Circle()
+                            .frame(
+                                width:  2 * state.scale * ENSWatchCrownLayer.clipRadius,
+                                height: 2 * state.scale * ENSWatchCrownLayer.clipRadius
+                            )
+                            .offset(x: state.offset.y, y: state.offset.x)
+                    )
+            } else {
+//                ESkyBackground()
+                LinearGradient(colors: [
+                    Color.darkIndigo,
+                    Color.darkBerry,
+                ], startPoint: .top, endPoint: .bottom)
+            }
             
             CelestialCanva()
             
             ObjectsTrackingOverlay()
         }
+        .ignoresSafeArea()
         .overlay {
             HStack {
                 CoordinatesTile(origin: state.origin)
                     .frame(width: 100)
                 
                 CircledResetButton()
-                    .frame(maxWidth: .infinity)
+                    .frame(width: 150)
                 
                 
                 ProjectionModePicker()
                     .frame(width: 100)
             }
-            .frame(maxHeight: .infinity, alignment: .top)
-            .padding(.top, 72)
-            .padding(.horizontal, 16)
+            .frame(maxHeight: 700, alignment: .top)
             
         }
-        .ignoresSafeArea()
-        .onAppear { state.applyTimeOfDayPreset() }
-        .onChange(of: state.observationDate) { state.applyTimeOfDayPreset() }
         .onChange(of: layerVisibilityHash) { ECloudSync.shared.saveLayerVisibility(state) }
+        .onChange(of: state.magnitudeFilter) { ECloudSync.shared.saveLayerVisibility(state) }
         
-        .zenithButton(placement: .bottomBar)
+        
         .toolbar {
             
-            ToolbarItem(placement: .bottomBar) {
-                DateButton()
-            }
+            ToolbarItem(placement: .bottomBar) { DateButton() }
             
-            ToolbarItem(placement: .status) {
-                if !state.isShowingDatePicker || state.showStarList {
-                    SearchBar(showStarList: Bindable(state).showStarList)
-                }
-            }
+            ToolbarItem(placement: .status) { SearchBar() }
+            
+            ToolbarItem(placement: .bottomBar) { ZenithButton() }
         }
         
         .sheet(isPresented: Bindable(state).showStarList) {
             NavigationStack {
                 EListView()
-                    .scrollContentBackground(.hidden)
-                    .presentationDetents([.medium, .large])
-                    .presentationBackgroundInteraction(.enabled)
-            }
-        }
-        
-        .sheet(isPresented: Bindable(state).showMagnFilter) {
-            FilterView(
-                magnitudeCap: Bindable(state).magnitudeFilter,
-                magnitudeRange: -2.0...8.0,
-                starCount: StarDatabase.shared.workableStars.filter { $0.magnitude <= state.magnitudeFilter && $0.name != "Unknown" }.count
-            )
-            .presentationDetents([.height(320)])
-            .presentationDragIndicator(.visible)
-        }
-        
-        .sheet(isPresented: Bindable(state).showSunInfo) {
-            NavigationStack {
-                ENSSunDetailView()
-                    .scrollContentBackground(.hidden)
-                    .presentationDetents([.medium, .large])
-                    .presentationBackgroundInteraction(.enabled)
-            }
-        }
-        
-        .sheet(isPresented: Bindable(state).showMoonInfo) {
-            NavigationStack {
-                ENSMoonDetailView()
-                    .scrollContentBackground(.hidden)
-                    .presentationDetents([.medium, .large])
-                    .presentationBackgroundInteraction(.enabled)
+                    .sheetFormat()
             }
         }
     }
@@ -97,4 +82,18 @@ struct MainView: View {
         (state.showPlanets         ? 64  : 0) |
         (state.showSelectedStars   ? 128 : 0)
     }
+}
+
+
+extension View {
+    func sheetFormat() -> some View {
+        scrollContentBackground(.hidden)
+            .presentationDetents([.medium, .large])
+            .presentationBackgroundInteraction(.enabled)
+    }
+}
+
+
+#Preview {
+    MainView().environment(EAppState())
 }

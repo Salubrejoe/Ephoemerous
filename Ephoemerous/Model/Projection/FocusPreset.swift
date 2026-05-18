@@ -96,8 +96,8 @@ extension EAppState {
 
     /// Animate the view back to the default scale and offset.
     func resetView() {
-        let toScale  = AstroConstants.defaultScale
-        let toOffset = CGPoint(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
+        let toScale  = defaultScale
+        let toOffset = defaultOffset
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
@@ -130,18 +130,17 @@ extension EAppState {
         }
         let targetScreenX = canvasSize.width  / 2
         let targetScreenY = canvasSize.height / 2 - 160
-        let newOffset = CGPoint(
-            x: offset.x + (targetScreenY - sun.y),
-            y: offset.y + (targetScreenX - sun.x)
-        )
+        let newOffset = offsetToCenter(screenPos: sun, atScale: trackingScale,
+                                       targetX: targetScreenX, targetY: targetScreenY)
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
-            toScale:    scale,
+            toScale:    trackingScale,
             toOffset:   newOffset,
             startTime:  Date.now.timeIntervalSinceReferenceDate,
             duration:   AstroConstants.transitionDuration
         )
+        scale  = trackingScale
         offset = newOffset
         ELogger.sun("trackSun: offset → \(newOffset)")
     }
@@ -157,18 +156,17 @@ extension EAppState {
         }
         let targetScreenX = canvasSize.width  / 2
         let targetScreenY = canvasSize.height / 2 - 160
-        let newOffset = CGPoint(
-            x: offset.x + (targetScreenY - moon.y),
-            y: offset.y + (targetScreenX - moon.x)
-        )
+        let newOffset = offsetToCenter(screenPos: moon, atScale: trackingScale,
+                                        targetX: targetScreenX, targetY: targetScreenY)
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
-            toScale:    scale,
+            toScale:    trackingScale,
             toOffset:   newOffset,
             startTime:  Date.now.timeIntervalSinceReferenceDate,
             duration:   AstroConstants.transitionDuration
         )
+        scale  = trackingScale
         offset = newOffset
         ELogger.moon("trackMoon: offset → \(newOffset)")
     }
@@ -189,18 +187,17 @@ extension EAppState {
         }
         let targetScreenX = canvasSize.width  / 2
         let targetScreenY = canvasSize.height / 2 - 160
-        let newOffset = CGPoint(
-            x: offset.x + (targetScreenY - pt.y),
-            y: offset.y + (targetScreenX - pt.x)
-        )
+        let newOffset = offsetToCenter(screenPos: pt, atScale: trackingScale,
+                                        targetX: targetScreenX, targetY: targetScreenY)
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
-            toScale:    scale,
+            toScale:    trackingScale,
             toOffset:   newOffset,
             startTime:  Date.now.timeIntervalSinceReferenceDate,
             duration:   AstroConstants.transitionDuration
         )
+        scale  = trackingScale
         offset = newOffset
         ELogger.selectedStars("trackStar: \(star.name) → \(newOffset)")
     }
@@ -225,6 +222,21 @@ extension EAppState {
         let sx = canvasSize.width  / 2 + proj.x * renderedScale + renderedOffset.y
         let sy = canvasSize.height / 2 - proj.y * renderedScale + renderedOffset.x
         return CGPoint(x: sx, y: sy)
+    }
+
+    /// Compute the offset needed to place `screenPos` (computed at the current scale)
+    /// at `(targetX, targetY)` after zooming to `newScale`.
+    /// Inverts the screen projection to get scale-independent coordinates, then reprojects.
+    func offsetToCenter(screenPos: CGPoint, atScale newScale: Double,
+                        targetX: Double, targetY: Double) -> CGPoint {
+        let s = renderedScale
+        let o = renderedOffset
+        let projX = (screenPos.x - canvasSize.width  / 2 - o.y) / s
+        let projY = (canvasSize.height / 2 - screenPos.y + o.x) / s
+        return CGPoint(
+            x: targetY - canvasSize.height / 2 + projY * newScale,
+            y: targetX - canvasSize.width  / 2 - projX * newScale
+        )
     }
 }
 
@@ -265,17 +277,34 @@ extension EAppState {
 }
 
 // MARK: - Inertia transition
+// Momentum glide after a flick. Velocity decays exponentially:
+//   v(t) = v0 · e^(−k·t)
+// Each frame emits the *exact* integral of v over the elapsed slice, so the
+// distance travelled is identical no matter the frame rate (the old version
+// multiplied by a hardcoded 1/60 and ended on the first tick — that was the
+// "unnaturally sped / instantly dead" inertia).
 struct EInertiaTransition {
-    var velX:      Double
-    var velY:      Double
+    let velX:      Double      // pt/s along offset.x  (follows translation.height)
+    let velY:      Double      // pt/s along offset.y  (follows translation.width)
     let startTime: Double
-    let decay:     Double = 8.0
+    var lastEmittedTime: Double
 
-    // Returns (dx, dy, isFinished). Exponential velocity decay: v(t) = v0 * e^(-decay * t)
-    func tick(at time: Double) -> (Double, Double, Bool) {
-        let t      = time - startTime
-        let dt     = 1.0 / 60.0
-        let factor = exp(-decay * t)
-        return (velX * factor * dt, velY * factor * dt, factor < 1)
+    /// Decay rate (1/s). Higher = shorter, snappier glide. Total travel ≈ v0 / k.
+    let decayRate:         Double = 80.0
+    /// Stop once speed has fallen to this fraction of the launch speed.
+    let stopSpeedFraction: Double = 0.02
+
+    /// Returns the offset delta to apply for the slice
+    /// [lastEmittedTime, time] and whether the glide has settled.
+    /// `advance` is mutating: it remembers how far it has already emitted.
+    mutating func advance(to time: Double) -> (dx: Double, dy: Double, isFinished: Bool) {
+        let k  = decayRate
+        let t0 = max(0, lastEmittedTime - startTime)
+        let t1 = max(t0, time - startTime)
+        // ∫ v0·e^(−k·t) dt  from t0 to t1  =  (v0/k)·(e^(−k·t0) − e^(−k·t1))
+        let span = (exp(-k * t0) - exp(-k * t1)) / k
+        lastEmittedTime = time
+        let finished = exp(-k * t1) < stopSpeedFraction
+        return (velX * span, velY * span, finished)
     }
 }

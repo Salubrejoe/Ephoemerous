@@ -35,6 +35,24 @@ extension EAppState {
         -EPrecession.gmstSiderealOffset(for: renderedObservationDate)
     }
 
+    /// Default scale derived from canvas height — falls back to AstroConstants while canvasSize is unknown.
+    var defaultScale: Double {
+        canvasSize.height > 0 ? canvasSize.height / 20 : AstroConstants.defaultScale
+    }
+
+    /// Scale used when tracking a celestial object (zoomed in relative to default).
+    var trackingScale: Double {
+        canvasSize.height > 0 ? canvasSize.height / 6 : AstroConstants.defaultScale
+    }
+
+    /// Default offset derived from canvas height — falls back to AstroConstants while canvasSize is unknown.
+    var defaultOffset: CGPoint {
+        guard canvasSize.height > 0 else {
+            return CGPoint(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
+        }
+        return CGPoint(x: -canvasSize.height / 8, y: 0)
+    }
+
     /// Move the observer to a new geographic position.
     /// In non-origin projection modes the view plane is automatically reset
     /// to the antipodal point so the horizon stays sensible.

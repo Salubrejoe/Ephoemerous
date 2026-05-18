@@ -55,6 +55,7 @@ struct EGraphicContext {
             prev = sc
         }
         ctx.stroke(path, with: .color(color), lineWidth: width)
+//        ctx.stroke(path, with: .foreground, lineWidth: 2)
     }
 
     

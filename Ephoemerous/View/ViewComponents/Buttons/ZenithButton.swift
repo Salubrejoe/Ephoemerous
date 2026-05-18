@@ -1,16 +1,6 @@
 import SwiftUI
 import CoreLocation
 
-extension View {
-    func zenithButton(placement: ToolbarItemPlacement) -> some View {
-        toolbar {
-            ToolbarItem(placement: placement) {
-                ZenithButton()
-            }
-        }
-    }
-}
-
 
 struct ZenithButton: View {
     @Environment(EAppState.self) var state
@@ -22,7 +12,14 @@ struct ZenithButton: View {
             if !state.isShowingDatePicker {
                 Button {
                     state.haptics.toggle()
-                    handleTap()
+                    if let l = loc.location {
+                        let currentProjMode = state.projectionMode
+                        state.projectionMode = .coupled
+                        state.animateOrigin(to: .degrees(l.coordinate.latitude), lon: .degrees(l.coordinate.longitude))
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                            state.projectionMode = currentProjMode
+                        }
+                    } else { loc.requestIfNeeded() }
                 } label: {
                     Image(symbol: buttonSymbol)
                         .foregroundStyle(iconColor)
@@ -65,18 +62,10 @@ extension ZenithButton {
     private var helpText: String {
         state.appMode == .travel ? "Travel mode (long press to exit)" : "Centre on your location"
     }
-    private func handleTap() {
-        if let l = loc.location {
-            let currentProjMode = state.projectionMode
-            state.projectionMode = .coupled
-            state.animateOrigin(to: .degrees(l.coordinate.latitude), lon: .degrees(l.coordinate.longitude))
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                state.projectionMode = currentProjMode
-            }
-        } else { loc.requestIfNeeded() }
-    }
+    
     private func togglePulsingWithAnimation() {
-        if true {
+        // TODO: Refactor - `if true` is a placeholder; wire to actual acquiring state
+        if isAcquiring {
             withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { pulsing = true }
         } else {
             withAnimation(.easeInOut(duration: 0.2)) { pulsing = false }

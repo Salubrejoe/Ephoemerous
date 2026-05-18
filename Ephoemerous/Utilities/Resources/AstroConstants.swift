@@ -21,6 +21,7 @@ enum AstroConstants {
     static let obliquity:         Angle = .degrees(23.4393)
     static let arcticCircle:      Angle = .degrees(66.5607)   // = 90° − ε
     static let antarcticCircle:   Angle = .degrees(-66.5607)
+    static let userLocation:      Angle = .degrees(-75.0)
     static let tropicCancer:      Angle = .degrees(23.4393)   // = ε
     static let tropicCapricorn:   Angle = .degrees(-23.4393)  // = −ε
 
@@ -210,8 +211,8 @@ enum AstroConstants {
     static let dotScale:          Double = 6.0
     static let dotFactor:         Double = 0.55
     /// Twinkle animation
-    static let twinkleAmplitude:  Double = 0.2
-    static let twinkleFrequency:  Double = 2.5
+    static let twinkleAmplitude:  Double = 0.1
+    static let twinkleFrequency:  Double = 0.1
     static let twinklePhaseRA:    Double = 17.3
     static let twinklePhaseDec:   Double =  7.9
     /// Planet dot: max(planetDotMinR, (planetDotScale − baseMag) × planetDotFactor) / 2

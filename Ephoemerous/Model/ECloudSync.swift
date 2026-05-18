@@ -19,6 +19,7 @@ final class ECloudSync {
         static let showStars        = "layerShowStars"
         static let showPlanets      = "layerShowPlanets"
         static let showSelectedStars = "layerShowSelectedStars"
+        static let magnitudeFilter  = "magnitudeFilter"
     }
 
     // MARK: - Bootstrap
@@ -69,7 +70,7 @@ final class ECloudSync {
     }
 
     // MARK: - Layer visibility
-    // TODO: Persist - layer visibility is saved but projectionMode and appMode are not; consider persisting them too
+    
     func saveLayerVisibility(_ state: EAppState) {
         store.set(state.showEquatorTropics,   forKey: Key.showEquator)
         store.set(state.showEcliptic,         forKey: Key.showEcliptic)
@@ -79,6 +80,7 @@ final class ECloudSync {
         store.set(state.showStars,            forKey: Key.showStars)
         store.set(state.showPlanets,          forKey: Key.showPlanets)
         store.set(state.showSelectedStars,    forKey: Key.showSelectedStars)
+        store.set(state.magnitudeFilter,      forKey: Key.magnitudeFilter)
         store.synchronize()
     }
 
@@ -91,5 +93,6 @@ final class ECloudSync {
         if store.object(forKey: Key.showStars)         != nil { state.showStars           = store.bool(forKey: Key.showStars) }
         if store.object(forKey: Key.showPlanets)       != nil { state.showPlanets         = store.bool(forKey: Key.showPlanets) }
         if store.object(forKey: Key.showSelectedStars) != nil { state.showSelectedStars   = store.bool(forKey: Key.showSelectedStars) }
+        if store.object(forKey: Key.magnitudeFilter)   != nil { state.magnitudeFilter     = store.double(forKey: Key.magnitudeFilter) }
     }
 }

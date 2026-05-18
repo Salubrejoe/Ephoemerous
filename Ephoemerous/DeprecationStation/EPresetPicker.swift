@@ -7,9 +7,9 @@ struct EPresetPicker: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(EViewPreset.all) { preset in
-                PresetButton(preset: preset, isActive: state.activePreset == preset) {
-                    preset.id == "trackSun" ? state.applySunTracking() : state.apply(preset)
+            ForEach(FocusPreset.allCases) { preset in
+                PresetButton(preset: preset) {
+                    state.apply(preset)
                 }
             }
         }
@@ -22,8 +22,7 @@ struct EPresetPicker: View {
 // MARK: - PresetButton
 private struct PresetButton: View {
 
-    let preset: EViewPreset
-    let isActive: Bool
+    let preset: FocusPreset
     let action: () -> Void
 
     var body: some View {

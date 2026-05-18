@@ -15,18 +15,25 @@ extension Angle {
         return (hour, minute, second)
     }
     
-    static let goldenHor    : Angle = .radians(0.1)
-    static let horizon      : Angle = .zero
-    static let civil        : Angle = .radians(-0.1)
-    static let naval        : Angle = .radians(-0.2)
-    static let astronomical : Angle = .radians(-AstroConstants.civilTwilightRad)
+    static let goldenHor    : Angle = .radians(-0.1)
+    static let horizon      : Angle = .radians(-0.001)
+    static let civil        : Angle = .radians(0.1)
+    static let naval        : Angle = .radians(0.2)
+    static let astronomical : Angle = .radians(AstroConstants.civilTwilightRad)
+    static let userLocation : Angle = .radians(1.45)
     
     static let sunsets: [Angle] = [
-        .goldenHor,
+//        .goldenHor,
         .horizon,
-        .civil,
-        .naval,
-        .astronomical,
+//        .civil,
+//        .naval,
+//        .astronomical,
+        .degrees(15),
+        .degrees(30),
+        .degrees(45),
+        .degrees(60),
+        .degrees(75),
+        .userLocation
     ]
     
     static var pi: Angle {

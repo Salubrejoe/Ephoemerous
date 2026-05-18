@@ -1,13 +1,49 @@
 import SwiftUI
 
+struct GlassRing: View {
+    let radius     : Double
+    let lineWidth  : Double
+    let tint       : Color
+    
+    init(radius: Double, lineWidth: Double, tint: Color = .clear) {
+        self.radius = radius
+        self.lineWidth = lineWidth
+        self.tint = tint
+    }
+    
+    var body: some View {
+        Circle()
+        //            .fill(tint)
+            .frame(width: 2 * radius, height: 2 * radius)
+            .glassEffect(.clear.tint(tint))
+            .mask(
+                Circle()
+                    .frame(width: 2 * radius, height: 2 * radius)
+                    .overlay(
+                        Circle()
+                            .frame(width: 2 * (radius - lineWidth), height: 2 * (radius - lineWidth))
+                            .blendMode(.destinationOut)
+                    )
+                    .compositingGroup()
+            )
+    }
+}
 struct Ring: View {
     let radius     : Double
     let lineWidth  : Double
+    let tint       : Color
+    
+    init(radius: Double, lineWidth: Double, tint: Color = .clear) {
+        self.radius = radius
+        self.lineWidth = lineWidth
+        self.tint = tint
+    }
 
     var body: some View {
         Circle()
+            .fill(tint)
             .frame(width: 2 * radius, height: 2 * radius)
-            .glassEffect()
+//            .glassEffect(.clear.tint(tint))
             .mask(
                 Circle()
                     .frame(width: 2 * radius, height: 2 * radius)
@@ -34,24 +70,66 @@ struct WatchMaskView: View {
     var body: some View {
         ZStack {
             let crownR = state.renderedScale * ENSWatchCrownLayer.clipRadius
-            let ringW  = 4.0
+            let ringW  = 2.5
             let outerR = crownR + ringW
             let off    = CGSize(width: state.renderedOffset.y, height: state.renderedOffset.x)
+            let eq = proj.rings[1]
 
-            ForEach(proj.rings) { parallel in
-                Ring(radius: parallel.radius, lineWidth: ringW)
+            ZStack {
+                ForEach(proj.rings) { parallel in
+                    ZStack {
+                        Circle()
+                            .fill(parallel.color.opacity(0.1))
+                            .frame(
+                                width: parallel.radius * 2,
+                                height: parallel.radius * 2
+                            )
+                            .blur(radius: 1)
+//                        Circle()
+//                            .fill(.ultraThinMaterial)
+//                            .frame(
+//                                width: parallel.radius * 2,
+//                                height: parallel.radius * 2
+//                            )
+                            
+                    }
                     .offset(x: state.renderedOffset.y, y: state.renderedOffset.x + parallel.centerOffset)
                     .mask(
-                        Circle().frame(width: 2 * crownR, height: 2 * crownR).offset(off)
+                        Circle()
+                            .frame(width: 2 * crownR, height: 2 * crownR).offset(off)
                     )
+                    
+                }
             }
+            
+            GlassRing(
+                radius: eq.radius,
+                lineWidth: ringW,
+                //                    tint: parallel.color
+            )
+            .offset(x: state.renderedOffset.y, y: state.renderedOffset.x + eq.centerOffset)
+            .mask(
+                Circle()
+                    .frame(width: 2 * crownR, height: 2 * crownR).offset(off)
+            )
 
-            Ring(radius: outerR, lineWidth: ringW)
+            ZStack {
+                GlassRing(radius: outerR + 4, lineWidth: ringW, tint: .clear)
+                    
+                Button {
+                    //
+                } label: {
+                    Image(systemName: "arcade.stick.and.arrow.up.and.arrow.down")
+                        .foregroundStyle(Color.baseOrange)
+                }
+                .buttonStyle(.glass)
+            }
                 .offset(off)
+            
 
             ForEach(0..<24, id: \.self) { h in
                 let angle  = -(-.pi / 2 - Double(h) * .pi / 12.0)
-                let midR   = (crownR + ringW / 2) + 24
+                let midR   = (crownR + ringW / 2) + 16
                 let tz     = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
                 let label  = (h + tz + 24) % 24
                 let hour   = Calendar.current.component(.hour, from: Date())
@@ -62,16 +140,18 @@ struct WatchMaskView: View {
                         y: state.renderedOffset.x + sin(angle) * midR
                     )
             }
+            
+           
         }
         .ignoresSafeArea()
         .onAppear {
             proj.baseLatitude = state.origin.latitude
-            proj.scale        = 2 * state.scale
+            proj.scale        = 2 * state.renderedScale
         }
         .onChange(of: state.origin.latitude) { _, newValue in
             proj.baseLatitude = newValue
         }
-        .onChange(of: state.scale) { _, newValue in
+        .onChange(of: state.renderedScale) { _, newValue in
             proj.scale = 2 * newValue
         }
     }
@@ -79,7 +159,7 @@ struct WatchMaskView: View {
     @ViewBuilder
     private func hourNumber(_ string: String, _ color: Color?) -> some View {
         Text(string)
-            .font(.subheadline.weight(.semibold))
+            .font(.caption2.weight(.light))
             .fontDesign(.serif)
             .foregroundStyle(color ?? .white)
     }
@@ -112,13 +192,20 @@ public class SProjection: Identifiable {
         self.parallelOffsets = parallelOffsets
     }
 
-    // Projected circle for one parallel at `offset` from baseLatitude.
+    // Projected circle for a small circle (parallel) at angular distance `offset` from baseLatitude.
+    // d1 uses the antioffset side (base - offset), d2 uses the offset side (base + offset).
     public func ring(at offset: Angle) -> ParallelRing? {
-        let lat = baseLatitude.radians + offset.radians
-        let t   = tan(lat / 2)
-        guard abs(t) > 1e-6 else { return nil }
-        let d1 = min(scale / t,  maxValue)
-        let d2 = -scale * t
+        let latAnti = baseLatitude.radians - offset.radians
+        let latOff  = baseLatitude.radians + offset.radians
+
+        let t1 = tan(latAnti / 2)
+        guard abs(t1) > 1e-6 else { return nil }
+        let d1 = min(scale / t1, maxValue)
+
+        let t2 = tan(latOff / 2)
+        guard abs(t2) > 1e-6 else { return nil }
+        let d2 = -scale * t2
+
         return ParallelRing(
             radius:       min((d1 - d2) / 2, maxValue),
             centerOffset: min((d1 + d2) / 2, maxValue)
@@ -138,5 +225,14 @@ public class SProjection: Identifiable {
         public var id:           Int   = 0
         public let radius:       Pixel
         public let centerOffset: Pixel
+        
+        public var color: Color {
+            if id == 0 { return Color.sunGold }
+            if id == 1 { return Color.mutedRose }
+            if id == 2 { return Color.deepNavy }
+            if id == 3 { return Color.darkIndigo }
+            if id == 4 { return Color.nearBlack }
+            else       { return Color.gray }
+        }
     }
 }

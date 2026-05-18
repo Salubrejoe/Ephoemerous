@@ -8,7 +8,7 @@ enum EKnownParallels: CaseIterable {
     case trCancer       
     case trCapr         
     case articCircle    
-    case antarticCircle 
+    case antarticCircle
     
     var declination: Angle {
         switch self {

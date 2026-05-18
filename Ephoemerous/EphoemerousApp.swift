@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 @main
 struct EphoemerousApp: App {
@@ -15,13 +16,15 @@ struct EphoemerousApp: App {
         WindowGroup {
             NavigationStack {
                 MainView()
-//                    .navigationTitle("👋 Hello")
-//                    .navigationBarTitleDisplayMode(.inline)
-                    .environment(state)
-                    .onAppear { ECloudSync.shared.start(appState: state) }
-                    
             }
-            .preferredColorScheme(.dark)
+            .ignoresSafeArea()
+            .onAppear { ECloudSync.shared.start(appState: state) }
+            .onChange(of: ELocationService.shared.location) { _, loc in
+                guard let loc, state.origin == .init() else { return }
+                state.setOrigin(lat: .degrees(loc.coordinate.latitude),
+                                lon: .degrees(loc.coordinate.longitude))
+            }
+            .environment(state)
         }
     }
 }

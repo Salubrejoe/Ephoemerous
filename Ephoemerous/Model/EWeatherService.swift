@@ -56,6 +56,7 @@ final class EWeatherService {
     static let shared = EWeatherService()
     private init() {}
 
+    // TODO: Audit - sunEvents is fetched for detail views (ESunDetailView, EMoonDetailView); ESkyBackground now uses sun altitude instead. Consider whether WeatherKit fetch is still needed or can be scoped further
     private(set) var sunEvents:  ESunEvents?  = nil
     private(set) var moonEvents: EMoonEvents? = nil
     private(set) var isLoading = false

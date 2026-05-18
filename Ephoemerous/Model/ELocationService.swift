@@ -13,7 +13,7 @@ final class ELocationService: NSObject, CLLocationManagerDelegate {
     private override init() {
         super.init()
         manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyKilometer
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
 
     func requestIfNeeded() {

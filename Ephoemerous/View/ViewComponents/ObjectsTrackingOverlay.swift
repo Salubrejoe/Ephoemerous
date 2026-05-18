@@ -11,36 +11,35 @@ struct ObjectsTrackingOverlay: View {
     
     
     var body: some View {
-        GeometryReader { geo in
+//        GeometryReader { geo in
             ZStack {
                 
+                // SUN
                 if let sunPt = state.sunScreenPosition {
                     ClearCircle(at: sunPt)
                         .onTapGesture {
-                            state.showStarList = false
-                            state.showMoonInfo = false
-                            showStarView = false
+                            state.closeAllSheets()
                             state.applySunTracking()
                             state.showSunInfo = true
                         }
                 }
+                
+                // MOON
                 if let moonPt = state.moonScreenPosition {
                     ClearCircle(at: moonPt)
                         .onTapGesture {
-                            state.showStarList = false
-                            state.showSunInfo = false
-                            showStarView = false
+                            state.closeAllSheets()
                             state.applyMoonTracking()
                             state.showMoonInfo = true
                         }
                 }
+                
+                // SELECTED STARS
                 ForEach(state.selectedStars.uniqued(by: \.name), id: \.name) { star in
                     if let pt = state.selectedStarPositions[star.name] {
                         ClearCircle(at: pt)
                             .onTapGesture {
-                                state.showStarList = false
-                                state.showSunInfo = false
-                                state.showMoonInfo = false
+                                state.closeAllSheets()
                                 state.applyStarTracking(star)
                                 state.currentlyDisplayedStar = star
                                 showStarView = true
@@ -48,20 +47,33 @@ struct ObjectsTrackingOverlay: View {
                     }
                 }
             }
+            
+            .sheet(isPresented: Bindable(state).showSunInfo) {
+                NavigationStack {
+                    ESunDetailView()
+                        .sheetFormat()
+                }
+            }
+            
+            .sheet(isPresented: Bindable(state).showMoonInfo) {
+                NavigationStack {
+                    EMoonDetailView()
+                        .sheetFormat()
+                }
+            }
+            
             .sheet(isPresented: $showStarView) {
                 NavigationStack {
                     if let star = state.currentlyDisplayedStar {
                         EStarDetailView(star: star)
+                            .sheetFormat()
                             .onDisappear {
                                 state.currentlyDisplayedStar = nil
                             }
                     }
                 }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackgroundInteraction(.enabled)
             }
-        }
+//        }
         .allowsHitTesting(true)
         .ignoresSafeArea()
     }
