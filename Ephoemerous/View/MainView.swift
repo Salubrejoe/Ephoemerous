@@ -26,12 +26,6 @@ struct MainView: View {
             ObjectsTrackingOverlay()
 
         }
-        .onGeometryChange(for: CGSize.self, of: { geo in
-            geo.size
-        }, action: { newSize in
-            height = newSize.height
-            width = newSize.width
-        })
 //        .navigationTitle(Strings.App.name)
 //        .navigationBarTitleDisplayMode(.inline)
         .ignoresSafeArea()
@@ -72,16 +66,16 @@ struct MainView: View {
 //            .frame(maxWidth: 400, maxHeight: 700, alignment: .top)
 //            
 //        }
-//        .overlay {
-//            VStack {
-//                if state.scale != state.defaultScale || state.offset !=  state.defaultOffset {
-//                    CircledResetButton()
-//                }
-//                Spacer()
-//                GameBoyControlPad()
-//            }.padding(.horizontal, 32)
-//                .frame(maxWidth: width, maxHeight: height, alignment: .bottom)
-//        }
+        .overlay {
+            VStack {
+                if state.scale != state.defaultScale || state.offset !=  state.defaultOffset {
+                    CircledResetButton()
+                }
+                Spacer()
+                GameBoyControlPad()
+            }.padding(.horizontal, 32)
+                .frame(maxWidth: 400, maxHeight: 700, alignment: .bottom)
+        }
         .onChange(of: state.layerVisibilitySignature) { state.persistLayerVisibility() }
         .onChange(of: state.magnitudeFilter)          { state.persistLayerVisibility() }
         
