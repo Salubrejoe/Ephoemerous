@@ -41,7 +41,7 @@ struct Ring: View {
 
     var body: some View {
         Circle()
-            .fill(tint)
+            .fill(.ultraThinMaterial)
             .frame(width: 2 * radius, height: 2 * radius)
 //            .glassEffect(.clear.tint(tint))
             .mask(
@@ -70,7 +70,7 @@ struct WatchMaskView: View {
     var body: some View {
         ZStack {
             let crownR = state.renderedScale * ENSWatchCrownLayer.clipRadius
-            let ringW  = 2.5
+            let ringW  = 4.0
             let outerR = crownR + ringW
             let off    = CGSize(width: state.renderedOffset.y, height: state.renderedOffset.x)
             let eq = proj.rings[1]
@@ -79,7 +79,7 @@ struct WatchMaskView: View {
                 ForEach(proj.rings) { parallel in
                     ZStack {
                         Circle()
-                            .fill(parallel.color.opacity(0.1))
+                            .fill(parallel.color.opacity(0.2))
                             .frame(
                                 width: parallel.radius * 2,
                                 height: parallel.radius * 2
@@ -102,7 +102,7 @@ struct WatchMaskView: View {
                 }
             }
             
-            GlassRing(
+            Ring(
                 radius: eq.radius,
                 lineWidth: ringW,
                 //                    tint: parallel.color
@@ -114,22 +114,15 @@ struct WatchMaskView: View {
             )
 
             ZStack {
-                GlassRing(radius: outerR + 4, lineWidth: ringW, tint: .clear)
-                    
-                Button {
-                    //
-                } label: {
-                    Image(systemName: "arcade.stick.and.arrow.up.and.arrow.down")
-                        .foregroundStyle(Color.baseOrange)
-                }
-                .buttonStyle(.glass)
+                GlassRing(radius: outerR + 6, lineWidth: ringW, tint: .clear)
+                
             }
                 .offset(off)
             
 
             ForEach(0..<24, id: \.self) { h in
                 let angle  = -(-.pi / 2 - Double(h) * .pi / 12.0)
-                let midR   = (crownR + ringW / 2) + 16
+                let midR   = (crownR + ringW / 2) + 20
                 let tz     = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
                 let label  = (h + tz + 24) % 24
                 let hour   = Calendar.current.component(.hour, from: Date())

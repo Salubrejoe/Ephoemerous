@@ -10,58 +10,58 @@ struct MainView: View {
             if state.appMode == .clock {
                 
 //                ESkyBackground()
-                LinearGradient(colors: [
-                    Color.darkIndigo,
-                    Color.darkBerry,
-                ], startPoint: .top, endPoint: .bottom)
-                    .mask(
-                        Circle()
-                            .frame(
-                                width:  2 * state.scale * ENSWatchCrownLayer.clipRadius,
-                                height: 2 * state.scale * ENSWatchCrownLayer.clipRadius
-                            )
-                            .offset(x: state.offset.y, y: state.offset.x)
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(
+                        width:  2 * state.scale * ENSWatchCrownLayer.clipRadius,
+                        height: 2 * state.scale * ENSWatchCrownLayer.clipRadius
                     )
+                    .offset(x: state.offset.y, y: state.offset.x)
+                    
             } else {
 //                ESkyBackground()
-                LinearGradient(colors: [
-                    Color.darkIndigo,
-                    Color.darkBerry,
-                ], startPoint: .top, endPoint: .bottom)
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                
             }
             
             CelestialCanva()
             
             ObjectsTrackingOverlay()
-        }
-        .ignoresSafeArea()
-        .overlay {
-            HStack {
-                CoordinatesTile(origin: state.origin)
-                    .frame(width: 100)
-                
-                CircledResetButton()
-                    .frame(width: 150)
-                
-                
-                ProjectionModePicker()
-                    .frame(width: 100)
-            }
-            .frame(maxHeight: 700, alignment: .top)
             
+            GameBoyControlPad()
+                .padding(.bottom, 70)
         }
+        .navigationTitle(Strings.App.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .ignoresSafeArea()
+//        .overlay {
+//            HStack {
+//                CoordinatesTile(origin: state.origin)
+//                    .frame(width: 100)
+//                
+//                CircledResetButton()
+//                    .frame(width: 150)
+//                
+//                
+//                ProjectionModePicker()
+//                    .frame(width: 100)
+//            }
+//            .frame(maxHeight: 700, alignment: .top)
+//            
+//        }
         .onChange(of: state.layerVisibilitySignature) { state.persistLayerVisibility() }
         .onChange(of: state.magnitudeFilter)          { state.persistLayerVisibility() }
         
         
-        .toolbar {
-            
-            ToolbarItem(placement: .bottomBar) { DateButton() }
-            
-            ToolbarItem(placement: .status) { SearchBar() }
-            
-            ToolbarItem(placement: .bottomBar) { ZenithButton() }
-        }
+//        .toolbar {
+//            
+//            ToolbarItem(placement: .bottomBar) { DateButton() }
+//            
+//            ToolbarItem(placement: .status) { SearchBar() }
+//            
+//            ToolbarItem(placement: .bottomBar) { ZenithButton() }
+//        }
         
         .sheet(isPresented: Bindable(state).showStarList) {
             NavigationStack {

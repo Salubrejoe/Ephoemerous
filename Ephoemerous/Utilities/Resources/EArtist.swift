@@ -34,12 +34,33 @@ struct EArtist {
     let sunsetStrokeColor  : Color  = .baseOrange
     let sunsetStrokeWidth  : Double = 1.0
 
+    // MARK: - Tap affordance (breathing ring)
+    let breathPeriod     : Double  = 11.0   // seconds per full crisp→blur→crisp cycle
+    let breathRingGap    : CGFloat = 3.0    // gap between body edge and the ring
+    let breathRingWidth  : CGFloat = 1.5    // stroke width when in focus
+    let breathMaxBlur    : Double  = 6.0    // blur radius at the defocused peak
+    let breathMinOpacity : Double  = 0.16   // alpha when fully blurred
+    let breathMaxOpacity : Double  = 0.50   // alpha when crisp / well-defined
+
+    /// A proper, well-defined ring that slowly defocuses into a soft glow
+    /// and sharpens back — a mix of a static ring and a breathing halo.
+    /// Phase uses (1 − cos)/2 so the cycle begins and ends fully crisp.
+    /// Driven off the canvas clock, so it costs ~nothing.
+    func drawBreathingRing(at sc: CGPoint, radius: CGFloat, color: Color,
+                           time t: Double, in dc: inout EGraphicContext) {
+        let phase   = 0.5 - 0.5 * cos(2 * .pi * t / breathPeriod)   // 0 crisp → 1 blurred → 0
+        let blur    = breathMaxBlur * phase
+        let opacity = breathMaxOpacity - (breathMaxOpacity - breathMinOpacity) * phase
+        let ring    = Path(ellipseIn: CGRect(x: sc.x - radius, y: sc.y - radius,
+                                             width: radius * 2, height: radius * 2))
+        var layer = dc.ctx
+        if blur > 0.01 { layer.addFilter(.blur(radius: blur)) }
+        layer.stroke(ring, with: .color(color.opacity(opacity)), lineWidth: breathRingWidth)
+    }
+
     // MARK: - Sun
     let sunColor      : Color  = .yellow.opacity(0.8)
     let sunGlowBlur   : Double = 1.2   // multiplier on disc radius
-    let sunRingOffset : Double = 14.0  // added to disc diameter for ring
-    let sunRingColor  : Color  = .yellow.opacity(0.3)
-    let sunRingWidth  : Double = 1.5
 
     func drawSun(at sc: CGPoint, in dc: inout EGraphicContext) {
         let r    = 8.0
@@ -52,16 +73,15 @@ struct EArtist {
         disco.addFilter(.brightness(0.7))
         disco.fill(disc, with: .color(sunColor))
 //        dc.ctx.fill(disc, with: .color(sunColor))
-        let size = AstroConstants.sunDiscDiameter + sunRingOffset
-        let ring = Path(ellipseIn: CGRect(x: sc.x - size/2, y: sc.y - size/2, width: size, height: size))
-        dc.ctx.stroke(ring, with: .color(sunRingColor.opacity(0.1)), lineWidth: sunRingWidth)
+        drawBreathingRing(at: sc,
+                          radius: r + breathRingGap,
+                          color:  .yellow,
+                          time:   dc.state.animationTime,
+                          in:     &dc)
     }
 
     // MARK: - Moon
     let moonBodyColor  : Color  = .gray.opacity(0.55)
-    let moonRingColor  : Color  = .gray.opacity(0.4)
-    let moonRingWidth  : Double = 1.5
-    let moonRingOffset : Double = 14.0  // added to base radius for NS ring
 
     func drawMoon(at sc: CGPoint, fraction: Double, showRing: Bool, in dc: inout EGraphicContext) {
         let baseRadius = 4.0
@@ -102,11 +122,13 @@ struct EArtist {
             with: .color(.white.opacity(AstroConstants.moonRimOpacity)),
             lineWidth: 0.5
         )
-        // NS-only ring
+        // NS-only tap affordance
         if showRing {
-            let size = CGFloat(AstroConstants.moonBaseRadius + moonRingOffset)
-            let ring = Path(ellipseIn: CGRect(x: sc.x - size/2, y: sc.y - size/2, width: size, height: size))
-            dc.ctx.stroke(ring, with: .color(moonRingColor), lineWidth: moonRingWidth)
+            drawBreathingRing(at: sc,
+                              radius: baseRadius + breathRingGap,
+                              color:  .white,
+                              time:   dc.state.animationTime,
+                              in:     &dc)
         }
     }
 
@@ -148,7 +170,6 @@ struct EArtist {
 
     // MARK: - Selected stars
     let selectedStarRingRadius      : CGFloat = 6.0
-    let selectedStarRingWidth       : CGFloat = 1.0
     let constellationStarRingRadius : CGFloat = 4.5
     let constellationStarRingWidth  : CGFloat = 0.75
     let starLabelOffset             : CGPoint = CGPoint(x: 12, y: -4)
@@ -157,10 +178,22 @@ struct EArtist {
     func drawSelectedStar(_ star: EStar, at sc: CGPoint,
                           isSelected: Bool, isCurrentlyDisplayed: Bool,
                           showLabel: Bool, in dc: inout EGraphicContext) {
-        let r     : CGFloat = isSelected ? selectedStarRingRadius : constellationStarRingRadius
-        let lw    : CGFloat = isSelected ? selectedStarRingWidth  : constellationStarRingWidth
-        let ring  = Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r, width: r * 2, height: r * 2))
-        dc.ctx.stroke(ring, with: .color(star.spectralClass.color.opacity(0.4)), lineWidth: lw)
+        // User-selected stars get the breathing ring (the old static ring is
+        // gone). Constellation members keep a plain identity ring — it's
+        // their only marker, and breathing a dense constellation would shimmer.
+        if isSelected {
+            drawBreathingRing(at: sc,
+                              radius: selectedStarRingRadius + breathRingGap,
+                              color:  star.spectralClass.color,
+                              time:   dc.state.animationTime,
+                              in:     &dc)
+        } else {
+            let r    = constellationStarRingRadius
+            let ring = Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
+                                              width: r * 2, height: r * 2))
+            dc.ctx.stroke(ring, with: .color(star.spectralClass.color.opacity(0.4)),
+                          lineWidth: constellationStarRingWidth)
+        }
 
         if dc.state.renderedScale > 100 {
             let font: Font = isCurrentlyDisplayed ? .body.weight(.heavy) : .footnote.weight(.light)
