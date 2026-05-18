@@ -61,14 +61,23 @@ struct WatchMaskView: View {
     @Environment(\.colorScheme) var cS
     @Environment(EAppState.self) var state
 
-    @State private var proj = SProjection(
-        baseLatitude: .degrees(51),
-        scale: 100,
-        parallelOffsets: [.radians(0.1), .radians(0.0), .radians(-0.1), .radians(-0.2), .radians(-0.31)]
-    )
+    // Crown parallels — small-circle offsets from the observer latitude.
+    private static let parallelOffsets: [Angle] = [
+        .radians(0.1), .radians(0.0), .radians(-0.1), .radians(-0.2), .radians(-0.31)
+    ]
 
     var body: some View {
-        ZStack {
+        // Derive the projection straight from state every render. The old
+        // code mirrored scale/latitude into an @State SProjection via
+        // .onChange, which runs *after* the pass that drew the canvas — so
+        // the crown trailed the sky by one frame during pinch/drag. Pure
+        // derivation keeps both layers in exact lockstep.
+        let proj = SProjection(
+            baseLatitude:    state.origin.latitude,
+            scale:           2 * state.renderedScale,
+            parallelOffsets: Self.parallelOffsets
+        )
+        return ZStack {
             let crownR = state.renderedScale * ENSWatchCrownLayer.clipRadius
             let ringW  = 4.0
             let outerR = crownR + ringW
@@ -137,16 +146,6 @@ struct WatchMaskView: View {
            
         }
         .ignoresSafeArea()
-        .onAppear {
-            proj.baseLatitude = state.origin.latitude
-            proj.scale        = 2 * state.renderedScale
-        }
-        .onChange(of: state.origin.latitude) { _, newValue in
-            proj.baseLatitude = newValue
-        }
-        .onChange(of: state.renderedScale) { _, newValue in
-            proj.scale = 2 * newValue
-        }
     }
 
     @ViewBuilder
