@@ -15,19 +15,21 @@ struct GameBoyControlPad: View {
         VStack(spacing: 12) {
             Spacer()
 
-            GlassEffectContainer {
             if state.isShowingDatePicker {
                 datePickerPanel
                     .transition(.move(edge: .trailing).combined(with: .opacity).combined(with: .blurReplace))
             }
 
+            GlassEffectContainer {
                 HStack(alignment: .center, spacing: 0) {
                     directionPad
                     Spacer(minLength: 12)
                     actionCluster
                 }
                 .padding(.horizontal, 26)
-                .padding(.vertical, 4)
+                .padding(.vertical, 16)
+                .glassEffect(.clear.interactive(),
+                             in: RoundedRectangle(cornerRadius: 34, style: .continuous))
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 8)
@@ -75,8 +77,8 @@ private extension GameBoyControlPad {
                 .offset(x:  arm)
 
             Circle()
+                .fill(.ultraThinMaterial)
                 .frame(width: 26, height: 26)
-                .glassEffect(.regular)
         }
         .frame(width: arm * 2 + 54, height: arm * 2 + 54)
     }
@@ -88,7 +90,7 @@ private extension GameBoyControlPad {
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.primary)
                 .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 
@@ -116,24 +118,40 @@ private extension GameBoyControlPad {
                 actionButton("location.fill",  "Here")    { state.goToDeviceLocation() }
             }
             GridRow {
-                actionButton("viewfinder",     "Default") { state.resetView() }
-                actionButton("magnifyingglass","Search")  { state.showStarList.toggle() }
+                // Like the old CircledResetButton: tap → default scale &
+                // offset; long-press → toggle app mode.
+                actionButton("viewfinder", "Default",
+                             longPress: { state.toggleAppMode() }) {
+                    state.resetView()
+                }
+                actionButton("magnifyingglass", "Search") { state.showStarList.toggle() }
             }
         }
     }
 
+    @ViewBuilder
     func actionButton(_ systemName: String, _ title: String,
+                       longPress: (() -> Void)? = nil,
                        action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        let button = Button(action: action) {
             VStack(spacing: 3) {
                 Image(systemName: systemName)
                     .font(.title3.weight(.semibold))
             }
             .foregroundStyle(.primary)
             .frame(width: 56, height: 52)
-            .glassEffect(.regular.interactive(), in: .circle)
+            .contentShape(Circle())                 // solid, predictable hit area
+            .background(.ultraThinMaterial, in: Circle())
         }
         .buttonStyle(.plain)
+
+        if let longPress {
+            button.simultaneousGesture(
+                LongPressGesture().onEnded { _ in longPress() }
+            )
+        } else {
+            button
+        }
     }
 }
 
