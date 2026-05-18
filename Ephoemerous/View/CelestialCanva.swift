@@ -11,28 +11,22 @@ struct CelestialCanva: View {
     // MARK: - Layers
     // Layers drawn inside the clip circle, back → front
     private let skyLayers: [any EGridLayer] = [
-//        EMeridiansLayer(mode: .northSouth),
-//        EEquatorTropicsLayer(mode: .northSouth),
-//        EMeridiansLayer(mode: .userLocation),
-//        EEclipticLayer(mode: .northSouth),
-//        EStarsLayer(mode: .northSouth),
-//        EPlanetsLayer(mode: .northSouth),
-//        EULHorizonLayer()
-    ]
-    private let clockLayers: [any EGridLayer] = [
-//        EStarsLayer(mode: .northSouth),
-//        EMeridiansLayer(mode: .userLocation),
+        ESkyBackgroundLayer(),
+        EMilkyWayLayer(mode: .northSouth),
         EEquatorTropicsLayer(mode: .northSouth),
         EMeridiansLayer(mode: .userLocation),
         EEclipticLayer(mode: .northSouth),
         EStarsLayer(mode: .northSouth),
+    ]
+    private let clockLayers: [any EGridLayer] = [
         EMoonLayer(mode: .northSouth),
         ESunLayer(mode: .northSouth),
         ESelectedStarsLayer(mode: .northSouth),
-//        ENSWatchCrownLayer(),
     ]
     
     private let travelLayers: [any EGridLayer] = [
+//        ESkyBackgroundLayer(),
+        EMilkyWayLayer(mode: .userLocation),
         EEquatorTropicsLayer(mode: .userLocation),
         EEclipticLayer(mode: .userLocation),
         EMeridiansLayer(mode: .userLocation),
@@ -41,7 +35,6 @@ struct CelestialCanva: View {
         EMoonLayer(mode: .userLocation),
         EPlanetsLayer(mode: .userLocation),
         ESelectedStarsLayer(mode: .userLocation),
-//        ENSWatchCrownLayer(),
     ]
     
     private var outerLayers: [any EGridLayer] { state.appMode == .clock ? clockLayers : travelLayers }
@@ -63,7 +56,9 @@ struct CelestialCanva: View {
                         canvasSize: size
                     )
                     var innerDC = innerDC(ctx: ctx, size: size)
-                    for layer in skyLayers { layer.draw(in: &innerDC) }
+                    if state.appMode == .clock {
+                        for layer in skyLayers { layer.draw(in: &innerDC) }
+                    }
                 }
                 
                     
@@ -79,6 +74,7 @@ struct CelestialCanva: View {
             }
         }
         .ignoresSafeArea()
+        .clipped()
         .animation(.default, value: state.appMode)
         .gesture(gestures.viewportDragGesture(state: state))
         .simultaneousGesture(gestures.magnificationGesture(state: state))
