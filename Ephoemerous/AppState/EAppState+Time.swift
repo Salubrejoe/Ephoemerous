@@ -50,4 +50,43 @@ extension EAppState {
         )
         observationDate = newDate
     }
+
+    /// Commit a date chosen in the date picker.
+    /// A same-day edit (time only) animates the sky; a day change jumps
+    /// (a large rotation looks wrong animated). Either way the projection is
+    /// coupled for the move and then restored — the previous code only
+    /// restored on the time-only path, stranding day changes in `.coupled`.
+    func commitPickedObservationDate(_ newDate: Date) {
+        let sameDay = Calendar.current.isDate(observationDate, inSameDayAs: newDate)
+        useCoupledProjectionTemporarily(for: 0.7) {
+            if sameDay {
+                setObservationDate(newDate)
+            } else {
+                _dateTransition = nil
+                observationDate = newDate
+            }
+        }
+    }
+
+    /// Show or hide the inline date picker. Opening it first resets the
+    /// viewport so the picker isn't fighting a tracking transition.
+    func toggleDatePicker() {
+        if !isShowingDatePicker { resetView() }
+        isShowingDatePicker.toggle()
+    }
+
+    /// Whether the observation date falls on the current calendar day.
+    var isObservationDateToday: Bool {
+        Calendar.current.isDateInToday(observationDate)
+    }
+
+    /// True when the observation date differs from "now" at minute resolution.
+    /// Drives the visibility of the reset-to-now control.
+    var observationDiffersFromNow: Bool {
+        guard isObservationDateToday else { return true }
+        let calendar = Calendar.current
+        let now      = Date.now
+        return calendar.component(.hour,   from: observationDate) != calendar.component(.hour,   from: now)
+            || calendar.component(.minute, from: observationDate) != calendar.component(.minute, from: now)
+    }
 }
