@@ -11,32 +11,36 @@ struct MainView: View {
                 
 //                ESkyBackground()
                 Circle()
-                    .fill(.ultraThinMaterial)
+                    .fill(LinearGradient(colors: [
+                        .darkIndigo,
+                        .darkIndigo.opacity(0.5)
+                    ], startPoint: .top, endPoint: .bottom))
                     .frame(
-                        width:  2 * state.scale * ENSWatchCrownLayer.clipRadius,
-                        height: 2 * state.scale * ENSWatchCrownLayer.clipRadius
+                        width:  2 * state.renderedScale * ENSWatchCrownLayer.clipRadius,
+                        height: 2 * state.renderedScale * ENSWatchCrownLayer.clipRadius
                     )
-                    .offset(x: state.offset.y, y: state.offset.x)
+                    .offset(x: state.renderedOffset.y, y: state.renderedOffset.x)
                     
             } else {
 //                ESkyBackground()
                 Rectangle()
-                    .fill(.ultraThinMaterial)
+                    .fill(LinearGradient(colors: [
+                        .darkIndigo,
+                        .darkIndigo.opacity(0.5)
+                    ], startPoint: .top, endPoint: .bottom))
                 
             }
             
             CelestialCanva()
             
             ObjectsTrackingOverlay()
-            
-            GameBoyControlPad()
-                .padding(.bottom, 70)
+
         }
         .navigationTitle(Strings.App.name)
         .navigationBarTitleDisplayMode(.inline)
         .ignoresSafeArea()
-//        .overlay {
-//            HStack {
+        .overlay {
+            HStack {
 //                CoordinatesTile(origin: state.origin)
 //                    .frame(width: 100)
 //                
@@ -46,10 +50,11 @@ struct MainView: View {
 //                
 //                ProjectionModePicker()
 //                    .frame(width: 100)
-//            }
-//            .frame(maxHeight: 700, alignment: .top)
-//            
-//        }
+                GameBoyControlPad()
+            }
+            .frame(maxWidth: 300, maxHeight: 700, alignment: .bottom)
+            
+        }
         .onChange(of: state.layerVisibilitySignature) { state.persistLayerVisibility() }
         .onChange(of: state.magnitudeFilter)          { state.persistLayerVisibility() }
         

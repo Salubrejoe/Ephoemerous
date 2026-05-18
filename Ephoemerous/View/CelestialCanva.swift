@@ -11,17 +11,21 @@ struct CelestialCanva: View {
     // MARK: - Layers
     // Layers drawn inside the clip circle, back → front
     private let skyLayers: [any EGridLayer] = [
-        EEquatorTropicsLayer(mode: .northSouth),
 //        EMeridiansLayer(mode: .northSouth),
-        EMeridiansLayer(mode: .userLocation),
-        EEclipticLayer(mode: .northSouth),
+//        EEquatorTropicsLayer(mode: .northSouth),
+//        EMeridiansLayer(mode: .userLocation),
+//        EEclipticLayer(mode: .northSouth),
+//        EStarsLayer(mode: .northSouth),
 //        EPlanetsLayer(mode: .northSouth),
-        EStarsLayer(mode: .northSouth),
 //        EULHorizonLayer()
     ]
     private let clockLayers: [any EGridLayer] = [
 //        EStarsLayer(mode: .northSouth),
 //        EMeridiansLayer(mode: .userLocation),
+        EEquatorTropicsLayer(mode: .northSouth),
+        EMeridiansLayer(mode: .userLocation),
+        EEclipticLayer(mode: .northSouth),
+        EStarsLayer(mode: .northSouth),
         EMoonLayer(mode: .northSouth),
         ESunLayer(mode: .northSouth),
         ESelectedStarsLayer(mode: .northSouth),
@@ -45,16 +49,12 @@ struct CelestialCanva: View {
     // Every touch interaction lives in the coordinator (own file / class).
     @State private var gestures = CelestialGestureCoordinator()
 
-    // Schedule invalidation -- bump to wake the TimelineView immediately
-    @State private var scheduleID: Int = 0
-    
-    
-    
     // MARK: - Body
-    
+
     var body: some View {
-        // Single timeline: 60fps during gestures/transitions, 1/min at rest.
-        // animationTime is updated here -- transitions only interpolate when this fires fast.
+        // One timeline: 60 fps during gestures/transitions, 10 fps at rest.
+        // `schedule` is recomputed whenever isAnimating flips, so TimelineView
+        // reschedules on the next render — no destructive .id() teardown.
         TimelineView(schedule) { timeline in
             ZStack {
                 Canvas { ctx, size in
@@ -80,12 +80,8 @@ struct CelestialCanva: View {
         }
         .ignoresSafeArea()
         .animation(.default, value: state.appMode)
-        .id(scheduleID)
         .gesture(gestures.viewportDragGesture(state: state))
         .simultaneousGesture(gestures.magnificationGesture(state: state))
-        .onChange(of: state._dateTransition != nil || state._activeTransition != nil || state._originTransition != nil || state._inertiaTransition != nil) {
-            scheduleID &+= 1  // wake TimelineView immediately when transition starts
-        }
     }
 }
 
