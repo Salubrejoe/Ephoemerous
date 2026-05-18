@@ -1,80 +1,47 @@
 import SwiftUI
 import CoreGraphics
 
-// MARK: - EViewPreset
-struct EViewPreset: Identifiable, Equatable {
-    let id: String
-    let name: String
-    let symbol: String
-    let scale: Double
-    let offset: CGPoint
+// MARK: - FocusPreset
+// The three tracking modes the user can lock onto.
+// Scale and offset are computed dynamically by the tracking methods
+// rather than being hardcoded here.
+enum FocusPreset: String, CaseIterable, Identifiable {
+    case sun  = "trackSun"
+    case moon = "trackMoon"
+    case star = "trackStar"
 
-    static func == (lhs: EViewPreset, rhs: EViewPreset) -> Bool {
-        lhs.id == rhs.id
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .sun:  return Strings.Preset.trackSun
+        case .moon: return Strings.Preset.trackMoon
+        case .star: return Strings.Preset.trackStar
+        }
     }
 
-    // MARK: - Built-in presets
-    
-    static let defaultPreset = EViewPreset(
-        id: "default",
-        name: "Default",
-        symbol: "circle",
-        scale: AstroConstants.defaultScale,
-        offset: .init(
-            x: AstroConstants.defaultOffsetX,
-            y: AstroConstants.defaultOffsetY
-        )
-    )
-    
-    static let morningTime = EViewPreset(
-        id: "morningTime",
-        name: Strings.Preset.morning,
-        symbol: "sunrise",
-        scale: 90,
-        offset: CGPoint(x: 12, y: 155)
-    )
-    static let daytime = EViewPreset(
-        id: "daytime",
-        name: Strings.Preset.day,
-        symbol: "sun.max",
-        scale: 90,
-        offset: CGPoint(x: 12, y: 0)
-    )
-    static let afternoonTime = EViewPreset(
-        id: "afternoonTime",
-        name: Strings.Preset.afternoon,
-        symbol: "sunset",
-        scale: 90,
-        offset: CGPoint(x: 12, y: -155)
-    )
-    static let nightTime = EViewPreset(
-        id: "nightTime",
-        name: Strings.Preset.night,
-        symbol: "moon.stars",
-        scale: 90,
-        offset: CGPoint(x: -50, y: 0)
-    )
-
-    // TODO: Refactor - scale:0 / offset:.zero is a magic sentinel meaning "tracking preset, ignore scale/offset"; model this explicitly
-    static let trackSun = EViewPreset(id: "trackSun", name: Strings.Preset.trackSun, symbol: "scope", scale: 0, offset: .zero)
-    static let trackMoon = EViewPreset(id: "trackMoon", name: Strings.Preset.trackMoon, symbol: "moon.circle", scale: 0, offset: .zero)
-    static let trackStar = EViewPreset(id: "trackStar", name: Strings.Preset.trackStar, symbol: "star.circle", scale: 0, offset: .zero)
-    static let all: [EViewPreset] = [morningTime, daytime, afternoonTime, nightTime, trackSun, trackMoon, trackStar]
+    var symbol: String {
+        switch self {
+        case .sun:  return "scope"
+        case .moon: return "moon.circle"
+        case .star: return "star.circle"
+        }
+    }
 }
 
 // MARK: - Preset animation state
+// Shared by both FocusPreset tracking transitions and the manual resetView animation.
 struct EPresetTransition {
     let fromScale:  Double
     let fromOffset: CGPoint
     let toScale:    Double
     let toOffset:   CGPoint
     let startTime:  Double      // animationTime at start
-    let duration:   Double      // seconds
+    let duration:   Double
 
-    // Bounce easing -- overshoot then settle
+    // Bounce easing — overshoot then settle
     static func bounceEase(_ t: Double) -> Double {
         let t = max(0, min(1, t))
-        // Approximation of a spring: overshoot ~8% at t=0.6
         return t < 0.5
             ? 4 * t * t * t
             : 1 - pow(-2 * t + 2, 3) / 2 + 0.08 * sin(t * .pi * 2.5) * (1 - t)
@@ -98,16 +65,16 @@ struct EPresetTransition {
     }
 }
 
-// MARK: - EAppState extension
+// MARK: - EAppState: rendered scale / offset
 extension EAppState {
 
-    // The running transition, if any. Canvas reads this every frame.
+    /// The running transition, if any. Canvas reads this every frame.
     var activeTransition: EPresetTransition? {
         get { _activeTransition }
         set { _activeTransition = newValue }
     }
 
-    // Rendered scale -- use this in EGraphicContext instead of .scale
+    /// Use this in EGraphicContext instead of `.scale` directly.
     var renderedScale: Double {
         guard let t = _activeTransition else { return scale }
         if t.isFinished(at: animationTime) {
@@ -117,7 +84,7 @@ extension EAppState {
         return t.interpolatedScale(at: animationTime)
     }
 
-    // Rendered offset -- use this in EGraphicContext instead of .offset
+    /// Use this in EGraphicContext instead of `.offset` directly.
     var renderedOffset: CGPoint {
         guard let t = _activeTransition else { return offset }
         if t.isFinished(at: animationTime) {
@@ -127,34 +94,35 @@ extension EAppState {
         return t.interpolatedOffset(at: animationTime)
     }
 
-    var activePreset: EViewPreset? {
-        EViewPreset.all.first { 
-            abs($0.scale    - scale)      < 0.001 &&
-            abs($0.offset.x - offset.x) < 0.001 &&
-            abs($0.offset.y - offset.y) < 0.001
-        }
-    }
-
-    func apply(_ preset: EViewPreset) {
+    /// Animate the view back to the default scale and offset.
+    func resetView() {
+        let toScale  = AstroConstants.defaultScale
+        let toOffset = CGPoint(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
-            toScale:    preset.scale,
-            toOffset:   preset.offset,
+            toScale:    toScale,
+            toOffset:   toOffset,
             startTime:  Date.now.timeIntervalSinceReferenceDate,
             duration:   AstroConstants.transitionDuration
         )
-        scale  = preset.scale
-        offset = preset.offset
-        ELogger.sun("Preset applied: " + preset.name)
+        scale  = toScale
+        offset = toOffset
+    }
+
+    /// Apply a focus preset, optionally providing the target star for `.star` tracking.
+    func apply(_ preset: FocusPreset, star: EStar? = nil) {
+        switch preset {
+        case .sun:  applySunTracking()
+        case .moon: applyMoonTracking()
+        case .star: if let star { applyStarTracking(star) }
+        }
     }
 }
 
-// MARK: - Sun tracking
+// MARK: - EAppState: Sun tracking
 extension EAppState {
 
-    // Places the sun at screen centre + 80 pts below (y=80 in offset space).
-    // offset.y drives screenX, offset.x drives screenY (see toScreen).
     func applySunTracking() {
         guard let sun = sunScreenPosition else {
             ELogger.sun("trackSun: sunScreenPosition not yet available")
@@ -175,37 +143,11 @@ extension EAppState {
             duration:   AstroConstants.transitionDuration
         )
         offset = newOffset
-        ELogger.sun("trackSun: offset set to " + newOffset.debugDescription)
+        ELogger.sun("trackSun: offset → \(newOffset)")
     }
 }
 
-
-// MARK: - Time of day preset
-extension EAppState {
-
-    // 04:00 - 10:00  morning
-    // 10:00 - 14:00  day
-    // 14:00 - 20:00  afternoon
-    // 20:00 - 04:00  night
-    var timeOfDayPreset: EViewPreset {
-        let hour = Calendar.current.component(.hour, from: observationDate)
-        switch hour {
-        case 4..<11:  return .morningTime
-        case 11..<14: return .daytime
-        case 14..<21: return .afternoonTime
-        default:      return .nightTime
-        }
-    }
-
-    func applyTimeOfDayPreset() {
-        let preset = timeOfDayPreset
-        guard preset != activePreset else { return }
-        apply(preset)
-        ELogger.sun("Time-of-day preset: " + preset.name)
-    }
-}
-
-// MARK: - Moon tracking
+// MARK: - EAppState: Moon tracking
 extension EAppState {
 
     func applyMoonTracking() {
@@ -228,23 +170,21 @@ extension EAppState {
             duration:   AstroConstants.transitionDuration
         )
         offset = newOffset
-        ELogger.moon("trackMoon: offset set to " + newOffset.debugDescription)
+        ELogger.moon("trackMoon: offset → \(newOffset)")
     }
 }
 
-// MARK: - Star tracking
+// MARK: - EAppState: Star tracking
 extension EAppState {
 
     func applyStarTracking(_ star: EStar) {
-        // Prefer the cached screen position (already drawn this frame).
-        // If not yet available (first tap), compute it directly from the projection pipeline.
         let pt: CGPoint
         if let cached = selectedStarPositions[star.name] {
             pt = cached
         } else if let computed = screenPosition(of: star) {
             pt = computed
         } else {
-            ELogger.selectedStars("trackStar: could not compute position for " + star.name)
+            ELogger.selectedStars("trackStar: could not compute position for \(star.name)")
             return
         }
         let targetScreenX = canvasSize.width  / 2
@@ -253,7 +193,6 @@ extension EAppState {
             x: offset.x + (targetScreenY - pt.y),
             y: offset.y + (targetScreenX - pt.x)
         )
-        
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
@@ -263,17 +202,14 @@ extension EAppState {
             duration:   AstroConstants.transitionDuration
         )
         offset = newOffset
-        
-        
-        ELogger.selectedStars("trackStar: " + star.name + " -> " + newOffset.debugDescription)
+        ELogger.selectedStars("trackStar: \(star.name) → \(newOffset)")
     }
 }
 
-// MARK: - Screen position helper
+// MARK: - EAppState: Screen position helper
 extension EAppState {
 
-    // Computes the screen position of a star without relying on the cached selectedStarPositions.
-    // Uses the same projection pipeline as ENSSelectedStarsLayer.
+    /// Computes the screen position of a star without relying on the cached selectedStarPositions.
     func screenPosition(of star: EStar) -> CGPoint? {
         guard canvasSize != .zero else { return nil }
         let (pRA, pDec) = EPrecession.precess(
@@ -294,7 +230,7 @@ extension EAppState {
 
 // MARK: - Origin transition
 struct EOriginTransition {
-    let fromLat:   Double  // radians
+    let fromLat:   Double
     let fromLon:   Double
     let toLat:     Double
     let toLon:     Double
@@ -315,7 +251,6 @@ struct EOriginTransition {
 }
 
 extension EAppState {
-    
 
     func animateOrigin(to lat: Angle, lon: Angle, duration: Double = 0.6) {
         _originTransition = EOriginTransition(
@@ -334,10 +269,9 @@ struct EInertiaTransition {
     var velX:      Double
     var velY:      Double
     let startTime: Double
-    let decay:     Double = 8.0  // tune: higher = faster stop, lower = longer glide
+    let decay:     Double = 8.0
 
-    // Returns (dx, dy, isFinished) for the current frame.
-    // Exponential velocity decay: v(t) = v0 * e^(-decay * t)
+    // Returns (dx, dy, isFinished). Exponential velocity decay: v(t) = v0 * e^(-decay * t)
     func tick(at time: Double) -> (Double, Double, Bool) {
         let t      = time - startTime
         let dt     = 1.0 / 60.0
