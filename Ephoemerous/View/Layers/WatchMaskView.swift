@@ -12,20 +12,27 @@ struct GlassRing: View {
     }
     
     var body: some View {
-        Circle()
-        //            .fill(tint)
-            .frame(width: 2 * radius, height: 2 * radius)
-            .glassEffect(.clear.tint(tint))
-            .mask(
-                Circle()
-                    .frame(width: 2 * radius, height: 2 * radius)
-                    .overlay(
-                        Circle()
-                            .frame(width: 2 * (radius - lineWidth), height: 2 * (radius - lineWidth))
-                            .blendMode(.destinationOut)
-                    )
-                    .compositingGroup()
-            )
+        if EFeatureFlags.vectorWatchRings {
+            // Vector annulus — no offscreen raster, no zoom pop.
+            Circle()
+                .strokeBorder(.ultraThinMaterial, lineWidth: lineWidth)
+                .frame(width: 2 * radius, height: 2 * radius)
+        } else {
+            Circle()
+            //            .fill(tint)
+                .frame(width: 2 * radius, height: 2 * radius)
+                .glassEffect(.clear.tint(tint))
+                .mask(
+                    Circle()
+                        .frame(width: 2 * radius, height: 2 * radius)
+                        .overlay(
+                            Circle()
+                                .frame(width: 2 * (radius - lineWidth), height: 2 * (radius - lineWidth))
+                                .blendMode(.destinationOut)
+                        )
+                        .compositingGroup()
+                )
+        }
     }
 }
 struct Ring: View {
@@ -40,20 +47,27 @@ struct Ring: View {
     }
 
     var body: some View {
-        Circle()
-            .fill(.ultraThinMaterial)
-            .frame(width: 2 * radius, height: 2 * radius)
+        if EFeatureFlags.vectorWatchRings {
+            // Vector annulus — no offscreen raster, no zoom pop.
+            Circle()
+                .strokeBorder(.ultraThinMaterial, lineWidth: lineWidth)
+                .frame(width: 2 * radius, height: 2 * radius)
+        } else {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .frame(width: 2 * radius, height: 2 * radius)
 //            .glassEffect(.clear.tint(tint))
-            .mask(
-                Circle()
-                    .frame(width: 2 * radius, height: 2 * radius)
-                    .overlay(
-                        Circle()
-                            .frame(width: 2 * (radius - lineWidth), height: 2 * (radius - lineWidth))
-                            .blendMode(.destinationOut)
-                    )
-                    .compositingGroup()
-            )
+                .mask(
+                    Circle()
+                        .frame(width: 2 * radius, height: 2 * radius)
+                        .overlay(
+                            Circle()
+                                .frame(width: 2 * (radius - lineWidth), height: 2 * (radius - lineWidth))
+                                .blendMode(.destinationOut)
+                        )
+                        .compositingGroup()
+                )
+        }
     }
 }
 
@@ -66,12 +80,102 @@ struct WatchMaskView: View {
         .radians(0.1), .radians(0.0), .radians(-0.1), .radians(-0.2), .radians(-0.31)
     ]
 
+    // Twilight bands, outer → inner. Same colours/opacity as the original
+    // SProjection design — only the geometry source changes.
+    private static let bands: [(dec: Angle, color: Color)] = [
+        (.radians( 0.10), .sunGold),
+        (.radians( 0.00), .mutedRose),
+        (.radians(-0.10), .deepNavy),
+        (.radians(-0.20), .darkIndigo),
+        (.radians(-0.31), .nearBlack),
+    ]
+
     var body: some View {
-        // Derive the projection straight from state every render. The old
-        // code mirrored scale/latitude into an @State SProjection via
-        // .onChange, which runs *after* the pass that drew the canvas — so
-        // the crown trailed the sky by one frame during pinch/drag. Pure
-        // derivation keeps both layers in exact lockstep.
+        if EFeatureFlags.skyAnchoredCrown {
+            skyAnchoredCrown
+        } else {
+            legacyCrown
+        }
+    }
+
+    // MARK: Sky-anchored crown
+    // Bands & equator are projected through the SAME pipeline as the sky
+    // (EProjection .userLocation → toScreen), so they stay glued to the
+    // star field at every zoom. The bezel + hour ring are the watch frame
+    // and stay viewport-fixed (offset only) exactly as before.
+    private var skyAnchoredCrown: some View {
+        let crownR = state.renderedScale * ENSWatchCrownLayer.clipRadius
+        let ringW  = 4.0
+        let outerR = crownR + ringW
+        let off    = CGSize(width: state.renderedOffset.y, height: state.renderedOffset.x)
+
+        return ZStack {
+            Canvas { ctx, size in
+                drawProjectedCrown(into: &ctx, size: size, crownR: crownR, ringW: ringW)
+            }
+
+            ZStack {
+                GlassRing(radius: outerR + 6, lineWidth: ringW, tint: .clear)
+            }
+            .offset(off)
+
+            ForEach(0..<24, id: \.self) { h in
+                let angle   = -(-.pi / 2 - Double(h) * .pi / 12.0)
+                let midR    = (crownR + ringW / 2) + 20
+                let tz      = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
+                let label   = (h + tz + 24) % 24
+                let hour    = Calendar.current.component(.hour, from: Date())
+                let current = hour == label
+                hourNumber(label.description, current ? .yellow : primaryColor)
+                    .offset(
+                        x: state.renderedOffset.y + cos(angle) * midR,
+                        y: state.renderedOffset.x + sin(angle) * midR
+                    )
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    private func drawProjectedCrown(into ctx: inout GraphicsContext,
+                                    size: CGSize, crownR: Double, ringW: Double) {
+        let rend = state.renderedScale
+        let roff = state.renderedOffset
+
+        func toScreen(_ p: CGPoint) -> CGPoint {
+            CGPoint(x: size.width  / 2 + p.x * rend + roff.y,
+                    y: size.height / 2 - p.y * rend + roff.x)
+        }
+
+        // Clip to the crown disc — the exact disc the sky's inner clip uses.
+        let cc = CGPoint(x: size.width / 2 + roff.y, y: size.height / 2 + roff.x)
+        ctx.clip(to: Path(ellipseIn: CGRect(x: cc.x - crownR, y: cc.y - crownR,
+                                            width: 2 * crownR, height: 2 * crownR)))
+
+        func parallelPath(dec: Angle) -> Path {
+            var path    = Path()
+            var started = false
+            for i in 0...120 {
+                let t = Double(i) / 120.0
+                let q = EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: dec)
+                    .sidereallyRotated(by: state.localSiderealOffset)
+                guard let p = EProjection.project(q, appState: state, mode: .userLocation)
+                else { continue }
+                let s = toScreen(p)
+                if started { path.addLine(to: s) } else { path.move(to: s); started = true }
+            }
+            if started { path.closeSubpath() }
+            return path
+        }
+
+        for band in Self.bands {
+            ctx.fill(parallelPath(dec: band.dec), with: .color(band.color.opacity(0.2)))
+        }
+        ctx.stroke(parallelPath(dec: .zero),
+                   with: .color(.white.opacity(0.16)), lineWidth: ringW)
+    }
+
+    // MARK: Legacy SProjection crown (A/B only — drifts/snaps)
+    private var legacyCrown: some View {
         let proj = SProjection(
             baseLatitude:    state.origin.latitude,
             scale:           2 * state.renderedScale,
@@ -86,64 +190,34 @@ struct WatchMaskView: View {
 
             ZStack {
                 ForEach(proj.rings) { parallel in
-                    ZStack {
-                        Circle()
-                            .fill(parallel.color.opacity(0.2))
-                            .frame(
-                                width: parallel.radius * 2,
-                                height: parallel.radius * 2
-                            )
-                            .blur(radius: 1)
-//                        Circle()
-//                            .fill(.ultraThinMaterial)
-//                            .frame(
-//                                width: parallel.radius * 2,
-//                                height: parallel.radius * 2
-//                            )
-                            
-                    }
-                    .offset(x: state.renderedOffset.y, y: state.renderedOffset.x + parallel.centerOffset)
-                    .mask(
-                        Circle()
-                            .frame(width: 2 * crownR, height: 2 * crownR).offset(off)
-                    )
-                    
+                    Circle()
+                        .fill(parallel.color.opacity(0.2))
+                        .frame(width: parallel.radius * 2, height: parallel.radius * 2)
+                        .offset(x: state.renderedOffset.y,
+                                y: state.renderedOffset.x + parallel.centerOffset)
+                        .mask(Circle().frame(width: 2 * crownR, height: 2 * crownR).offset(off))
                 }
             }
-            
-            Ring(
-                radius: eq.radius,
-                lineWidth: ringW,
-                //                    tint: parallel.color
-            )
-            .offset(x: state.renderedOffset.y, y: state.renderedOffset.x + eq.centerOffset)
-            .mask(
-                Circle()
-                    .frame(width: 2 * crownR, height: 2 * crownR).offset(off)
-            )
 
-            ZStack {
-                GlassRing(radius: outerR + 6, lineWidth: ringW, tint: .clear)
-                
-            }
+            Ring(radius: eq.radius, lineWidth: ringW)
+                .offset(x: state.renderedOffset.y,
+                        y: state.renderedOffset.x + eq.centerOffset)
+                .mask(Circle().frame(width: 2 * crownR, height: 2 * crownR).offset(off))
+
+            ZStack { GlassRing(radius: outerR + 6, lineWidth: ringW, tint: .clear) }
                 .offset(off)
-            
 
             ForEach(0..<24, id: \.self) { h in
-                let angle  = -(-.pi / 2 - Double(h) * .pi / 12.0)
-                let midR   = (crownR + ringW / 2) + 20
-                let tz     = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
-                let label  = (h + tz + 24) % 24
-                let hour   = Calendar.current.component(.hour, from: Date())
+                let angle   = -(-.pi / 2 - Double(h) * .pi / 12.0)
+                let midR    = (crownR + ringW / 2) + 20
+                let tz      = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
+                let label   = (h + tz + 24) % 24
+                let hour    = Calendar.current.component(.hour, from: Date())
                 let current = hour == label
                 hourNumber(label.description, current ? .yellow : primaryColor)
-                    .offset(
-                        x: state.renderedOffset.y + cos(angle) * midR,
-                        y: state.renderedOffset.x + sin(angle) * midR
-                    )
+                    .offset(x: state.renderedOffset.y + cos(angle) * midR,
+                            y: state.renderedOffset.x + sin(angle) * midR)
             }
-            
-           
         }
         .ignoresSafeArea()
     }
@@ -159,6 +233,7 @@ struct WatchMaskView: View {
     private var primaryColor: Color {
         cS == .dark ? .white : .black
     }
+
 }
 
 #Preview {
