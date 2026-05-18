@@ -72,16 +72,16 @@ struct MainView: View {
 //            .frame(maxWidth: 400, maxHeight: 700, alignment: .top)
 //            
 //        }
-        .overlay {
-            VStack {
-                if state.scale != state.defaultScale || state.offset !=  state.defaultOffset {
-                    CircledResetButton()
-                }
-                Spacer()
-                GameBoyControlPad()
-            }.padding(.horizontal, 32)
-                .frame(maxWidth: width, maxHeight: height, alignment: .bottom)
-        }
+//        .overlay {
+//            VStack {
+//                if state.scale != state.defaultScale || state.offset !=  state.defaultOffset {
+//                    CircledResetButton()
+//                }
+//                Spacer()
+//                GameBoyControlPad()
+//            }.padding(.horizontal, 32)
+//                .frame(maxWidth: width, maxHeight: height, alignment: .bottom)
+//        }
         .onChange(of: state.layerVisibilitySignature) { state.persistLayerVisibility() }
         .onChange(of: state.magnitudeFilter)          { state.persistLayerVisibility() }
         

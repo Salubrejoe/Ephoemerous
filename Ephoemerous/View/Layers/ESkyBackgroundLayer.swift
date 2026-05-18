@@ -13,7 +13,7 @@ struct ESkyBackgroundLayer: EGridLayer {
 
     private let gradient = Gradient(colors: [
         .darkIndigo,
-        .darkIndigo.opacity(0.5),
+        .deepNavy,
     ])
 
     func draw(in dc: inout EGraphicContext) {

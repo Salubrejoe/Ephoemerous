@@ -83,11 +83,14 @@ struct WatchMaskView: View {
     // Twilight bands, outer → inner. Same colours/opacity as the original
     // SProjection design — only the geometry source changes.
     private static let bands: [(dec: Angle, color: Color)] = [
+//        (.radians( 0.20), .spotCream),
         (.radians( 0.10), .sunGold),
-        (.radians( 0.00), .mutedRose),
+        (.radians( 0.00), .afternoonHaze),
         (.radians(-0.10), .deepNavy),
         (.radians(-0.20), .darkIndigo),
         (.radians(-0.31), .nearBlack),
+        (.radians(-0.41), .nearBlack),
+        (.radians(-0.51), .nearBlack),
     ]
 
     var body: some View {
