@@ -240,41 +240,7 @@ extension EAppState {
     }
 }
 
-// MARK: - Origin transition
-struct EOriginTransition {
-    let fromLat:   Double
-    let fromLon:   Double
-    let toLat:     Double
-    let toLon:     Double
-    let startTime: Double
-    let duration:  Double
-
-    private static func smoothStep(_ t: Double) -> Double {
-        let t = max(0, min(1, t))
-        return t * t * (3 - 2 * t)
-    }
-
-    func interpolated(at time: Double) -> (lat: Double, lon: Double) {
-        let t = Self.smoothStep((time - startTime) / duration)
-        return (fromLat + (toLat - fromLat) * t, fromLon + (toLon - fromLon) * t)
-    }
-
-    func isFinished(at time: Double) -> Bool { time >= startTime + duration }
-}
-
-extension EAppState {
-
-    func animateOrigin(to lat: Angle, lon: Angle, duration: Double = 0.6) {
-        _originTransition = EOriginTransition(
-            fromLat:   origin.latitude.radians,
-            fromLon:   origin.longitude.radians,
-            toLat:     lat.radians,
-            toLon:     lon.radians,
-            startTime: Date.now.timeIntervalSinceReferenceDate,
-            duration:  duration
-        )
-    }
-}
+// EOriginTransition and animateOrigin moved to EAppState+Location.swift.
 
 // MARK: - Inertia transition
 // Momentum glide after a flick. Velocity decays exponentially:

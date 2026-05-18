@@ -1,5 +1,4 @@
 import SwiftUI
-import CoreLocation
 import Observation
 import CoreGraphics
 import simd
@@ -51,8 +50,11 @@ class EAppState {
     var plane:  Plane
     var scale:  Double   = AstroConstants.defaultScale
     var offset: CGPoint  = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
-    var _originTransition:  EOriginTransition?  = nil   // defined in EViewPreset.swift
-    var _inertiaTransition: EInertiaTransition? = nil   // defined in EViewPreset.swift
+    var _originTransition:  EOriginTransition?  = nil   // defined in EAppState+Location.swift
+    var _inertiaTransition: EInertiaTransition? = nil   // defined in FocusPreset.swift
+    // Transient — true once the device's first location fix has been adopted
+    // as the origin. Not persisted. See EAppState+Location.swift.
+    var _didAdoptDeviceLocation: Bool = false
 
     // MARK: - Star state  (logic → EAppState+Stars.swift)
     var magnitudeFilter: Double = AstroConstants.defaultMagCap { didSet { invalidateStarCache() } }
@@ -92,18 +94,12 @@ class EAppState {
     var _activeTransition: EPresetTransition? = nil
 
     // MARK: - Init
+    // At launch CoreLocation has no fix yet, so origin/plane start at their
+    // defaults; the first real fix is adopted once via
+    // adoptInitialDeviceLocation(_:) (see EAppState+Location.swift).
     init() {
-        if let loc = ELocationService.shared.location {
-            let lat = Angle.degrees(loc.coordinate.latitude)
-            let lon = Angle.degrees(loc.coordinate.longitude)
-            var o = Origin(); o.latitude = lat; o.longitude = lon
-            var p = Plane();  p.latitude = -lat; p.longitude = lon + .pi
-            self.origin = o
-            self.plane  = p
-        } else {
-            self.origin = .init()
-            self.plane  = .init()
-        }
+        self.origin = .init()
+        self.plane  = .init()
     }
 }
 
