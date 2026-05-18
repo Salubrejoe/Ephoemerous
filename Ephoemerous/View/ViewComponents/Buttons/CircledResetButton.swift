@@ -7,10 +7,11 @@ struct CircledResetButton: View {
         Button(action: state.resetView) {
             Image(symbol: .circle)
                 .font(.title.weight(.semibold))
-                .foregroundStyle(.primary)
+                .symbolColorRenderingMode(.gradient)
+                .foregroundStyle(.white)
         }
         .padding(2)
-        .glassEffect(.regular.interactive(), in: .circle)
+        .glassEffect(.clear.interactive(), in: .circle)
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in state.toggleAppMode() }

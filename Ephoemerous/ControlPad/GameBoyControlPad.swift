@@ -8,34 +8,77 @@ struct GameBoyControlPad: View {
 
     @Environment(EAppState.self) private var state
 
-    private let latitudeStep:  Double = 1.5   // degrees per D-pad step
-    private let longitudeStep: Double = 1.5
+    private let latitudeStep:  Double = 0.1   // degrees per D-pad step
+    private let longitudeStep: Double = 0.1
+    
+    @State var isShowingArrowPad: Bool = false
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             Spacer()
 
-            if state.isShowingDatePicker {
-                datePickerPanel
-                    .transition(.move(edge: .trailing).combined(with: .opacity).combined(with: .blurReplace))
-            }
-
-            GlassEffectContainer {
-                HStack(alignment: .center, spacing: 0) {
-                    directionPad
-                    Spacer(minLength: 12)
-                    actionCluster
+                VStack {
+                    
+                    
+                    VStack {
+                        
+                        if isShowingArrowPad {
+                            directionPad
+                                .padding()
+                                .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .blurReplace))
+                        }
+                        
+                        if state.isShowingDatePicker {
+                            datePickerPanel
+                                .padding()
+                                .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .blurReplace))
+                        }
+                        
+                    }
+                    
+                    GlassEffectContainer {
+                    HStack {
+                        
+                            
+                            SearchBar()
+                            Spacer()
+                        
+                        
+                        
+                            actionButton(
+                                isShowingArrowPad ? "xmark" : "arcade.stick.and.arrow.up.and.arrow.down",
+                                "Here",
+                                color: .baseOrange
+                            )    {
+                                //                state.goToDeviceLocation()
+                                isShowingArrowPad.toggle()
+                            }
+                        
+                        
+                        
+                            actionButton(
+                                state.isShowingDatePicker ? "xmark" : "\(Calendar.current.component(.day, from: .now)).calendar",
+                                "Date",
+                                color: .baseCoral
+                            )    { state.toggleDatePicker() }
+                        
+                    }
+                    
+                    
+                    
                 }
-                .padding(.horizontal, 26)
-                .padding(.vertical, 16)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
                 .glassEffect(.clear.interactive(),
                              in: RoundedRectangle(cornerRadius: 34, style: .continuous))
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
+            
         }
         .animation(.easeIn,
                    value: state.isShowingDatePicker)
+        .animation(.easeIn,
+                   value: isShowingArrowPad)
+
     }
 }
 
@@ -87,61 +130,57 @@ private extension GameBoyControlPad {
                action: @escaping () -> Void) -> some View {
         HoldRepeatButton(action: action) {
             Image(systemName: systemName)
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.primary)
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.secondary)
                 .frame(width: 44, height: 44)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 
     func nudgeLatitude(by delta: Double) {
+        
+        state.coupledAxis = .vertical
         let lat = (state.origin.latitude.degrees + delta).clamped(to: -89 ... 89)
         state.setOrigin(lat: .degrees(lat), lon: state.origin.longitude)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            state.coupledAxis = .none
+        }
     }
 
     func nudgeLongitude(by delta: Double) {
+        state.coupledAxis = .horizontal
         var lon = (state.origin.longitude.degrees + delta)
             .truncatingRemainder(dividingBy: 360)
         if lon >  180 { lon -= 360 }
         if lon < -180 { lon += 360 }
         state.setOrigin(lat: state.origin.latitude, lon: .degrees(lon))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            state.coupledAxis = .none
+        }
     }
 }
 
 // MARK: - Action cluster (date / location / default view / search)
 private extension GameBoyControlPad {
 
-    var actionCluster: some View {
-        Grid(horizontalSpacing: 14, verticalSpacing: 14) {
-            GridRow {
-                actionButton("calendar",       "Date")    { state.toggleDatePicker() }
-                actionButton("location.fill",  "Here")    { state.goToDeviceLocation() }
-            }
-            GridRow {
-                // Like the old CircledResetButton: tap → default scale &
-                // offset; long-press → toggle app mode.
-                actionButton("viewfinder", "Default",
-                             longPress: { state.toggleAppMode() }) {
-                    state.resetView()
-                }
-                actionButton("magnifyingglass", "Search") { state.showStarList.toggle() }
-            }
-        }
-    }
 
     @ViewBuilder
     func actionButton(_ systemName: String, _ title: String,
                        longPress: (() -> Void)? = nil,
+                      color: Color = .primary,
                        action: @escaping () -> Void) -> some View {
         let button = Button(action: action) {
-            VStack(spacing: 3) {
+            ZStack {
+                Circle().fill(.ultraThinMaterial)
                 Image(systemName: systemName)
-                    .font(.title3.weight(.semibold))
+                    .font(.title3)
+                    .fontWeight(.light)
             }
+            
             .foregroundStyle(.primary)
-            .frame(width: 56, height: 52)
+//            .foregroundStyle(color)
+            .frame(width: 44, height: 44)
             .contentShape(Circle())                 // solid, predictable hit area
-            .background(.ultraThinMaterial, in: Circle())
+//            .background(.ultraThinMaterial, in: Circle())
         }
         .buttonStyle(.plain)
 

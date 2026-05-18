@@ -5,8 +5,9 @@ struct SearchBar: View {
     @Environment(EAppState.self) var state
     
     var body: some View {
-        Group {
-            if !state.isShowingDatePicker || state.showStarList {
+        VStack {
+            
+            if !state.showStarList {
                 Button {
                     state.showStarList.toggle()
                 } label: {
@@ -16,9 +17,11 @@ struct SearchBar: View {
                         Spacer()
                     }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.gray)
                 }
                 .padding(.horizontal)
+                .padding(.vertical)
+                .glassEffect()
                 .animation(.bouncy, value: state.showStarList)
             }
         }
