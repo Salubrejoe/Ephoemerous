@@ -18,7 +18,7 @@ struct EphoemerousApp: App {
                 MainView()
             }
             .ignoresSafeArea()
-            .onAppear { ECloudSync.shared.start(appState: state) }
+            .onAppear(perform: state.startCloudSync)
             .onChange(of: ELocationService.shared.location) { _, location in
                 if let location { state.adoptInitialDeviceLocation(location) }
             }

@@ -58,29 +58,12 @@ struct CelestialCanva: View {
         TimelineView(schedule) { timeline in
             ZStack {
                 Canvas { ctx, size in
-                    state.animationTime = timeline.date.timeIntervalSinceReferenceDate
-                    if var t = state._inertiaTransition {
-                        let (dx, dy, finished) = t.advance(to: state.animationTime)
-                        let advanced = t
-                        DispatchQueue.main.async {
-                            state.offset.x += dx
-                            state.offset.y += dy
-                            state._inertiaTransition = finished ? nil : advanced
-                        }
-                    }
-                    
-                    if let t = state._originTransition {
-                        let (lat, lon) = t.interpolated(at: state.animationTime)
-                        let finished = t.isFinished(at: state.animationTime)
-                        DispatchQueue.main.async {
-                            state.setOrigin(lat: .radians(lat), lon: .radians(lon))
-                            if finished { state._originTransition = nil }
-                        }
-                    }; if state.canvasSize != size { DispatchQueue.main.async { state.canvasSize = size } }
-                    
+                    state.advanceCanvasClock(
+                        to:         timeline.date.timeIntervalSinceReferenceDate,
+                        canvasSize: size
+                    )
                     var innerDC = innerDC(ctx: ctx, size: size)
                     for layer in skyLayers { layer.draw(in: &innerDC) }
-                    
                 }
                 
                     

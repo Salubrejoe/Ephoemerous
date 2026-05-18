@@ -50,8 +50,8 @@ struct MainView: View {
             .frame(maxHeight: 700, alignment: .top)
             
         }
-        .onChange(of: layerVisibilityHash) { ECloudSync.shared.saveLayerVisibility(state) }
-        .onChange(of: state.magnitudeFilter) { ECloudSync.shared.saveLayerVisibility(state) }
+        .onChange(of: state.layerVisibilitySignature) { state.persistLayerVisibility() }
+        .onChange(of: state.magnitudeFilter)          { state.persistLayerVisibility() }
         
         
         .toolbar {
@@ -69,18 +69,6 @@ struct MainView: View {
                     .sheetFormat()
             }
         }
-    }
-    
-    // Bitmask to detect any layer toggle change in one .onChange
-    private var layerVisibilityHash: Int {
-        (state.showEquatorTropics  ? 1   : 0) |
-        (state.showEcliptic        ? 2   : 0) |
-        (state.showNSMeridians     ? 4   : 0) |
-        (state.showULMeridians     ? 8   : 0) |
-        (state.showHorizon         ? 16  : 0) |
-        (state.showStars           ? 32  : 0) |
-        (state.showPlanets         ? 64  : 0) |
-        (state.showSelectedStars   ? 128 : 0)
     }
 }
 

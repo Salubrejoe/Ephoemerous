@@ -4,80 +4,51 @@ import SwiftUI
 
 struct ObjectsTrackingOverlay: View {
     @Environment(EAppState.self) var state
-    @Environment(\.dismiss) var dismiss
-    
-    @State private var showStarView : Bool = false
-    
-    
-    
+
     var body: some View {
-//        GeometryReader { geo in
-            ZStack {
-                
-                // SUN
-                if let sunPt = state.sunScreenPosition {
-                    ClearCircle(at: sunPt)
-                        .onTapGesture {
-                            state.closeAllSheets()
-                            state.applySunTracking()
-                            state.showSunInfo = true
-                        }
-                }
-                
-                // MOON
-                if let moonPt = state.moonScreenPosition {
-                    ClearCircle(at: moonPt)
-                        .onTapGesture {
-                            state.closeAllSheets()
-                            state.applyMoonTracking()
-                            state.showMoonInfo = true
-                        }
-                }
-                
-                // SELECTED STARS
-                ForEach(state.selectedStars.uniqued(by: \.name), id: \.name) { star in
-                    if let pt = state.selectedStarPositions[star.name] {
-                        ClearCircle(at: pt)
-                            .onTapGesture {
-                                state.closeAllSheets()
-                                state.applyStarTracking(star)
-                                state.currentlyDisplayedStar = star
-                                showStarView = true
-                            }
-                    }
+        ZStack {
+            if let sunPoint = state.sunScreenPosition {
+                ClearCircle(at: sunPoint)
+                    .onTapGesture { state.presentSunInfo() }
+            }
+
+            if let moonPoint = state.moonScreenPosition {
+                ClearCircle(at: moonPoint)
+                    .onTapGesture { state.presentMoonInfo() }
+            }
+
+            ForEach(state.selectedStars.uniqued(by: \.name), id: \.name) { star in
+                if let point = state.selectedStarPositions[star.name] {
+                    ClearCircle(at: point)
+                        .onTapGesture { state.presentStarInfo(star) }
                 }
             }
-            
-            .sheet(isPresented: Bindable(state).showSunInfo) {
-                NavigationStack {
-                    ESunDetailView()
+        }
+        .sheet(isPresented: Bindable(state).showSunInfo) {
+            NavigationStack {
+                ESunDetailView()
+                    .sheetFormat()
+            }
+        }
+        .sheet(isPresented: Bindable(state).showMoonInfo) {
+            NavigationStack {
+                EMoonDetailView()
+                    .sheetFormat()
+            }
+        }
+        .sheet(isPresented: Bindable(state).showStarView) {
+            NavigationStack {
+                if let star = state.currentlyDisplayedStar {
+                    EStarDetailView(star: star)
                         .sheetFormat()
+                        .onDisappear { state.currentlyDisplayedStar = nil }
                 }
             }
-            
-            .sheet(isPresented: Bindable(state).showMoonInfo) {
-                NavigationStack {
-                    EMoonDetailView()
-                        .sheetFormat()
-                }
-            }
-            
-            .sheet(isPresented: $showStarView) {
-                NavigationStack {
-                    if let star = state.currentlyDisplayedStar {
-                        EStarDetailView(star: star)
-                            .sheetFormat()
-                            .onDisappear {
-                                state.currentlyDisplayedStar = nil
-                            }
-                    }
-                }
-            }
-//        }
+        }
         .allowsHitTesting(true)
         .ignoresSafeArea()
     }
-    
+
     @ViewBuilder
     private func ClearCircle(at point: CGPoint) -> some View {
         Circle()
@@ -87,4 +58,3 @@ struct ObjectsTrackingOverlay: View {
             .position(point)
     }
 }
-
