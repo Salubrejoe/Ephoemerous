@@ -105,11 +105,7 @@ class EAppState {
 
 // MARK: - Supporting value types
 
-enum EAppMode {
-    case clock, travel
-    mutating func toggle() { self = self == .clock ? .travel : .clock }
-}
-
+// EAppMode and its behaviour live in EAppState+AppMode.swift.
 // ProjectionMode and its behaviour live in EAppState+ProjectionMode.swift.
 
 struct Origin: Equatable {
