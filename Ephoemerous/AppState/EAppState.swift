@@ -36,6 +36,11 @@ class EAppState {
     var coupledAxis:    Axis?           = nil
     var haptics:        Bool            = false
 
+    // Transient backing for useCoupledProjectionTemporarily(...). Not persisted.
+    // The generation token makes overlapping calls race-safe (see EAppState+ProjectionMode).
+    var _coupledRestoreMode:       ProjectionMode? = nil
+    var _coupledRestoreGeneration: Int             = 0
+
     // MARK: - Temporal state  (logic → EAppState+Time.swift)
     var observationDate: Date   = .now  { didSet { invalidateStarCache() } }
     var animationTime:   Double = 0.0
@@ -109,27 +114,7 @@ enum EAppMode {
     mutating func toggle() { self = self == .clock ? .travel : .clock }
 }
 
-enum ProjectionMode: String, CaseIterable {
-    case drag    = "drag"
-    case coupled = "coupled"
-    case origin  = "origin"
-
-    var symbol: String {
-        switch self {
-        case .drag:    return "arrow.up.and.down.and.arrow.left.and.right"
-        case .coupled: return "arcade.stick.and.arrow.up.and.arrow.down"
-        case .origin:  return "figure.walk.motion"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .drag:    return .primary
-        case .coupled: return .baseOrange
-        case .origin:  return .baseCoral
-        }
-    }
-}
+// ProjectionMode and its behaviour live in EAppState+ProjectionMode.swift.
 
 struct Origin: Equatable {
     var latitude:  Angle = .degrees(51)

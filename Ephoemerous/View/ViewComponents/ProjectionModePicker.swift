@@ -5,7 +5,7 @@ struct ProjectionModePicker: View {
 
     var body: some View {
         Picker("", selection: Bindable(state).projectionMode) {
-            ForEach(visibleModes, id: \.self) { mode in
+            ForEach(state.selectableProjectionModes, id: \.self) { mode in
                 Image(systemName: mode.symbol)
                     .tag(mode)
             }
@@ -16,15 +16,11 @@ struct ProjectionModePicker: View {
         .background(highlights())
     }
 
-    private var visibleModes: [ProjectionMode] {
-        state.appMode == .travel ? ProjectionMode.allCases : [.drag, .coupled]
-    }
-    
-    private var color1 : Color {
+    private var coupledHighlight: Color {
         state.projectionMode == .coupled ? .baseOrange : .clear
     }
-    
-    private var color2 : Color {
+
+    private var originHighlight: Color {
         state.projectionMode == .origin ? .baseCoral : .clear
     }
     
@@ -33,10 +29,10 @@ struct ProjectionModePicker: View {
         HStack(spacing:2) {
             Capsule().fill(.clear)
             Capsule()
-                .stroke(color1)
+                .stroke(coupledHighlight)
             if state.appMode == .travel {
                 Capsule()
-                    .stroke(color2)
+                    .stroke(originHighlight)
             }
         }
         .padding([.top, .horizontal], 1)
