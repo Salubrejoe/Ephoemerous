@@ -120,86 +120,56 @@ extension EAppState {
     }
 }
 
-// MARK: - EAppState: Sun tracking
+// MARK: - EAppState: Object tracking
 extension EAppState {
+
+    /// Centre the viewport on a screen point and zoom to tracking scale,
+    /// animated through an EPresetTransition. Shared by sun / moon / star —
+    /// previously this body was copy-pasted three times.
+    private func beginTracking(toward screenPosition: CGPoint) {
+        let targetX   = canvasSize.width  / 2
+        let targetY   = canvasSize.height / 2 - 160
+        let newOffset = offsetToCenter(screenPos: screenPosition,
+                                       atScale:   trackingScale,
+                                       targetX:   targetX,
+                                       targetY:   targetY)
+        _activeTransition = EPresetTransition(
+            fromScale:  renderedScale,
+            fromOffset: renderedOffset,
+            toScale:    trackingScale,
+            toOffset:   newOffset,
+            startTime:  Date.now.timeIntervalSinceReferenceDate,
+            duration:   AstroConstants.transitionDuration
+        )
+        scale  = trackingScale
+        offset = newOffset
+    }
 
     func applySunTracking() {
         guard let sun = sunScreenPosition else {
             ELogger.sun("trackSun: sunScreenPosition not yet available")
             return
         }
-        let targetScreenX = canvasSize.width  / 2
-        let targetScreenY = canvasSize.height / 2 - 160
-        let newOffset = offsetToCenter(screenPos: sun, atScale: trackingScale,
-                                       targetX: targetScreenX, targetY: targetScreenY)
-        _activeTransition = EPresetTransition(
-            fromScale:  renderedScale,
-            fromOffset: renderedOffset,
-            toScale:    trackingScale,
-            toOffset:   newOffset,
-            startTime:  Date.now.timeIntervalSinceReferenceDate,
-            duration:   AstroConstants.transitionDuration
-        )
-        scale  = trackingScale
-        offset = newOffset
-        ELogger.sun("trackSun: offset → \(newOffset)")
+        beginTracking(toward: sun)
+        ELogger.sun("trackSun: offset → \(offset)")
     }
-}
-
-// MARK: - EAppState: Moon tracking
-extension EAppState {
 
     func applyMoonTracking() {
         guard let moon = moonScreenPosition else {
             ELogger.moon("trackMoon: moonScreenPosition not yet available")
             return
         }
-        let targetScreenX = canvasSize.width  / 2
-        let targetScreenY = canvasSize.height / 2 - 160
-        let newOffset = offsetToCenter(screenPos: moon, atScale: trackingScale,
-                                        targetX: targetScreenX, targetY: targetScreenY)
-        _activeTransition = EPresetTransition(
-            fromScale:  renderedScale,
-            fromOffset: renderedOffset,
-            toScale:    trackingScale,
-            toOffset:   newOffset,
-            startTime:  Date.now.timeIntervalSinceReferenceDate,
-            duration:   AstroConstants.transitionDuration
-        )
-        scale  = trackingScale
-        offset = newOffset
-        ELogger.moon("trackMoon: offset → \(newOffset)")
+        beginTracking(toward: moon)
+        ELogger.moon("trackMoon: offset → \(offset)")
     }
-}
-
-// MARK: - EAppState: Star tracking
-extension EAppState {
 
     func applyStarTracking(_ star: EStar) {
-        let pt: CGPoint
-        if let cached = selectedStarPositions[star.name] {
-            pt = cached
-        } else if let computed = screenPosition(of: star) {
-            pt = computed
-        } else {
+        guard let position = selectedStarPositions[star.name] ?? screenPosition(of: star) else {
             ELogger.selectedStars("trackStar: could not compute position for \(star.name)")
             return
         }
-        let targetScreenX = canvasSize.width  / 2
-        let targetScreenY = canvasSize.height / 2 - 160
-        let newOffset = offsetToCenter(screenPos: pt, atScale: trackingScale,
-                                        targetX: targetScreenX, targetY: targetScreenY)
-        _activeTransition = EPresetTransition(
-            fromScale:  renderedScale,
-            fromOffset: renderedOffset,
-            toScale:    trackingScale,
-            toOffset:   newOffset,
-            startTime:  Date.now.timeIntervalSinceReferenceDate,
-            duration:   AstroConstants.transitionDuration
-        )
-        scale  = trackingScale
-        offset = newOffset
-        ELogger.selectedStars("trackStar: \(star.name) → \(newOffset)")
+        beginTracking(toward: position)
+        ELogger.selectedStars("trackStar: \(star.name) → \(offset)")
     }
 }
 
@@ -242,35 +212,5 @@ extension EAppState {
 
 // EOriginTransition and animateOrigin moved to EAppState+Location.swift.
 
-// MARK: - Inertia transition
-// Momentum glide after a flick. Velocity decays exponentially:
-//   v(t) = v0 · e^(−k·t)
-// Each frame emits the *exact* integral of v over the elapsed slice, so the
-// distance travelled is identical no matter the frame rate (the old version
-// multiplied by a hardcoded 1/60 and ended on the first tick — that was the
-// "unnaturally sped / instantly dead" inertia).
-struct EInertiaTransition {
-    let velX:      Double      // pt/s along offset.x  (follows translation.height)
-    let velY:      Double      // pt/s along offset.y  (follows translation.width)
-    let startTime: Double
-    var lastEmittedTime: Double
-
-    /// Decay rate (1/s). Higher = shorter, snappier glide. Total travel ≈ v0 / k.
-    let decayRate:         Double = 80.0
-    /// Stop once speed has fallen to this fraction of the launch speed.
-    let stopSpeedFraction: Double = 0.02
-
-    /// Returns the offset delta to apply for the slice
-    /// [lastEmittedTime, time] and whether the glide has settled.
-    /// `advance` is mutating: it remembers how far it has already emitted.
-    mutating func advance(to time: Double) -> (dx: Double, dy: Double, isFinished: Bool) {
-        let k  = decayRate
-        let t0 = max(0, lastEmittedTime - startTime)
-        let t1 = max(t0, time - startTime)
-        // ∫ v0·e^(−k·t) dt  from t0 to t1  =  (v0/k)·(e^(−k·t0) − e^(−k·t1))
-        let span = (exp(-k * t0) - exp(-k * t1)) / k
-        lastEmittedTime = time
-        let finished = exp(-k * t1) < stopSpeedFraction
-        return (velX * span, velY * span, finished)
-    }
-}
+// EInertiaTransition moved to CelestialGestureCoordinator.swift (it is the
+// momentum of a viewport flick — a gesture concern, not a focus preset).

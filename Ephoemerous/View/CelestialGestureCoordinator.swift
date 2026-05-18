@@ -203,3 +203,36 @@ final class CelestialGestureCoordinator {
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
 }
+
+// MARK: - EInertiaTransition
+// Momentum glide after a flick. Velocity decays exponentially:
+//   v(t) = v0 · e^(−k·t)
+// Each frame emits the *exact* integral of v over the elapsed slice, so the
+// distance travelled is identical no matter the frame rate (the old version
+// multiplied by a hardcoded 1/60 and ended on the first tick — that was the
+// "unnaturally sped / instantly dead" inertia).
+struct EInertiaTransition {
+    let velX:      Double      // pt/s along offset.x  (follows translation.height)
+    let velY:      Double      // pt/s along offset.y  (follows translation.width)
+    let startTime: Double
+    var lastEmittedTime: Double
+
+    /// Decay rate (1/s). Higher = shorter, snappier glide. Total travel ≈ v0 / k.
+    let decayRate:         Double = 80.0
+    /// Stop once speed has fallen to this fraction of the launch speed.
+    let stopSpeedFraction: Double = 0.02
+
+    /// Returns the offset delta to apply for the slice
+    /// [lastEmittedTime, time] and whether the glide has settled.
+    /// `advance` is mutating: it remembers how far it has already emitted.
+    mutating func advance(to time: Double) -> (dx: Double, dy: Double, isFinished: Bool) {
+        let k  = decayRate
+        let t0 = max(0, lastEmittedTime - startTime)
+        let t1 = max(t0, time - startTime)
+        // ∫ v0·e^(−k·t) dt  from t0 to t1  =  (v0/k)·(e^(−k·t0) − e^(−k·t1))
+        let span = (exp(-k * t0) - exp(-k * t1)) / k
+        lastEmittedTime = time
+        let finished = exp(-k * t1) < stopSpeedFraction
+        return (velX * span, velY * span, finished)
+    }
+}
