@@ -75,8 +75,12 @@ struct CelestialCanva: View {
         }
         .ignoresSafeArea()
         .clipped()
+        // Same frame the inner Canvas reports as `size`, so a tap read in
+        // this space lines up exactly with toScreen — no nav-bar/safe-area
+        // inset bias on the double-tap zoom.
+        .coordinateSpace(.named("celestialCanvas"))
         .animation(.default, value: state.appMode)
-        .gesture(gestures.viewportDragGesture(state: state))
+        .gesture(gestures.primaryGesture(state: state))
         .simultaneousGesture(gestures.magnificationGesture(state: state))
     }
 }

@@ -18,14 +18,27 @@ final class CelestialGestureCoordinator {
 
     private(set) var isPanningViewport = false
     private(set) var isPinchingToZoom  = false
+    private(set) var isZoomDragging    = false
 
     private var viewportOffsetAtPanStart: CGPoint = .zero
     private var scaleAtPinchStart:        Double  = 0
     private var skyAnchorUnderFingers:    CGPoint = .zero
 
+    // One-finger touch classification (tap / double-tap / double-tap-drag / pan).
+    private enum TouchPhase { case undecided, panning, zoomDragging }
+    private var phase:             TouchPhase = .undecided
+    private var touchStamped:      Bool       = false   // stamp start once per touch
+    private var touchStartTime:    Date       = .distantPast
+    private var touchStartPoint:   CGPoint    = .zero
+    private var lastTapEndedAt:    Date       = .distantPast
+    private var lastTapPoint:      CGPoint    = .zero
+    private var zoomDragStartScale: Double    = 0
+    private var zoomDragAnchorSky:  CGPoint   = .zero   // sky point pinned under the tap
+    private var zoomDragAnchorScreen: CGPoint = .zero   // fixed screen point (the double-tap)
+
     /// True while the user is actively manipulating the canvas. The
     /// timeline reads this to stay at 60 fps for the duration.
-    var isInteracting: Bool { isPanningViewport || isPinchingToZoom }
+    var isInteracting: Bool { isPanningViewport || isPinchingToZoom || isZoomDragging }
 
     // MARK: Tuning
 
@@ -33,32 +46,125 @@ final class CelestialGestureCoordinator {
     private let coupledAxisLockSlop:    Double = 6      // pt before an axis locks
     private let minimumFlingSpeed:      Double = 150    // pt/s, below this: no inertia
     private let maximumFlingSpeed:      Double = 4000   // pt/s, clamp wild flicks
+    private let doubleTapWindow:        Double = 0.30   // s: tap-up → next touch-down
+    private let tapMaxMovement:         Double = 10     // pt: beyond this it's a drag
+    private let tapMaxDuration:         Double = 0.30   // s: longer (still) isn't a tap
+    private let zoomDragSensitivity:    Double = 0.005  // scale e-fold per pt dragged
+    private let maximumScale:           Double = 300    // hard zoom-in ceiling, all gestures
 
-    // MARK: - Single-finger drag
+    // MARK: - Primary one-finger gesture
+    // One DragGesture(minimumDistance: 0) classifies the touch: a quick tap,
+    // a double-tap (discrete step zoom), a double-tap held + dragged
+    // (continuous zoom — drag down = in, up = out, exactly like pinch), or
+    // a pan (viewport / coupled / origin + inertia). Doing this in a single
+    // gesture avoids SwiftUI arbitration fights between tap and drag.
 
-    func viewportDragGesture(state: EAppState) -> some Gesture {
-        DragGesture(minimumDistance: 1)
+    func primaryGesture(state: EAppState) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("celestialCanvas"))
             .onChanged { value in
-                // Pinch owns the viewport while two fingers are down.
-                guard !self.isPinchingToZoom else { return }
-                self.commitAnyRunningPresetTransition(state: state)
-                self.stopInertia(state: state)
-                self.beginPanIfNeeded(state: state)
+                guard !self.isPinchingToZoom else { return }   // pinch owns 2-finger
 
-                switch state.projectionMode {
-                case .drag:    self.panViewport(state: state, by: value.translation)
-                case .coupled: self.moveObserverWithAxisLock(state: state, by: value)
-                case .origin:  self.moveObserverFreely(state: state, by: value.translation)
+                if self.phase == .undecided {
+                    self.classifyTouch(state: state, value: value)
+                }
+
+                switch self.phase {
+                case .zoomDragging:
+                    self.updateZoomDrag(state: state, value: value)
+
+                case .panning:
+                    self.commitAnyRunningPresetTransition(state: state)
+                    self.stopInertia(state: state)
+                    self.beginPanIfNeeded(state: state)
+                    switch state.projectionMode {
+                    case .drag:    self.panViewport(state: state, by: value.translation)
+                    case .coupled: self.moveObserverWithAxisLock(state: state, by: value)
+                    case .origin:  self.moveObserverFreely(state: state, by: value.translation)
+                    }
+
+                case .undecided:
+                    break   // tiny movement so far — still could be a tap
                 }
             }
             .onEnded { value in
-                // Inertia only makes sense when panning the viewport itself —
-                // a flung observer in coupled / origin mode would be disorienting.
-                if state.projectionMode == .drag && !self.isPinchingToZoom {
-                    self.startInertiaIfFlung(state: state, velocity: value.velocity)
+                defer { self.phase = .undecided; self.touchStamped = false }
+                guard !self.isPinchingToZoom else { return }
+
+                let moved    = hypot(value.translation.width, value.translation.height)
+                let duration = Date.now.timeIntervalSince(self.touchStartTime)
+                let wasTap   = moved <= self.tapMaxMovement && duration <= self.tapMaxDuration
+
+                switch self.phase {
+                case .zoomDragging:
+                    // Second tap with no drag → discrete step zoom; with a
+                    // drag → continuous zoom already applied live. Either
+                    // way the zoom centres on the FIRST tap of the series.
+                    if wasTap { self.zoomToward(point: self.lastTapPoint, state: state) }
+                    self.lastTapEndedAt = .distantPast      // double-tap consumed
+                    self.isZoomDragging = false
+
+                case .panning:
+                    if state.projectionMode == .drag {
+                        self.startInertiaIfFlung(state: state, velocity: value.velocity)
+                    }
+                    self.endPan(state: state)
+                    self.lastTapEndedAt = .distantPast      // a pan cancels a pending tap
+
+                case .undecided:
+                    if wasTap {                             // a (first) clean tap
+                        self.lastTapEndedAt = Date.now
+                        self.lastTapPoint   = self.touchStartPoint
+                    }
                 }
-                self.endPan(state: state)
             }
+    }
+
+    // First onChanged of a touch: stamp it, then decide whether it's the
+    // held second tap of a double-tap (→ zoom drag) or an ordinary drag.
+    private func classifyTouch(state: EAppState, value: DragGesture.Value) {
+        if !touchStamped {                       // stamp the down once, not every frame
+            touchStamped    = true
+            touchStartTime  = Date.now
+            touchStartPoint = value.startLocation
+        }
+
+        let isSecondTap = Date.now.timeIntervalSince(lastTapEndedAt) <= doubleTapWindow
+        if isSecondTap {
+            commitAnyRunningPresetTransition(state: state)
+            stopInertia(state: state)
+            beginZoomDrag(state: state, at: lastTapPoint)
+            phase = .zoomDragging
+        } else if hypot(value.translation.width, value.translation.height) > tapMaxMovement {
+            phase = .panning
+        }
+        // else: still .undecided — wait for movement or lift (tap).
+    }
+
+    // MARK: - Double-tap-and-drag zoom (continuous, anchored at the tap)
+
+    private func beginZoomDrag(state: EAppState, at anchor: CGPoint) {
+        let size = state.canvasSize
+        isZoomDragging      = true
+        zoomDragStartScale  = state.scale
+        zoomDragAnchorScreen = anchor
+        // Same inversion as beginPinchIfNeeded: sky point under the tap.
+        zoomDragAnchorSky = CGPoint(
+            x: (anchor.x - size.width  / 2 - state.offset.y) / state.scale,
+            y: (size.height / 2 + state.offset.x - anchor.y) / state.scale
+        )
+    }
+
+    private func updateZoomDrag(state: EAppState, value: DragGesture.Value) {
+        let size     = state.canvasSize
+        guard size.width > 0, size.height > 0 else { return }
+        // Drag down (translation.height > 0) → zoom in; up → zoom out.
+        let factor   = exp(value.translation.height * zoomDragSensitivity)
+        let newScale = clampScale(zoomDragStartScale * factor, state: state)
+
+        // Same reprojection as zoomAroundFingers — keep the tap point fixed.
+        state.scale    = newScale
+        state.offset.y = zoomDragAnchorScreen.x - size.width  / 2 - zoomDragAnchorSky.x * newScale
+        state.offset.x = zoomDragAnchorScreen.y - size.height / 2 + zoomDragAnchorSky.y * newScale
     }
 
     // MARK: - Pinch to zoom
@@ -72,6 +178,59 @@ final class CelestialGestureCoordinator {
                 self.zoomAroundFingers(state: state, value: value)
             }
             .onEnded { _ in self.endPinch() }
+    }
+
+    // MARK: - Discrete step zoom (quick double-tap, no drag)
+    // Reuses the exact pinch anchor math so the tapped point stays pinned,
+    // animated via the shared preset transition (crown / stars / Milky Way
+    // all track it together).
+
+    private let doubleTapZoomFactor: Double = 2.0
+
+    private func zoomToward(point: CGPoint, state: EAppState) {
+        let size = state.canvasSize
+        guard size.width > 0, size.height > 0 else { return }
+
+        let ceiling = maximumScale
+        let floor   = state.defaultScale.isFinite
+            ? Swift.min(state.defaultScale, ceiling) : 1
+
+        // Same inversion as beginPinchIfNeeded: the sky point under the tap.
+        let anchorX = (point.x - size.width  / 2 - state.offset.y) / state.scale
+        let anchorY = (size.height / 2 + state.offset.x - point.y) / state.scale
+
+        // Zoom in a step; once at the ceiling the next double-tap zooms out.
+        let atCeiling = state.scale >= ceiling - 0.5
+        let target    = atCeiling
+            ? floor
+            : Swift.min(state.scale * doubleTapZoomFactor, ceiling)
+
+        // Same reprojection as zoomAroundFingers, so the tap stays fixed.
+        var newOffset = CGPoint.zero
+        newOffset.y = point.x - size.width  / 2 - anchorX * target
+        newOffset.x = point.y - size.height / 2 + anchorY * target
+
+        state._activeTransition = EPresetTransition(
+            fromScale:  state.renderedScale,
+            fromOffset: state.renderedOffset,
+            toScale:    target,
+            toOffset:   newOffset,
+            startTime:  Date.now.timeIntervalSinceReferenceDate,
+            duration:   AstroConstants.transitionDuration
+        )
+        state.scale  = target
+        state.offset = newOffset
+    }
+
+    // Order- and NaN-safe scale clamp. Floor = defaultScale but never above
+    // the hard ceiling; ceiling = maximumScale. Never constructs a Range, so
+    // a degenerate/transient canvasSize can't trip "Range requires
+    // lowerBound <= upperBound" (the pinch crash).
+    private func clampScale(_ candidate: Double, state: EAppState) -> Double {
+        let df    = state.defaultScale
+        let floor = df.isFinite ? Swift.min(df, maximumScale) : 1
+        guard candidate.isFinite else { return floor }
+        return Swift.min(Swift.max(candidate, floor), maximumScale)
     }
 
     // MARK: - Pan: viewport (.drag mode)
@@ -152,10 +311,8 @@ final class CelestialGestureCoordinator {
 
     private func zoomAroundFingers(state: EAppState, value: MagnifyGesture.Value) {
         let size = state.canvasSize
-        let minScale: Double = state.defaultScale
-        let maxScale: Double = size.height / 4
-        let newScale = (scaleAtPinchStart * Double(value.magnification))
-            .clamped(to: minScale ... maxScale)
+        let newScale = clampScale(scaleAtPinchStart * Double(value.magnification),
+                                  state: state)
 
         let mx = value.startAnchor.x * size.width
         let my = value.startAnchor.y * size.height
