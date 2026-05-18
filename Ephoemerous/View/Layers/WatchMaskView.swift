@@ -140,6 +140,14 @@ struct WatchMaskView: View {
                                     size: CGSize, crownR: Double, ringW: Double) {
         let rend = state.renderedScale
         let roff = state.renderedOffset
+        // Hoist the expensive per-frame constants out of the sample loop:
+        // localSiderealOffset recomputes GMST (Julian/Calendar math) on every
+        // access, and project(appState:mode:) rebuilds origin/plane vectors
+        // each call. Previously evaluated ~726× per frame; now once.
+        let sidereal = state.localSiderealOffset
+        let originV  = state.originVector
+        let planeV   = state.planeVector
+        let steps    = 48
 
         func toScreen(_ p: CGPoint) -> CGPoint {
             CGPoint(x: size.width  / 2 + p.x * rend + roff.y,
@@ -154,11 +162,11 @@ struct WatchMaskView: View {
         func parallelPath(dec: Angle) -> Path {
             var path    = Path()
             var started = false
-            for i in 0...120 {
-                let t = Double(i) / 120.0
+            for i in 0...steps {
+                let t = Double(i) / Double(steps)
                 let q = EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: dec)
-                    .sidereallyRotated(by: state.localSiderealOffset)
-                guard let p = EProjection.project(q, appState: state, mode: .userLocation)
+                    .sidereallyRotated(by: sidereal)
+                guard let p = EProjection.project(q, origin: originV, plane: planeV)
                 else { continue }
                 let s = toScreen(p)
                 if started { path.addLine(to: s) } else { path.move(to: s); started = true }
@@ -167,11 +175,13 @@ struct WatchMaskView: View {
             return path
         }
 
+        // dec 0 serves both its colour band and the equator stroke — compute once.
+        let equatorPath = parallelPath(dec: .zero)
         for band in Self.bands {
-            ctx.fill(parallelPath(dec: band.dec), with: .color(band.color.opacity(0.2)))
+            let p = band.dec == .zero ? equatorPath : parallelPath(dec: band.dec)
+            ctx.fill(p, with: .color(band.color.opacity(0.2)))
         }
-        ctx.stroke(parallelPath(dec: .zero),
-                   with: .color(.white.opacity(0.16)), lineWidth: ringW)
+        ctx.stroke(equatorPath, with: .color(.white.opacity(0.16)), lineWidth: ringW)
     }
 
     // MARK: Legacy SProjection crown (A/B only — drifts/snaps)
@@ -199,7 +209,7 @@ struct WatchMaskView: View {
                 }
             }
 
-            Ring(radius: eq.radius, lineWidth: ringW)
+            GlassRing(radius: eq.radius, lineWidth: ringW)
                 .offset(x: state.renderedOffset.y,
                         y: state.renderedOffset.x + eq.centerOffset)
                 .mask(Circle().frame(width: 2 * crownR, height: 2 * crownR).offset(off))

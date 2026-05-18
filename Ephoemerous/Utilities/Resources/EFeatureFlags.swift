@@ -8,7 +8,7 @@ enum EFeatureFlags {
     /// `true`  → vector strokes (no offscreen material/glass/mask raster,
     ///           so no re-rasterization "pop" when zooming past ~scale 90).
     /// `false` → the original glass / ultraThinMaterial annuli.
-    static let vectorWatchRings: Bool = true
+    static let vectorWatchRings: Bool = false
 
     /// Watch-crown geometry.
     /// `true`  → bands/equator projected through the SAME EProjection
