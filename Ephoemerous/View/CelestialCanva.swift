@@ -37,8 +37,6 @@ struct CelestialCanva: View {
         ESelectedStarsLayer(mode: .userLocation),
     ]
     
-    private var outerLayers: [any EGridLayer] { state.appMode == .clock ? clockLayers : travelLayers }
-    
     // Every touch interaction lives in the coordinator (own file / class).
     @State private var gestures = CelestialGestureCoordinator()
 
@@ -49,48 +47,67 @@ struct CelestialCanva: View {
         // `schedule` is recomputed whenever isAnimating flips, so TimelineView
         // reschedules on the next render — no destructive .id() teardown.
         TimelineView(schedule) { timeline in
+            // 0 = clock, 1 = travel. Drives a cross-fade between the two
+            // compositions (a per-star morph is geometrically impossible —
+            // the two view centres are ~141° apart through a projection
+            // blind past 90°; see spikes/projection_frame_spike.swift).
+            let blend = state.renderedProjectionBlend
+
             ZStack {
-                Canvas { ctx, size in
-                    state.advanceCanvasClock(
-                        to:         timeline.date.timeIntervalSinceReferenceDate,
-                        canvasSize: size
-                    )
-                    var innerDC = innerDC(ctx: ctx, size: size)
-                    if state.appMode == .clock {
+                // Clock composition — fades out as blend → 1.
+                ZStack {
+                    Canvas { ctx, size in
+                        // Single per-frame driver: advance the clock even
+                        // when this group is invisible (blend == 1) so
+                        // animationTime / inertia / the blend keep ticking.
+                        state.advanceCanvasClock(
+                            to:         timeline.date.timeIntervalSinceReferenceDate,
+                            canvasSize: size
+                        )
+                        guard blend < 0.999 else { return }
+                        var innerDC = innerDC(ctx: ctx, size: size)
                         for layer in skyLayers { layer.draw(in: &innerDC) }
                     }
+                    Canvas { ctx, size in
+                        guard blend < 0.999 else { return }
+                        var dc = EGraphicContext(ctx: ctx, size: size, state: state)
+                        for layer in clockLayers { layer.draw(in: &dc) }
+                    }
+                    if blend < 0.999 {
+                        // Layout sink: the crown's rings are framed to the
+                        // zoom (radius ∝ renderedScale); without this the
+                        // ZStack grows with scale and drags the gesture
+                        // view's coordinate space under the finger.
+                        WatchMaskView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                    }
                 }
-                
-                    
-                
-                Canvas { ctx, size in
-                    var outerDC = EGraphicContext(ctx: ctx, size: size, state: state)
-                    for layer in outerLayers { layer.draw(in: &outerDC) }
-                }
-                if state.appMode == .clock {
-                    // Layout sink: the crown's rings are framed to the zoom
-                    // (radius ∝ renderedScale), so without this the ZStack
-                    // grows with scale and drags the gesture view's
-                    // coordinate space under the finger — a layout-routed
-                    // feedback loop. Pin to the proposal, clip the overspill.
-                    WatchMaskView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
-                }
+                .opacity(1 - blend)
 
-                // Topmost, same frame the inner Canvas reports as `size`:
-                // UIKit recognisers read touches in this exact space, so
-                // location(in:) lines up with toScreen with no safe-area
-                // inset bias. Owns every canvas touch interaction. The
-                // flexible frame keeps this space immune to any sibling's
-                // intrinsic size.
+                // Travel composition — fades in as blend → 1.
+                ZStack {
+                    Rectangle()
+                        .fill(LinearGradient(colors: [.darkIndigo,
+                                                      .darkIndigo.opacity(0.5)],
+                                             startPoint: .top, endPoint: .bottom))
+                    Canvas { ctx, size in
+                        guard blend > 0.001 else { return }
+                        var dc = EGraphicContext(ctx: ctx, size: size, state: state)
+                        for layer in travelLayers { layer.draw(in: &dc) }
+                    }
+                }
+                .opacity(blend)
+
+                // Topmost: owns every canvas touch. The flexible frame keeps
+                // this coordinate space immune to any sibling's intrinsic
+                // size (the layout-routed gesture feedback fix).
                 CelestialGestureView(gestures: gestures, state: state)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .ignoresSafeArea()
         .clipped()
-        .animation(.default, value: state.appMode)
     }
 }
 

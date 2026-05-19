@@ -9,69 +9,15 @@ struct MainView: View {
     
     var body: some View {
         ZStack {
-            
-            // Clock-mode sky disc is now a back-most layer in the inner
-            // canvas (ESkyBackgroundLayer) — anchored exactly like the
-            // stars/crown. Travel keeps a plain full-screen fill.
-            if state.appMode == .travel {
-                Rectangle()
-                    .fill(LinearGradient(colors: [
-                        .darkIndigo,
-                        .darkIndigo.opacity(0.5)
-                    ], startPoint: .top, endPoint: .bottom))
-            }
-            
+            // Travel backdrop moved into CelestialCanva's travel group so it
+            // cross-fades with the sky on the same blend.
             CelestialCanva()
-            
-            ObjectsTrackingOverlay()
 
+            ObjectsTrackingOverlay()
         }
-//        .navigationTitle(Strings.App.name)
-//        .navigationBarTitleDisplayMode(.inline)
         .ignoresSafeArea()
-//        .overlay {
-//            HStack {
-//                // Needs to pull from ELocationService the name of the locality approx.
-//                HStack(spacing: 2) {
-//                    //if location is not user location
-//                    Image(systemName: "reset.circle.fill")
-//                        .glassEffect(.clear.tint(.baseOrange).interactive(), in: .circle)
-//                        .padding(.leading, 2)
-//                    //
-//                    
-//                    Image(symbol: .location)
-//                    Text("Brighton")
-//                }
-//                .font(.caption)
-//                .frame(width: 100)
-//                
-//                Spacer()
-//                // if state.scale and scale.offset are not the default
-//                CircledResetButton()
-//                //
-//                Spacer()
-//                // Needs to pull from appState the observation date
-//                HStack(spacing: 2) {
-//                    Image(systemName: "18.calendar")
-//                    Text("May 26")
-//                    //if observation date is not current date
-//                    Image(systemName: "reset.circle.fill")
-//                        .glassEffect(.clear.tint(.baseCoral).interactive(), in: .circle)
-//                        .padding(.leading, 2)
-//                    //
-//                }
-//                .font(.caption)
-//                .frame(width: 100)
-//            }
-//            .frame(maxWidth: 400, maxHeight: 700, alignment: .top)
-//            
-//        }
         .overlay {
             VStack {
-                if state.scale != state.defaultScale || state.offset !=  state.defaultOffset {
-//                    CircledResetButton()
-                }
-                Spacer()
                 GameBoyControlPad()
             }.padding(.horizontal, 32)
                 .frame(maxWidth: 400, maxHeight: 700, alignment: .bottom)
@@ -81,15 +27,6 @@ struct MainView: View {
         
         
         .toolbar {
-//            
-//            ToolbarItem(placement: .bottomBar) { DateButton() }
-//            
-//            ToolbarItem(placement: .status) {
-////                SearchBar()
-//                GameBoyControlPad()
-//            }
-//            
-//            ToolbarItem(placement: .bottomBar) { ZenithButton() }
             ToolbarItem(placement: .principal) { CoordinatesTile(origin: state.origin) }
 //
         }

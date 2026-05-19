@@ -275,6 +275,50 @@ func dissolveHideCheck() {
     print("")
 }
 
+// ── Phase 2: is there a `-Q`-free equivalent of travel? ──────────────
+// app travel = project(-Q, o, -o). We need a (+Q) form  project(Q, O*, P*)
+// (optionally with a screen-axis sign) that reproduces it EXACTLY and is
+// handedness-consistent with clock — then clock→travel is a pure centre
+// slerp (.north → O*). Also report the geodesic angle .north→O* (a proxy
+// for boundedness: <~80° stays well inside the gnomonic disc; ≳90° blows).
+func phase2EquivalenceSearch() {
+    print("── Phase 2: -Q-free travel equivalence search ──")
+    func ang(_ a: V, _ b: V) -> Double { acos(max(-1,min(1,dot(a,b)))) * 180 / .pi }
+    for (la, lo) in [(51.0,0.0),(0.0,90.0),(-33.0,151.0),(78.0,-20.0)] {
+        let o  = spherePoint(latDeg: la, lonDeg: lo)
+        let no = scale(o, -1)
+        func appT(_ Q: V) -> (x: Double, y: Double)? { travelScreen(Q, originVec: o) }
+
+        // Candidate +Q forms and screen-sign variants.
+        let cands: [(String, (V) -> (x: Double, y: Double)?, V)] = [
+            ("proj(Q,-o, o)        ", { project($0, origin: no, plane: o) }, no),
+            ("proj(Q,-o, o) xflip  ", { project($0, origin: no, plane: o).map{(-$0.x,$0.y)} }, no),
+            ("proj(Q,-o, o) yflip  ", { project($0, origin: no, plane: o).map{($0.x,-$0.y)} }, no),
+            ("proj(Q, o,-o)        ", { project($0, origin: o,  plane: no) }, o),
+            ("proj(Q, o,-o) xflip  ", { project($0, origin: o,  plane: no).map{(-$0.x,$0.y)} }, o),
+        ]
+        var best = ""; var bestErr = Double.infinity; var bestAxisDeg = 0.0
+        for (name, f, Ostar) in cands {
+            var mx = 0.0, n = 0
+            for _ in 0..<20000 {
+                let Q = randomDir()
+                guard let a = appT(Q), let b = f(Q) else { continue }
+                mx = max(mx, max(abs(a.x-b.x), abs(a.y-b.y))); n += 1
+            }
+            if n > 500 && mx < bestErr { bestErr = mx; best = name; bestAxisDeg = ang(nVec, Ostar) }
+            print(String(format: "  lat %3.0f: %@ resid=%.2e (n=%d)  geo∠(.north→O*)=%.1f°",
+                          la, name, mx, n, ang(nVec, Ostar)))
+        }
+        print(String(format: "  → best: %@ resid=%.2e  geodesic=%.1f°  %@",
+                      best, bestErr, bestAxisDeg,
+                      bestErr < 1e-7 ? (bestAxisDeg < 85 ? "EXACT & BOUNDED ✓"
+                                                         : "exact but geodesic blows ✗")
+                                     : "no exact +Q form ✗"))
+        print("")
+    }
+}
+
+phase2EquivalenceSearch()
 print("=== Phase 0: clock↔travel projection-frame spike ===")
 for (la, lo) in [(51.0, 0.0), (0.0, 90.0), (-33.0, 151.0), (78.0, -20.0)] {
     evaluate(latDeg: la, lonDeg: lo)

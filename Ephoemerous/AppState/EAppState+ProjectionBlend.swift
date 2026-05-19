@@ -1,5 +1,4 @@
 import SwiftUI
-import simd
 
 // MARK: - EProjectionTransition
 // Smooth-stepped blend ∈ [0,1] between the clock (.northSouth) and travel
@@ -56,40 +55,11 @@ extension EAppState {
             duration:  duration
         )
     }
-
-    // MARK: Camera-slerp frame
-    //
-    // Phase 0 verdict: clock→travel must MOVE THE CAMERA — slerp the
-    // projection centre `.north → originVector` with a parallel-transported
-    // basis — NOT spin the sky about a fixed centre. The fixed-centre form
-    // drags in-disc stars through the gnomonic horizon (r≈1000); this
-    // geodesic form keeps them bounded (≈0.1% leave a clock-sized disc;
-    // geodesic ≈39° at the default location).
-    //
-    // blend 0 is EXACTLY the app's clock frame (centre `.north`, basis
-    // `baseVectors(.south)`). blend 1 is the travel centre with the
-    // parallel-transported clock basis: the validated *bounded path*.
-    // Aligning blend 1 to the app's existing `.userLocation` basis exactly
-    // (the in-plane twist + `-Q` / handedness flip) and asserting endpoint
-    // exactness against the spike oracle is Phase 2 — deliberately not
-    // claimed here.
-    func projectionFrame(at blend: Double)
-        -> (O: SIMD3<Double>, e1: SIMD3<Double>, e2: SIMD3<Double>) {
-
-        let O0         = SIMD3<Double>.north
-        let (e1c, e2c) = SIMD3<Double>.south.baseVectors()
-        let O1         = originVector
-
-        let dotv = Swift.min(Swift.max(simd_dot(O0, O1), -1), 1)
-        let ang  = acos(dotv) * blend
-
-        var axis = simd_cross(O0, O1)
-        if simd_length(axis) < 1e-9 {            // O0 ∥ ±O1 — pick a stable ⟂
-            axis = abs(O0.z) < 0.9 ? SIMD3(0, 0, 1) : SIMD3(1, 0, 0)
-        }
-
-        return (O0.rotated(about: axis, by: ang),
-                e1c.rotated(about: axis, by: ang),
-                e2c.rotated(about: axis, by: ang))
-    }
 }
+
+// NOTE: a per-star projection morph (camera-slerp / quaternion frame
+// interpolation) was prototyped here in Phase 1 and removed: the spike
+// oracle (spikes/projection_frame_spike.swift) proved clock↔travel is a
+// ~141° reorientation through a projection blind past 90° — bounded,
+// exact, continuous can't all hold. The blend now drives a cross-fade
+// between the two whole compositions instead (CelestialCanva).
