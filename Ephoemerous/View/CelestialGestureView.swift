@@ -105,6 +105,13 @@ struct CelestialGestureView: UIViewRepresentable {
             case .began:
                 gestures.pinchBegan(centroid: centroid, state: state)
             case .changed:
+                // When one finger lifts before the other, the recogniser
+                // emits a .changed whose centroid has snapped from the
+                // two-finger midpoint to the lone remaining finger. Feeding
+                // that to pinchChanged re-pins the sky anchor under the
+                // jumped centroid → the view lurches. Ignore any sub-two-
+                // touch frame; the gesture ends right after anyway.
+                guard g.numberOfTouches >= 2 else { return }
                 gestures.pinchChanged(scale: Double(g.scale),
                                       centroid: centroid, state: state)
             case .ended, .cancelled, .failed:
