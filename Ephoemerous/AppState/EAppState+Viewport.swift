@@ -29,6 +29,12 @@ extension EAppState {
               canvasSize.width  > 0,
               canvasSize.height > 0,
               s.isFinite else { return nil }
+        // `defaultScale` is the home detent: at or below it the clock is
+        // framed by design, so there is no resting position other than
+        // `defaultOffset`. Zero limits → still draggable (rubber), but any
+        // pan / zoom-out always springs back home. Roaming the disc is
+        // only meaningful once zoomed IN past default.
+        if s <= defaultScale { return (x: 0, y: 0) }
         let r = contentDiscRadius(atScale: s)
         return (x: max(0, r - canvasSize.height / 2),
                 y: max(0, r - canvasSize.width  / 2))

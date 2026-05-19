@@ -147,11 +147,14 @@ final class CelestialGestureCoordinator {
 
     func pinchChanged(scale magnification: Double, centroid c: CGPoint,
                       state: EAppState) {
-        let newScale = rubberScale(scaleAtPinchStart * magnification, state: state)
+        let rawScale = scaleAtPinchStart * magnification
+        let newScale = rubberScale(rawScale, state: state)
+        let pinned   = screenPin(sky: skyAnchorUnderFingers, under: c,
+                                 scale: newScale, state: state)
         state.scale  = newScale
-        state.offset = rubberOffset(screenPin(sky: skyAnchorUnderFingers,
-                                              under: c, scale: newScale,
-                                              state: state),
+        state.offset = rubberOffset(homedTowardDefault(pinned,
+                                                       rawScale: rawScale,
+                                                       state: state),
                                     state: state, scale: newScale)
     }
 
@@ -173,8 +176,8 @@ final class CelestialGestureCoordinator {
     }
 
     func doubleHoldChanged(translation t: CGSize, state: EAppState) {
-        // Drag down (t.height > 0) → zoom in; up → zoom out.
-        let target = zoomDragStartScale * exp(t.height * zoomDragSensitivity)
+        // Drag up (t.height < 0) → zoom in; down → zoom out.
+        let target = zoomDragStartScale * exp(-t.height * zoomDragSensitivity)
 
         // De-gain: cap |Δln(scale)| per event so a single spurious sample
         // can't be amplified through the anchor lever into a huge offset
@@ -187,10 +190,13 @@ final class CelestialGestureCoordinator {
 
         let newScale = rubberScale(limited, state: state)
         zoomDragLastScale = newScale
+        let pinned   = screenPin(sky: zoomDragAnchorSky,
+                                 under: zoomDragAnchorScreen,
+                                 scale: newScale, state: state)
         state.scale  = newScale
-        state.offset = rubberOffset(screenPin(sky: zoomDragAnchorSky,
-                                              under: zoomDragAnchorScreen,
-                                              scale: newScale, state: state),
+        state.offset = rubberOffset(homedTowardDefault(pinned,
+                                                       rawScale: limited,
+                                                       state: state),
                                     state: state, scale: newScale)
     }
 
@@ -294,6 +300,23 @@ final class CelestialGestureCoordinator {
             x: c.x + rubber(raw.x - c.x, limit: lim.x, dim: state.canvasSize.height),
             y: c.y + rubber(raw.y - c.y, limit: lim.y, dim: state.canvasSize.width)
         )
+    }
+
+    // Zoom-out reset. While the raw (pre-rubber) scale is pulled below
+    // `defaultScale` — the zoom-out rubber zone — blend the offset home
+    // toward `defaultOffset` in step with how far it's pulled. So pinching
+    // or hold-dragging all the way out lands on the exact initial view
+    // (default scale AND offset), not just the initial scale. f = 0 at the
+    // floor (offset stays pinned), → 1 as the scale is pulled toward 0.
+    private func homedTowardDefault(_ pinned: CGPoint, rawScale: Double,
+                                    state: EAppState) -> CGPoint {
+        let floor = state.defaultScale.isFinite
+            ? Swift.min(state.defaultScale, maximumScale) : 1
+        guard rawScale.isFinite, rawScale < floor, floor > 0 else { return pinned }
+        let f = Swift.min(Swift.max((floor - rawScale) / floor, 0), 1)
+        let d = state.defaultOffset
+        return CGPoint(x: pinned.x + (d.x - pinned.x) * f,
+                       y: pinned.y + (d.y - pinned.y) * f)
     }
 
     // Scale with damped overshoot past floor / ceiling (springs back on release).
