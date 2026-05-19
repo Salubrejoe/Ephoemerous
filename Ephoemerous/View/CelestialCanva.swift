@@ -68,20 +68,29 @@ struct CelestialCanva: View {
                     for layer in outerLayers { layer.draw(in: &outerDC) }
                 }
                 if state.appMode == .clock {
+                    // Layout sink: the crown's rings are framed to the zoom
+                    // (radius ∝ renderedScale), so without this the ZStack
+                    // grows with scale and drags the gesture view's
+                    // coordinate space under the finger — a layout-routed
+                    // feedback loop. Pin to the proposal, clip the overspill.
                     WatchMaskView()
-                        
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
                 }
+
+                // Topmost, same frame the inner Canvas reports as `size`:
+                // UIKit recognisers read touches in this exact space, so
+                // location(in:) lines up with toScreen with no safe-area
+                // inset bias. Owns every canvas touch interaction. The
+                // flexible frame keeps this space immune to any sibling's
+                // intrinsic size.
+                CelestialGestureView(gestures: gestures, state: state)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .ignoresSafeArea()
         .clipped()
-        // Same frame the inner Canvas reports as `size`, so a tap read in
-        // this space lines up exactly with toScreen — no nav-bar/safe-area
-        // inset bias on the double-tap zoom.
-        .coordinateSpace(.named("celestialCanvas"))
         .animation(.default, value: state.appMode)
-        .gesture(gestures.primaryGesture(state: state))
-        .simultaneousGesture(gestures.magnificationGesture(state: state))
     }
 }
 
@@ -129,7 +138,8 @@ extension CelestialCanva {
         // Clip circle matching the crown's inner edge (dec = -30°)
         let cx = size.width  / 2 + state.renderedOffset.y
         let cy = size.height / 2 + state.renderedOffset.x
-        let r  = 2 * sqrt(3) * state.renderedScale
+        let r  = state.renderedScale * EArtist.shared.clipRadius
+               + EArtist.shared.clipBleed
         let clipPath = Path(
             ellipseIn:
                 CGRect(

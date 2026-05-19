@@ -21,7 +21,8 @@ struct ESkyBackgroundLayer: EGridLayer {
 
         let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
         let cy = dc.size.height / 2 + dc.state.renderedOffset.x
-        let r  = dc.state.renderedScale * ENSWatchCrownLayer.clipRadius
+        let r  = dc.state.renderedScale * EArtist.shared.clipRadius
+               + EArtist.shared.clipBleed
         let disc = Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
                                           width: 2 * r, height: 2 * r))
 

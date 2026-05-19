@@ -1,89 +1,17 @@
 import SwiftUI
+import UIKit
 
-struct GlassRing: View {
-    let radius     : Double
-    let lineWidth  : Double
-    let tint       : Color
-    
-    init(radius: Double, lineWidth: Double, tint: Color = .clear) {
-        self.radius = radius
-        self.lineWidth = lineWidth
-        self.tint = tint
-    }
-    
-    var body: some View {
-        if EFeatureFlags.vectorWatchRings {
-            // Vector annulus — no offscreen raster, no zoom pop.
-            Circle()
-                .strokeBorder(.ultraThinMaterial, lineWidth: lineWidth)
-                .frame(width: 2 * radius, height: 2 * radius)
-        } else {
-            Circle()
-            //            .fill(tint)
-                .frame(width: 2 * radius, height: 2 * radius)
-                .glassEffect(.clear.tint(tint))
-                .mask(
-                    Circle()
-                        .frame(width: 2 * radius, height: 2 * radius)
-                        .overlay(
-                            Circle()
-                                .frame(width: 2 * (radius - lineWidth), height: 2 * (radius - lineWidth))
-                                .blendMode(.destinationOut)
-                        )
-                        .compositingGroup()
-                )
-        }
-    }
-}
-struct Ring: View {
-    let radius     : Double
-    let lineWidth  : Double
-    let tint       : Color
-    
-    init(radius: Double, lineWidth: Double, tint: Color = .clear) {
-        self.radius = radius
-        self.lineWidth = lineWidth
-        self.tint = tint
-    }
-
-    var body: some View {
-        if EFeatureFlags.vectorWatchRings {
-            // Vector annulus — no offscreen raster, no zoom pop.
-            Circle()
-                .strokeBorder(.ultraThinMaterial, lineWidth: lineWidth)
-                .frame(width: 2 * radius, height: 2 * radius)
-        } else {
-            Circle()
-                .fill(.ultraThinMaterial)
-                .frame(width: 2 * radius, height: 2 * radius)
-//            .glassEffect(.clear.tint(tint))
-                .mask(
-                    Circle()
-                        .frame(width: 2 * radius, height: 2 * radius)
-                        .overlay(
-                            Circle()
-                                .frame(width: 2 * (radius - lineWidth), height: 2 * (radius - lineWidth))
-                                .blendMode(.destinationOut)
-                        )
-                        .compositingGroup()
-                )
-        }
-    }
-}
-
+// MARK: - WatchMaskView (sky-anchored crown)
+// Bands & equator are projected through the SAME pipeline as the sky
+// (EProjection .userLocation → toScreen), so they stay glued to the star
+// field at every zoom. The hour ring is the watch frame and is
+// viewport-fixed (offset only).
 struct WatchMaskView: View {
     @Environment(\.colorScheme) var cS
     @Environment(EAppState.self) var state
 
-    // Crown parallels — small-circle offsets from the observer latitude.
-    private static let parallelOffsets: [Angle] = [
-        .radians(0.1), .radians(0.0), .radians(-0.1), .radians(-0.2), .radians(-0.31)
-    ]
-
-    // Twilight bands, outer → inner. Same colours/opacity as the original
-    // SProjection design — only the geometry source changes.
+    // Twilight bands, outer → inner.
     private static let bands: [(dec: Angle, color: Color)] = [
-//        (.radians( 0.20), .spotCream),
         (.radians( 0.10), .sunGold),
         (.radians( 0.00), .mutedRose),
         (.radians(-0.10), .deepNavy),
@@ -94,37 +22,17 @@ struct WatchMaskView: View {
     ]
 
     var body: some View {
-        if EFeatureFlags.skyAnchoredCrown {
-            skyAnchoredCrown
-        } else {
-            legacyCrown
-        }
-    }
-
-    // MARK: Sky-anchored crown
-    // Bands & equator are projected through the SAME pipeline as the sky
-    // (EProjection .userLocation → toScreen), so they stay glued to the
-    // star field at every zoom. The bezel + hour ring are the watch frame
-    // and stay viewport-fixed (offset only) exactly as before.
-    private var skyAnchoredCrown: some View {
-        let crownR = state.renderedScale * ENSWatchCrownLayer.clipRadius
-        let ringW  = 4.0
-        let outerR = crownR + ringW
-        let off    = CGSize(width: state.renderedOffset.y, height: state.renderedOffset.x)
+        let discR = state.renderedScale * EArtist.shared.clipRadius
+        let ringW = 4.0
 
         return ZStack {
             Canvas { ctx, size in
-                drawProjectedCrown(into: &ctx, size: size, crownR: crownR, ringW: ringW)
+                drawProjectedCrown(into: &ctx, size: size, discR: discR, ringW: ringW)
             }
-
-            ZStack {
-                GlassRing(radius: outerR + 6, lineWidth: ringW, tint: .clear)
-            }
-            .offset(off)
 
             ForEach(0..<24, id: \.self) { h in
                 let angle   = -(-.pi / 2 - Double(h) * .pi / 12.0)
-                let midR    = (crownR + ringW / 2) + 20
+                let midR    = (discR + ringW / 2) + EArtist.shared.hourRingGap
                 let tz      = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
                 let label   = (h + tz + 24) % 24
                 let hour    = Calendar.current.component(.hour, from: Date())
@@ -140,7 +48,7 @@ struct WatchMaskView: View {
     }
 
     private func drawProjectedCrown(into ctx: inout GraphicsContext,
-                                    size: CGSize, crownR: Double, ringW: Double) {
+                                    size: CGSize, discR: Double, ringW: Double) {
         let rend = state.renderedScale
         let roff = state.renderedOffset
         // Hoist the expensive per-frame constants out of the sample loop:
@@ -157,10 +65,12 @@ struct WatchMaskView: View {
                     y: size.height / 2 - p.y * rend + roff.x)
         }
 
-        // Clip to the crown disc — the exact disc the sky's inner clip uses.
-        let cc = CGPoint(x: size.width / 2 + roff.y, y: size.height / 2 + roff.x)
-        ctx.clip(to: Path(ellipseIn: CGRect(x: cc.x - crownR, y: cc.y - crownR,
-                                            width: 2 * crownR, height: 2 * crownR)))
+        // Clip `clipBleed` px past the disc so the rim is real content — the
+        // same over-clip the sky's inner clip uses, kept in lockstep.
+        let cc    = CGPoint(x: size.width / 2 + roff.y, y: size.height / 2 + roff.x)
+        let clipR = discR + EArtist.shared.clipBleed
+        ctx.clip(to: Path(ellipseIn: CGRect(x: cc.x - clipR, y: cc.y - clipR,
+                                            width: 2 * clipR, height: 2 * clipR)))
 
         func parallelPath(dec: Angle) -> Path {
             var path    = Path()
@@ -185,54 +95,17 @@ struct WatchMaskView: View {
             ctx.fill(p, with: .color(band.color.opacity(0.2)))
         }
         ctx.stroke(equatorPath, with: .color(.white.opacity(0.16)), lineWidth: ringW)
-    }
 
-    // MARK: Legacy SProjection crown (A/B only — drifts/snaps)
-    private var legacyCrown: some View {
-        let proj = SProjection(
-            baseLatitude:    state.origin.latitude,
-            scale:           2 * state.renderedScale,
-            parallelOffsets: Self.parallelOffsets
-        )
-        return ZStack {
-            let crownR = state.renderedScale * ENSWatchCrownLayer.clipRadius
-            let ringW  = 4.0
-            let outerR = crownR + ringW
-            let off    = CGSize(width: state.renderedOffset.y, height: state.renderedOffset.x)
-            let eq = proj.rings[1]
-
-            ZStack {
-                ForEach(proj.rings) { parallel in
-                    Circle()
-                        .fill(parallel.color.opacity(0.2))
-                        .frame(width: parallel.radius * 2, height: parallel.radius * 2)
-                        .offset(x: state.renderedOffset.y,
-                                y: state.renderedOffset.x + parallel.centerOffset)
-                        .mask(Circle().frame(width: 2 * crownR, height: 2 * crownR).offset(off))
-                }
-            }
-
-            GlassRing(radius: eq.radius, lineWidth: ringW)
-                .offset(x: state.renderedOffset.y,
-                        y: state.renderedOffset.x + eq.centerOffset)
-                .mask(Circle().frame(width: 2 * crownR, height: 2 * crownR).offset(off))
-
-            ZStack { GlassRing(radius: outerR + 6, lineWidth: ringW, tint: .clear) }
-                .offset(off)
-
-            ForEach(0..<24, id: \.self) { h in
-                let angle   = -(-.pi / 2 - Double(h) * .pi / 12.0)
-                let midR    = (crownR + ringW / 2) + 20
-                let tz      = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
-                let label   = (h + tz + 24) % 24
-                let hour    = Calendar.current.component(.hour, from: Date())
-                let current = hour == label
-                hourNumber(label.description, current ? .yellow : primaryColor)
-                    .offset(x: state.renderedOffset.y + cos(angle) * midR,
-                            y: state.renderedOffset.x + sin(angle) * midR)
-            }
-        }
-        .ignoresSafeArea()
+        // Background-tinted rim over the old hard seam: content fills to
+        // discR, this ring sits at [discR, discR+bezelWidth], then the
+        // remaining clipBleed−bezelWidth px of content peeks past it.
+        let bw   = EArtist.shared.bezelWidth
+        let bezR = discR + bw / 2
+        ctx.stroke(
+            Path(ellipseIn: CGRect(x: cc.x - bezR, y: cc.y - bezR,
+                                   width: 2 * bezR, height: 2 * bezR)),
+            with: .color(Color(uiColor: .systemBackground)),
+            lineWidth: bw)
     }
 
     @ViewBuilder
@@ -246,73 +119,9 @@ struct WatchMaskView: View {
     private var primaryColor: Color {
         cS == .dark ? .white : .black
     }
-
 }
 
 #Preview {
     WatchMaskView()
         .environment(EAppState())
-}
-
-// MARK: - SProjection
-
-@Observable
-public class SProjection: Identifiable {
-    public typealias Pixel = Double
-
-    public let id = UUID()
-    public var baseLatitude:    Angle
-    public var scale:           Pixel
-    public var maxValue:        Pixel   = 9999
-    public var parallelOffsets: [Angle] = []
-
-    public init(baseLatitude: Angle, scale: Pixel = 100.0, parallelOffsets: [Angle] = []) {
-        self.baseLatitude    = baseLatitude
-        self.scale           = scale
-        self.parallelOffsets = parallelOffsets
-    }
-
-    // Projected circle for a small circle (parallel) at angular distance `offset` from baseLatitude.
-    // d1 uses the antioffset side (base - offset), d2 uses the offset side (base + offset).
-    public func ring(at offset: Angle) -> ParallelRing? {
-        let latAnti = baseLatitude.radians - offset.radians
-        let latOff  = baseLatitude.radians + offset.radians
-
-        let t1 = tan(latAnti / 2)
-        guard abs(t1) > 1e-6 else { return nil }
-        let d1 = min(scale / t1, maxValue)
-
-        let t2 = tan(latOff / 2)
-        guard abs(t2) > 1e-6 else { return nil }
-        let d2 = -scale * t2
-
-        return ParallelRing(
-            radius:       min((d1 - d2) / 2, maxValue),
-            centerOffset: min((d1 + d2) / 2, maxValue)
-        )
-    }
-
-    // All projected circles for the stored parallelOffsets.
-    public var rings: [ParallelRing] {
-        parallelOffsets.enumerated().compactMap { i, offset in
-            guard var r = ring(at: offset) else { return nil }
-            r.id = i
-            return r
-        }
-    }
-
-    public struct ParallelRing: Identifiable {
-        public var id:           Int   = 0
-        public let radius:       Pixel
-        public let centerOffset: Pixel
-        
-        public var color: Color {
-            if id == 0 { return Color.sunGold }
-            if id == 1 { return Color.mutedRose }
-            if id == 2 { return Color.deepNavy }
-            if id == 3 { return Color.darkIndigo }
-            if id == 4 { return Color.nearBlack }
-            else       { return Color.gray }
-        }
-    }
 }

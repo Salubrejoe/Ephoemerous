@@ -20,7 +20,7 @@ import SwiftUI
 extension EAppState {
 
     func contentDiscRadius(atScale s: Double) -> Double {
-        s * ENSWatchCrownLayer.clipRadius * 2
+        s * EArtist.shared.clipRadius * 2
     }
 
     /// Per-axis `|offset|` limit, or nil when panning should be free.

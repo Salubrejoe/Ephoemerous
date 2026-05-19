@@ -4,9 +4,6 @@ import SwiftUI
 struct ENSWatchCrownLayer: EGridLayer {
     let artist = EArtist.shared
 
-    // Clip boundary: dec = -30deg -> r = 2sqrt3 in NS projection units
-    static let clipRadius: Double = 2 * sqrt(3)
-
     // Crown geometry (fixed screen points, independent of scale)
     private let crownWidth   : Double = 25
     private let majorTickLen : Double = 4
@@ -15,7 +12,7 @@ struct ENSWatchCrownLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let cx     = dc.size.width  / 2 + dc.state.renderedOffset.y
         let cy     = dc.size.height / 2 + dc.state.renderedOffset.x
-        let innerR = dc.state.renderedScale * Self.clipRadius
+        let innerR = dc.state.renderedScale * artist.clipRadius
         let outerR = (innerR + crownWidth)
         // Fixed orientation: RA=0h at bottom, RA=12h at top. Never rotates.
         let theta: Double = -.pi / 2

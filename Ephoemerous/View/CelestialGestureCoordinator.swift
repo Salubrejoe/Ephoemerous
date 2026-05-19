@@ -2,15 +2,15 @@ import SwiftUI
 import UIKit
 
 // MARK: - CelestialGestureCoordinator
-// Owns every touch interaction for the celestial canvas and keeps the
-// transient gesture state that must survive across individual callbacks
-// (pan origin, pinch anchor, axis lock). All persistent view state still
-// lives on EAppState — this object only translates fingers into intent.
-//
-// One drag gesture, one pinch gesture. The drag does different work per
-// projection mode; the pinch always zooms about the finger midpoint.
-// They never write the viewport at the same time: the drag stands down
-// while a pinch is in progress, so two fingers can't fight over `offset`.
+// A pure transform engine. It owns the tuning constants and the transient
+// anchors a gesture needs across callbacks (pan origin, pinch/zoom-drag
+// sky anchor, axis lock) and translates already-resolved UIKit recogniser
+// deltas into writes on EAppState. It contains NO SwiftUI gesture: touch
+// classification, double-tap timing and arbitration all live in
+// CelestialGestureView's UIKit recognisers. Keeping the math here and the
+// recognisers there is what kills the old per-frame feedback loop — these
+// methods run on the main thread OUTSIDE the SwiftUI body rebuild, so a
+// state write can no longer pollute the next finger sample.
 @Observable
 final class CelestialGestureCoordinator {
 
@@ -24,17 +24,10 @@ final class CelestialGestureCoordinator {
     private var scaleAtPinchStart:        Double  = 0
     private var skyAnchorUnderFingers:    CGPoint = .zero
 
-    // One-finger touch classification (tap / double-tap / double-tap-drag / pan).
-    private enum TouchPhase { case undecided, panning, zoomDragging }
-    private var phase:             TouchPhase = .undecided
-    private var touchStamped:      Bool       = false   // stamp start once per touch
-    private var touchStartTime:    Date       = .distantPast
-    private var touchStartPoint:   CGPoint    = .zero
-    private var lastTapEndedAt:    Date       = .distantPast
-    private var lastTapPoint:      CGPoint    = .zero
-    private var zoomDragStartScale: Double    = 0
-    private var zoomDragAnchorSky:  CGPoint   = .zero   // sky point pinned under the tap
-    private var zoomDragAnchorScreen: CGPoint = .zero   // fixed screen point (the double-tap)
+    private var zoomDragStartScale:  Double  = 0
+    private var zoomDragLastScale:   Double  = 0
+    private var zoomDragAnchorSky:   CGPoint = .zero   // sky point pinned under the tap
+    private var zoomDragAnchorScreen: CGPoint = .zero  // fixed screen point (the double-tap)
 
     /// True while the user is actively manipulating the canvas. The
     /// timeline reads this to stay at 60 fps for the duration.
@@ -46,167 +39,175 @@ final class CelestialGestureCoordinator {
     private let coupledAxisLockSlop:    Double = 6      // pt before an axis locks
     private let minimumFlingSpeed:      Double = 150    // pt/s, below this: no inertia
     private let maximumFlingSpeed:      Double = 4000   // pt/s, clamp wild flicks
-    private let doubleTapWindow:        Double = 0.30   // s: tap-up → next touch-down
     private let tapMaxMovement:         Double = 10     // pt: beyond this it's a drag
     private let tapMaxDuration:         Double = 0.30   // s: longer (still) isn't a tap
     private let zoomDragSensitivity:    Double = 0.005  // scale e-fold per pt dragged
+    private let zoomDragMaxStep:        Double = 0.40   // max |Δln(scale)| per event (de-gain)
     private let maximumScale:           Double = 300    // hard zoom-in ceiling, all gestures
     private let rubberC:                Double = 0.55   // iOS scroll rubber-band constant
     private let scaleOvershootFraction: Double = 0.12   // damped zoom-past-ceiling room
+    private let doubleTapZoomFactor:    Double = 2.0
 
-    // MARK: - Primary one-finger gesture
-    // One DragGesture(minimumDistance: 0) classifies the touch: a quick tap,
-    // a double-tap (discrete step zoom), a double-tap held + dragged
-    // (continuous zoom — drag down = in, up = out, exactly like pinch), or
-    // a pan (viewport / coupled / origin + inertia). Doing this in a single
-    // gesture avoids SwiftUI arbitration fights between tap and drag.
+    // MARK: - Pan: one finger  (.drag / .coupled / .origin)
 
-    func primaryGesture(state: EAppState) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .named("celestialCanvas"))
-            .onChanged { value in
-                guard !self.isPinchingToZoom else { return }   // pinch owns 2-finger
-
-                if self.phase == .undecided {
-                    self.classifyTouch(state: state, value: value)
-                }
-
-                switch self.phase {
-                case .zoomDragging:
-                    self.updateZoomDrag(state: state, value: value)
-
-                case .panning:
-                    self.commitAnyRunningPresetTransition(state: state)
-                    self.stopInertia(state: state)
-                    self.beginPanIfNeeded(state: state)
-                    switch state.projectionMode {
-                    case .drag:    self.panViewport(state: state, by: value.translation)
-                    case .coupled: self.moveObserverWithAxisLock(state: state, by: value)
-                    case .origin:  self.moveObserverFreely(state: state, by: value.translation)
-                    }
-
-                case .undecided:
-                    break   // tiny movement so far — still could be a tap
-                }
-            }
-            .onEnded { value in
-                defer { self.phase = .undecided; self.touchStamped = false }
-                guard !self.isPinchingToZoom else { return }
-
-                let moved    = hypot(value.translation.width, value.translation.height)
-                let duration = Date.now.timeIntervalSince(self.touchStartTime)
-                let wasTap   = moved <= self.tapMaxMovement && duration <= self.tapMaxDuration
-
-                switch self.phase {
-                case .zoomDragging:
-                    // No drag → discrete step zoom (its own clamped
-                    // transition). Drag → continuous zoom was applied live,
-                    // so spring any rubber overshoot back to the limits.
-                    // Either way the zoom centres on the FIRST tap.
-                    if wasTap {
-                        self.zoomToward(point: self.lastTapPoint, state: state)
-                    } else {
-                        self.settleWithinBounds(state: state)
-                    }
-                    self.lastTapEndedAt = .distantPast      // double-tap consumed
-                    self.isZoomDragging = false
-
-                case .panning:
-                    if state.projectionMode == .drag {
-                        let clamped = state.hardClampedOffset(state.offset,
-                                                              atScale: state.scale)
-                        let outOfBounds = hypot(clamped.x - state.offset.x,
-                                                clamped.y - state.offset.y) > 0.5
-                        if outOfBounds {
-                            self.settleWithinBounds(state: state)   // spring back, no fling
-                        } else {
-                            self.startInertiaIfFlung(state: state, velocity: value.velocity)
-                        }
-                    }
-                    self.endPan(state: state)
-                    self.lastTapEndedAt = .distantPast      // a pan cancels a pending tap
-
-                case .undecided:
-                    if wasTap {                             // a (first) clean tap
-                        self.lastTapEndedAt = Date.now
-                        self.lastTapPoint   = self.touchStartPoint
-                    }
-                }
-            }
+    func panBegan(state: EAppState) {
+        commitAnyRunningPresetTransition(state: state)
+        stopInertia(state: state)
     }
 
-    // First onChanged of a touch: stamp it, then decide whether it's the
-    // held second tap of a double-tap (→ zoom drag) or an ordinary drag.
-    private func classifyTouch(state: EAppState, value: DragGesture.Value) {
-        if !touchStamped {                       // stamp the down once, not every frame
-            touchStamped    = true
-            touchStartTime  = Date.now
-            touchStartPoint = value.startLocation
+    func panChanged(translation t: CGSize, state: EAppState) {
+        beginPanIfNeeded(state: state)
+        switch state.projectionMode {
+        case .drag:    panViewport(state: state, by: t)
+        case .coupled: moveObserverWithAxisLock(state: state, by: t)
+        case .origin:  moveObserverFreely(state: state, by: t)
         }
-
-        let isSecondTap = Date.now.timeIntervalSince(lastTapEndedAt) <= doubleTapWindow
-        if isSecondTap {
-            commitAnyRunningPresetTransition(state: state)
-            stopInertia(state: state)
-            beginZoomDrag(state: state, at: lastTapPoint)
-            phase = .zoomDragging
-        } else if hypot(value.translation.width, value.translation.height) > tapMaxMovement {
-            phase = .panning
-        }
-        // else: still .undecided — wait for movement or lift (tap).
     }
 
-    // MARK: - Double-tap-and-drag zoom (continuous, anchored at the tap)
+    func panEnded(translation t: CGSize, velocity v: CGSize, state: EAppState) {
+        if state.projectionMode == .drag {
+            let clamped     = state.hardClampedOffset(state.offset, atScale: state.scale)
+            let outOfBounds = hypot(clamped.x - state.offset.x,
+                                    clamped.y - state.offset.y) > 0.5
+            if outOfBounds { settleWithinBounds(state: state) }            // spring back
+            else           { startInertiaIfFlung(state: state, velocity: v) }
+        }
+        endPan(state: state)
+    }
 
-    private func beginZoomDrag(state: EAppState, at anchor: CGPoint) {
-        let size = state.canvasSize
-        isZoomDragging      = true
-        zoomDragStartScale  = state.scale
+    private func beginPanIfNeeded(state: EAppState) {
+        guard !isPanningViewport else { return }
+        isPanningViewport = true
+        viewportOffsetAtPanStart = state.offset
+    }
+
+    private func panViewport(state: EAppState, by t: CGSize) {
+        // t.width = horizontal (offset.y), t.height = vertical (offset.x).
+        let raw = CGPoint(x: viewportOffsetAtPanStart.x + t.height,
+                          y: viewportOffsetAtPanStart.y + t.width)
+        state.offset = rubberOffset(raw, state: state, scale: state.scale)
+    }
+
+    private func endPan(state: EAppState) {
+        isPanningViewport = false
+        state.coupledAxis = nil          // release the axis lock for the next gesture
+    }
+
+    // Lock onto the first dominant axis, then walk the observer along it.
+    private func moveObserverWithAxisLock(state: EAppState, by t: CGSize) {
+        if state.coupledAxis == nil {
+            let dx = abs(t.width)
+            let dy = abs(t.height)
+            guard dx > coupledAxisLockSlop || dy > coupledAxisLockSlop else { return }
+            state.coupledAxis = dx > dy ? .horizontal : .vertical
+        }
+
+        let rawLat = state.origin.latitude  - .radians(t.height * coupledSensitivity)
+        let newLat = Angle.radians(rawLat.radians.clamped(to: 0.1 ... .pi / 2 - 0.1))
+        let rawLon = state.origin.longitude - .radians(t.width  * coupledSensitivity)
+        let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
+
+        switch state.coupledAxis {
+        case .vertical:
+            emitTickIfDegreeChanged(from: state.origin.latitude, to: newLat,
+                                    style: .light, state: state)
+            state.setOrigin(lat: newLat, lon: state.origin.longitude)
+        case .horizontal:
+            emitTickIfDegreeChanged(from: state.origin.longitude, to: newLon,
+                                    style: .rigid, state: state)
+            state.setOrigin(lat: state.origin.latitude, lon: newLon)
+        case nil:
+            break
+        }
+    }
+
+    private func moveObserverFreely(state: EAppState, by t: CGSize) {
+        let rawLat = state.origin.latitude  - .radians(t.height * coupledSensitivity)
+        let newLat = Angle.radians(rawLat.radians.clamped(to: -.pi / 2 ... .pi / 2))
+        let rawLon = state.origin.longitude - .radians(t.width  * coupledSensitivity)
+        let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
+        state.origin.latitude  = newLat
+        state.origin.longitude = newLon
+    }
+
+    // MARK: - Pinch: two fingers  (Maps-style: scale + translate together)
+    // The sky point under the two-finger centroid at gesture start is pinned
+    // to the *live* centroid every callback. Because the centroid moves with
+    // the fingers, that single reprojection gives scale-about-centroid AND
+    // pan-follows-centroid at once — no second recogniser, no double-count.
+
+    func pinchBegan(centroid c: CGPoint, state: EAppState) {
+        commitAnyRunningPresetTransition(state: state)
+        stopInertia(state: state)
+        guard !isPinchingToZoom else { return }
+        isPinchingToZoom  = true
+        scaleAtPinchStart = state.scale
+        skyAnchorUnderFingers = skyPoint(under: c, state: state)
+    }
+
+    func pinchChanged(scale magnification: Double, centroid c: CGPoint,
+                      state: EAppState) {
+        let newScale = rubberScale(scaleAtPinchStart * magnification, state: state)
+        state.scale  = newScale
+        state.offset = rubberOffset(screenPin(sky: skyAnchorUnderFingers,
+                                              under: c, scale: newScale,
+                                              state: state),
+                                    state: state, scale: newScale)
+    }
+
+    func pinchEnded(state: EAppState) {
+        isPinchingToZoom = false
+        settleWithinBounds(state: state)        // spring back from overshoot
+    }
+
+    // MARK: - Double-tap-and-hold-drag zoom (continuous, anchored at the tap)
+
+    func doubleHoldBegan(at anchor: CGPoint, state: EAppState) {
+        commitAnyRunningPresetTransition(state: state)
+        stopInertia(state: state)
+        isZoomDragging       = true
+        zoomDragStartScale   = state.scale
+        zoomDragLastScale    = state.scale
         zoomDragAnchorScreen = anchor
-        // Same inversion as beginPinchIfNeeded: sky point under the tap.
-        zoomDragAnchorSky = CGPoint(
-            x: (anchor.x - size.width  / 2 - state.offset.y) / state.scale,
-            y: (size.height / 2 + state.offset.x - anchor.y) / state.scale
-        )
+        zoomDragAnchorSky    = skyPoint(under: anchor, state: state)
     }
 
-    private func updateZoomDrag(state: EAppState, value: DragGesture.Value) {
-        let size     = state.canvasSize
-        guard size.width > 0, size.height > 0 else { return }
-        // Drag down (translation.height > 0) → zoom in; up → zoom out.
-        let factor   = exp(value.translation.height * zoomDragSensitivity)
-        let newScale = rubberScale(zoomDragStartScale * factor, state: state)
+    func doubleHoldChanged(translation t: CGSize, state: EAppState) {
+        // Drag down (t.height > 0) → zoom in; up → zoom out.
+        let target = zoomDragStartScale * exp(t.height * zoomDragSensitivity)
 
-        // Same reprojection as zoomAroundFingers — keep the tap point fixed.
-        state.scale = newScale
-        let raw = CGPoint(
-            x: zoomDragAnchorScreen.y - size.height / 2 + zoomDragAnchorSky.y * newScale,
-            y: zoomDragAnchorScreen.x - size.width  / 2 - zoomDragAnchorSky.x * newScale
-        )
-        state.offset = rubberOffset(raw, state: state, scale: newScale)
+        // De-gain: cap |Δln(scale)| per event so a single spurious sample
+        // can't be amplified through the anchor lever into a huge offset
+        // jump. With clean recogniser input this never binds.
+        let prev    = zoomDragLastScale > 0 ? zoomDragLastScale : zoomDragStartScale
+        let safeTgt = target.isFinite ? target : prev
+        let lo      = prev * exp(-zoomDragMaxStep)
+        let hi      = prev * exp( zoomDragMaxStep)
+        let limited = Swift.min(Swift.max(safeTgt, lo), hi)
+
+        let newScale = rubberScale(limited, state: state)
+        zoomDragLastScale = newScale
+        state.scale  = newScale
+        state.offset = rubberOffset(screenPin(sky: zoomDragAnchorSky,
+                                              under: zoomDragAnchorScreen,
+                                              scale: newScale, state: state),
+                                    state: state, scale: newScale)
     }
 
-    // MARK: - Pinch to zoom
-
-    func magnificationGesture(state: EAppState) -> some Gesture {
-        MagnifyGesture()
-            .onChanged { value in
-                self.commitAnyRunningPresetTransition(state: state)
-                self.stopInertia(state: state)
-                self.beginPinchIfNeeded(state: state, at: value.startAnchor)
-                self.zoomAroundFingers(state: state, value: value)
-            }
-            .onEnded { _ in
-                self.endPinch()
-                self.settleWithinBounds(state: state)   // spring back from overshoot
-            }
+    func doubleHoldEnded(translation t: CGSize, duration: Double,
+                         state: EAppState) {
+        let moved  = hypot(t.width, t.height)
+        let wasTap = moved <= tapMaxMovement && duration <= tapMaxDuration
+        // Quick double-tap (no real drag) → discrete step zoom. A real drag
+        // applied continuous zoom live → just spring any overshoot back.
+        if wasTap { zoomToward(point: zoomDragAnchorScreen, state: state) }
+        else      { settleWithinBounds(state: state) }
+        isZoomDragging = false
     }
 
-    // MARK: - Discrete step zoom (quick double-tap, no drag)
-    // Reuses the exact pinch anchor math so the tapped point stays pinned,
-    // animated via the shared preset transition (crown / stars / Milky Way
-    // all track it together).
-
-    private let doubleTapZoomFactor: Double = 2.0
+    // MARK: - Discrete step zoom (quick double-tap)
+    // Reuses the pinch anchor math so the tapped point stays pinned,
+    // animated via the shared preset transition.
 
     private func zoomToward(point: CGPoint, state: EAppState) {
         let size = state.canvasSize
@@ -215,10 +216,7 @@ final class CelestialGestureCoordinator {
         let ceiling = maximumScale
         let floor   = state.defaultScale.isFinite
             ? Swift.min(state.defaultScale, ceiling) : 1
-
-        // Same inversion as beginPinchIfNeeded: the sky point under the tap.
-        let anchorX = (point.x - size.width  / 2 - state.offset.y) / state.scale
-        let anchorY = (size.height / 2 + state.offset.x - point.y) / state.scale
+        let anchor  = skyPoint(under: point, state: state)
 
         // Zoom in a step; once at the ceiling the next double-tap zooms out.
         let atCeiling = state.scale >= ceiling - 0.5
@@ -226,12 +224,9 @@ final class CelestialGestureCoordinator {
             ? floor
             : Swift.min(state.scale * doubleTapZoomFactor, ceiling)
 
-        // Same reprojection as zoomAroundFingers, so the tap stays fixed,
-        // then clamp into the map-like bounds at the target scale.
-        var newOffset = CGPoint.zero
-        newOffset.y = point.x - size.width  / 2 - anchorX * target
-        newOffset.x = point.y - size.height / 2 + anchorY * target
-        newOffset   = state.hardClampedOffset(newOffset, atScale: target)
+        let newOffset = state.hardClampedOffset(
+            screenPin(sky: anchor, under: point, scale: target, state: state),
+            atScale: target)
 
         state._activeTransition = EPresetTransition(
             fromScale:  state.renderedScale,
@@ -245,10 +240,31 @@ final class CelestialGestureCoordinator {
         state.offset = newOffset
     }
 
+    // MARK: - Projection inversion / reprojection
+    // Single source of truth for the screen⇄sky mapping every zoom uses.
+    // Mirrors EGraphicContext.toScreen: offset.y is the horizontal shift,
+    // offset.x the vertical.
+
+    private func skyPoint(under screen: CGPoint, state: EAppState) -> CGPoint {
+        let size = state.canvasSize
+        return CGPoint(
+            x: (screen.x - size.width  / 2 - state.offset.y) / state.scale,
+            y: (size.height / 2 + state.offset.x - screen.y) / state.scale
+        )
+    }
+
+    /// Offset that puts `sky` exactly under screen point `p` at `scale`.
+    private func screenPin(sky: CGPoint, under p: CGPoint, scale: Double,
+                           state: EAppState) -> CGPoint {
+        let size = state.canvasSize
+        return CGPoint(
+            x: p.y - size.height / 2 + sky.y * scale,
+            y: p.x - size.width  / 2 - sky.x * scale
+        )
+    }
+
     // Order- and NaN-safe scale clamp. Floor = defaultScale but never above
-    // the hard ceiling; ceiling = maximumScale. Never constructs a Range, so
-    // a degenerate/transient canvasSize can't trip "Range requires
-    // lowerBound <= upperBound" (the pinch crash).
+    // the hard ceiling; ceiling = maximumScale.
     private func clampScale(_ candidate: Double, state: EAppState) -> Double {
         let df    = state.defaultScale
         let floor = df.isFinite ? Swift.min(df, maximumScale) : 1
@@ -269,7 +285,8 @@ final class CelestialGestureCoordinator {
     }
 
     // Offset with rubber resistance past the map-like disc limits.
-    private func rubberOffset(_ raw: CGPoint, state: EAppState, scale s: Double) -> CGPoint {
+    private func rubberOffset(_ raw: CGPoint, state: EAppState,
+                              scale s: Double) -> CGPoint {
         guard let lim = state.viewportOffsetLimits(forScale: s) else { return raw }
         // Resist relative to defaultOffset (the home), not screen-centre.
         let c = state.defaultOffset
@@ -317,102 +334,6 @@ final class CelestialGestureCoordinator {
         state.offset = targetOffset
     }
 
-    // MARK: - Pan: viewport (.drag mode)
-
-    private func beginPanIfNeeded(state: EAppState) {
-        guard !isPanningViewport else { return }
-        isPanningViewport = true
-        viewportOffsetAtPanStart = state.offset
-    }
-
-    private func panViewport(state: EAppState, by translation: CGSize) {
-        let raw = CGPoint(x: viewportOffsetAtPanStart.x + translation.height,
-                          y: viewportOffsetAtPanStart.y + translation.width)
-        state.offset = rubberOffset(raw, state: state, scale: state.scale)
-    }
-
-    private func endPan(state: EAppState) {
-        isPanningViewport = false
-        state.coupledAxis = nil          // release the axis lock for the next gesture
-    }
-
-    // MARK: - Pan: move the observer (.coupled mode)
-
-    // Lock onto the first dominant axis, then walk the observer along it.
-    private func moveObserverWithAxisLock(state: EAppState, by value: DragGesture.Value) {
-        if state.coupledAxis == nil {
-            let dx = abs(value.translation.width)
-            let dy = abs(value.translation.height)
-            guard dx > coupledAxisLockSlop || dy > coupledAxisLockSlop else { return }
-            state.coupledAxis = dx > dy ? .horizontal : .vertical
-        }
-
-        let rawLat = state.origin.latitude  - .radians(value.translation.height * coupledSensitivity)
-        let newLat = Angle.radians(rawLat.radians.clamped(to: 0.1 ... .pi / 2 - 0.1))
-        let rawLon = state.origin.longitude - .radians(value.translation.width  * coupledSensitivity)
-        let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
-
-        switch state.coupledAxis {
-        case .vertical:
-            emitTickIfDegreeChanged(from: state.origin.latitude, to: newLat,
-                                    style: .light, state: state)
-            state.setOrigin(lat: newLat, lon: state.origin.longitude)
-        case .horizontal:
-            emitTickIfDegreeChanged(from: state.origin.longitude, to: newLon,
-                                    style: .rigid, state: state)
-            state.setOrigin(lat: state.origin.latitude, lon: newLon)
-        case nil:
-            break
-        }
-    }
-
-    // MARK: - Pan: move the observer freely (.origin mode)
-
-    private func moveObserverFreely(state: EAppState, by translation: CGSize) {
-        let rawLat = state.origin.latitude  - .radians(translation.height * coupledSensitivity)
-        let newLat = Angle.radians(rawLat.radians.clamped(to: -.pi / 2 ... .pi / 2))
-        let rawLon = state.origin.longitude - .radians(translation.width  * coupledSensitivity)
-        let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
-        state.origin.latitude  = newLat
-        state.origin.longitude = newLon
-    }
-
-    // MARK: - Pinch
-
-    private func beginPinchIfNeeded(state: EAppState, at startAnchor: UnitPoint) {
-        guard !isPinchingToZoom else { return }
-        isPinchingToZoom  = true
-        scaleAtPinchStart = state.scale
-        let size = state.canvasSize
-        let mx = startAnchor.x * size.width
-        let my = startAnchor.y * size.height
-        // Invert the screen projection to find the sky point under the fingers,
-        // so we can keep that exact point pinned while the scale changes.
-        skyAnchorUnderFingers = CGPoint(
-            x: (mx - size.width  / 2 - state.offset.y) / state.scale,
-            y: (size.height / 2 + state.offset.x - my) / state.scale
-        )
-    }
-
-    private func zoomAroundFingers(state: EAppState, value: MagnifyGesture.Value) {
-        let size = state.canvasSize
-        let newScale = rubberScale(scaleAtPinchStart * Double(value.magnification),
-                                   state: state)
-
-        let mx = value.startAnchor.x * size.width
-        let my = value.startAnchor.y * size.height
-        state.scale = newScale
-        let raw = CGPoint(
-            x: my - size.height / 2 + skyAnchorUnderFingers.y * newScale,
-            y: mx - size.width  / 2 - skyAnchorUnderFingers.x * newScale
-        )
-        state.offset = rubberOffset(raw, state: state, scale: newScale)
-    }
-
-    private func endPinch() {
-        isPinchingToZoom = false
-    }
-
     // MARK: - Inertia
 
     private func startInertiaIfFlung(state: EAppState, velocity: CGSize) {
@@ -421,8 +342,8 @@ final class CelestialGestureCoordinator {
         let damp = min(1, maximumFlingSpeed / speed)   // clamp wild flicks
         let now  = Date().timeIntervalSinceReferenceDate
         state._inertiaTransition = EInertiaTransition(
-            velX: velocity.height * damp,   // offset.x follows translation.height
-            velY: velocity.width  * damp,   // offset.y follows translation.width
+            velX: velocity.height * damp,   // offset.x follows vertical
+            velY: velocity.width  * damp,   // offset.y follows horizontal
             startTime:       now,
             lastEmittedTime: now
         )
@@ -453,12 +374,10 @@ final class CelestialGestureCoordinator {
 // Momentum glide after a flick. Velocity decays exponentially:
 //   v(t) = v0 · e^(−k·t)
 // Each frame emits the *exact* integral of v over the elapsed slice, so the
-// distance travelled is identical no matter the frame rate (the old version
-// multiplied by a hardcoded 1/60 and ended on the first tick — that was the
-// "unnaturally sped / instantly dead" inertia).
+// distance travelled is identical no matter the frame rate.
 struct EInertiaTransition {
-    let velX:      Double      // pt/s along offset.x  (follows translation.height)
-    let velY:      Double      // pt/s along offset.y  (follows translation.width)
+    let velX:      Double      // pt/s along offset.x  (follows vertical)
+    let velY:      Double      // pt/s along offset.y  (follows horizontal)
     let startTime: Double
     var lastEmittedTime: Double
 

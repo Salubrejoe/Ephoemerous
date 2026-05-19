@@ -211,6 +211,19 @@ struct EArtist {
     let crownBorderColor : Color  = .primary
     let crownBorderWidth : Double = 2.0
 
+    // Clip disc + bezel trick (shared by the sky clip, sky background,
+    // crown and pan bounds — single source of truth).
+    //   • clipRadius  — disc radius in NS projection units (dec −30°)
+    //   • clipBleed   — px clipped past the disc so the rim is real
+    //                   content, not a jagged clip seam
+    //   • bezelWidth  — background-tinted ring laid over the old edge;
+    //                   (clipBleed − bezelWidth) px of content peeks past it
+    //   • hourRingGap — gap from the disc to the hour-number midline
+    let clipRadius  : Double = 2 * sqrt(3)
+    let clipBleed   : Double = 8
+    let bezelWidth  : Double = 4
+    let hourRingGap : Double = 20
+
     // MARK: - Stars
     func starPointFallsWithinMarigin(_ screenPoint: CGPoint, in dc: EGraphicContext, margin: Double = 20) -> Bool {
         screenPoint.x > -margin &&
