@@ -50,8 +50,9 @@ class EAppState {
     var plane:  Plane
     var scale:  Double   = AstroConstants.defaultScale
     var offset: CGPoint  = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
-    var _originTransition:  EOriginTransition?  = nil   // defined in EAppState+Location.swift
-    var _inertiaTransition: EInertiaTransition? = nil   // defined in FocusPreset.swift
+    var _originTransition:     EOriginTransition?     = nil   // defined in EAppState+Location.swift
+    var _inertiaTransition:    EInertiaTransition?    = nil   // defined in FocusPreset.swift
+    var _projectionTransition: EProjectionTransition? = nil   // defined in EAppState+ProjectionBlend.swift
     // Transient — true once the device's first location fix has been adopted
     // as the origin. Not persisted. See EAppState+Location.swift.
     var _didAdoptDeviceLocation: Bool = false

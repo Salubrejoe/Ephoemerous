@@ -126,8 +126,9 @@ extension CelestialCanva {
         gestures.isInteracting          ||
         state._activeTransition  != nil ||
         state._dateTransition    != nil ||
-        state._originTransition  != nil ||
-        state._inertiaTransition != nil   // keep 60 fps while the fling glides
+        state._originTransition     != nil ||
+        state._inertiaTransition    != nil ||
+        state._projectionTransition != nil   // keep 60 fps while the fling/mode blend runs
     }
     private var schedule: ECanvasSchedule { ECanvasSchedule(isAnimating: isAnimating) }
 }

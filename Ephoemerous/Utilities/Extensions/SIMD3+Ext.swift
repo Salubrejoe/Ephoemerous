@@ -61,4 +61,16 @@ extension SIMD3 where Scalar == Double {
             self.z
         )
     }
+
+    /// Rodrigues rotation of this vector about `axis` (need not be unit) by
+    /// `angle` radians. Identity for a zero axis or zero angle.
+    func rotated(about axis: SIMD3, by angle: Double) -> SIMD3 {
+        let n = simd_length(axis)
+        guard n > 1e-12, angle != 0 else { return self }
+        let k = axis / n
+        let c = cos(angle), s = sin(angle)
+        return self * c
+             + simd_cross(k, self) * s
+             + k * (simd_dot(k, self) * (1 - c))
+    }
 }
