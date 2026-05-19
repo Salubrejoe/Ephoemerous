@@ -14,29 +14,20 @@ enum EAppMode {
 // MARK: - EAppState + AppMode
 extension EAppState {
 
-    /// Switch between clock and travel. The projection is coupled while the
-    /// sky settles, the mode flips on a brief animated delay, and the
-    /// projection ends on `.drag` (the sensible default in either mode).
-    ///
-    /// Bumping the coupled-restore generation cancels any pending restore
-    /// from another feature so it can't fire mid-toggle and fight us.
+    /// Switch between clock and travel via a blur+opacity defocus: the
+    /// composition blurs/dims out, the mode flips at the envelope peak
+    /// (hard cut hidden), then it sharpens back. Ends on `.drag` (the
+    /// sensible default in either mode).
     func toggleAppMode() {
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        _coupledRestoreGeneration &+= 1
-        let thisGeneration = _coupledRestoreGeneration
-        _coupledRestoreMode = nil
-        projectionMode      = .coupled
+        let dur = AstroConstants.modeTransitionDuration
+        beginModeTransition(duration: dur)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-            guard let self,
-                  self._coupledRestoreGeneration == thisGeneration else { return }
-            // Kick the cross-fade BEFORE flipping appMode: animateProjection-
-            // Blend reads the current blend as its start, so this must run
-            // while appMode is still the old value (target = the new one).
-            let blendTarget: Double = self.appMode == .clock ? 1 : 0
-            self.animateProjectionBlend(to: blendTarget)
-            withAnimation { self.appMode.toggle() }
+        // Flip at the envelope peak so the swap is masked by max blur.
+        DispatchQueue.main.asyncAfter(deadline: .now() + dur / 2) { [weak self] in
+            guard let self else { return }
+            self.appMode.toggle()
             self.projectionMode = .drag
         }
     }

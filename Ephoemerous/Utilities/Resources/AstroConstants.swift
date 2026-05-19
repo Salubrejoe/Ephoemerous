@@ -316,4 +316,6 @@ enum AstroConstants {
     static let moonSunMagnitude:  Double = -12.6
     static let transitionDuration: Double = 0.55
     static let dateTansitionDuration: Double = 0.7
+    static let modeTransitionDuration: Double = 0.8   // clock↔travel defocus swap
+
 }

@@ -47,33 +47,38 @@ struct CelestialCanva: View {
         // `schedule` is recomputed whenever isAnimating flips, so TimelineView
         // reschedules on the next render — no destructive .id() teardown.
         TimelineView(schedule) { timeline in
-            // 0 = clock, 1 = travel. Drives a cross-fade between the two
-            // compositions (a per-star morph is geometrically impossible —
-            // the two view centres are ~141° apart through a projection
-            // blind past 90°; see spikes/projection_frame_spike.swift).
-            let blend = state.renderedProjectionBlend
+            // Defocus swap envelope: 0 at rest → 1 at the mid-transition
+            // (where appMode flips) → 0. A per-star morph is geometrically
+            // impossible and layers self-gate on appMode, so the modes are
+            // swapped atomically under peak blur instead of cross-faded.
+            let env = state.renderedTransitionEnvelope
 
             ZStack {
-                // Clock composition — fades out as blend → 1.
                 ZStack {
+                    if state.appMode == .travel {
+                        Rectangle()
+                            .fill(LinearGradient(colors: [.darkIndigo,
+                                                          .darkIndigo.opacity(0.5)],
+                                                 startPoint: .top, endPoint: .bottom))
+                    }
+
                     Canvas { ctx, size in
-                        // Single per-frame driver: advance the clock even
-                        // when this group is invisible (blend == 1) so
-                        // animationTime / inertia / the blend keep ticking.
                         state.advanceCanvasClock(
                             to:         timeline.date.timeIntervalSinceReferenceDate,
                             canvasSize: size
                         )
-                        guard blend < 0.999 else { return }
+                        guard state.appMode == .clock else { return }
                         var innerDC = innerDC(ctx: ctx, size: size)
                         for layer in skyLayers { layer.draw(in: &innerDC) }
                     }
+
                     Canvas { ctx, size in
-                        guard blend < 0.999 else { return }
                         var dc = EGraphicContext(ctx: ctx, size: size, state: state)
-                        for layer in clockLayers { layer.draw(in: &dc) }
+                        let layers = state.appMode == .clock ? clockLayers : travelLayers
+                        for layer in layers { layer.draw(in: &dc) }
                     }
-                    if blend < 0.999 {
+
+                    if state.appMode == .clock {
                         // Layout sink: the crown's rings are framed to the
                         // zoom (radius ∝ renderedScale); without this the
                         // ZStack grows with scale and drags the gesture
@@ -83,25 +88,16 @@ struct CelestialCanva: View {
                             .clipped()
                     }
                 }
-                .opacity(1 - blend)
+                // Scale up as it defocuses out / down as it sharpens in —
+                // the clipped disc appears to open past the screen (clock
+                // leaving) and close back into place (clock returning).
+                .scaleEffect(1 + 0.6 * env)
+                .blur(radius: 20 * env)
+                .opacity(1 - 0.9 * env)
 
-                // Travel composition — fades in as blend → 1.
-                ZStack {
-                    Rectangle()
-                        .fill(LinearGradient(colors: [.darkIndigo,
-                                                      .darkIndigo.opacity(0.5)],
-                                             startPoint: .top, endPoint: .bottom))
-                    Canvas { ctx, size in
-                        guard blend > 0.001 else { return }
-                        var dc = EGraphicContext(ctx: ctx, size: size, state: state)
-                        for layer in travelLayers { layer.draw(in: &dc) }
-                    }
-                }
-                .opacity(blend)
-
-                // Topmost: owns every canvas touch. The flexible frame keeps
-                // this coordinate space immune to any sibling's intrinsic
-                // size (the layout-routed gesture feedback fix).
+                // Topmost, sharp & interactive (outside the defocus): owns
+                // every canvas touch. The flexible frame keeps this
+                // coordinate space immune to any sibling's intrinsic size.
                 CelestialGestureView(gestures: gestures, state: state)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

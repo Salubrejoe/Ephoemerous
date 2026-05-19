@@ -1,25 +1,22 @@
 import SwiftUI
 
 // MARK: - EProjectionTransition
-// Smooth-stepped blend ∈ [0,1] between the clock (.northSouth) and travel
-// (.userLocation) projection frames. Canvas layers read
-// `renderedProjectionBlend` (wired in Phase 2) so a mode change animates
-// the sky reorienting instead of snapping. Same easing as the date / origin
-// transitions — a bounce on a sky rotation looks wrong.
+// A timed defocus envelope for the clock↔travel swap. There is no per-star
+// morph (the spike proved it geometrically impossible — see the note at
+// the bottom); instead the whole composition is blurred + dimmed, the mode
+// is swapped under peak blur, then it sharpens back. `envelope` is 0 at
+// rest, 1 at the midpoint (where appMode flips), 0 again at the end.
 struct EProjectionTransition {
-    let fromBlend: Double
-    let toBlend:   Double
     let startTime: Double
     let duration:  Double
 
-    private static func smoothStep(_ t: Double) -> Double {
-        let t = max(0, min(1, t))
-        return t * t * (3 - 2 * t)
+    private func progress(at time: Double) -> Double {
+        max(0, min(1, (time - startTime) / duration))
     }
 
-    func interpolated(at time: Double) -> Double {
-        let t = Self.smoothStep((time - startTime) / duration)
-        return fromBlend + (toBlend - fromBlend) * t
+    /// 0 → 1 → 0, peaking at the midpoint.
+    func envelope(at time: Double) -> Double {
+        sin(.pi * progress(at: time))
     }
 
     func isFinished(at time: Double) -> Bool {
@@ -27,30 +24,25 @@ struct EProjectionTransition {
     }
 }
 
-// MARK: - EAppState + projection blend
+// MARK: - EAppState + mode transition
 extension EAppState {
 
-    /// 0 = clock frame, 1 = travel frame. The animated value while a
-    /// transition is in flight, otherwise the steady value implied by
-    /// `appMode`. Self-clears the finished transition on read — same
-    /// pattern as `renderedObservationDate`.
-    var renderedProjectionBlend: Double {
-        let target: Double = appMode == .travel ? 1 : 0
-        guard let t = _projectionTransition else { return target }
+    /// Blur/opacity defocus amount: 0 at rest, peaks 1 mid-swap. Drives the
+    /// clock↔travel transition in CelestialCanva. Self-clears the finished
+    /// transition on read — same pattern as `renderedObservationDate`.
+    var renderedTransitionEnvelope: Double {
+        guard let t = _projectionTransition else { return 0 }
         if t.isFinished(at: animationTime) {
             _projectionTransition = nil
-            return target
+            return 0
         }
-        return t.interpolated(at: animationTime)
+        return t.envelope(at: animationTime)
     }
 
-    /// Kick an animated clock↔travel blend toward `target` (0 or 1).
-    /// Phase 4 calls this from the mode toggle.
-    func animateProjectionBlend(to target: Double,
-                                duration: Double = AstroConstants.transitionDuration) {
+    /// Start the defocus envelope. `toggleAppMode` flips the mode at the
+    /// midpoint so the hard swap is hidden under peak blur.
+    func beginModeTransition(duration: Double = AstroConstants.modeTransitionDuration) {
         _projectionTransition = EProjectionTransition(
-            fromBlend: renderedProjectionBlend,
-            toBlend:   target,
             startTime: Date.now.timeIntervalSinceReferenceDate,
             duration:  duration
         )
@@ -58,8 +50,9 @@ extension EAppState {
 }
 
 // NOTE: a per-star projection morph (camera-slerp / quaternion frame
-// interpolation) was prototyped here in Phase 1 and removed: the spike
-// oracle (spikes/projection_frame_spike.swift) proved clock↔travel is a
-// ~141° reorientation through a projection blind past 90° — bounded,
-// exact, continuous can't all hold. The blend now drives a cross-fade
-// between the two whole compositions instead (CelestialCanva).
+// interpolation) was prototyped (Phase 1) and removed: the spike oracle
+// proved clock↔travel is a ~141° reorientation through a projection blind
+// past 90° — bounded, exact, continuous can't all hold. So the modes are
+// swapped under a blur+opacity defocus rather than morphed. Layers also
+// self-gate on `appMode`, so a per-layer cross-fade can't work anyway —
+// the single atomic swap under peak blur sidesteps that entirely.

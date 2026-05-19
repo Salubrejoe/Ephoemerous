@@ -12,7 +12,7 @@ struct MainView: View {
             // Travel backdrop moved into CelestialCanva's travel group so it
             // cross-fades with the sky on the same blend.
             CelestialCanva()
-
+            CircledResetButton()
             ObjectsTrackingOverlay()
         }
         .ignoresSafeArea()
