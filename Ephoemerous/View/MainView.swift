@@ -69,7 +69,7 @@ struct MainView: View {
         .overlay {
             VStack {
                 if state.scale != state.defaultScale || state.offset !=  state.defaultOffset {
-                    CircledResetButton()
+//                    CircledResetButton()
                 }
                 Spacer()
                 GameBoyControlPad()
