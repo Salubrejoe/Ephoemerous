@@ -31,6 +31,11 @@ extension EAppState {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self,
                   self._coupledRestoreGeneration == thisGeneration else { return }
+            // Kick the cross-fade BEFORE flipping appMode: animateProjection-
+            // Blend reads the current blend as its start, so this must run
+            // while appMode is still the old value (target = the new one).
+            let blendTarget: Double = self.appMode == .clock ? 1 : 0
+            self.animateProjectionBlend(to: blendTarget)
             withAnimation { self.appMode.toggle() }
             self.projectionMode = .drag
         }
