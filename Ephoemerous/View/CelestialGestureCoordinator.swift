@@ -271,9 +271,11 @@ final class CelestialGestureCoordinator {
     // Offset with rubber resistance past the map-like disc limits.
     private func rubberOffset(_ raw: CGPoint, state: EAppState, scale s: Double) -> CGPoint {
         guard let lim = state.viewportOffsetLimits(forScale: s) else { return raw }
+        // Resist relative to defaultOffset (the home), not screen-centre.
+        let c = state.defaultOffset
         return CGPoint(
-            x: rubber(raw.x, limit: lim.x, dim: state.canvasSize.height),
-            y: rubber(raw.y, limit: lim.y, dim: state.canvasSize.width)
+            x: c.x + rubber(raw.x - c.x, limit: lim.x, dim: state.canvasSize.height),
+            y: c.y + rubber(raw.y - c.y, limit: lim.y, dim: state.canvasSize.width)
         )
     }
 
