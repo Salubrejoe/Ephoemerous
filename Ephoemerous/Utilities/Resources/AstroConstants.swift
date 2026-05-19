@@ -248,7 +248,7 @@ enum AstroConstants {
     // MARK: Default viewport
     // -------------------------------------------------------------------------
     static let defaultScale:      Double  = 45
-    static let defaultOffsetX:    Double  = -80.0
+    static let defaultOffsetX:    Double  = -50.0
     static let defaultOffsetY:    Double  = 0.0
 
     // -------------------------------------------------------------------------

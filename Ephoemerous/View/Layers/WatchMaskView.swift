@@ -85,10 +85,10 @@ struct WatchMaskView: View {
     private static let bands: [(dec: Angle, color: Color)] = [
 //        (.radians( 0.20), .spotCream),
         (.radians( 0.10), .sunGold),
-        (.radians( 0.00), .afternoonHaze),
+        (.radians( 0.00), .mutedRose),
         (.radians(-0.10), .deepNavy),
         (.radians(-0.20), .darkIndigo),
-        (.radians(-0.31), .nearBlack),
+        (.radians(-0.31), .midnightBlue),
         (.radians(-0.41), .nearBlack),
         (.radians(-0.51), .nearBlack),
     ]
