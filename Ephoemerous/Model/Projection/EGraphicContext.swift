@@ -62,7 +62,7 @@ struct EGraphicContext {
     mutating func fillCurve(_ pts: [CGPoint?], color: Color) {
         var path = Path()
         var prev: CGPoint? = nil
-        
+
         for pt in pts {
             guard let pt else { prev = nil; continue }
             let sc = toScreen(pt)
@@ -80,7 +80,6 @@ struct EGraphicContext {
             prev = sc
         }
         ctx.fill(path, with: .color(color))
-        ctx.clip(to: path)
     }
     
     mutating func fillDot(at sc: CGPoint, radius: CGFloat, color: Color) {

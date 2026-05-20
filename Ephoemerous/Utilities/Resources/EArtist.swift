@@ -76,7 +76,7 @@ struct EArtist {
 
     // 16-corner squircle, shared between the sun body and its breathing
     // border. Cached once — tweak corners/bulge here and recompile.
-    private static let sunUnitPath: Path = Squircle(corners: 16, bulge: 2.5)
+    private static let sunUnitPath: Path = Squircle(corners: 7, bulge: 2.5)
         .path(in: CGRect(x: -1, y: -1, width: 2, height: 2))
 
     func drawSun(at sc: CGPoint, in dc: inout EGraphicContext) {

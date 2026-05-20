@@ -1,58 +1,87 @@
 import SwiftUI
 
 // MARK: - EProjectionTransition
-// A timed defocus envelope for the clock↔travel swap. There is no per-star
-// morph (the spike proved it geometrically impossible — see the note at
-// the bottom); instead the whole composition is blurred + dimmed, the mode
-// is swapped under peak blur, then it sharpens back. `envelope` is 0 at
-// rest, 1 at the midpoint (where appMode flips), 0 again at the end.
+// The clock↔travel transition. Drives two things in parallel:
+//   • An origin slerp (managed by `_originTransition`) from the observer's
+//     real location to the celestial north pole (or back).
+//   • A cross-fade between the clock-layer group and the travel-layer
+//     group, with its window pinned to whichever end of the slerp NP sits.
+//
+// At observer = NP the userLocation projection (with -Q dropped, see
+// `EProjection.project`) coincides exactly with the northSouth projection,
+// so the layer swap is geometrically seamless at the bridge moment.
 struct EProjectionTransition {
-    let startTime: Double
-    let duration:  Double
+
+    enum Direction { case toTravel, toClock }
+
+    let startTime : Double
+    let duration  : Double
+    let direction : Direction
 
     private func progress(at time: Double) -> Double {
         max(0, min(1, (time - startTime) / duration))
     }
 
-    /// 0 → 1 → 0, peaking at the midpoint.
-    func envelope(at time: Double) -> Double {
-        sin(.pi * progress(at: time))
+    /// Travel-layer opacity: 0 = clock visible, 1 = travel visible. The
+    /// 40 %-wide cross-fade window is parked at whichever end of the slerp
+    /// the observer reaches NP — the end for Clock→Travel, the start for
+    /// Travel→Clock.
+    func travelOpacity(at time: Double) -> Double {
+        let p = progress(at: time)
+        switch direction {
+        case .toTravel: return smoothstep((p - 0.6) / 0.4)   // bridge at p=1
+        case .toClock:  return 1 - smoothstep(p / 0.4)       // bridge at p=0
+        }
     }
 
     func isFinished(at time: Double) -> Bool {
         time >= startTime + duration
+    }
+
+    private func smoothstep(_ x: Double) -> Double {
+        let t = max(0, min(1, x))
+        return t * t * (3 - 2 * t)
     }
 }
 
 // MARK: - EAppState + mode transition
 extension EAppState {
 
-    /// Blur/opacity defocus amount: 0 at rest, peaks 1 mid-swap. Drives the
-    /// clock↔travel transition in CelestialCanva. Self-clears the finished
-    /// transition on read — same pattern as `renderedObservationDate`.
-    var renderedTransitionEnvelope: Double {
-        guard let t = _projectionTransition else { return 0 }
-        if t.isFinished(at: animationTime) {
-            _projectionTransition = nil
-            return 0
-        }
-        return t.envelope(at: animationTime)
+    /// True while the cross-fade window is in flight. EProjection drops the
+    /// -Q from the userLocation branch when this is true, so UL and NS
+    /// coincide at the moment the observer reaches NP.
+    var isModeTransitioning: Bool {
+        guard let t = _projectionTransition else { return false }
+        return !t.isFinished(at: animationTime)
     }
 
-    /// Start the defocus envelope. `toggleAppMode` flips the mode at the
-    /// midpoint so the hard swap is hidden under peak blur.
-    func beginModeTransition(duration: Double = AstroConstants.modeTransitionDuration) {
+    /// Travel-layer opacity for the current frame. Self-clears the
+    /// transition once it finishes — same pattern as the old envelope.
+    var renderedTravelOpacity: Double {
+        guard let t = _projectionTransition else {
+            return appMode == .travel ? 1 : 0
+        }
+        if t.isFinished(at: animationTime) {
+            _projectionTransition = nil
+            return appMode == .travel ? 1 : 0
+        }
+        return t.travelOpacity(at: animationTime)
+    }
+
+    /// Clock-layer opacity is the complement; reading this also drives
+    /// the self-clear above.
+    var renderedClockOpacity: Double {
+        1 - renderedTravelOpacity
+    }
+
+    /// Start the cross-fade for a given direction. The accompanying origin
+    /// slerp is triggered by `toggleAppMode` so the two stay synchronised.
+    func beginModeTransition(direction: EProjectionTransition.Direction,
+                             duration: Double = AstroConstants.modeTransitionDuration) {
         _projectionTransition = EProjectionTransition(
             startTime: Date.now.timeIntervalSinceReferenceDate,
-            duration:  duration
+            duration:  duration,
+            direction: direction
         )
     }
 }
-
-// NOTE: a per-star projection morph (camera-slerp / quaternion frame
-// interpolation) was prototyped (Phase 1) and removed: the spike oracle
-// proved clock↔travel is a ~141° reorientation through a projection blind
-// past 90° — bounded, exact, continuous can't all hold. So the modes are
-// swapped under a blur+opacity defocus rather than morphed. Layers also
-// self-gate on `appMode`, so a per-layer cross-fade can't work anyway —
-// the single atomic swap under peak blur sidesteps that entirely.

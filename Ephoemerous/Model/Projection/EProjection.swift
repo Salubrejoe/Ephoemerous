@@ -36,14 +36,21 @@ enum EProjection {
                         appState: EAppState,
                         mode: ProjectionFrame) -> CGPoint? {
         if mode == .northSouth {
-            project(
+            return project(
                 Q,
                 origin: .north,
                 plane: .south
             )
         } else {
-            project(
-                -Q,
+            // No -Q sign flip. With the projection source = observer zenith
+            // and plane tangent at the nadir, projecting Q directly gives an
+            // "external observer at zenith looking down" view. At observer
+            // = NP this collapses to the same math as the NS branch, so the
+            // clock↔travel slerp is geometrically continuous and ends with
+            // Polaris off-screen (the user's "looking south from NP through
+            // the horizon" view).
+            return project(
+                Q,
                 origin: appState.originVector,
                 plane: appState.planeVector
             )
