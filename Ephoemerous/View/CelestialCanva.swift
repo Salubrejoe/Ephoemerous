@@ -11,33 +11,33 @@ struct CelestialCanva: View {
     // MARK: - Layers
     // Layers drawn inside the clip circle, back → front
     private let skyLayers: [any EGridLayer] = [
-        WatchBackground(),
+        WatchBackgroundLayer(),
+        HorizonLayer(),
 //        EMilkyWayLayer(mode: .northSouth),
-        EarthGrid(mode: .northSouth),
-//        EEclipticLayer(mode: .northSouth),
-//        EStarsLayer(mode: .northSouth),
+        
     ]
     private let clockLayers: [any EGridLayer] = [
-//        EEquatorTropicsLayer(mode: .northSouth),
-        EarthGrid(mode: .userLocation),
-//        EMeridiansLayer(mode: .userLocation),
-//        EMoonLayer(mode: .northSouth),
-//        ESunLayer(mode: .northSouth),
-//        ESelectedStarsLayer(mode: .northSouth),
+//        EarthGrid(mode: .northSouth),
+        EarthGridLayer(mode: .userLocation),
+        EclipticLayer(mode: .northSouth),
+        EStarsLayer(mode: .northSouth),
+        EMoonLayer(mode: .northSouth),
+        ESunLayer(mode: .northSouth),
+        ESelectedStarsLayer(mode: .northSouth),
         ENSWatchCrownLayer(),
     ]
     
     private let travelLayers: [any EGridLayer] = [
 //        ESkyBackgroundLayer(),
-        EMilkyWayLayer(mode: .userLocation),
-        EEquatorTropicsLayer(mode: .userLocation),
-        EEclipticLayer(mode: .userLocation),
-        EMeridiansLayer(mode: .userLocation),
-        EStarsLayer(mode: .userLocation),
-        ESunLayer(mode: .userLocation),
-        EMoonLayer(mode: .userLocation),
-        EPlanetsLayer(mode: .userLocation),
-        ESelectedStarsLayer(mode: .userLocation),
+        EarthGridLayer(mode: .userLocation),
+        HorizonLayer(),
+//        EMilkyWayLayer(mode: .userLocation),
+//        EEclipticLayer(mode: .userLocation),
+//        EStarsLayer(mode: .userLocation),
+//        ESunLayer(mode: .userLocation),
+//        EMoonLayer(mode: .userLocation),
+//        EPlanetsLayer(mode: .userLocation),
+//        ESelectedStarsLayer(mode: .userLocation),
     ]
     
     // Every touch interaction lives in the coordinator (own file / class).
@@ -59,10 +59,7 @@ struct CelestialCanva: View {
             ZStack {
                 ZStack {
                     if state.appMode == .travel {
-                        Rectangle()
-                            .fill(LinearGradient(colors: [.indigo,
-                                                          .purple.opacity(0.5)],
-                                                 startPoint: .top, endPoint: .bottom))
+                        Color.systemBackground
                     }
 
                     Canvas { ctx, size in
@@ -94,7 +91,7 @@ struct CelestialCanva: View {
                 // Scale up as it defocuses out / down as it sharpens in —
                 // the clipped disc appears to open past the screen (clock
                 // leaving) and close back into place (clock returning).
-                .scaleEffect(1 + 0.6 * env)
+//                .scaleEffect(1 + 0.6 * env)
                 .blur(radius: 20 * env)
                 .opacity(1 - 0.9 * env)
 

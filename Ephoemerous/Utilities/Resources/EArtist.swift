@@ -13,21 +13,8 @@ struct EArtist {
     let eclColor : Color  = .secondary
     let eclWidth : Double = 4.0
 
-    // MARK: - Meridians
-    let nsMeridianColor   : Color  = .primary
-    let nsMeridianOpacity : Double = 0.1
-    let nsMeridianStep    : Double = 1.0
-    let ulMeridianColor   : Color  = .primary
-    let ulMeridianOpacity : Double = 0.1
-    let ulMeridianStep    : Double = 1.0
 
-    func meridianColor(mode: EProjection.ProjectionFrame) -> Color {
-        mode == .northSouth ? nsMeridianColor.opacity(nsMeridianOpacity)
-                            : ulMeridianColor.opacity(ulMeridianOpacity)
-    }
-    func meridianStep(mode: EProjection.ProjectionFrame) -> Double {
-        mode == .northSouth ? nsMeridianStep : ulMeridianStep
-    }
+
 
     // MARK: - Horizon
     let horizonFillColor   : Color  = .secondary

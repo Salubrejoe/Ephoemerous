@@ -4,39 +4,34 @@ import SwiftUI
 import simd
 
 
-struct EarthGrid: EGridLayer {
+struct EarthGridLayer: EGridLayer {
     let artist = EArtist.shared
     let mode: EProjection.ProjectionFrame
     
-    private var color: Color {
-        mode == .userLocation ? .green : .secondary
+    private var modeColor: Color {
+        .quaternaryLabel
     }
     
     private func width(atParallel parallel: Angle) -> Double {
-        (1/abs(parallel.degrees)) * 4
+//        (1/abs(parallel.degrees)) * 4
+        0.15
     }
     
     private func width(atMeridian meridian: Angle) -> Double {
-        if meridian == .piHalf || meridian == -.piHalf {
-            2
-        }
-        else if meridian == .pi || meridian == -.pi {
-            5
-        }
-        else if meridian == .zero {
-            1
-        } else {
-            0
-        }
+        0.15
+//        if meridian == .piHalf || meridian == .zero { 1 }
+//        else { 0.5 }
     }
     
     func draw(in dc: inout EGraphicContext) {
+        var blur = dc.ctx
+        blur.addFilter(.blur(radius: 4))
         drawMeridians(in: &dc)
         drawParallels(in: &dc)
     }
     
     func drawParallels(in dc: inout EGraphicContext) {
-        guard dc.state.showHorizon else { return }
+//        guard dc.state.showHorizon else { return }
         
         for decl in Angle.parallels {
             let pts = EProjection.sampleCurve(appState: dc.state, mode: .userLocation) { t in
@@ -47,16 +42,17 @@ struct EarthGrid: EGridLayer {
             // MARK: - DRAW
             dc.strokeCurve(
                 pts,
-                color: color,
+                color: modeColor,
                 width: width(atParallel: decl)
             )
         }
     }
     
     func drawMeridians(in dc: inout EGraphicContext) {
-        let show = mode == .northSouth ? dc.state.showNSMeridians : dc.state.showULMeridians
-        guard show else { return }
-        for h in stride(from: 0.0, to: 12.0, by: artist.meridianStep(mode: mode)) {
+//        let show = mode == .northSouth ? dc.state.showNSMeridians : dc.state.showULMeridians
+//        guard show else { return }
+        
+        for h in stride(from: 0.0, to: 12.0, by: 1.0) {
             let ra  = h / 24.0 * Double.twoPi
             let pts = EProjection.sampleCurve(appState: dc.state, mode: mode) { t in
                 EPrecession.equatorialVector(ra: .radians(ra),
@@ -66,7 +62,7 @@ struct EarthGrid: EGridLayer {
             // MARK: - DRAW
             dc.strokeCurve(
                 pts,
-                color: color,
+                color: modeColor,
                 width: width(atMeridian: .radians(ra))
             )
         }

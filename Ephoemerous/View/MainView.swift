@@ -16,6 +16,7 @@ struct MainView: View {
             // cross-fades with the sky on the same blend.
             CelestialCanva()
             CircledResetButton()
+//                .offset(y: -350)
             ObjectsTrackingOverlay()
         }
         .ignoresSafeArea()

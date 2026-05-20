@@ -9,7 +9,7 @@ import SwiftUI
 //
 // Travel mode keeps its plain full-screen fill in MainView (a flat
 // rectangle has no scale/offset positioning, so nothing to anchor).
-struct WatchBackground: EGridLayer {
+struct WatchBackgroundLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.appMode == .clock else { return }
@@ -17,10 +17,15 @@ struct WatchBackground: EGridLayer {
         let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
         let cy = dc.size.height / 2 + dc.state.renderedOffset.x
         let r  = dc.state.renderedScale * EArtist.shared.clipRadius
-               + EArtist.shared.clipBleed
+               + EArtist.shared.clipBleed - 8
         let disc = Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
                                           width: 2 * r, height: 2 * r))
 
         dc.ctx.fill(disc, with: .color(.systemBackground))
+
+        let ringR = r + 6
+        let ring = Path(ellipseIn: CGRect(x: cx - ringR, y: cy - ringR,
+                                          width: 2 * ringR, height: 2 * ringR))
+        dc.ctx.stroke(ring, with: .color(.systemBackground), lineWidth: 4)
     }
 }
