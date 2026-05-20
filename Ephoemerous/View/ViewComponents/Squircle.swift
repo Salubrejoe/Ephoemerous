@@ -51,7 +51,7 @@ struct Squircle: Shape {
         pts.reserveCapacity(segments + 1)
         for i in 0...segments {
             let t = CGFloat(i) / CGFloat(segments) * 2 * .pi
-            let r = lameRadius(angle: t, corners: n, bulge: p)
+            let r = Squircle.lameRadius(angle: t, corners: n, bulge: p)
             pts.append(
                 CGPoint(x: cx + rx * r * cos(t + α),
                         y: cy + ry * r * sin(t + α))
@@ -60,7 +60,10 @@ struct Squircle: Shape {
         return pts
     }
 
-    private func lameRadius(angle t: CGFloat, corners n: CGFloat, bulge p: CGFloat) -> CGFloat {
+    /// The bulge function in isolation. Exposed so other layers can apply
+    /// the same radial modulation to non-circular curves (e.g. a projected
+    /// horizon that has deformed away from a true circle).
+    static func lameRadius(angle t: CGFloat, corners n: CGFloat, bulge p: CGFloat) -> CGFloat {
         let a = abs(cos(n * t / 4))
         let b = abs(sin(n * t / 4))
         return pow(pow(a, p) + pow(b, p), -1 / p)

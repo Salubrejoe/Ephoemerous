@@ -39,6 +39,7 @@ struct CelestialCanva: View {
             EPlanetsLayer(mode: m),
             ESelectedStarsLayer(mode: m),
             ClipAndHoursLayer(),
+            WatchRimLayer(),
         ]
     }
 

@@ -14,19 +14,14 @@ struct WatchBackgroundLayer: EGridLayer {
         let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
         let cy = dc.size.height / 2 + dc.state.renderedOffset.x
         let r  = (dc.state.renderedScale * EArtist.shared.clipRadius
-                  + EArtist.shared.clipBleed - 10) * scale
+                  + EArtist.shared.clipBleed) * scale
 
         var local = dc.ctx
         local.opacity = opacity
-        local.addFilter(.shadow(color: .tertiary, radius: 1))
+        local.addFilter(.shadow(color: .tertiary, radius: 2))
 
         let disc = Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
                                           width: 2 * r, height: 2 * r))
         local.fill(disc, with: .color(.systemBackground))
-
-        let ringR = r + 6 * scale
-        let ring  = Path(ellipseIn: CGRect(x: cx - ringR, y: cy - ringR,
-                                           width: 2 * ringR, height: 2 * ringR))
-        local.stroke(ring, with: .color(.systemBackground), lineWidth: 4 * scale)
     }
 }
