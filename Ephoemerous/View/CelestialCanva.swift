@@ -24,7 +24,7 @@ struct CelestialCanva: View {
         EMoonLayer(mode: .northSouth),
         ESunLayer(mode: .northSouth),
         ESelectedStarsLayer(mode: .northSouth),
-        ENSWatchCrownLayer(),
+        CrownHours(),
     ]
     
     private let travelLayers: [any EGridLayer] = [

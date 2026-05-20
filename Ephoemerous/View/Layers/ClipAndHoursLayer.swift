@@ -1,7 +1,7 @@
 import SwiftUI
 
 
-struct ENSWatchCrownLayer: EGridLayer {
+struct ClipAndHoursLayer: EGridLayer {
     let artist = EArtist.shared
 
     // Crown geometry (fixed screen points, independent of scale)
@@ -17,9 +17,6 @@ struct ENSWatchCrownLayer: EGridLayer {
         // Fixed orientation: RA=0h at bottom, RA=12h at top. Never rotates.
         let theta: Double = -.pi / 2
 
-//        drawRing    (cx: cx, cy: cy, innerR: innerR, outerR: outerR, in: &dc)
-//        drawBorders (cx: cx, cy: cy, innerR: innerR, outerR: outerR, in: &dc)
-//        drawMinorTicks(cx: cx, cy: cy, innerR: innerR, theta: theta, in: &dc)
         drawHours   (cx: cx, cy: cy, innerR: innerR, outerR: outerR, theta: theta, in: &dc)
     }
 
@@ -52,26 +49,5 @@ struct ENSWatchCrownLayer: EGridLayer {
     
     private func isCurrentHour(_ hour: Int, tzOffset: Int) -> Bool {
         (Calendar.current.component(.hour, from: Date())) == (hour + tzOffset + 24) % 24
-    }
-
-    // MARK: - Tick helper
-
-    private func drawTick(cx: Double, cy: Double, angle: Double,
-                          fromR: Double, toR: Double, width: CGFloat,
-                          in dc: inout EGraphicContext) {
-        var path = Path()
-        path.move(
-            to:    CGPoint(
-                x: cx + cos(angle) * fromR,
-                y: cy - sin(angle) * fromR
-            )
-        )
-        path.addLine(
-            to: CGPoint(
-                x: cx + cos(angle) * toR,
-                y: cy - sin(angle) * toR
-            )
-        )
-        dc.ctx.stroke(path, with: .color(.green.opacity(0.6)), lineWidth: width)
     }
 }
