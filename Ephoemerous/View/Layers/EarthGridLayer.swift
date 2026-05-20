@@ -14,11 +14,11 @@ struct EarthGridLayer: EGridLayer {
     
     private func width(atParallel parallel: Angle) -> Double {
 //        (1/abs(parallel.degrees)) * 4
-        0.15
+        0.2
     }
     
     private func width(atMeridian meridian: Angle) -> Double {
-        0.15
+        0.2
 //        if meridian == .piHalf || meridian == .zero { 1 }
 //        else { 0.5 }
     }

@@ -15,8 +15,9 @@ import SwiftUI
 // See https://thatsmaths.com/2016/07/14/squircles/ for the squircle case.
 struct Squircle: Shape {
 
-    var corners : Int     = 4
-    var bulge   : CGFloat = 4
+    var corners  : Int     = 4
+    var bulge    : CGFloat = 4
+    var rotation : Angle   = .zero
 
     // Animate `bulge` smoothly; `corners` is discrete and not animated.
     var animatableData: CGFloat {
@@ -25,26 +26,38 @@ struct Squircle: Shape {
     }
 
     func path(in rect: CGRect) -> Path {
+        var path = Path()
+        for (i, p) in vertices(in: rect).enumerated() {
+            if i == 0 { path.move   (to: p) }
+            else      { path.addLine(to: p) }
+        }
+        path.closeSubpath()
+        return path
+    }
+
+    /// Sampled rim of the squircle. Useful when you want to feed the points
+    /// through your own drawing pipeline (e.g. `EGraphicContext.strokeCurve`)
+    /// rather than letting SwiftUI fill/stroke a `Path` directly.
+    func vertices(in rect: CGRect, segments: Int = 240) -> [CGPoint] {
         let cx = rect.midX
         let cy = rect.midY
         let rx = rect.width  / 2
         let ry = rect.height / 2
         let n  = CGFloat(corners)
         let p  = max(bulge, 0.0001)
+        let α  = CGFloat(rotation.radians)
 
-        let segments = 240
-        var path     = Path()
-
+        var pts = [CGPoint]()
+        pts.reserveCapacity(segments + 1)
         for i in 0...segments {
             let t = CGFloat(i) / CGFloat(segments) * 2 * .pi
             let r = lameRadius(angle: t, corners: n, bulge: p)
-            let x = cx + rx * r * cos(t)
-            let y = cy + ry * r * sin(t)
-            if i == 0 { path.move   (to: CGPoint(x: x, y: y)) }
-            else      { path.addLine(to: CGPoint(x: x, y: y)) }
+            pts.append(
+                CGPoint(x: cx + rx * r * cos(t + α),
+                        y: cy + ry * r * sin(t + α))
+            )
         }
-        path.closeSubpath()
-        return path
+        return pts
     }
 
     private func lameRadius(angle t: CGFloat, corners n: CGFloat, bulge p: CGFloat) -> CGFloat {
