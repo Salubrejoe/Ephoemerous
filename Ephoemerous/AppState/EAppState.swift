@@ -30,15 +30,9 @@ class EAppState {
     var selectedStarPositions:  [String: CGPoint]  = [:]
 
     // MARK: - App mode
-    var appMode:        EAppMode        = .clock
-    var projectionMode: ProjectionMode  = .drag
-    var coupledAxis:    Axis?           = nil
-    var haptics:        Bool            = false
-
-    // Transient backing for useCoupledProjectionTemporarily(...). Not persisted.
-    // The generation token makes overlapping calls race-safe (see EAppState+ProjectionMode).
-    var _coupledRestoreMode:       ProjectionMode? = nil
-    var _coupledRestoreGeneration: Int             = 0
+    var appMode:     EAppMode = .clock
+    var coupledAxis: Axis?    = nil   // axis lock for the travel-mode single-finger pan
+    var haptics:     Bool     = false
 
     // MARK: - Temporal state  (logic → EAppState+Time.swift)
     var observationDate: Date   = .now  { didSet { invalidateStarCache() } }
@@ -110,7 +104,6 @@ class EAppState {
 // MARK: - Supporting value types
 
 // EAppMode and its behaviour live in EAppState+AppMode.swift.
-// ProjectionMode and its behaviour live in EAppState+ProjectionMode.swift.
 
 struct Origin: Equatable {
     var latitude:  Angle = .degrees(51)

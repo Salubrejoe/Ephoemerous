@@ -68,13 +68,11 @@ extension EAppState {
                           duration: dur) { [weak self] in
                 guard let self else { return }
                 self.appMode           = .travel
-                self.projectionMode    = .drag
                 self._chromeTransition = nil
             }
 
         case .travel:
             appMode           = .clock
-            projectionMode    = .drag
             _chromeTransition = EChromeTransition(
                 direction:      .collapsing,
                 startTime:      now,

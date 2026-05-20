@@ -58,13 +58,11 @@ extension EAppState {
     /// restored on the time-only path, stranding day changes in `.coupled`.
     func commitPickedObservationDate(_ newDate: Date) {
         let sameDay = Calendar.current.isDate(observationDate, inSameDayAs: newDate)
-        useCoupledProjectionTemporarily(for: 0.7) {
-            if sameDay {
-                setObservationDate(newDate)
-            } else {
-                _dateTransition = nil
-                observationDate = newDate
-            }
+        if sameDay {
+            setObservationDate(newDate)
+        } else {
+            _dateTransition = nil
+            observationDate = newDate
         }
     }
 

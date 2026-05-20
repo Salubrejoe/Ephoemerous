@@ -16,22 +16,30 @@ final class CelestialGestureCoordinator {
 
     // MARK: Transient interaction state
 
-    private(set) var isPanningViewport = false
-    private(set) var isPinchingToZoom  = false
-    private(set) var isZoomDragging    = false
+    private(set) var isPanningViewport    = false
+    private(set) var isPinchingToZoom     = false
+    private(set) var isZoomDragging       = false
+    private(set) var isTwoFingerOriginPan = false
 
     private var viewportOffsetAtPanStart: CGPoint = .zero
     private var scaleAtPinchStart:        Double  = 0
     private var skyAnchorUnderFingers:    CGPoint = .zero
+    private var pinchCentroidAtStart:     CGPoint = .zero   // for origin-nudge delta
 
     private var zoomDragStartScale:  Double  = 0
     private var zoomDragLastScale:   Double  = 0
     private var zoomDragAnchorSky:   CGPoint = .zero   // sky point pinned under the tap
     private var zoomDragAnchorScreen: CGPoint = .zero  // fixed screen point (the double-tap)
 
+    // Two-finger origin nudge (travel mode only): remembers where origin
+    // was before the gesture so we can spring it back on release.
+    private var originAtTwoFingerStart: Origin? = nil
+
     /// True while the user is actively manipulating the canvas. The
     /// timeline reads this to stay at 60 fps for the duration.
-    var isInteracting: Bool { isPanningViewport || isPinchingToZoom || isZoomDragging }
+    var isInteracting: Bool {
+        isPanningViewport || isPinchingToZoom || isZoomDragging || isTwoFingerOriginPan
+    }
 
     // MARK: Tuning
 
@@ -48,7 +56,13 @@ final class CelestialGestureCoordinator {
     private let scaleOvershootFraction: Double = 0.12   // damped zoom-past-ceiling room
     private let doubleTapZoomFactor:    Double = 2.0
 
-    // MARK: - Pan: one finger  (.drag / .coupled / .origin)
+    // MARK: - Pan: one finger
+    //
+    // Clock mode: pans the viewport (rubber-band on overscroll, fling
+    // inertia on release). Travel mode: moves the observer with axis
+    // lock — pure single-axis nudges of latitude OR longitude, picked
+    // by whichever drag direction wins the first `coupledAxisLockSlop`
+    // of motion.
 
     func panBegan(state: EAppState) {
         commitAnyRunningPresetTransition(state: state)
@@ -57,15 +71,14 @@ final class CelestialGestureCoordinator {
 
     func panChanged(translation t: CGSize, state: EAppState) {
         beginPanIfNeeded(state: state)
-        switch state.projectionMode {
-        case .drag:    panViewport(state: state, by: t)
-        case .coupled: moveObserverWithAxisLock(state: state, by: t)
-        case .origin:  moveObserverFreely(state: state, by: t)
+        switch state.appMode {
+        case .clock:  panViewport(state: state, by: t)
+        case .travel: moveObserverWithAxisLock(state: state, by: t)
         }
     }
 
     func panEnded(translation t: CGSize, velocity v: CGSize, state: EAppState) {
-        if state.projectionMode == .drag {
+        if state.appMode == .clock {
             let clamped     = state.hardClampedOffset(state.offset, atScale: state.scale)
             let outOfBounds = hypot(clamped.x - state.offset.x,
                                     clamped.y - state.offset.y) > 0.5
@@ -121,13 +134,46 @@ final class CelestialGestureCoordinator {
         }
     }
 
-    private func moveObserverFreely(state: EAppState, by t: CGSize) {
-        let rawLat = state.origin.latitude  - .radians(t.height * coupledSensitivity)
+    // MARK: - Two-finger origin nudge (any app mode)
+    //
+    // Held two-finger drag moves origin freely (no axis lock, plane
+    // untouched) and on release springs origin back to where the gesture
+    // started via `animateOrigin(updatePlane: false)` — so the user
+    // previews a position without the projection morphing under them.
+    // Active in both modes; in clock mode the visible effect is on the
+    // EarthGrid / Horizon / CardinalLabels (which read origin), with
+    // the NS-projected celestial bodies staying put. Coexists with pinch
+    // (delegate allows simultaneous recognition), so the user can
+    // pan+zoom in one two-finger motion.
+
+    func twoFingerOriginPanBegan(state: EAppState) {
+        commitAnyRunningPresetTransition(state: state)
+        stopInertia(state: state)
+        isTwoFingerOriginPan   = true
+        originAtTwoFingerStart = state.origin
+    }
+
+    func twoFingerOriginPanChanged(translation t: CGSize, state: EAppState) {
+        guard isTwoFingerOriginPan, let start = originAtTwoFingerStart else { return }
+        // Anchor on the snapshot rather than the live origin so the drag
+        // is absolute (no drift across the gesture).
+        let rawLat = start.latitude  - .radians(t.height * coupledSensitivity)
         let newLat = Angle.radians(rawLat.radians.clamped(to: -.pi / 2 ... .pi / 2))
-        let rawLon = state.origin.longitude - .radians(t.width  * coupledSensitivity)
+        let rawLon = start.longitude - .radians(t.width  * coupledSensitivity)
         let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
+        // Direct mutation — bypass `setOrigin` so plane is preserved.
         state.origin.latitude  = newLat
         state.origin.longitude = newLon
+    }
+
+    func twoFingerOriginPanEnded(state: EAppState) {
+        guard isTwoFingerOriginPan, let snapshot = originAtTwoFingerStart else { return }
+        isTwoFingerOriginPan   = false
+        originAtTwoFingerStart = nil
+        state.animateOrigin(to:          snapshot.latitude,
+                            lon:         snapshot.longitude,
+                            duration:    0.45,
+                            updatePlane: false)
     }
 
     // MARK: - Pinch: two fingers  (Maps-style: scale + translate together)
@@ -140,27 +186,45 @@ final class CelestialGestureCoordinator {
         commitAnyRunningPresetTransition(state: state)
         stopInertia(state: state)
         guard !isPinchingToZoom else { return }
-        isPinchingToZoom  = true
-        scaleAtPinchStart = state.scale
+        isPinchingToZoom      = true
+        scaleAtPinchStart     = state.scale
         skyAnchorUnderFingers = skyPoint(under: c, state: state)
+        // Origin nudge piggy-backs on pinch — pinch reliably tracks the
+        // two-finger centroid, while a parallel UIPanGestureRecognizer
+        // with min/max=2 loses the touch race with pinch.
+        pinchCentroidAtStart = c
+        twoFingerOriginPanBegan(state: state)
     }
 
     func pinchChanged(scale magnification: Double, centroid c: CGPoint,
                       state: EAppState) {
         let rawScale = scaleAtPinchStart * magnification
         let newScale = rubberScale(rawScale, state: state)
-        let pinned   = screenPin(sky: skyAnchorUnderFingers, under: c,
+        // Pin to the START centroid rather than the live one. Scale
+        // changes still anchor around the original pinch point (Maps-
+        // style zoom-around-fingers), but pure finger TRANSLATION no
+        // longer pans the viewport — that's the origin nudge's job.
+        let pinned   = screenPin(sky: skyAnchorUnderFingers,
+                                 under: pinchCentroidAtStart,
                                  scale: newScale, state: state)
         state.scale  = newScale
         state.offset = rubberOffset(homedTowardDefault(pinned,
                                                        rawScale: rawScale,
                                                        state: state),
                                     state: state, scale: newScale)
+        // Origin nudge from the centroid's translation since pinch began.
+        // Pure pinching (centroid stationary) → no origin shift; pure
+        // two-finger drag → pure origin shift.
+        twoFingerOriginPanChanged(
+            translation: CGSize(width:  c.x - pinchCentroidAtStart.x,
+                                height: c.y - pinchCentroidAtStart.y),
+            state: state)
     }
 
     func pinchEnded(state: EAppState) {
         isPinchingToZoom = false
         settleWithinBounds(state: state)        // spring back from overshoot
+        twoFingerOriginPanEnded(state: state)   // spring origin back
     }
 
     // MARK: - Double-tap-and-hold-drag zoom (continuous, anchored at the tap)

@@ -34,10 +34,13 @@ extension EAppState {
 
     private func advanceOriginTransition(at time: Double) {
         guard let transition = _originTransition else { return }
-        let (lat, lon) = transition.interpolated(at: time)
-        let finished   = transition.isFinished(at: time)
+        let (lat, lon)  = transition.interpolated(at: time)
+        let finished    = transition.isFinished(at: time)
+        let updatePlane = transition.updatePlane
         DispatchQueue.main.async {
-            self.setOrigin(lat: .radians(lat), lon: .radians(lon))
+            self.setOrigin(lat: .radians(lat),
+                           lon: .radians(lon),
+                           updatePlane: updatePlane)
             if finished {
                 self._originTransition = nil
                 // Run the completion in the same dispatch as the final

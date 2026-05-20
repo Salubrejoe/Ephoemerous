@@ -10,13 +10,17 @@ import UIKit
 //
 // Recognisers:
 //   • pan  — one finger only. Viewport / observer move + fling.
-//   • pinch — two fingers. Maps-style: scale + translate via the live
-//     centroid, in one reprojection (no separate two-finger pan).
+//   • pinch — two fingers. Drives BOTH the Maps-style scale + centroid
+//     reprojection AND the two-finger origin nudge (centroid translation
+//     → origin shift, springs back on release). A separate
+//     `UIPanGestureRecognizer(numberOfTouches: 2)` would, in practice,
+//     never transition out of Possible because pinch claims the same two
+//     touches first; piggy-backing on pinch is the standard fix.
 //   • hold — one tap then press-and-hold. A quick second tap = discrete
 //     step zoom; held + dragged = continuous zoom.
 //
-// Arbitration: pan and pinch may run simultaneously (Maps feel); a held
-// second tap suppresses the pan (pan requires the hold to fail).
+// Arbitration: pan + pinch may run simultaneously (Maps feel); a held
+// second tap suppresses the one-finger pan.
 struct CelestialGestureView: UIViewRepresentable {
 
     let gestures: CelestialGestureCoordinator
@@ -96,7 +100,7 @@ struct CelestialGestureView: UIViewRepresentable {
             }
         }
 
-        // MARK: Two-finger pinch (scale + translate via live centroid)
+        // MARK: Two-finger pinch (scale + centroid reprojection + origin nudge)
 
         @objc func handlePinch(_ g: UIPinchGestureRecognizer) {
             guard let v = trackedView else { return }
@@ -149,16 +153,23 @@ struct CelestialGestureView: UIViewRepresentable {
 
         // MARK: Arbitration
 
-        // Pan + pinch together = Maps feel. The hold is exclusive (pan
-        // already requires it to fail; keep pinch off it too).
+        // Multi-touch recognisers all run simultaneously (Maps / Photos
+        // pattern). Without this, pinch claims the two touches first and
+        // the two-finger pan never transitions out of Possible — the
+        // delegate has to whitelist *both* directions (pinch-asks-about-
+        // pan AND pan-asks-about-pinch) for either to start. The 1-finger
+        // pan and 2-finger pan don't overlap by touch count anyway, so
+        // letting them recognise together is harmless. Hold stays
+        // exclusive (1-finger pan already requires it to fail).
         func gestureRecognizer(
             _ g: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
         ) -> Bool {
-            let pinchPan =
-                (g is UIPinchGestureRecognizer && other is UIPanGestureRecognizer) ||
-                (g is UIPanGestureRecognizer  && other is UIPinchGestureRecognizer)
-            return pinchPan
+            if g is UILongPressGestureRecognizer
+            || other is UILongPressGestureRecognizer {
+                return false
+            }
+            return true
         }
     }
 }

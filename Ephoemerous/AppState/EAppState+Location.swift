@@ -17,17 +17,15 @@ extension EAppState {
                   lon: .degrees(location.coordinate.longitude))
     }
 
-    /// Animate the observer to the device's current location, briefly
-    /// coupling the projection. If no fix is available yet, ask for one.
+    /// Animate the observer to the device's current location. If no fix
+    /// is available yet, ask for one.
     func goToDeviceLocation() {
         guard let coordinate = ELocationService.shared.location?.coordinate else {
             ELocationService.shared.requestIfNeeded()
             return
         }
-        useCoupledProjectionTemporarily(for: 0.7) {
-            animateOrigin(to: .degrees(coordinate.latitude),
-                          lon: .degrees(coordinate.longitude))
-        }
+        animateOrigin(to: .degrees(coordinate.latitude),
+                      lon: .degrees(coordinate.longitude))
     }
 
     /// True when the observer origin is within 1° of the device location.
@@ -55,6 +53,10 @@ struct EOriginTransition {
     let toLon:        Double
     let startTime:    Double
     let duration:     Double
+    /// Forwarded to `setOrigin(updatePlane:)` per frame. `false` lets the
+    /// two-finger origin nudge spring back without touching the view
+    /// plane it was previewing.
+    let updatePlane:  Bool
     /// Fired in the same main-queue dispatch as the final `setOrigin(…)`
     /// when the slerp lands, so any follow-on state change (e.g. flipping
     /// `appMode` after a mode-transition slerp) is applied atomically
@@ -82,6 +84,7 @@ extension EAppState {
     func animateOrigin(to lat: Angle,
                        lon: Angle,
                        duration: Double = 0.6,
+                       updatePlane: Bool = true,
                        onCompletion: (() -> Void)? = nil) {
         _originTransition = EOriginTransition(
             fromLat:      origin.latitude.radians,
@@ -90,6 +93,7 @@ extension EAppState {
             toLon:        lon.radians,
             startTime:    Date.now.timeIntervalSinceReferenceDate,
             duration:     duration,
+            updatePlane:  updatePlane,
             onCompletion: onCompletion
         )
     }
