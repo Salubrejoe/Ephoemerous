@@ -196,7 +196,7 @@ private extension GameBoyControlPad {
 
 #Preview {
     ZStack {
-        LinearGradient(colors: [.darkIndigo, .darkBerry],
+        LinearGradient(colors: [.blue, .pink],
                        startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
         GameBoyControlPad()

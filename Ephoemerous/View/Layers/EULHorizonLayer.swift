@@ -1,6 +1,7 @@
 import SwiftUI
 import simd
 
+
 struct EULHorizonLayer: EGridLayer {
     let artist = EArtist.shared
 

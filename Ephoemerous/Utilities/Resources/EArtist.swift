@@ -5,13 +5,13 @@ struct EArtist {
     static let shared = EArtist()
 
     // MARK: - Grid
-    let color      : Color  = .baseSlate.opacity(0.5)
-    let width      : Double = 0.5
+    let color      : Color  = .secondary
+    let width      : Double = 0.3
     let thickWidth : Double = 1.0
 
     // MARK: - Ecliptic
-    let eclColor : Color  = .secondary.opacity(0.1)
-    let eclWidth : Double = 16.0
+    let eclColor : Color  = .secondary
+    let eclWidth : Double = 4.0
 
     // MARK: - Meridians
     let nsMeridianColor   : Color  = .primary
@@ -30,7 +30,7 @@ struct EArtist {
     }
 
     // MARK: - Horizon
-    let horizonFillColor   : Color  = .primary.opacity(0.4)
+    let horizonFillColor   : Color  = .secondary
     let sunsetStrokeColor  : Color  = .baseOrange
     let sunsetStrokeWidth  : Double = 1.0
 
@@ -65,17 +65,17 @@ struct EArtist {
     func drawSun(at sc: CGPoint, in dc: inout EGraphicContext) {
         let r    = 8.0
         let disc = Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r, width: 2*r, height: 2*r))
-        var glow = dc.ctx
-        glow.addFilter(.brightness(1))
-        glow.addFilter(.blur(radius: r * sunGlowBlur))
-        glow.fill(disc, with: .color(sunColor))
-        var disco = dc.ctx
-        disco.addFilter(.brightness(0.7))
-        disco.fill(disc, with: .color(sunColor))
-//        dc.ctx.fill(disc, with: .color(sunColor))
+//        var glow = dc.ctx
+//        glow.addFilter(.brightness(1))
+//        glow.addFilter(.blur(radius: r * sunGlowBlur))
+//        glow.fill(disc, with: .color(sunColor))
+//        var disco = dc.ctx
+//        disco.addFilter(.brightness(0.7))
+//        disco.fill(disc, with: .color(sunColor))
+        dc.ctx.fill(disc, with: .color(.primary))
         drawBreathingRing(at: sc,
                           radius: r + breathRingGap,
-                          color:  .yellow,
+                          color:  .primary,
                           time:   dc.state.animationTime,
                           in:     &dc)
     }
@@ -169,8 +169,8 @@ struct EArtist {
     }
 
     // MARK: - Selected stars
-    let selectedStarRingRadius      : CGFloat = 6.0
-    let constellationStarRingRadius : CGFloat = 4.5
+    let selectedStarRingRadius      : CGFloat = 4.0
+    let constellationStarRingRadius : CGFloat = 2.0
     let constellationStarRingWidth  : CGFloat = 0.75
     let starLabelOffset             : CGPoint = CGPoint(x: 12, y: -4)
     let starLabelOpacity            : Double  = 0.9
@@ -244,14 +244,14 @@ struct EArtist {
 
     func drawStar(_ star: EStar, at sc: CGPoint, in dc: inout EGraphicContext) {
         let r = starRadius(star, in: dc) * 0.5
-        var glow = dc.ctx
-        glow.addFilter(.blur(radius: r * AstroConstants.starGlowBlurRatio/3))
-        glow.fill(
-            Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r, width: r * 2, height: r * 2)),
-            with: .color(star.spectralClass.color.opacity(0.5))
-        )
-        dc.fillDot(at: sc, radius: r, color: star.spectralClass.color)
-//        dc.fillDot(at: sc, radius: r, color: .secondary)
+//        var glow = dc.ctx
+//        glow.addFilter(.blur(radius: r * AstroConstants.starGlowBlurRatio/3))
+//        glow.fill(
+//            Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r, width: r * 2, height: r * 2)),
+//            with: .color(star.spectralClass.color.opacity(0.5))
+//        )
+//        dc.fillDot(at: sc, radius: r, color: star.spectralClass.color)
+        dc.fillDot(at: sc, radius: r, color: .white)
         
     }
 }

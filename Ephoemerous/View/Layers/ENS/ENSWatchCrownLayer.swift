@@ -5,7 +5,7 @@ struct ENSWatchCrownLayer: EGridLayer {
     let artist = EArtist.shared
 
     // Crown geometry (fixed screen points, independent of scale)
-    private let crownWidth   : Double = 25
+    private let crownWidth   : Double = 42
     private let majorTickLen : Double = 4
     private let minorTickLen : Double = 4
 
@@ -18,90 +18,9 @@ struct ENSWatchCrownLayer: EGridLayer {
         let theta: Double = -.pi / 2
 
 //        drawRing    (cx: cx, cy: cy, innerR: innerR, outerR: outerR, in: &dc)
-        drawBorders (cx: cx, cy: cy, innerR: innerR, outerR: outerR, in: &dc)
+//        drawBorders (cx: cx, cy: cy, innerR: innerR, outerR: outerR, in: &dc)
 //        drawMinorTicks(cx: cx, cy: cy, innerR: innerR, theta: theta, in: &dc)
         drawHours   (cx: cx, cy: cy, innerR: innerR, outerR: outerR, theta: theta, in: &dc)
-    }
-
-    // MARK: - Ring background (even-odd fill punches the inner hole)
-
-    private func drawRing(cx: Double, cy: Double, innerR: Double, outerR: Double,
-                          in dc: inout EGraphicContext) {
-        var path = Path()
-        path.addEllipse(
-            in: CGRect(
-                x: cx - outerR,
-                y: cy - outerR,
-                width: 2 * outerR,
-                height: 2 * outerR
-            )
-        )
-        path.addEllipse(
-            in: CGRect(
-                x: cx - innerR,
-                y: cy - innerR,
-                width: 2 * innerR,
-                height: 2 * innerR
-            )
-        )
-        dc.ctx.fill(
-            path,
-            with: .backdrop,
-            style: FillStyle(eoFill: true)
-        )
-    }
-
-    // MARK: - Inner and outer border circles
-
-    private func drawBorders(cx: Double, cy: Double, innerR: Double, outerR: Double,
-                              in dc: inout EGraphicContext) {
-        dc.ctx.stroke(
-            Path(
-                ellipseIn: CGRect(
-                    x: cx - innerR,
-                    y: cy - innerR,
-                    width: 2 * innerR,
-                    height: 2 * innerR
-                )
-            ),
-            with: .color(artist.crownBorderColor),
-            lineWidth: artist.crownBorderWidth,
-            
-        )
-//        for r in [innerR] {
-//            dc.ctx.stroke(
-//                Path(
-//                    ellipseIn: CGRect(
-//                        x: cx - r,
-//                        y: cy - r,
-//                        width: 2 * r,
-//                        height: 2 * r
-//                    )
-//                ),
-//                with: .color(.blue),
-//                lineWidth: 4,
-//                
-//            )
-//        }
-    }
-
-    // MARK: - Minor ticks (30-minute marks, 48 positions total, skip hour positions)
-
-    private func drawMinorTicks(cx: Double, cy: Double, innerR: Double,
-                                theta: Double, in dc: inout EGraphicContext) {
-        for i in 0..<48 {
-            guard i % 2 != 0 else { continue }      // even i = hour mark, skip
-            let angle = theta - Double(i) * .pi / 24.0
-            drawTick(
-                cx: cx,
-                cy: cy,
-                angle: angle,
-                fromR: innerR - minorTickLen,
-                toR: innerR + minorTickLen,
-                width: 0.1,
-                in: &dc
-            )
-        }
     }
 
     // MARK: - Major ticks and hour labels
@@ -114,16 +33,6 @@ struct ENSWatchCrownLayer: EGridLayer {
         for h in 0..<24 {
             let angle = theta - Double(h) * .pi / 12.0
 
-//            drawTick(
-//                cx: cx,
-//                cy: cy,
-//                angle: angle,
-//                fromR: outerR - majorTickLen,
-//                toR: outerR,
-//                width: 1.5,
-//                in: &dc
-//            )
-
             let lx = cx + cos(angle) * midR
             let ly = cy - sin(angle) * midR
 
@@ -131,10 +40,8 @@ struct ENSWatchCrownLayer: EGridLayer {
             let margin = 0.0
             dc.ctx.draw(
                 Text("\((h + tzOffset + 24) % 24)")
-//                    .font(isCurrentHour(h, tzOffset: tzOffset) ? .largeTitle : .title3)
-//                    .bold()
                     .fontDesign(.serif)
-                    .foregroundStyle(isCurrentHour(h, tzOffset: tzOffset) ? .yellow : .primary),
+                    .foregroundStyle(isCurrentHour(h, tzOffset: tzOffset) ? .primary : .secondary),
                 at: CGPoint(x: lx + margin, y: ly + margin),
                 anchor: .center
             )

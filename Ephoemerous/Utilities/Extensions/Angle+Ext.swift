@@ -23,17 +23,39 @@ extension Angle {
     static let userLocation : Angle = .radians(1.45)
     
     static let sunsets: [Angle] = [
-//        .goldenHor,
+        .goldenHor,
         .horizon,
-//        .civil,
-//        .naval,
-//        .astronomical,
-        .degrees(15),
-        .degrees(30),
-        .degrees(45),
-        .degrees(60),
-        .degrees(75),
+        .civil,
+        .naval,
+        .astronomical,
+//        .degrees(15),
+//        .degrees(30),
+//        .degrees(45),
+//        .degrees(60),
+//        .degrees(75),
         .userLocation
+    ]
+    
+    static let parallels: [Angle] = [
+        .degrees(-89.99),
+        .degrees(-80),
+        .degrees(-70),
+        .degrees(-60),
+        .degrees(-50),
+        .degrees(-40),
+        .degrees(-30),
+        .degrees(-20),
+        .degrees(-10),
+        .degrees(0.0),
+        .degrees(10),
+        .degrees(20),
+        .degrees(30),
+        .degrees(40),
+        .degrees(50),
+        .degrees(60),
+        .degrees(70),
+        .degrees(80),
+        .degrees(89.99),
     ]
     
     static var pi: Angle {

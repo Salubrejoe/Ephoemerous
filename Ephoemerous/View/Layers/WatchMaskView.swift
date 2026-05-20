@@ -12,13 +12,11 @@ struct WatchMaskView: View {
 
     // Twilight bands, outer → inner.
     private static let bands: [(dec: Angle, color: Color)] = [
-        (.radians( 0.10), .sunGold),
-        (.radians( 0.00), .mutedRose),
-        (.radians(-0.10), .deepNavy),
-        (.radians(-0.20), .darkIndigo),
-        (.radians(-0.31), .midnightBlue),
-        (.radians(-0.41), .nearBlack),
-        (.radians(-0.51), .nearBlack),
+        (.radians( 0.10), .secondary),
+        (.radians( 0.00), .secondary),
+        (.radians(-0.10), .secondary),
+        (.radians(-0.20), .secondary),
+        (.radians(-0.31), .secondary),
     ]
 
     var body: some View {
@@ -26,6 +24,7 @@ struct WatchMaskView: View {
         let ringW = 4.0
 
         return ZStack {
+            
             Canvas { ctx, size in
                 drawProjectedCrown(into: &ctx, size: size, discR: discR, ringW: ringW)
             }
@@ -37,7 +36,7 @@ struct WatchMaskView: View {
                 let label   = (h + tz + 24) % 24
                 let hour    = Calendar.current.component(.hour, from: Date())
                 let current = hour == label
-                hourNumber(label.description, current ? .yellow : primaryColor)
+                hourNumber(label.description, current ? .primary : .secondary)
                     .offset(
                         x: state.renderedOffset.y + cos(angle) * midR,
                         y: state.renderedOffset.x + sin(angle) * midR
@@ -90,11 +89,11 @@ struct WatchMaskView: View {
 
         // dec 0 serves both its colour band and the equator stroke — compute once.
         let equatorPath = parallelPath(dec: .zero)
-        for band in Self.bands {
-            let p = band.dec == .zero ? equatorPath : parallelPath(dec: band.dec)
-            ctx.fill(p, with: .color(band.color.opacity(0.2)))
-        }
-        ctx.stroke(equatorPath, with: .color(.white.opacity(0.16)), lineWidth: ringW)
+//        for band in Self.bands {
+//            let p = band.dec == .zero ? equatorPath : parallelPath(dec: band.dec)
+//            ctx.fill(p, with: .color(.secondarySystemBackground.opacity(0.4)))
+//        }
+        ctx.stroke(equatorPath, with: .color(.secondary), lineWidth: ringW)
 
         // Background-tinted rim over the old hard seam: content fills to
         // discR, this ring sits at [discR, discR+bezelWidth], then the
@@ -104,16 +103,15 @@ struct WatchMaskView: View {
         ctx.stroke(
             Path(ellipseIn: CGRect(x: cc.x - bezR, y: cc.y - bezR,
                                    width: 2 * bezR, height: 2 * bezR)),
-            with: .color(Color(uiColor: .systemBackground)),
+            with: .color(.secondary),
             lineWidth: bw)
     }
 
     @ViewBuilder
     private func hourNumber(_ string: String, _ color: Color?) -> some View {
         Text(string)
-            .font(.caption2.weight(.light))
+            .font(.footnote.weight(.light))
             .fontDesign(.serif)
-            .foregroundStyle(color ?? .white)
     }
 
     private var primaryColor: Color {

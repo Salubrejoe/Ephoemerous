@@ -9,6 +9,9 @@ struct MainView: View {
     
     var body: some View {
         ZStack {
+            Color.secondarySystemBackground
+                .ignoresSafeArea()
+                
             // Travel backdrop moved into CelestialCanva's travel group so it
             // cross-fades with the sky on the same blend.
             CelestialCanva()

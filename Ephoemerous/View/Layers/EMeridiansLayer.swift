@@ -15,7 +15,7 @@ struct EMeridiansLayer: EGridLayer {
                                             dec: .radians((t - 0.5) * Double.pi))
                     .sidereallyRotated(by: dc.state.localSiderealOffset)
             }
-            dc.strokeCurve(pts, color: artist.meridianColor(mode: mode), width: artist.width)
+            dc.strokeCurve(pts, color: artist.horizonFillColor, width: artist.width)
         }
     }
 }

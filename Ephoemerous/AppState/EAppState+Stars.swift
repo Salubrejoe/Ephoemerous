@@ -24,11 +24,11 @@ extension EAppState {
         if let cached = _starsCache { return cached }
         let zenith = observerZenith
         let result = StarDatabase.shared.workableStars
-            .filter { s in
-                let precessed = EPrecession.precess(ra: s.rightAscension, dec: s.declination, to: observationDate)
-                let starVec   = Angle.spherePoint(latitude: precessed.dec, longitude: precessed.ra)
-                return simd_dot(starVec, zenith) > 0.0     // above horizon
-            }
+//            .filter { s in
+//                let precessed = EPrecession.precess(ra: s.rightAscension, dec: s.declination, to: observationDate)
+//                let starVec   = Angle.spherePoint(latitude: precessed.dec, longitude: precessed.ra)
+//                return simd_dot(starVec, zenith) > 0.0     // above horizon
+//            }
             .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
         _starsCache = result
         return result

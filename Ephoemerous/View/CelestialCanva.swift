@@ -11,17 +11,20 @@ struct CelestialCanva: View {
     // MARK: - Layers
     // Layers drawn inside the clip circle, back → front
     private let skyLayers: [any EGridLayer] = [
-        ESkyBackgroundLayer(),
-        EMilkyWayLayer(mode: .northSouth),
-        EEquatorTropicsLayer(mode: .northSouth),
-        EMeridiansLayer(mode: .userLocation),
-        EEclipticLayer(mode: .northSouth),
-        EStarsLayer(mode: .northSouth),
+        WatchBackground(),
+//        EMilkyWayLayer(mode: .northSouth),
+        EarthGrid(mode: .northSouth),
+//        EEclipticLayer(mode: .northSouth),
+//        EStarsLayer(mode: .northSouth),
     ]
     private let clockLayers: [any EGridLayer] = [
-        EMoonLayer(mode: .northSouth),
-        ESunLayer(mode: .northSouth),
-        ESelectedStarsLayer(mode: .northSouth),
+//        EEquatorTropicsLayer(mode: .northSouth),
+        EarthGrid(mode: .userLocation),
+//        EMeridiansLayer(mode: .userLocation),
+//        EMoonLayer(mode: .northSouth),
+//        ESunLayer(mode: .northSouth),
+//        ESelectedStarsLayer(mode: .northSouth),
+        ENSWatchCrownLayer(),
     ]
     
     private let travelLayers: [any EGridLayer] = [
@@ -57,8 +60,8 @@ struct CelestialCanva: View {
                 ZStack {
                     if state.appMode == .travel {
                         Rectangle()
-                            .fill(LinearGradient(colors: [.darkIndigo,
-                                                          .darkIndigo.opacity(0.5)],
+                            .fill(LinearGradient(colors: [.indigo,
+                                                          .purple.opacity(0.5)],
                                                  startPoint: .top, endPoint: .bottom))
                     }
 
@@ -78,15 +81,15 @@ struct CelestialCanva: View {
                         for layer in layers { layer.draw(in: &dc) }
                     }
 
-                    if state.appMode == .clock {
-                        // Layout sink: the crown's rings are framed to the
-                        // zoom (radius ∝ renderedScale); without this the
-                        // ZStack grows with scale and drags the gesture
-                        // view's coordinate space under the finger.
-                        WatchMaskView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .clipped()
-                    }
+//                    if state.appMode == .clock {
+////                        // Layout sink: the crown's rings are framed to the
+////                        // zoom (radius ∝ renderedScale); without this the
+////                        // ZStack grows with scale and drags the gesture
+////                        // view's coordinate space under the finger.
+//                        WatchMaskView()
+//                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+//                            .clipped()
+//                    }
                 }
                 // Scale up as it defocuses out / down as it sharpens in —
                 // the clipped disc appears to open past the screen (clock

@@ -9,12 +9,7 @@ import SwiftUI
 //
 // Travel mode keeps its plain full-screen fill in MainView (a flat
 // rectangle has no scale/offset positioning, so nothing to anchor).
-struct ESkyBackgroundLayer: EGridLayer {
-
-    private let gradient = Gradient(colors: [
-        .darkIndigo,
-        .deepNavy,
-    ])
+struct WatchBackground: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.appMode == .clock else { return }
@@ -26,9 +21,6 @@ struct ESkyBackgroundLayer: EGridLayer {
         let disc = Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
                                           width: 2 * r, height: 2 * r))
 
-        dc.ctx.fill(disc, with: .linearGradient(
-            gradient,
-            startPoint: CGPoint(x: cx, y: cy - r),
-            endPoint:   CGPoint(x: cx, y: cy + r)))
+        dc.ctx.fill(disc, with: .color(.systemBackground))
     }
 }
