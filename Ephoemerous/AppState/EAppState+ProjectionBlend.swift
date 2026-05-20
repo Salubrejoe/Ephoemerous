@@ -1,36 +1,47 @@
 import SwiftUI
 
-// MARK: - EProjectionTransition
-// The clock↔travel transition. Drives two things in parallel:
-//   • An origin slerp (managed by `_originTransition`) from the observer's
-//     real location to the celestial north pole (or back).
-//   • A cross-fade between the clock-layer group and the travel-layer
-//     group, with its window pinned to whichever end of the slerp NP sits.
+// MARK: - EChromeTransition
+// Drives the watch-chrome (WatchBackgroundLayer + ClipAndHoursLayer)
+// scale-and-fade during a mode toggle:
 //
-// At observer = NP the userLocation projection (with -Q dropped, see
-// `EProjection.project`) coincides exactly with the northSouth projection,
-// so the layer swap is geometrically seamless at the bridge moment.
-struct EProjectionTransition {
+//   • Clock → Travel:  direction = .expanding
+//       opacity 1 → 0, radiusScale 1 → maxRadiusScale.
+//       The chrome "blows out" past the screen as it disappears.
+//
+//   • Travel → Clock:  direction = .collapsing
+//       opacity 0 → 1, radiusScale maxRadiusScale → 1.
+//       The chrome shrinks in from a huge ring as it reappears.
+//
+// The transition is started by `toggleAppMode` and cleared explicitly by
+// the same code path that ends the toggle (the slerp's `onCompletion`
+// for forward, an `asyncAfter` for reverse). The getters do NOT
+// self-clear, so there's no race against those explicit clears.
+struct EChromeTransition {
 
-    enum Direction { case toTravel, toClock }
+    enum Direction { case expanding, collapsing }
 
-    let startTime : Double
-    let duration  : Double
-    let direction : Direction
+    let direction      : Direction
+    let startTime      : Double
+    let duration       : Double
+    let maxRadiusScale : Double
 
     private func progress(at time: Double) -> Double {
         max(0, min(1, (time - startTime) / duration))
     }
 
-    /// Travel-layer opacity: 0 = clock visible, 1 = travel visible. The
-    /// 40 %-wide cross-fade window is parked at whichever end of the slerp
-    /// the observer reaches NP — the end for Clock→Travel, the start for
-    /// Travel→Clock.
-    func travelOpacity(at time: Double) -> Double {
-        let p = progress(at: time)
+    func opacity(at time: Double) -> Double {
+        let p = smoothstep(progress(at: time))
         switch direction {
-        case .toTravel: return smoothstep((p - 0.6) / 0.4)   // bridge at p=1
-        case .toClock:  return 1 - smoothstep(p / 0.4)       // bridge at p=0
+        case .expanding:  return 1 - p
+        case .collapsing: return p
+        }
+    }
+
+    func radiusScale(at time: Double) -> Double {
+        let p = smoothstep(progress(at: time))
+        switch direction {
+        case .expanding:  return 1 + p * (maxRadiusScale - 1)
+        case .collapsing: return maxRadiusScale - p * (maxRadiusScale - 1)
         }
     }
 
@@ -44,44 +55,26 @@ struct EProjectionTransition {
     }
 }
 
-// MARK: - EAppState + mode transition
+// MARK: - EAppState + chrome state
 extension EAppState {
 
-    /// True while the cross-fade window is in flight. EProjection drops the
-    /// -Q from the userLocation branch when this is true, so UL and NS
-    /// coincide at the moment the observer reaches NP.
-    var isModeTransitioning: Bool {
-        guard let t = _projectionTransition else { return false }
-        return !t.isFinished(at: animationTime)
-    }
-
-    /// Travel-layer opacity for the current frame. Self-clears the
-    /// transition once it finishes — same pattern as the old envelope.
-    var renderedTravelOpacity: Double {
-        guard let t = _projectionTransition else {
-            return appMode == .travel ? 1 : 0
+    /// Chrome alpha for the current frame. 1 = fully visible, 0 = hidden.
+    /// While a chrome transition is in flight it's driven by the
+    /// transition's curve; otherwise it falls back to the appMode
+    /// (clock = 1, travel = 0).
+    var chromeOpacity: Double {
+        if let t = _chromeTransition {
+            return t.opacity(at: animationTime)
         }
-        if t.isFinished(at: animationTime) {
-            _projectionTransition = nil
-            return appMode == .travel ? 1 : 0
+        return appMode == .clock ? 1 : 0
+    }
+
+    /// Multiplier on every chrome radius (disc, hours ring, etc.).
+    /// 1 at rest; > 1 while the chrome is mid-expand/collapse.
+    var chromeRadiusScale: Double {
+        if let t = _chromeTransition {
+            return t.radiusScale(at: animationTime)
         }
-        return t.travelOpacity(at: animationTime)
-    }
-
-    /// Clock-layer opacity is the complement; reading this also drives
-    /// the self-clear above.
-    var renderedClockOpacity: Double {
-        1 - renderedTravelOpacity
-    }
-
-    /// Start the cross-fade for a given direction. The accompanying origin
-    /// slerp is triggered by `toggleAppMode` so the two stay synchronised.
-    func beginModeTransition(direction: EProjectionTransition.Direction,
-                             duration: Double = AstroConstants.modeTransitionDuration) {
-        _projectionTransition = EProjectionTransition(
-            startTime: Date.now.timeIntervalSinceReferenceDate,
-            duration:  duration,
-            direction: direction
-        )
+        return 1
     }
 }

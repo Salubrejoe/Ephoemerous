@@ -38,7 +38,14 @@ extension EAppState {
         let finished   = transition.isFinished(at: time)
         DispatchQueue.main.async {
             self.setOrigin(lat: .radians(lat), lon: .radians(lon))
-            if finished { self._originTransition = nil }
+            if finished {
+                self._originTransition = nil
+                // Run the completion in the same dispatch as the final
+                // setOrigin so any follow-on state flip (e.g. appMode)
+                // applies atomically with the final position — avoids
+                // the 1–3 frame "phase" race that hit Clock→Travel.
+                transition.onCompletion?()
+            }
         }
     }
 }

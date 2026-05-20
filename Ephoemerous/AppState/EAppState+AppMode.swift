@@ -14,44 +14,78 @@ enum EAppMode {
 // MARK: - EAppState + AppMode
 extension EAppState {
 
-    /// Clock↔Travel via a synchronised origin slerp + cross-fade.
+    /// The projection mode the NS/UL-parametrised layers should use, derived
+    /// purely from `appMode`. Clock = .northSouth (sky locked to the watch);
+    /// Travel = .userLocation (sky follows the observer). At observer = NP
+    /// the two projections coincide, which is what lets the mode flip on
+    /// either end of the origin slerp without a visual jump.
+    var layerMode: EProjection.ProjectionFrame {
+        appMode == .clock ? .northSouth : .userLocation
+    }
+
+    /// Clock↔Travel transition.
     ///
-    ///   Clock → Travel: snapshot the current origin, slerp it to the
-    ///     celestial north pole; the cross-fade fades the clock layers out
-    ///     and the travel layers in at the END of the slerp (the bridge
-    ///     moment when UL with -Q dropped == NS).
-    ///   Travel → Clock: slerp the origin from NP back to the snapshotted
-    ///     clock origin; the cross-fade swaps groups at the START of the
-    ///     slerp (same bridge moment, mirrored timing).
+    ///   Clock → Travel:
+    ///     1. Snapshot the real origin (so a future "centre on me" still
+    ///        has it).
+    ///     2. Slerp origin to lat 90°. EarthGrid and Horizon morph along
+    ///        with it; everything else stays put (NS).
+    ///     3. In the same dispatch as the final `setOrigin(90°,…)`, flip
+    ///        `appMode = .travel` via the slerp's `onCompletion`. Chrome
+    ///        self-gates off and the six NS layers switch to UL — at
+    ///        lat 90° the two projections coincide, so the swap is
+    ///        invisible. No race, no phase flash.
     ///
-    /// `appMode` flips at the END of each transition so the
-    /// `renderedClockOpacity` / `renderedTravelOpacity` fallback resolves
-    /// to the right group once the transition self-clears.
+    ///   Travel → Clock:
+    ///     Flip `appMode = .clock` immediately. Chrome reappears and the
+    ///     six layers swap back to NS — origin is wherever the user left
+    ///     it in travel (today: NP; later: wherever they explored to),
+    ///     so the swap is invisible at NP and harmless elsewhere because
+    ///     NS layers don't read origin. We do NOT auto-restore the saved
+    ///     clock origin — the user's view in travel sticks.
+    ///
+    /// A second tap during an in-flight slerp is ignored, so the user
+    /// can't break the state by mashing the button.
     func toggleAppMode() {
+        guard _originTransition == nil, _chromeTransition == nil else { return }
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        let dur = AstroConstants.modeTransitionDuration
+        let dur          = AstroConstants.modeTransitionDuration
+        let chromeMaxR   = AstroConstants.chromeMaxRadiusScale
+        let now          = Date.now.timeIntervalSinceReferenceDate
 
         switch appMode {
         case .clock:
             _savedClockOrigin = origin
-            animateOrigin(to:  .degrees(90),
-                          lon: origin.longitude,
-                          duration: dur)
-            beginModeTransition(direction: .toTravel, duration: dur)
+            _chromeTransition = EChromeTransition(
+                direction:      .expanding,
+                startTime:      now,
+                duration:       dur,
+                maxRadiusScale: chromeMaxR
+            )
+            animateOrigin(to:       .degrees(90),
+                          lon:      origin.longitude,
+                          duration: dur) { [weak self] in
+                guard let self else { return }
+                self.appMode           = .travel
+                self.projectionMode    = .drag
+                self._chromeTransition = nil
+            }
 
         case .travel:
-            let restore = _savedClockOrigin ?? origin
-            animateOrigin(to:  restore.latitude,
-                          lon: restore.longitude,
-                          duration: dur)
-            beginModeTransition(direction: .toClock, duration: dur)
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + dur) { [weak self] in
-            guard let self else { return }
-            self.appMode.toggle()
-            self.projectionMode = .drag
+            appMode           = .clock
+            projectionMode    = .drag
+            _chromeTransition = EChromeTransition(
+                direction:      .collapsing,
+                startTime:      now,
+                duration:       dur,
+                maxRadiusScale: chromeMaxR
+            )
+            // Small buffer past the natural endpoint so the clear can't
+            // race ahead of `animationTime` reaching `now + dur`.
+            DispatchQueue.main.asyncAfter(deadline: .now() + dur + 0.05) { [weak self] in
+                self?._chromeTransition = nil
+            }
         }
     }
 }

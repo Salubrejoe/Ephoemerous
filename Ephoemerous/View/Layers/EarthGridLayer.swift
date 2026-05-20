@@ -32,13 +32,17 @@ struct EarthGridLayer: EGridLayer {
     
     func drawParallels(in dc: inout EGraphicContext) {
 //        guard dc.state.showHorizon else { return }
-        
+
         for decl in Angle.parallels {
-            let pts = EProjection.sampleCurve(appState: dc.state, mode: .userLocation) { t in
+            let pts = EProjection.sampleCurve(
+                appState:           dc.state,
+                mode:               .userLocation,
+                negateUserLocation: false
+            ) { t in
                 EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: decl)
                     .sidereallyRotated(by: dc.state.localSiderealOffset)
             }
-            
+
             // MARK: - DRAW
             dc.strokeCurve(
                 pts,
@@ -47,14 +51,18 @@ struct EarthGridLayer: EGridLayer {
             )
         }
     }
-    
+
     func drawMeridians(in dc: inout EGraphicContext) {
 //        let show = mode == .northSouth ? dc.state.showNSMeridians : dc.state.showULMeridians
 //        guard show else { return }
-        
+
         for h in stride(from: 0.0, to: 12.0, by: 1.0) {
             let ra  = h / 24.0 * Double.twoPi
-            let pts = EProjection.sampleCurve(appState: dc.state, mode: mode) { t in
+            let pts = EProjection.sampleCurve(
+                appState:           dc.state,
+                mode:               mode,
+                negateUserLocation: false
+            ) { t in
                 EPrecession.equatorialVector(ra: .radians(ra),
                                              dec: .radians((t - 0.5) * 2*Double.pi))
                 .sidereallyRotated(by: dc.state.localSiderealOffset)

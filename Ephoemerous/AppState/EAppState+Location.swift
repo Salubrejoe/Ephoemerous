@@ -49,12 +49,17 @@ extension EAppState {
 // Smooth-stepped animated move of the observer origin. Read each frame by
 // the canvas while in flight.
 struct EOriginTransition {
-    let fromLat:   Double
-    let fromLon:   Double
-    let toLat:     Double
-    let toLon:     Double
-    let startTime: Double
-    let duration:  Double
+    let fromLat:      Double
+    let fromLon:      Double
+    let toLat:        Double
+    let toLon:        Double
+    let startTime:    Double
+    let duration:     Double
+    /// Fired in the same main-queue dispatch as the final `setOrigin(…)`
+    /// when the slerp lands, so any follow-on state change (e.g. flipping
+    /// `appMode` after a mode-transition slerp) is applied atomically
+    /// with the final position — no inter-frame race.
+    let onCompletion: (() -> Void)?
 
     private static func smoothStep(_ t: Double) -> Double {
         let t = max(0, min(1, t))
@@ -74,14 +79,18 @@ struct EOriginTransition {
 
 extension EAppState {
 
-    func animateOrigin(to lat: Angle, lon: Angle, duration: Double = 0.6) {
+    func animateOrigin(to lat: Angle,
+                       lon: Angle,
+                       duration: Double = 0.6,
+                       onCompletion: (() -> Void)? = nil) {
         _originTransition = EOriginTransition(
-            fromLat:   origin.latitude.radians,
-            fromLon:   origin.longitude.radians,
-            toLat:     lat.radians,
-            toLon:     lon.radians,
-            startTime: Date.now.timeIntervalSinceReferenceDate,
-            duration:  duration
+            fromLat:      origin.latitude.radians,
+            fromLon:      origin.longitude.radians,
+            toLat:        lat.radians,
+            toLon:        lon.radians,
+            startTime:    Date.now.timeIntervalSinceReferenceDate,
+            duration:     duration,
+            onCompletion: onCompletion
         )
     }
 }

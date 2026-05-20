@@ -58,5 +58,7 @@ extension View {
 
 
 #Preview {
-    MainView().environment(EAppState())
+    NavigationStack {
+        MainView().environment(EAppState())
+    }
 }

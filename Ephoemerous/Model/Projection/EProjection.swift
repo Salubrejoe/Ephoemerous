@@ -34,7 +34,8 @@ enum EProjection {
     
     static func project(_ Q     : SIMD3<Double>,
                         appState: EAppState,
-                        mode: ProjectionFrame) -> CGPoint? {
+                        mode: ProjectionFrame,
+                        negateUserLocation: Bool = true) -> CGPoint? {
         if mode == .northSouth {
             return project(
                 Q,
@@ -49,11 +50,21 @@ enum EProjection {
             // clock↔travel slerp is geometrically continuous and ends with
             // Polaris off-screen (the user's "looking south from NP through
             // the horizon" view).
-            return project(
+            guard let p = project(
                 Q,
                 origin: appState.originVector,
                 plane: appState.planeVector
-            )
+            ) else { return nil }
+            // Manual π rotation: `baseVectors()`'s singular fallback at
+            // P=(0,0,-1) (used by NS) is opposite its continuous limit at
+            // any non-pole observer (used by UL). Negating the UL output
+            // realigns the two bases on screen so the sun, moon, stars
+            // and ecliptic share their NS orientation across the mode
+            // flip. EarthGridLayer and HorizonLayer opt out via
+            // `negateUserLocation: false` because they never used the NS
+            // basis to begin with — flipping them by π would just rotate
+            // a layer that already looked correct.
+            return negateUserLocation ? CGPoint(x: -p.x, y: -p.y) : p
         }
     }
  
@@ -62,12 +73,14 @@ enum EProjection {
     static func sampleCurve(steps: Int = 360,
                             appState: EAppState,
                             mode: ProjectionFrame,
+                            negateUserLocation: Bool = true,
                             point: (Double) -> SIMD3<Double>) -> [CGPoint?] {
         (0...steps).map { i in
             project(
                 point(Double(i) / Double(steps)),
-                appState: appState,
-                mode: mode
+                appState:           appState,
+                mode:               mode,
+                negateUserLocation: negateUserLocation
             )
         }
     }

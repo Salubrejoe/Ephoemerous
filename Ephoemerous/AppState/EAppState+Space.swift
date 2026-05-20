@@ -56,12 +56,23 @@ extension EAppState {
     /// Move the observer to a new geographic position.
     /// In non-origin projection modes the view plane is automatically reset
     /// to the antipodal point so the horizon stays sensible.
+    ///
+    /// Latitude is clamped just shy of ±90° so `planeVector` never lands
+    /// at exactly (0, 0, ±1). That singularity makes `SIMD3.baseVectors()`
+    /// fall through to its arbitrary `(1, 0, 0)` fallback, which is
+    /// opposite the continuous limit from any neighbouring latitude —
+    /// the resulting basis flip rotates every UL-projected layer by π
+    /// the instant the latitude leaves the pole. 89.999° is
+    /// pixel-indistinguishable from 90° on screen.
     func setOrigin(lat: Angle, lon: Angle) {
-        origin.latitude  = lat
+        let limit       = Angle.degrees(89.999)
+        let clampedLat  = Angle.radians(max(-limit.radians,
+                                            min(limit.radians, lat.radians)))
+        origin.latitude  = clampedLat
         origin.longitude = lon
         invalidateStarCache()
         if projectionMode != .origin {
-            plane.latitude  = -lat
+            plane.latitude  = Angle.radians(-clampedLat.radians)
             plane.longitude = lon + Angle.pi
         }
     }

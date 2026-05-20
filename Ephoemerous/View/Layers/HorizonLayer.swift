@@ -18,13 +18,16 @@ struct HorizonLayer: EGridLayer {
         guard dc.state.showHorizon else { return }
 
         for decl in Angle.sunsets {
-            let pts = EProjection.sampleCurve(appState: dc.state, mode: .userLocation) { t in
-                EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: decl)
+            let pts = EProjection.sampleCurve(
+                appState:           dc.state,
+                mode:               .userLocation,
+                negateUserLocation: false
+            ) { t in
+                EPrecession
+                    .equatorialVector(ra: .radians(t * .twoPi), dec: decl)
                     .sidereallyRotated(by: dc.state.localSiderealOffset)
             }
-            dc.fillCurve(
-                pts,
-                color: .quaternarySystemFill,)
+            dc.fillCurve(pts, color: .quaternarySystemFill)
         }
     }
 }

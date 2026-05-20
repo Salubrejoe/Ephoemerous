@@ -4,39 +4,43 @@ import CoreLocation
 
 
 struct CelestialCanva: View {
-    
+
     @Environment(EAppState.self) var state
-    
-    
-    // MARK: - Layers
-    // One unified celestial-content set drawn in both modes. EarthGrid +
-    // Horizon ride the origin slerp (UL). Sun/Moon/Stars/Ecliptic/Planets/
-    // SelectedStars stay celestially put (NS) so they don't smear during
-    // the slerp. The chrome below brackets this content front and back.
-    private let commonLayers: [any EGridLayer] = [
-        EarthGridLayer(mode: .userLocation),
-        HorizonLayer(),
-        CardinalLabelsLayer(),
-        EStarsLayer(mode: .northSouth),
-        EclipticLayer(mode: .northSouth),
-        ESunLayer(mode: .northSouth),
-        EMoonLayer(mode: .northSouth),
-        EPlanetsLayer(mode: .northSouth),
-        ESelectedStarsLayer(mode: .northSouth),
-    ]
 
-    // Behind the celestial content — the watch-face disc fill.
-    private let clockChromeBack: [any EGridLayer] = [
-        WatchBackgroundLayer(),
-    ]
-
-    // In front of the celestial content — the hour numbers / clip ring.
-    private let clockChromeFront: [any EGridLayer] = [
-        ClipAndHoursLayer(),
-    ]
-    
     // Every touch interaction lives in the coordinator (own file / class).
     @State private var gestures = CelestialGestureCoordinator()
+
+    // MARK: - Layers
+    //
+    // Rebuilt each render so the six NS/UL-parametrised layers pick up
+    // the current `state.layerMode` (= .northSouth in clock, .userLocation
+    // in travel). The mode flip happens at the end (forward) or start
+    // (reverse) of the origin slerp — at lat 90° the two projections are
+    // identical, so the swap is invisible.
+    //
+    // EarthGridLayer + HorizonLayer are always UL: they're the visible
+    // animation during the slerp (the horizon morphs as the observer
+    // travels to / from the pole).
+    //
+    // Chrome layers (WatchBackgroundLayer + ClipAndHoursLayer) self-gate
+    // on `appMode == .clock` so they disappear / reappear in lockstep
+    // with the flip.
+    private var layers: [any EGridLayer] {
+        let m = state.layerMode
+        return [
+            WatchBackgroundLayer(),
+            EarthGridLayer(mode: .userLocation),
+            HorizonLayer(),
+            CardinalLabelsLayer(),
+            EStarsLayer(mode: m),
+            EclipticLayer(mode: m),
+            ESunLayer(mode: m),
+            EMoonLayer(mode: m),
+            EPlanetsLayer(mode: m),
+            ESelectedStarsLayer(mode: m),
+            ClipAndHoursLayer(),
+        ]
+    }
 
     // MARK: - Body
 
@@ -45,47 +49,18 @@ struct CelestialCanva: View {
         // `schedule` is recomputed whenever isAnimating flips, so TimelineView
         // reschedules on the next render — no destructive .id() teardown.
         TimelineView(schedule) { timeline in
-            // Cross-fade opacities for the clock chrome and the travel
-            // backdrop. At rest they collapse to {1, 0} or {0, 1}, so the
-            // matching chrome canvas is skipped entirely.
-            let clockA  = state.renderedClockOpacity
-            let travelA = state.renderedTravelOpacity
-
             ZStack {
-                // Travel backdrop — fades in opposite the clock chrome.
-                if travelA > 0 {
-                    Color.systemBackground.opacity(travelA)
+                if state.appMode == .travel {
+                    Color.systemBackground
                 }
 
-                // Back chrome (watch-face disc) — sits behind the celestial
-                // content so the stars/grid show on top of the disc fill.
-                if clockA > 0 {
-                    Canvas { ctx, size in
-                        var dc = EGraphicContext(ctx: ctx, size: size, state: state)
-                        for layer in clockChromeBack { layer.draw(in: &dc) }
-                    }
-                    .opacity(clockA)
-                }
-
-                // Unified celestial content — drawn in both modes. Also
-                // owns the per-frame canvas clock tick.
                 Canvas { ctx, size in
                     state.advanceCanvasClock(
                         to:         timeline.date.timeIntervalSinceReferenceDate,
                         canvasSize: size
                     )
                     var dc = EGraphicContext(ctx: ctx, size: size, state: state)
-                    for layer in commonLayers { layer.draw(in: &dc) }
-                }
-
-                // Front chrome (hour numbers) — drawn on top of the
-                // celestial content, fades with the clock group.
-                if clockA > 0 {
-                    Canvas { ctx, size in
-                        var dc = EGraphicContext(ctx: ctx, size: size, state: state)
-                        for layer in clockChromeFront { layer.draw(in: &dc) }
-                    }
-                    .opacity(clockA)
+                    for layer in layers { layer.draw(in: &dc) }
                 }
 
                 // Topmost, sharp & interactive: owns every canvas touch.
@@ -105,11 +80,11 @@ struct CelestialCanva: View {
 // Switches between 60fps (gestures/transitions) and 10fps (idle).
 struct ECanvasSchedule: TimelineSchedule {
     let isAnimating: Bool
-    
+
     func entries(from start: Date, mode: Mode) -> Entries {
         Entries(isAnimating: isAnimating, start: start)
     }
-    
+
     struct Entries: Sequence, IteratorProtocol {
         let isAnimating: Bool
         var next_date: Date
@@ -132,9 +107,9 @@ extension CelestialCanva {
         gestures.isInteracting          ||
         state._activeTransition  != nil ||
         state._dateTransition    != nil ||
-        state._originTransition     != nil ||
-        state._inertiaTransition    != nil ||
-        state._projectionTransition != nil   // keep 60 fps while the fling/mode blend runs
+        state._originTransition  != nil ||
+        state._inertiaTransition != nil ||
+        state._chromeTransition  != nil
     }
     private var schedule: ECanvasSchedule { ECanvasSchedule(isAnimating: isAnimating) }
 }
@@ -144,5 +119,3 @@ extension CelestialCanva {
     CelestialCanva()
         .environment(EAppState())
 }
-
-

@@ -52,7 +52,7 @@ class EAppState {
     var offset: CGPoint  = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
     var _originTransition:     EOriginTransition?     = nil   // defined in EAppState+Location.swift
     var _inertiaTransition:    EInertiaTransition?    = nil   // defined in FocusPreset.swift
-    var _projectionTransition: EProjectionTransition? = nil   // defined in EAppState+ProjectionBlend.swift
+    var _chromeTransition:     EChromeTransition?     = nil   // defined in EAppState+ProjectionBlend.swift
     // Snapshot of the clock-mode origin, captured on Clock→Travel so we can
     // slerp back to it on Travel→Clock. Travel mode parks the observer at NP.
     var _savedClockOrigin:     Origin?                = nil

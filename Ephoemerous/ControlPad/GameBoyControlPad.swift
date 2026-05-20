@@ -8,8 +8,8 @@ struct GameBoyControlPad: View {
 
     @Environment(EAppState.self) private var state
 
-    private let latitudeStep:  Double = 0.1   // degrees per D-pad step
-    private let longitudeStep: Double = 0.1
+    private let latitudeStep:  Double = 1.0   // degrees per D-pad step
+    private let longitudeStep: Double = 1.0
     
     @State var isShowingArrowPad: Bool = false
 

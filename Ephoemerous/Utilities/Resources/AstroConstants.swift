@@ -331,5 +331,6 @@ enum AstroConstants {
     static let transitionDuration: Double = 0.55
     static let dateTansitionDuration: Double = 0.7
     static let modeTransitionDuration: Double = 0.8   // clock↔travel defocus swap
+    static let chromeMaxRadiusScale:   Double = 3.0   // watch chrome "explodes" out to N× its rest size
 
 }
