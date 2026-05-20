@@ -40,8 +40,10 @@ struct ENSWatchCrownLayer: EGridLayer {
             let margin = 0.0
             dc.ctx.draw(
                 Text("\((h + tzOffset + 24) % 24)")
-                    .fontDesign(.serif)
-                    .foregroundStyle(isCurrentHour(h, tzOffset: tzOffset) ? .primary : .secondary),
+                    .font(isCurrentHour(h, tzOffset: tzOffset) ? .title3 : .footnote)
+                    .fontDesign(.rounded)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(isCurrentHour(h, tzOffset: tzOffset) ? .primary : .quaternary),
                 at: CGPoint(x: lx + margin, y: ly + margin),
                 anchor: .center
             )

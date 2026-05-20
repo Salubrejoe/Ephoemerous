@@ -206,15 +206,29 @@ enum AstroConstants {
     // -------------------------------------------------------------------------
     // MARK: Rendering / display
     // -------------------------------------------------------------------------
-    /// Canvas star dot: max(dotMinR, (dotScale − mag) × dotFactor) / 2
-    static let dotMinRadius:      Double = 0.6
-    static let dotScale:          Double = 6.0
-    static let dotFactor:         Double = 0.55
+    /// Canvas star dot. Pogson-style exponential in magnitude, so each step
+    /// in magnitude multiplies the radius by `dotMagRatio` (≪ 1 → faint
+    /// stars fall off fast). Visual radius applied in EArtist is half of
+    /// the value returned by `starRadius`.
+    ///   r = clamp(dotMinRadius, dotMaxRadius, dotBaseRadius · dotMagRatio^mag) × twinkle
+    static let dotBaseRadius:     Double = 2.7    // r at magnitude 0
+    static let dotMagRatio:       Double = 0.55   // multiplier per +1 magnitude
+    static let dotMaxRadius:      Double = 4.0    // cap → Sirius display radius = 2 px (after EArtist halves)
+    static let dotMinRadius:      Double = 0.02   // floor — keeps mag 8+ as sub-pixel specks rather than zero
     /// Twinkle animation
     static let twinkleAmplitude:  Double = 0.1
-    static let twinkleFrequency:  Double = 0.1
+    static let twinkleFrequency:  Double = 2.0
     static let twinklePhaseRA:    Double = 17.3
     static let twinklePhaseDec:   Double =  7.9
+    /// Twinkle shape modulation — `bulge` oscillates in this range; the
+    /// renderer snaps to one of `twinkleBulgeBuckets` cached paths.
+    static let twinkleBulgeMin:       Double = 2
+    static let twinkleBulgeMax:       Double = 10
+    static let twinkleBulgeBuckets:   Int    = 22
+    /// Shape modulation runs on its own (slower) clock — independent of the
+    /// radius twinkle, with no random jitter, so the bulge eases between
+    /// values rather than flickering.
+    static let twinkleBulgeFrequency: Double = 0.4    // rad/s ⇒ ~15 s period
     /// Planet dot: max(planetDotMinR, (planetDotScale − baseMag) × planetDotFactor) / 2
     static let planetDotScale:    Double = 5.0
     static let planetDotFactor:   Double = 0.55

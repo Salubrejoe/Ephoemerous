@@ -212,6 +212,25 @@ struct EArtist {
     let hourRingGap : Double = 20
 
     // MARK: - Stars
+    let starZoomExp : Double = 0.3   // sub-linear: r ∝ scale^starZoomExp
+
+    private static let starCorners: Int = 5
+
+    // Cached unit-rect (−1…1) star paths, one per bulge bucket. Per star
+    // we snap the current twinkle phase to a bucket index and draw the
+    // matching path — no Path allocations in the hot loop.
+    private static let starBulgePaths: [Path] = {
+        let n  = AstroConstants.twinkleBulgeBuckets
+        let lo = AstroConstants.twinkleBulgeMin
+        let hi = AstroConstants.twinkleBulgeMax
+        return (0..<n).map { i in
+            let t = Double(i) / Double(max(n - 1, 1))
+            let b = lo + (hi - lo) * t
+            return Squircle(corners: starCorners, bulge: CGFloat(b))
+                .path(in: CGRect(x: -1, y: -1, width: 2, height: 2))
+        }
+    }()
+
     func starPointFallsWithinMarigin(_ screenPoint: CGPoint, in dc: EGraphicContext, margin: Double = 20) -> Bool {
         screenPoint.x > -margin &&
         screenPoint.x < dc.size.width  + margin &&
@@ -220,25 +239,55 @@ struct EArtist {
     }
 
     func starRadius(_ star: EStar, in dc: EGraphicContext) -> Double {
-        let ra    = star.rightAscension.radians
-        let dec   = star.declination.radians
+        let ra      = star.rightAscension.radians
+        let dec     = star.declination.radians
         let phase   = ra * AstroConstants.twinklePhaseRA + dec * AstroConstants.twinklePhaseDec + .random(in: -1...1)
-        let twinkle = 1.0 + AstroConstants.twinkleAmplitude * sin(dc.state.animationTime * AstroConstants.twinkleFrequency + phase)
-        let returned = max(AstroConstants.dotMinRadius, (AstroConstants.dotScale - star.magnitude) * AstroConstants.dotFactor) * twinkle
-        
-        return returned
+        let twinkle = 1.0
+        + AstroConstants.twinkleAmplitude * sin(dc.state.animationTime * AstroConstants.twinkleFrequency + phase)
+
+        // Brightness drops by ~2.512× per magnitude step; we follow the
+        // same shape but with a tunable ratio so the contrast on screen
+        // is much steeper than a linear mapping would give.
+        let raw     = AstroConstants.dotBaseRadius * pow(AstroConstants.dotMagRatio, star.magnitude)
+        let clamped = min(AstroConstants.dotMaxRadius,
+                          max(AstroConstants.dotMinRadius, raw))
+
+        return clamped * twinkle
     }
 
     func drawStar(_ star: EStar, at sc: CGPoint, in dc: inout EGraphicContext) {
-        let r = starRadius(star, in: dc) * 0.5
-//        var glow = dc.ctx
-//        glow.addFilter(.blur(radius: r * AstroConstants.starGlowBlurRatio/3))
-//        glow.fill(
-//            Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r, width: r * 2, height: r * 2)),
-//            with: .color(star.spectralClass.color.opacity(0.5))
-//        )
-//        dc.fillDot(at: sc, radius: r, color: star.spectralClass.color)
-        dc.fillDot(at: sc, radius: r, color: .white)
-        
+        let baseR = starRadius(star, in: dc) * 0.2
+        let r     = baseR * pow(dc.state.renderedScale, starZoomExp)
+        let spin  = starSpin(of: star)
+        let bulge = bulgeBucket(for: star, in: dc)
+
+        var local = dc.ctx
+        local.translateBy(x: sc.x, y: sc.y)
+        local.rotate(by: spin)
+        local.scaleBy(x: r, y: r)
+        local.fill(Self.starBulgePaths[bulge], with: .color(.primary))
+    }
+
+    // Deterministic-but-arbitrary rotation derived from the star's own RA
+    // and Dec, so every star keeps a fixed orientation across frames while
+    // no two neighbours line up.
+    private func starSpin(of star: EStar) -> Angle {
+        let raw = star.rightAscension.radians * 73 + star.declination.radians * 137
+        return .radians(raw.truncatingRemainder(dividingBy: 2 * .pi))
+    }
+
+    // Pick a cached path whose `bulge` matches the current shape phase.
+    // Per-star RA/Dec offset desyncs neighbours; no random jitter and a
+    // slow dedicated frequency make the shape ease between buckets rather
+    // than flicker. Sin naturally lingers near the extremes, so wide bulge
+    // ranges read as a slow "breathe in / breathe out".
+    private func bulgeBucket(for star: EStar, in dc: EGraphicContext) -> Int {
+        let ra    = star.rightAscension.radians
+        let dec   = star.declination.radians
+        let phase = ra * AstroConstants.twinklePhaseRA + dec * AstroConstants.twinklePhaseDec
+        let s     = sin(dc.state.animationTime * AstroConstants.twinkleBulgeFrequency + phase)
+        let t     = (s + 1) / 2     // 0…1
+        let n     = AstroConstants.twinkleBulgeBuckets
+        return max(0, min(n - 1, Int((t * Double(n - 1)).rounded())))
     }
 }

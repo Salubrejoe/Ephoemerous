@@ -6,11 +6,11 @@ struct CircledResetButton: View {
     var body: some View {
         Button(action: state.resetView) {
             Image(symbol: .circle)
-                .font(.title.weight(.semibold))
+                .font(.footnote.weight(.semibold))
                 .symbolColorRenderingMode(.gradient)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
         }
-        .padding(2)
+        .padding(8)
         .glassEffect(.clear.interactive(), in: .circle)
         .simultaneousGesture(
             LongPressGesture()

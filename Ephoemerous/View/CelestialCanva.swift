@@ -12,6 +12,7 @@ struct CelestialCanva: View {
     // Layers drawn inside the clip circle, back → front
     private let skyLayers: [any EGridLayer] = [
         WatchBackgroundLayer(),
+        EStarsLayer(mode: .northSouth),
         HorizonLayer(),
 //        EMilkyWayLayer(mode: .northSouth),
         
@@ -20,7 +21,6 @@ struct CelestialCanva: View {
 //        EarthGrid(mode: .northSouth),
         EarthGridLayer(mode: .userLocation),
         EclipticLayer(mode: .northSouth),
-        EStarsLayer(mode: .northSouth),
         EMoonLayer(mode: .northSouth),
         ESunLayer(mode: .northSouth),
         ESelectedStarsLayer(mode: .northSouth),
