@@ -10,17 +10,18 @@ import UIKit
 //
 // Recognisers:
 //   • pan  — one finger only. Viewport / observer move + fling.
-//   • pinch — two fingers. Drives BOTH the Maps-style scale + centroid
-//     reprojection AND the two-finger origin nudge (centroid translation
-//     → origin shift, springs back on release). A separate
-//     `UIPanGestureRecognizer(numberOfTouches: 2)` would, in practice,
-//     never transition out of Possible because pinch claims the same two
-//     touches first; piggy-backing on pinch is the standard fix.
+//   • pinch — two fingers. Maps-style scale + zoom-around-start-centroid;
+//     also feeds the two-finger origin nudge when fingers naturally
+//     pinch+drag at once.
+//   • twoFingerPan — two fingers, min=max=2. Catches the pure parallel
+//     two-finger drag that pinch ignores (no scale change → pinch never
+//     transitions out of Possible). Both recognisers feed the same
+//     `twoFingerOriginPan*` methods, which are idempotent so concurrent
+//     firing doesn't double-snapshot.
 //   • hold — one tap then press-and-hold. A quick second tap = discrete
 //     step zoom; held + dragged = continuous zoom.
 //
-// Arbitration: pan + pinch may run simultaneously (Maps feel); a held
-// second tap suppresses the one-finger pan.
+// Arbitration: any non-hold pair may run simultaneously.
 struct CelestialGestureView: UIViewRepresentable {
 
     let gestures: CelestialGestureCoordinator
@@ -40,6 +41,12 @@ struct CelestialGestureView: UIViewRepresentable {
         pan.maximumNumberOfTouches = 1
         pan.delegate               = c
 
+        let twoFingerPan = UIPanGestureRecognizer(
+            target: c, action: #selector(Coordinator.handleTwoFingerPan))
+        twoFingerPan.minimumNumberOfTouches = 2
+        twoFingerPan.maximumNumberOfTouches = 2
+        twoFingerPan.delegate               = c
+
         let pinch = UIPinchGestureRecognizer(target: c, action: #selector(Coordinator.handlePinch))
         pinch.delegate = c
 
@@ -52,6 +59,7 @@ struct CelestialGestureView: UIViewRepresentable {
         pan.require(toFail: hold)                              // a held tap ≠ a pan
 
         view.addGestureRecognizer(pan)
+        view.addGestureRecognizer(twoFingerPan)
         view.addGestureRecognizer(pinch)
         view.addGestureRecognizer(hold)
         c.trackedView = view
@@ -95,6 +103,26 @@ struct CelestialGestureView: UIViewRepresentable {
                 gestures.panEnded(translation: CGSize(width: t.x, height: t.y),
                                   velocity:    CGSize(width: vel.x, height: vel.y),
                                   state: state)
+            default:
+                break
+            }
+        }
+
+        // MARK: Two-finger pan (catches pure parallel drag pinch ignores)
+
+        @objc func handleTwoFingerPan(_ g: UIPanGestureRecognizer) {
+            guard let v = trackedView else { return }
+            let t = g.translation(in: v)
+            switch g.state {
+            case .began:
+                gestures.twoFingerOriginPanBegan(state: state)
+            case .changed:
+                guard g.numberOfTouches >= 2 else { return }
+                gestures.twoFingerOriginPanChanged(
+                    translation: CGSize(width: t.x, height: t.y),
+                    state: state)
+            case .ended, .cancelled, .failed:
+                gestures.twoFingerOriginPanEnded(state: state)
             default:
                 break
             }

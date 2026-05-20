@@ -44,6 +44,7 @@ final class CelestialGestureCoordinator {
     // MARK: Tuning
 
     private let coupledSensitivity:     Double = 0.0001
+    private let originNudgeSensitivity: Double = 0.004  // ~23° per 100pt of two-finger drag
     private let coupledAxisLockSlop:    Double = 6      // pt before an axis locks
     private let minimumFlingSpeed:      Double = 150    // pt/s, below this: no inertia
     private let maximumFlingSpeed:      Double = 4000   // pt/s, clamp wild flicks
@@ -147,6 +148,10 @@ final class CelestialGestureCoordinator {
     // pan+zoom in one two-finger motion.
 
     func twoFingerOriginPanBegan(state: EAppState) {
+        // Idempotent — pinch and twoFingerPan may both fire this on the
+        // same gesture (one for pinch-drag, one for pure parallel drag).
+        // First call wins; second is a no-op.
+        guard !isTwoFingerOriginPan else { return }
         commitAnyRunningPresetTransition(state: state)
         stopInertia(state: state)
         isTwoFingerOriginPan   = true
@@ -157,9 +162,9 @@ final class CelestialGestureCoordinator {
         guard isTwoFingerOriginPan, let start = originAtTwoFingerStart else { return }
         // Anchor on the snapshot rather than the live origin so the drag
         // is absolute (no drift across the gesture).
-        let rawLat = start.latitude  - .radians(t.height * coupledSensitivity)
+        let rawLat = start.latitude  - .radians(t.height * originNudgeSensitivity)
         let newLat = Angle.radians(rawLat.radians.clamped(to: -.pi / 2 ... .pi / 2))
-        let rawLon = start.longitude - .radians(t.width  * coupledSensitivity)
+        let rawLon = start.longitude - .radians(t.width  * originNudgeSensitivity)
         let newLon = Angle.radians(rawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
         // Direct mutation — bypass `setOrigin` so plane is preserved.
         state.origin.latitude  = newLat
