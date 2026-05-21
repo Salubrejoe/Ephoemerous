@@ -31,9 +31,13 @@ final class CelestialGestureCoordinator {
     private var zoomDragAnchorSky:   CGPoint = .zero   // sky point pinned under the tap
     private var zoomDragAnchorScreen: CGPoint = .zero  // fixed screen point (the double-tap)
 
-    // Two-finger origin nudge (travel mode only): remembers where origin
-    // was before the gesture so we can spring it back on release.
-    private var originAtTwoFingerStart: Origin? = nil
+    // Two-finger origin nudge: remembers where origin was before the
+    // gesture so we can spring it back on release.
+    private var originAtTwoFingerStart:   Origin? = nil
+    // Parallel snapshot for the NS-projection origin — the same Δlat /
+    // Δlon gets applied to both during the drag, and both spring back
+    // together on release.
+    private var nsOriginAtTwoFingerStart: Origin? = nil
 
     /// True while the user is actively manipulating the canvas. The
     /// timeline reads this to stay at 60 fps for the duration.
@@ -154,12 +158,16 @@ final class CelestialGestureCoordinator {
         guard !isTwoFingerOriginPan else { return }
         commitAnyRunningPresetTransition(state: state)
         stopInertia(state: state)
-        isTwoFingerOriginPan   = true
-        originAtTwoFingerStart = state.origin
+        isTwoFingerOriginPan     = true
+        originAtTwoFingerStart   = state.origin
+        nsOriginAtTwoFingerStart = state.nsOrigin
     }
 
     func twoFingerOriginPanChanged(translation t: CGSize, state: EAppState) {
-        guard isTwoFingerOriginPan, let start = originAtTwoFingerStart else { return }
+        guard isTwoFingerOriginPan,
+              let start   = originAtTwoFingerStart,
+              let nsStart = nsOriginAtTwoFingerStart else { return }
+
         // Anchor on the snapshot rather than the live origin so the drag
         // is absolute (no drift across the gesture).
         let rawLat = start.latitude  - .radians(t.height * originNudgeSensitivity)
@@ -169,16 +177,32 @@ final class CelestialGestureCoordinator {
         // Direct mutation — bypass `setOrigin` so plane is preserved.
         state.origin.latitude  = newLat
         state.origin.longitude = newLon
+
+        // Same Δlat / Δlon applied to the NS origin so the celestial
+        // frame tilts in step with the observer frame. Plane is left
+        // alone (it's hardcoded `.south` in the projection).
+        let nsRawLat = nsStart.latitude  - .radians(t.height * originNudgeSensitivity)
+        let nsNewLat = Angle.radians(nsRawLat.radians.clamped(to: -.pi / 2 ... .pi / 2))
+        let nsRawLon = nsStart.longitude - .radians(t.width  * originNudgeSensitivity)
+        let nsNewLon = Angle.radians(nsRawLon.radians.truncatingRemainder(dividingBy: 2 * .pi))
+        state.nsOrigin.latitude  = nsNewLat
+        state.nsOrigin.longitude = nsNewLon
     }
 
     func twoFingerOriginPanEnded(state: EAppState) {
-        guard isTwoFingerOriginPan, let snapshot = originAtTwoFingerStart else { return }
-        isTwoFingerOriginPan   = false
-        originAtTwoFingerStart = nil
+        guard isTwoFingerOriginPan,
+              let snapshot   = originAtTwoFingerStart,
+              let nsSnapshot = nsOriginAtTwoFingerStart else { return }
+        isTwoFingerOriginPan     = false
+        originAtTwoFingerStart   = nil
+        nsOriginAtTwoFingerStart = nil
         state.animateOrigin(to:          snapshot.latitude,
                             lon:         snapshot.longitude,
                             duration:    0.45,
                             updatePlane: false)
+        state.animateNSOrigin(to:       nsSnapshot.latitude,
+                              lon:      nsSnapshot.longitude,
+                              duration: 0.45)
     }
 
     // MARK: - Pinch: two fingers  (Maps-style: scale + translate together)

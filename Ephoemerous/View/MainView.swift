@@ -16,7 +16,7 @@ struct MainView: View {
             // cross-fades with the sky on the same blend.
             CelestialCanva()
 
-            
+            OmniButton()
 //                .offset(y: -350)
             ObjectsTrackingOverlay()
         }
@@ -33,8 +33,8 @@ struct MainView: View {
         
         .toolbar {
             ToolbarItem(placement: .principal) {
-//                CoordinatesTile(origin: state.origin)
-                CircledResetButton()
+                CoordinatesTile(origin: state.origin)
+//                OmniButton()
             }
 //
         }

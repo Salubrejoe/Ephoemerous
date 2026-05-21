@@ -10,8 +10,9 @@ extension EAppState {
     /// Called once per Canvas frame with the timeline time and canvas size.
     func advanceCanvasClock(to time: Double, canvasSize size: CGSize) {
         animationTime = time
-        advanceInertiaTransition(at: time)
-        advanceOriginTransition(at: time)
+        advanceInertiaTransition(at:  time)
+        advanceOriginTransition(at:   time)
+        advanceNSOriginTransition(at: time)
         if canvasSize != size {
             DispatchQueue.main.async { self.canvasSize = size }
         }
@@ -47,6 +48,24 @@ extension EAppState {
                 // setOrigin so any follow-on state flip (e.g. appMode)
                 // applies atomically with the final position — avoids
                 // the 1–3 frame "phase" race that hit Clock→Travel.
+                transition.onCompletion?()
+            }
+        }
+    }
+
+    /// Step the NS origin's spring-back transition. Mirrors
+    /// `advanceOriginTransition` but writes directly into `nsOrigin`
+    /// (no `setOrigin`-style coupling because the NS projection's plane
+    /// is hardcoded to `.south` and never moves with the origin).
+    private func advanceNSOriginTransition(at time: Double) {
+        guard let transition = _nsOriginTransition else { return }
+        let (lat, lon) = transition.interpolated(at: time)
+        let finished   = transition.isFinished(at: time)
+        DispatchQueue.main.async {
+            self.nsOrigin.latitude  = .radians(lat)
+            self.nsOrigin.longitude = .radians(lon)
+            if finished {
+                self._nsOriginTransition = nil
                 transition.onCompletion?()
             }
         }

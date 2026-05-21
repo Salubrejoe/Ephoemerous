@@ -37,10 +37,15 @@ enum EProjection {
                         mode: ProjectionFrame,
                         negateUserLocation: Bool = true) -> CGPoint? {
         if mode == .northSouth {
+            // NS origin is dynamic so the two-finger drag can tilt the
+            // celestial frame in step with the UL horizon. The plane
+            // stays fixed at `.south` — only the origin is displaced.
+            // At rest, `nsOriginVector` resolves to `.north`, so this
+            // reduces to the historical hardcoded behaviour.
             return project(
                 Q,
-                origin: .north,
-                plane: .south
+                origin: appState.nsOriginVector,
+                plane:  .south
             )
         } else {
             // No -Q sign flip. With the projection source = observer zenith

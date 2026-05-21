@@ -17,16 +17,16 @@ struct WatchBackgroundLayer: EGridLayer {
         
         local.addFilter(
             .shadow(
-                color: .secondary,
+                color: .systemBackground,
                 radius: 4,
                 x: 0,
                 y: 1,
-                blendMode: .destinationOver,
-                options: .shadowAbove
+//                blendMode: .destinationOver,
+//                options: .shadowAbove
             )
         )
         
-        local.addFilter(.brightness(0.1))
+//        local.addFilter(.brightness(0.1))
         local.fill(artist.chromePath(in: dc), with: .color(.systemBackground))
     }
 }

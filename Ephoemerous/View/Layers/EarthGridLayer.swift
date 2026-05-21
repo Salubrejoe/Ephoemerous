@@ -7,21 +7,7 @@ import simd
 struct EarthGridLayer: EGridLayer {
     let artist = EArtist.shared
     let mode: EProjection.ProjectionFrame
-    
-    private var modeColor: Color {
-        .quaternaryLabel
-    }
-    
-    private func width(atParallel parallel: Angle) -> Double {
-//        (1/abs(parallel.degrees)) * 4
-        0.2
-    }
-    
-    private func width(atMeridian meridian: Angle) -> Double {
-        0.2
-//        if meridian == .piHalf || meridian == .zero { 1 }
-//        else { 0.5 }
-    }
+ 
     
     func draw(in dc: inout EGraphicContext) {
         var blur = dc.ctx
@@ -44,10 +30,12 @@ struct EarthGridLayer: EGridLayer {
             }
 
             // MARK: - DRAW
-            dc.strokeCurve(
+            var local = dc
+            local.ctx.addFilter(.brightness(artist.gridBrightness))
+            local.strokeCurve(
                 pts,
-                color: modeColor,
-                width: width(atParallel: decl)
+                color: artist.gridColor,
+                width: artist.gridWidth
             )
         }
     }
@@ -68,10 +56,12 @@ struct EarthGridLayer: EGridLayer {
                 .sidereallyRotated(by: dc.state.localSiderealOffset)
             }
             // MARK: - DRAW
-            dc.strokeCurve(
+            var local = dc
+            local.ctx.addFilter(.brightness(artist.gridBrightness))
+            local.strokeCurve(
                 pts,
-                color: modeColor,
-                width: width(atMeridian: .radians(ra))
+                color: artist.gridColor,
+                width: artist.gridWidth
             )
         }
     }

@@ -15,11 +15,11 @@ extension Angle {
         return (hour, minute, second)
     }
     
-    static let goldenHor    : Angle = .radians(-0.1)
+    static let goldenHor    : Angle = .radians(0.1)
     static let horizon      : Angle = .radians(0)
-    static let civil        : Angle = .radians(0.1)
-    static let naval        : Angle = .radians(0.2)
-    static let astronomical : Angle = .radians(AstroConstants.civilTwilightRad)
+    static let civil        : Angle = .radians(-0.1)
+    static let naval        : Angle = .radians(-0.2)
+    static let astronomical : Angle = .radians(-0.31)
 //    static let userLocation : Angle = .radians(1.45)
     
     static let sunsets: [Angle] = [

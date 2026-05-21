@@ -32,7 +32,7 @@ class EAppState {
     // MARK: - App mode
     var appMode:     EAppMode = .clock
     var coupledAxis: Axis?    = nil   // axis lock for the travel-mode single-finger pan
-    var haptics:     Bool     = false
+    var haptics:     Bool     = true
 
     // MARK: - Temporal state  (logic → EAppState+Time.swift)
     var observationDate: Date   = .now  { didSet { invalidateStarCache() } }
@@ -40,11 +40,17 @@ class EAppState {
     var _dateTransition: EDateTransition? = nil
 
     // MARK: - Spatial state  (logic → EAppState+Space.swift)
-    var origin: Origin
-    var plane:  Plane
-    var scale:  Double   = AstroConstants.defaultScale
-    var offset: CGPoint  = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
+    var origin:   Origin
+    var plane:    Plane
+    // Celestial-frame projection origin. Dynamic so the NS sky can be
+    // tilted in step with `origin` during the two-finger drag — at rest
+    // it sits at (lat 90°, lon 0°) = `.north`, the historical hardcoded
+    // value, so behaviour outside a gesture is unchanged.
+    var nsOrigin: Origin
+    var scale:    Double   = AstroConstants.defaultScale
+    var offset:   CGPoint  = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
     var _originTransition:     EOriginTransition?     = nil   // defined in EAppState+Location.swift
+    var _nsOriginTransition:   EOriginTransition?     = nil   // spring-back for `nsOrigin`
     var _inertiaTransition:    EInertiaTransition?    = nil   // defined in FocusPreset.swift
     var _chromeTransition:     EChromeTransition?     = nil   // defined in EAppState+ProjectionBlend.swift
     // Snapshot of the clock-mode origin, captured on Clock→Travel so we can
@@ -96,8 +102,10 @@ class EAppState {
     // defaults; the first real fix is adopted once via
     // adoptInitialDeviceLocation(_:) (see EAppState+Location.swift).
     init() {
-        self.origin = .init()
-        self.plane  = .init()
+        self.origin   = .init()
+        self.plane    = .init()
+        // Default NS origin = celestial north pole (`.north`).
+        self.nsOrigin = .init(latitude: .degrees(90), longitude: .zero)
     }
 }
 

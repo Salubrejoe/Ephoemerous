@@ -47,7 +47,9 @@ extension EAppState {
     /// A second tap during an in-flight slerp is ignored, so the user
     /// can't break the state by mashing the button.
     func toggleAppMode() {
-        guard _originTransition == nil, _chromeTransition == nil else { return }
+        guard _originTransition   == nil,
+              _nsOriginTransition == nil,
+              _chromeTransition   == nil else { return }
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
         let dur          = AstroConstants.modeTransitionDuration

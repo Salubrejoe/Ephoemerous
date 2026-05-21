@@ -51,7 +51,7 @@ struct HorizonLayer: EGridLayer {
                     .sidereallyRotated(by: bands.state.localSiderealOffset)
             }.compactMap { $0 }
             guard pts.count >= 8 else { continue }
-            bands.fillCurve(pts, color: .tertiarySystemFill)
+//            bands.strokeCurve(pts, color: artist.sunsetStrokeColor)
         }
 
         // Horizon great circle as a deformable squircle: each projection
@@ -73,7 +73,7 @@ struct HorizonLayer: EGridLayer {
                 .sidereallyRotated(by: rim.state.localSiderealOffset)
         }.compactMap { $0 }
         guard pts.count >= 8 else { return }
-        rim.strokeCurve(bumped(pts), color: .tertiarySystemFill, width: width)
+        rim.strokeCurve(bumped(pts), color: artist.horizonFillColor, width: width)
     }
 
     /// Push each sample radially outward from the curve's centroid by

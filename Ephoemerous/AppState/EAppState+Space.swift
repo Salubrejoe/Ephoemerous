@@ -16,6 +16,15 @@ extension EAppState {
         Angle.spherePoint(latitude: plane.latitude, longitude: plane.longitude)
     }
 
+    /// Unit vector for the NS projection's origin. Defaults to `.north`
+    /// (celestial north pole); displaced from there by the two-finger
+    /// origin nudge so the NS sky tilts in step with the UL horizon.
+    /// The NS projection's plane stays hardcoded at `.south`, so this
+    /// is the only knob that moves.
+    var nsOriginVector: SIMD3<Double> {
+        Angle.spherePoint(latitude: nsOrigin.latitude, longitude: nsOrigin.longitude)
+    }
+
     /// The direction of the zenith in equatorial coordinates at the rendered observation time.
     /// The Local Sidereal Time rotates the sky so that the meridian lines up with the observer.
     var observerZenith: SIMD3<Double> {
@@ -50,7 +59,8 @@ extension EAppState {
         guard canvasSize.height > 0 else {
             return CGPoint(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
         }
-        return CGPoint(x: -canvasSize.height / 8, y: 0)
+        return CGPoint(x: 0, y: 0)
+//        return CGPoint(x: -canvasSize.height / 8, y: 0)
     }
 
     /// Move the observer to a new geographic position. Defaults to also

@@ -15,45 +15,57 @@ import simd
 // as a true circle in projection space — fitting the centroid + mean
 // radius from the projected samples is exact.
 struct EclipticLayer: EGridLayer {
-
+    
     let artist = EArtist.shared
     let mode  : EProjection.ProjectionFrame
-
+    
     private let corners   : Int     = 12
     private let bulge     : CGFloat = 3
     private let width     : CGFloat = 2
     private let sunMargin : CGFloat = 10   // screen px — sun disc + a touch
-
+    
     private let zodiacFontSize : CGFloat = 12
     private let zodiacOpacity  : Double  = 1
-//    private let zodiacOpacity  : Double  = 0.5
-
+    //    private let zodiacOpacity  : Double  = 0.5
+    
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showEcliptic else { return }
-
+        
         let samples = EProjection.sampleEcliptic(appState: dc.state, mode: mode)
             .compactMap { $0 }
         guard samples.count >= 8 else { return }
-
+        
         let (centre, radius) = fitCircle(samples)
         guard radius > 0.0001 else { return }
-
+        
         // Two parallel ecliptic rims straddling the true ecliptic so the
         // Sun (which sits on it by definition) is held between them.
         // `δ` lives in screen px and gets converted to projection units
         // so the band's apparent width stays constant under zoom.
         let δ = sunMargin / dc.state.renderedScale
-
+        
+        var local = dc
         for offset in [0.0] {
-//        for offset in [0.0, δ] {
-            dc.strokeCurve(zodiacRim(extraOffset: offset, centre: centre, in: dc),
-                           color: .tertiarySystemFill,
-                           width: width)
+            //        for offset in [0.0, δ] {
+            //            local.ctx.addFilter(
+            //                .shadow(
+            //                    color: .yellow,
+            //                    radius: 3,
+            //                    x: 0,
+            //                    y: 1,
+            //                    blendMode: .destinationOver,
+            //                    options: .shadowAbove
+            //                )
+            //            )
+//            local.ctx.addFilter(.brightness(0.2))
+            local.strokeCurve(zodiacRim(extraOffset: offset, centre: centre, in: dc),
+                              color: artist.eclColor,
+                              width: artist.eclWidth)
         }
-
+        
         drawZodiacGlyphs(centre: centre, in: &dc)
     }
-
+    
     // Walk λ around the ecliptic, project each point, then push it
     // outward from the centroid by `lameRadius(λ)`. With corners = 12,
     // `lameRadius` is 30°-periodic — exactly the zodiac's sign spacing
@@ -89,7 +101,7 @@ struct EclipticLayer: EGridLayer {
                            y: centre.y + dy / d * target)
         }
     }
-
+    
     // Zodiac glyphs at each sign's midpoint (15°, 45°, 75°… ecliptic
     // longitude), drawn directly on the projected ecliptic — same
     // pipeline the Sun uses in `ESunLayer`. Each glyph is rotated so
@@ -115,20 +127,20 @@ struct EclipticLayer: EGridLayer {
             let nx = sc.x - centroidSc.x
             let ny = sc.y - centroidSc.y
             let θ  = atan2(nx, -ny)
-
+            
             var local = dc.ctx
             local.translateBy(x: sc.x, y: sc.y)
             local.rotate(by: .radians(θ))
             local.draw(
                 Text(sign.symbol)
                     .font(.caption2)
-                    .foregroundStyle(.secondary),
+                    .foregroundStyle(artist.sunBorderColor),
                 at:     .zero,
                 anchor: .center
             )
         }
     }
-
+    
     // Stereographic guarantees the samples are concyclic, so centroid +
     // mean radius are exact for a fully-visible ecliptic. Falls back
     // gracefully if a few samples were nil (partial visibility).
@@ -139,5 +151,6 @@ struct EclipticLayer: EGridLayer {
         let r  = pts.map { hypot($0.x - cx, $0.y - cy) }.reduce(0, +) / n
         return (CGPoint(x: cx, y: cy), r)
     }
-
+    
 }
+
