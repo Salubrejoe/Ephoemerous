@@ -19,17 +19,23 @@ extension EAppState {
     // MARK: Filtered star collections
 
     /// Stars visible above the observer's horizon, filtered by magnitude.
-    /// Used in clock mode. Result is cached until the cache is invalidated.
+    /// Used in clock mode. Result is cached until the cache is invalidated
+    /// (origin / date / magnitude change) — the horizon precess + dot
+    /// runs once per rebuild, never per frame.
     var stars: [EStar] {
         if let cached = _starsCache { return cached }
-        let zenith = observerZenith
+        // Zenith from the *stored* date so the cache key matches the data —
+        // `observerZenith` reads `renderedObservationDate`, which can be
+        // mid-step during a date transition.
+        let lst    = EPrecession.lst(for: observationDate, longitude: origin.longitude)
+        let zenith = Angle.spherePoint(latitude: origin.latitude, longitude: lst)
         let result = StarDatabase.shared.workableStars
+            .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
 //            .filter { s in
 //                let precessed = EPrecession.precess(ra: s.rightAscension, dec: s.declination, to: observationDate)
 //                let starVec   = Angle.spherePoint(latitude: precessed.dec, longitude: precessed.ra)
 //                return simd_dot(starVec, zenith) > 0.0     // above horizon
 //            }
-            .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
         _starsCache = result
         return result
     }

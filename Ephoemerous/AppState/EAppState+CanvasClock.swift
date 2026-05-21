@@ -39,9 +39,15 @@ extension EAppState {
         let finished    = transition.isFinished(at: time)
         let updatePlane = transition.updatePlane
         DispatchQueue.main.async {
-            self.setOrigin(lat: .radians(lat),
-                           lon: .radians(lon),
-                           updatePlane: updatePlane)
+            // Skip cache invalidation mid-spring. A "return" transition
+            // (updatePlane = false, e.g. the two-finger spring-back) ends
+            // where it started, so the cache is already correct. A "move"
+            // (updatePlane = true) genuinely changes the observer position
+            // — invalidate once on the last frame instead of every frame.
+            self.setOrigin(lat:              .radians(lat),
+                           lon:              .radians(lon),
+                           updatePlane:      updatePlane,
+                           invalidatesCache: finished && updatePlane)
             if finished {
                 self._originTransition = nil
                 // Run the completion in the same dispatch as the final

@@ -11,9 +11,14 @@ struct OmniButton: View {
                 .font(.headline.weight(.semibold))
                 .symbolColorRenderingMode(.gradient)
                 .foregroundStyle(prColor)
+                .padding(8)
+                .glassEffect(.clear.tint(.baseOrange).interactive(), in: Squircle(corners: 12, bulge: 2.5, rotation: .zero))
+//                .background(
+//                    Squircle(corners: 7, bulge: 3.5, rotation: .zero)
+//                        .fill(.regularMaterial)
+//                        .glassEffect()
+//                )
         }
-        .padding(8)
-        .glassEffect(.clear.interactive(), in: Squircle(corners: 7, bulge: 3.5, rotation: .zero))
         .offset(
             x: state.renderedOffset.y,
             y: state.renderedOffset.x

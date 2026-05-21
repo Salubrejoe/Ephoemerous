@@ -52,11 +52,15 @@ extension EArtist {
 
         guard twinkling else { return clamped }
 
+        // Phase is deterministic on RA / Dec — the 17.3 / 7.9 multipliers
+        // are big enough to decorrelate even neighbouring stars. The
+        // previous `.random(in: -1...1)` here was a bug + a hot spot:
+        // a per-frame RNG call per star (60k+/s) that also jittered the
+        // sine, so the twinkle never read as a smooth pulse.
         let ra      = star.rightAscension.radians
         let dec     = star.declination.radians
         let phase   = ra  * AstroConstants.twinklePhaseRA
                     + dec * AstroConstants.twinklePhaseDec
-                    + .random(in: -1...1)
         let twinkle = 1.0
                     + AstroConstants.twinkleAmplitude
                     * sin(dc.state.animationTime * AstroConstants.twinkleFrequency + phase)
@@ -71,6 +75,10 @@ extension EArtist {
     func drawStar(_ star: EStar, at sc: CGPoint, in dc: inout EGraphicContext) {
         let baseR = starRadius(star, in: dc) * 0.5
         let r     = baseR * pow(dc.state.renderedScale, starZoomExp)
+        // Sub-pixel stars are invisible on Retina anyway — skipping
+        // them spares a `translate + rotate + scale + fill` that would
+        // paint nothing readable.
+        guard r >= 0.5 else { return }
         let spin  = starSpin(of: star)
         let bulge = bulgeBucket(for: star, in: dc)
 
@@ -78,8 +86,12 @@ extension EArtist {
         local.translateBy(x: sc.x, y: sc.y)
         local.rotate(by: spin)
         local.scaleBy(x: r, y: r)
-        local.fill(Self.starBulgePaths[bulge],
-                   with: .color(dc.state.selectedStars.contains(star) ? .primary : .tertiary))
+        local.fill(
+            Self.starBulgePaths[bulge],
+            with: .color(
+                dc.state.selectedStars.contains(star) ? star.spectralClass.color.opacity(0.9) : .tertiary
+            )
+        )
     }
 
     /// Deterministic-but-arbitrary rotation derived from the star's

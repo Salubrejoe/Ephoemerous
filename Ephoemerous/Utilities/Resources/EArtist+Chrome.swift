@@ -31,13 +31,25 @@ extension EArtist {
     var chromeCorners : Int     { 24 }
     var chromeBulge   : CGFloat { 2.1 }
 
-    func chromePath(in dc: EGraphicContext) -> Path {
+    /// Screen-space centre + radius of the watch chrome disc. Cheap
+    /// `(dx² + dy²) < r²` rejection tests use this — `StarsLayer` and
+    /// `SelectedStarsLayer` pre-compute it once per frame to skip stars
+    /// projected outside the visible disc in clock mode. The squircle
+    /// rim's bumps push past `radius` by ~2 % at corners, so the cull
+    /// is marginally tight — irrelevant visually, generous enough not
+    /// to clip stars sitting on the disc edge.
+    func chromeBounds(in dc: EGraphicContext) -> (centre: CGPoint, radius: CGFloat) {
         let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
         let cy = dc.size.height / 2 + dc.state.renderedOffset.x
         let r  = (dc.state.renderedScale * clipRadius
                   + clipBleed) * dc.state.chromeRadiusScale
+        return (CGPoint(x: cx, y: cy), r)
+    }
+
+    func chromePath(in dc: EGraphicContext) -> Path {
+        let (centre, r) = chromeBounds(in: dc)
         return Squircle(corners: chromeCorners, bulge: chromeBulge)
-            .path(in: CGRect(x: cx - r, y: cy - r,
+            .path(in: CGRect(x: centre.x - r, y: centre.y - r,
                              width: 2 * r, height: 2 * r))
     }
 }

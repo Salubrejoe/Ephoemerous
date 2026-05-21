@@ -77,13 +77,19 @@ extension EAppState {
     /// the resulting basis flip rotates every UL-projected layer by π
     /// the instant the latitude leaves the pole. 89.999° is
     /// pixel-indistinguishable from 90° on screen.
-    func setOrigin(lat: Angle, lon: Angle, updatePlane: Bool = true) {
+    func setOrigin(lat: Angle, lon: Angle,
+                   updatePlane: Bool = true,
+                   invalidatesCache: Bool = true) {
         let limit       = Angle.degrees(89.999)
         let clampedLat  = Angle.radians(max(-limit.radians,
                                             min(limit.radians, lat.radians)))
         origin.latitude  = clampedLat
         origin.longitude = lon
-        invalidateStarCache()
+        // `invalidatesCache: false` lets per-frame origin tweens
+        // (`advanceOriginTransition`, two-finger spring-back) avoid
+        // thrashing the star cache — instead the caller invalidates
+        // once at the end of the transition if the origin actually moved.
+        if invalidatesCache { invalidateStarCache() }
         if updatePlane {
             plane.latitude  = Angle.radians(-clampedLat.radians)
             plane.longitude = lon + Angle.pi
