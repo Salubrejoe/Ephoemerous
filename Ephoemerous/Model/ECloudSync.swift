@@ -19,6 +19,8 @@ final class ECloudSync {
         static let showStars        = "layerShowStars"
         static let showPlanets      = "layerShowPlanets"
         static let showSelectedStars = "layerShowSelectedStars"
+        static let showConstellationLines = "layerShowConstellationLines"
+        static let showConstellationNames = "layerShowConstellationNames"
         static let magnitudeFilter  = "magnitudeFilter"
     }
 
@@ -79,8 +81,10 @@ final class ECloudSync {
         store.set(state.showHorizon,          forKey: Key.showHorizon)
         store.set(state.showStars,            forKey: Key.showStars)
         store.set(state.showPlanets,          forKey: Key.showPlanets)
-        store.set(state.showSelectedStars,    forKey: Key.showSelectedStars)
-        store.set(state.magnitudeFilter,      forKey: Key.magnitudeFilter)
+        store.set(state.showSelectedStars,        forKey: Key.showSelectedStars)
+        store.set(state.showConstellationLines,   forKey: Key.showConstellationLines)
+        store.set(state.showConstellationNames,   forKey: Key.showConstellationNames)
+        store.set(state.magnitudeFilter,          forKey: Key.magnitudeFilter)
         store.synchronize()
     }
 
@@ -92,7 +96,9 @@ final class ECloudSync {
         if store.object(forKey: Key.showHorizon)       != nil { state.showHorizon         = store.bool(forKey: Key.showHorizon) }
         if store.object(forKey: Key.showStars)         != nil { state.showStars           = store.bool(forKey: Key.showStars) }
         if store.object(forKey: Key.showPlanets)       != nil { state.showPlanets         = store.bool(forKey: Key.showPlanets) }
-        if store.object(forKey: Key.showSelectedStars) != nil { state.showSelectedStars   = store.bool(forKey: Key.showSelectedStars) }
-        if store.object(forKey: Key.magnitudeFilter)   != nil { state.magnitudeFilter     = store.double(forKey: Key.magnitudeFilter) }
+        if store.object(forKey: Key.showSelectedStars)      != nil { state.showSelectedStars       = store.bool(forKey: Key.showSelectedStars) }
+        if store.object(forKey: Key.showConstellationLines) != nil { state.showConstellationLines  = store.bool(forKey: Key.showConstellationLines) }
+        if store.object(forKey: Key.showConstellationNames) != nil { state.showConstellationNames  = store.bool(forKey: Key.showConstellationNames) }
+        if store.object(forKey: Key.magnitudeFilter)        != nil { state.magnitudeFilter         = store.double(forKey: Key.magnitudeFilter) }
     }
 }

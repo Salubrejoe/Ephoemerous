@@ -93,6 +93,8 @@ class EAppState {
     var showStars:          Bool = true
     var showPlanets:        Bool = true
     var showSelectedStars:  Bool = true
+    var showConstellationLines: Bool = true
+    var showConstellationNames: Bool = true
 
     // MARK: - Preset backing store  (logic → EViewPreset.swift)
     var _activeTransition: EPresetTransition? = nil
