@@ -6,22 +6,27 @@ import SwiftUI
 // mode toggle (expands on Clock→Travel, collapses on Travel→Clock).
 struct WatchBackgroundLayer: EGridLayer {
 
+    let artist = EArtist.shared
+
     func draw(in dc: inout EGraphicContext) {
         let opacity = dc.state.chromeOpacity
         guard opacity > 0.001 else { return }
-        let scale = dc.state.chromeRadiusScale
-
-        let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
-        let cy = dc.size.height / 2 + dc.state.renderedOffset.x
-        let r  = (dc.state.renderedScale * EArtist.shared.clipRadius
-                  + EArtist.shared.clipBleed) * scale
 
         var local = dc.ctx
         local.opacity = opacity
-        local.addFilter(.shadow(color: .tertiary, radius: 2))
-
-        let disc = Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
-                                          width: 2 * r, height: 2 * r))
-        local.fill(disc, with: .color(.systemBackground))
+        
+        local.addFilter(
+            .shadow(
+                color: .secondary,
+                radius: 4,
+                x: 0,
+                y: 1,
+                blendMode: .destinationOver,
+                options: .shadowAbove
+            )
+        )
+        
+        local.addFilter(.brightness(0.1))
+        local.fill(artist.chromePath(in: dc), with: .color(.systemBackground))
     }
 }

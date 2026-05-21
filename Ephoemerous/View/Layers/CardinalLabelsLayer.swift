@@ -26,7 +26,7 @@ import simd
 // just-inside the horizon curve rather than on it.
 struct CardinalLabelsLayer: EGridLayer {
 
-    let labelFont  : Font    = .footnote.weight(.semibold)
+    let labelFont  : Font    = .caption2.weight(.ultraLight)
     let labelColor : Color   = .secondary
     let labelInset : CGFloat = 14    // pt — pull toward canvas centre
 

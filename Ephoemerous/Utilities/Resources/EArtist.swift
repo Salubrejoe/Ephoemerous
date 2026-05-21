@@ -76,7 +76,7 @@ struct EArtist {
 
     // 16-corner squircle, shared between the sun body and its breathing
     // border. Cached once — tweak corners/bulge here and recompile.
-    private static let sunUnitPath: Path = Squircle(corners: 7, bulge: 2.5)
+    private static let sunUnitPath: Path = Squircle(corners: 12, bulge: 2.2)
         .path(in: CGRect(x: -1, y: -1, width: 2, height: 2))
 
     func drawSun(at sc: CGPoint, in dc: inout EGraphicContext) {
@@ -271,6 +271,23 @@ struct EArtist {
     let clipBleed   : Double = 8
     let bezelWidth  : Double = 4
     let hourRingGap : Double = 20
+
+    // Disc shape — squircle parameters drawn by WatchBackgroundLayer and
+    // used as the clip path by every layer that should stay inside the
+    // chrome (HorizonLayer's bands and rim). One source of truth so
+    // tweaking the disc never leaves the clip out of sync.
+    let chromeCorners : Int     = 24
+    let chromeBulge   : CGFloat = 2.1
+
+    func chromePath(in dc: EGraphicContext) -> Path {
+        let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
+        let cy = dc.size.height / 2 + dc.state.renderedOffset.x
+        let r  = (dc.state.renderedScale * clipRadius
+                  + clipBleed) * dc.state.chromeRadiusScale
+        return Squircle(corners: chromeCorners, bulge: chromeBulge)
+            .path(in: CGRect(x: cx - r, y: cy - r,
+                             width: 2 * r, height: 2 * r))
+    }
 
     // MARK: - Stars
     let starZoomExp : Double = 0.3   // sub-linear: r ∝ scale^starZoomExp

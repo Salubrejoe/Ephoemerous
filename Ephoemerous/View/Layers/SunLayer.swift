@@ -1,7 +1,7 @@
 import SwiftUI
 import simd
 
-struct ESunLayer: EGridLayer {
+struct SunLayer: EGridLayer {
     let artist = EArtist.shared
     let mode: EProjection.ProjectionFrame
     private static var lastLoggedDate: Date = .distantPast

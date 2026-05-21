@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct EStarsLayer: EGridLayer {
+struct StarsLayer: EGridLayer {
     let artist = EArtist.shared
     let mode: EProjection.ProjectionFrame
 

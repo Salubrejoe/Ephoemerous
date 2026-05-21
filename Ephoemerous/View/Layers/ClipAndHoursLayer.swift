@@ -42,7 +42,7 @@ struct ClipAndHoursLayer: EGridLayer {
 
             context.draw(
                 Text("\((h + tzOffset + 24) % 24)")
-                    .font(isCurrentHour(h, tzOffset: tzOffset) ? .title3 : .footnote)
+                    .font(isCurrentHour(h, tzOffset: tzOffset) ? .title : .caption2)
                     .fontDesign(.rounded)
                     .fontWeight(.semibold)
                     .foregroundStyle(isCurrentHour(h, tzOffset: tzOffset) ? .primary : .quaternary),

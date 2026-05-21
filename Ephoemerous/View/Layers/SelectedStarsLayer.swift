@@ -1,7 +1,7 @@
 import SwiftUI
 import simd
 
-struct ESelectedStarsLayer: EGridLayer {
+struct SelectedStarsLayer: EGridLayer {
     let artist = EArtist.shared
     let mode: EProjection.ProjectionFrame
 
