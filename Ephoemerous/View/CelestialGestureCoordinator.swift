@@ -48,7 +48,7 @@ final class CelestialGestureCoordinator {
     // MARK: Tuning
 
     private let coupledSensitivity:     Double = 0.0001
-    private let originNudgeSensitivity: Double = 0.004  // ~23° per 100pt of two-finger drag
+    private let originNudgeSensitivity: Double = 0.002  // ~23° per 100pt of two-finger drag
     private let coupledAxisLockSlop:    Double = 6      // pt before an axis locks
     private let minimumFlingSpeed:      Double = 150    // pt/s, below this: no inertia
     private let maximumFlingSpeed:      Double = 4000   // pt/s, clamp wild flicks

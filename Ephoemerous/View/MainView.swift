@@ -16,7 +16,7 @@ struct MainView: View {
             // cross-fades with the sky on the same blend.
             CelestialCanva()
             ObjectsTrackingOverlay()
-            OmniButton()
+            
         }
         .ignoresSafeArea()
         .overlay {
@@ -31,7 +31,10 @@ struct MainView: View {
         
         .toolbar {
             ToolbarItem(placement: .principal) {
-                CoordinatesTile(origin: state.origin)
+                VStack(spacing: 12) {
+                    CoordinatesTile(origin: state.origin)
+                    OmniButton()
+                }
             }
         }
         
