@@ -23,6 +23,11 @@ struct ObjectsTrackingOverlay: View {
                         .onTapGesture { state.presentStarInfo(star) }
                 }
             }
+
+            ForEach(Array(state.constellationLabelHitRects), id: \.key) { cons, rect in
+                ClearCapsule(in: rect)
+                    .onTapGesture { state.presentConstellationInfo(cons) }
+            }
         }
         .sheet(isPresented: Bindable(state).showSunInfo) {
             NavigationStack {
@@ -45,6 +50,15 @@ struct ObjectsTrackingOverlay: View {
                 }
             }
         }
+        .sheet(isPresented: Bindable(state).showConstellationView) {
+            NavigationStack {
+                if let cons = state.currentlyDisplayedConstellation {
+                    EConstellationDetailView(constellation: cons)
+                        .sheetFormat()
+                        .onDisappear { state.currentlyDisplayedConstellation = nil }
+                }
+            }
+        }
         .allowsHitTesting(true)
         .ignoresSafeArea()
     }
@@ -56,5 +70,18 @@ struct ObjectsTrackingOverlay: View {
             .contentShape(Circle())
             .frame(width: 44, height: 44)
             .position(point)
+    }
+
+    // Constellation tap target — a capsule sized to hug the rendered
+    // label (see ConstellationNamesLayer). Fill is `.clear` so it stays
+    // invisible; flip to `.white` like `ClearCircle` above to eyeball
+    // the hit areas while debugging.
+    @ViewBuilder
+    private func ClearCapsule(in rect: CGRect) -> some View {
+        Capsule()
+            .fill(Color.clear)
+            .contentShape(Capsule())
+            .frame(width: rect.width, height: rect.height)
+            .position(x: rect.midX, y: rect.midY)
     }
 }

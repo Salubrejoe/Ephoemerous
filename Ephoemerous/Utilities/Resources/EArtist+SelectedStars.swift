@@ -79,13 +79,16 @@ extension EArtist {
                           lineWidth: constellationStarRingWidth)
         }
 
-        if dc.state.renderedScale > 100 {
-            let font: Font = isCurrentlyDisplayed
-                ? .body.weight(.heavy)
-                : .footnote.weight(.light)
+        // Star labels share the constellation labels' reveal curve —
+        // hidden below `labelMinScale`, growing gently with zoom — and
+        // borrow their serif italic family so the two label classes
+        // read as one typographic voice. The currently-displayed star
+        // gets a heavier weight as the only hierarchy distinction.
+        if let size = scaledLabelSize(for: dc.state.renderedScale) {
+            let weight: Font.Weight = isCurrentlyDisplayed ? .heavy : .light
             dc.ctx.draw(
                 Text(star.displayName)
-                    .font(font)
+                    .font(serifLabelFont(size: size, weight: weight))
                     .foregroundStyle(.primary),
                 at:     CGPoint(x: sc.x + starLabelOffset.x,
                                 y: sc.y + starLabelOffset.y),

@@ -35,15 +35,11 @@ struct EConstellationDetailView: View {
         }
         .navigationTitle(constellation.fullName)
         .navigationBarTitleDisplayMode(.large)
-        .onAppear {
-            state.currentlyDisplayedConstellation = constellation
-            if let brightest = stars.first {
-                state.applyStarTracking(brightest)
-            }
-        }
-        .onDisappear {
-            state.currentlyDisplayedConstellation = nil
-        }
+        // `currentlyDisplayedConstellation` is now owned by
+        // `presentConstellationInfo(_:)` and cleared on the overlay's
+        // sheet dismiss. The detail view itself does no side effects on
+        // the sky — no auto-tracking the brightest star, no border
+        // selection — it just renders the constellation's roster.
         .navigationDestination(for: EStar.self) { s in
             EStarDetailView(star: s).onAppear { state.recordViewed(s) }
         }

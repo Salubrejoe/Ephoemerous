@@ -25,9 +25,12 @@ class EAppState {
             }
         }
     }
-    var sunScreenPosition:      CGPoint?           = nil
-    var moonScreenPosition:     CGPoint?           = nil
-    var selectedStarPositions:  [String: CGPoint]  = [:]
+    var sunScreenPosition:           CGPoint?                    = nil
+    var moonScreenPosition:          CGPoint?                    = nil
+    var selectedStarPositions:       [String: CGPoint]           = [:]
+    // Per-constellation label hit area (the capsule rect), republished
+    // every frame by ConstellationNamesLayer; read by ObjectsTrackingOverlay.
+    var constellationLabelHitRects:  [EConstellation: CGRect]    = [:]
 
     // MARK: - App mode
     var appMode:     EAppMode = .clock
@@ -77,12 +80,13 @@ class EAppState {
     var _travelStarsCache:                   [EStar]?        = nil
 
     // MARK: - Sheet state  (helpers → EAppState+Sheets.swift)
-    var showSunInfo:         Bool = false
-    var showMoonInfo:        Bool = false
-    var showStarList:        Bool = false
-    var showStarView:        Bool = false
-    var showMagnFilter:      Bool = false
-    var isShowingDatePicker: Bool = false
+    var showSunInfo:           Bool = false
+    var showMoonInfo:          Bool = false
+    var showStarList:          Bool = false
+    var showStarView:          Bool = false
+    var showConstellationView: Bool = false
+    var showMagnFilter:        Bool = false
+    var isShowingDatePicker:   Bool = false
 
     // MARK: - Layer visibility
     var showEquatorTropics: Bool = true

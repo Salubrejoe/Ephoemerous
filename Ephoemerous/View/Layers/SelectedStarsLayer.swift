@@ -7,7 +7,11 @@ struct SelectedStarsLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showSelectedStars else { return }
-        let currentStars = dc.state.selectedStars + (dc.state.currentlyDisplayedConstellation?.stars ?? [])
+        // Opening a constellation no longer paints its figure-stars as
+        // selected — constellations are now their own tap-target class
+        // (ConstellationNamesLayer + ObjectsTrackingOverlay), so this
+        // layer is purely about user-selected stars.
+        let currentStars = dc.state.selectedStars
 
         // Clock-mode disc cull, computed once. Selected stars projected
         // outside the chrome still get their screen position recorded

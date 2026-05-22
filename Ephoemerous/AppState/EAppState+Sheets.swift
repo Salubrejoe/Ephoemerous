@@ -9,10 +9,11 @@ extension EAppState {
     /// Dismiss all sheets at once — useful when switching app modes
     /// or navigating to a context where overlapping sheets would be confusing.
     func closeAllSheets() {
-        showSunInfo         = false
-        showMoonInfo        = false
-        showStarList        = false
-        showStarView        = false
+        showSunInfo           = false
+        showMoonInfo          = false
+        showStarList          = false
+        showStarView          = false
+        showConstellationView = false
     }
 
     // MARK: Focus + present
@@ -37,5 +38,16 @@ extension EAppState {
         applyStarTracking(star)
         currentlyDisplayedStar = star
         showStarView = true
+    }
+
+    /// Tapping a constellation label opens the constellation view.
+    /// Deliberately leaner than `presentStarInfo` — no camera tracking,
+    /// no border-star auto-selection, no other side effects. The detail
+    /// view just renders the constellation's roster; the sky underneath
+    /// stays exactly as the user left it.
+    func presentConstellationInfo(_ cons: EConstellation) {
+        closeAllSheets()
+        currentlyDisplayedConstellation = cons
+        showConstellationView = true
     }
 }
