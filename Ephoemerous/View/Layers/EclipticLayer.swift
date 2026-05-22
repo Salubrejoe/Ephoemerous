@@ -20,7 +20,7 @@ struct EclipticLayer: EGridLayer {
     let mode  : EProjection.ProjectionFrame
     
     private let corners   : Int     = 12
-    private let bulge     : CGFloat = 3
+    private let bulge     : CGFloat = 2.5
     private let width     : CGFloat = 2
     private let sunMargin : CGFloat = 10   // screen px — sun disc + a touch
     
@@ -42,7 +42,7 @@ struct EclipticLayer: EGridLayer {
         // Sun (which sits on it by definition) is held between them.
         // `δ` lives in screen px and gets converted to projection units
         // so the band's apparent width stays constant under zoom.
-        let δ = sunMargin / dc.state.renderedScale
+        let δ = sunMargin / dc.renderedScale
         
         var local = dc
         for offset in [0.0] {
@@ -81,7 +81,7 @@ struct EclipticLayer: EGridLayer {
                            centre: CGPoint,
                            in dc: EGraphicContext) -> [CGPoint?] {
         let steps  = 360
-        let th     = dc.state.localSiderealOffset.radians
+        let th     = dc.localSiderealOffset.radians
         let (c, s) = (cos(th), sin(th))
         let corn   = CGFloat(corners)
         return (0...steps).map { i in
@@ -110,7 +110,7 @@ struct EclipticLayer: EGridLayer {
     // typography that reads naturally when you tilt your head around
     // the rim.
     private func drawZodiacGlyphs(centre: CGPoint, in dc: inout EGraphicContext) {
-        let th         = dc.state.localSiderealOffset.radians
+        let th         = dc.localSiderealOffset.radians
         let (c, s)     = (cos(th), sin(th))
         let centroidSc = dc.toScreen(centre)
         for sign in EZodiacSign.zodiac {

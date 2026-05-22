@@ -25,7 +25,7 @@ struct EMilkyWayLayer: EGridLayer {
         guard (isClockFrame && dc.state.appMode == .clock)
            || (!isClockFrame && dc.state.appMode == .travel) else { return }
 
-        let offset = dc.state.localSiderealOffset
+        let offset = dc.localSiderealOffset
         let plane  = galacticPlanePath(in: dc, offset: offset)
         guard !plane.isEmpty else { return }
 

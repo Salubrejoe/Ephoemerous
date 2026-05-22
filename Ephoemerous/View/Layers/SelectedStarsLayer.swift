@@ -23,8 +23,8 @@ struct SelectedStarsLayer: EGridLayer {
 
         for star in currentStars {
             let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
-                                                  to: dc.state.renderedObservationDate)
-            let th = dc.state.localSiderealOffset.radians
+                                                  to: dc.renderedObservationDate)
+            let th = dc.localSiderealOffset.radians
             let (c, s) = (cos(th), sin(th))
             let v = EPrecession.equatorialVector(ra: pRA, dec: pDec)
             let Q = SIMD3(v.x * c - v.y * s, v.x * s + v.y * c, v.z)

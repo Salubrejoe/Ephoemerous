@@ -7,8 +7,8 @@ struct EPlanetsLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showPlanets else { return }
-        let pairs = EPlanetPosition.allVectors(for: dc.state.renderedObservationDate,
-                                               siderealOffset: dc.state.localSiderealOffset)
+        let pairs = EPlanetPosition.allVectors(for: dc.renderedObservationDate,
+                                               siderealOffset: dc.localSiderealOffset)
         for (planet, vec, _, _) in pairs {
             guard let proj = EProjection.project(vec, appState: dc.state, mode: mode) else { continue }
             let sc = dc.toScreen(proj)

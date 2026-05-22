@@ -28,8 +28,8 @@ extension EArtist {
     // MARK: Disc shape
     // Tweak corners / bulge to retune the disc; HorizonLayer's clip
     // and WatchBackgroundLayer's fill both follow.
-    var chromeCorners : Int     { 24 }
-    var chromeBulge   : CGFloat { 2.1 }
+    var chromeCorners : Int     { 4 }
+    var chromeBulge   : CGFloat { 4 }
 
     /// Screen-space centre + radius of the watch chrome disc. Cheap
     /// `(dx² + dy²) < r²` rejection tests use this — `StarsLayer` and
@@ -39,9 +39,9 @@ extension EArtist {
     /// is marginally tight — irrelevant visually, generous enough not
     /// to clip stars sitting on the disc edge.
     func chromeBounds(in dc: EGraphicContext) -> (centre: CGPoint, radius: CGFloat) {
-        let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
-        let cy = dc.size.height / 2 + dc.state.renderedOffset.x
-        let r  = (dc.state.renderedScale * clipRadius
+        let cx = dc.size.width  / 2 + dc.renderedOffset.y
+        let cy = dc.size.height / 2 + dc.renderedOffset.x
+        let r  = (dc.renderedScale * clipRadius
                   + clipBleed) * dc.state.chromeRadiusScale
         return (CGPoint(x: cx, y: cy), r)
     }

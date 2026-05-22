@@ -58,7 +58,7 @@ extension EArtist {
             drawBreathingRing(at:     sc,
                               radius: baseRadius + breathRingGap,
                               color:  .white,
-                              time:   dc.state.animationTime,
+                              time:   dc.animationTime,
                               in:     &dc)
         }
     }

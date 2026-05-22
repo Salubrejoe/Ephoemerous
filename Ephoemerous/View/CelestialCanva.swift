@@ -62,7 +62,21 @@ struct CelestialCanva: View {
                         to:         timeline.date.timeIntervalSinceReferenceDate,
                         canvasSize: size
                     )
-                    var dc = EGraphicContext(ctx: ctx, size: size, state: state)
+                    // Resolve every per-frame observable value exactly
+                    // once here. The draw loops below project 10k+
+                    // points; reading these off `state` per point would
+                    // route every read through Observation's
+                    // access(keyPath:) and melt the CPU.
+                    var dc = EGraphicContext(
+                        ctx:                     ctx,
+                        size:                    size,
+                        state:                   state,
+                        renderedScale:           state.renderedScale,
+                        renderedOffset:          state.renderedOffset,
+                        renderedObservationDate: state.renderedObservationDate,
+                        localSiderealOffset:     state.localSiderealOffset,
+                        animationTime:           state.animationTime
+                    )
                     for layer in layers { layer.draw(in: &dc) }
                 }
 

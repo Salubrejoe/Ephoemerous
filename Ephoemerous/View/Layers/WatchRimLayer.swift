@@ -15,9 +15,9 @@ struct WatchRimLayer: EGridLayer {
         guard opacity > 0.001 else { return }
         let scale = dc.state.chromeRadiusScale
 
-        let cx = dc.size.width  / 2 + dc.state.renderedOffset.y
-        let cy = dc.size.height / 2 + dc.state.renderedOffset.x
-        let r  = (dc.state.renderedScale * EArtist.shared.clipRadius
+        let cx = dc.size.width  / 2 + dc.renderedOffset.y
+        let cy = dc.size.height / 2 + dc.renderedOffset.x
+        let r  = (dc.renderedScale * EArtist.shared.clipRadius
                   + EArtist.shared.clipBleed - 14) * scale
 
         var local = dc.ctx

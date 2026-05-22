@@ -31,7 +31,7 @@ struct ConstellationNamesLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let stateRef = dc.state
         guard dc.state.showConstellationNames,
-              let size = artist.scaledLabelSize(for: dc.state.renderedScale)
+              let size = artist.scaledLabelSize(for: dc.renderedScale)
         else {
             DispatchQueue.main.async { stateRef.constellationLabelHitRects = [:] }
             return
@@ -45,7 +45,7 @@ struct ConstellationNamesLayer: EGridLayer {
         // Tap targets only exist once zoomed past `labelTapMinScale`;
         // below it the labels still draw but the hit-test work (text
         // measurement + rect) is skipped entirely.
-        let tappable = dc.state.renderedScale >= artist.labelTapMinScale
+        let tappable = dc.renderedScale >= artist.labelTapMinScale
 
         var rects: [EConstellation: CGRect] = [:]
         if tappable { rects.reserveCapacity(ConstellationLines.shared.labelAnchors.count) }
@@ -58,9 +58,9 @@ struct ConstellationNamesLayer: EGridLayer {
             }
 
             let (pRA, pDec) = EPrecession.precess(ra: anchor.ra, dec: anchor.dec,
-                                                  to: dc.state.renderedObservationDate)
+                                                  to: dc.renderedObservationDate)
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
-                .sidereallyRotated(by: dc.state.localSiderealOffset)
+                .sidereallyRotated(by: dc.localSiderealOffset)
             guard let proj = EProjection.project(Q, appState: dc.state, mode: mode) else { continue }
             let sc = dc.toScreen(proj)
 

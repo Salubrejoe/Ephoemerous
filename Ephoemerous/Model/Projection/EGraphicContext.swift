@@ -13,12 +13,28 @@ struct EGraphicContext {
     let size:  CGSize
     let state: EAppState
 
+    // MARK: Per-frame snapshot
+    // Resolved exactly ONCE per frame in `CelestialCanva` and held as
+    // plain values. A frame projects 10k+ points (the RA/Dec grid alone
+    // is ~12 meridians + parallels × 360 samples); reading `@Observable`
+    // state inside those loops funnels every single read through
+    // Observation's `access(keyPath:)` keypath machinery, which pegs the
+    // CPU. Layers and `toScreen` read these snapshots instead so the hot
+    // loops never touch the observable graph. The Canvas still registers
+    // one dependency per property (the single read below), so it still
+    // redraws correctly when any of them changes.
+    let renderedScale:           Double
+    let renderedOffset:          CGPoint
+    let renderedObservationDate: Date
+    let localSiderealOffset:     Angle
+    let animationTime:           Double
+
     // MARK: Coordinate helpers
 
     func toScreen(_ p: CGPoint) -> CGPoint {
         CGPoint(
-            x: size.width  / 2 + p.x * state.renderedScale + state.renderedOffset.y,
-            y: size.height / 2 - p.y * state.renderedScale + state.renderedOffset.x
+            x: size.width  / 2 + p.x * renderedScale + renderedOffset.y,
+            y: size.height / 2 - p.y * renderedScale + renderedOffset.x
         )
     }
 //

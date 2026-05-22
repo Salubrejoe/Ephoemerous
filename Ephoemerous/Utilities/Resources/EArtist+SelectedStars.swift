@@ -61,12 +61,12 @@ extension EArtist {
             // belongs to the star body underneath, breath belongs to
             // the halo.
             let starR = CGFloat(starRadius(star, in: dc, twinkling: false)) * 0.5
-                      * CGFloat(pow(dc.state.renderedScale, starZoomExp))
+                      * CGFloat(pow(dc.renderedScale, starZoomExp))
             drawBreathingHalo(at:         sc,
                               starRadius: starR,
 //                              color:      .primary,
                               color:    star.spectralClass.color,
-                              time:       dc.state.animationTime,
+                              time:       dc.animationTime,
                               in:         &dc)
             // Re-paint the star body so the halo reads as "behind" it.
             drawStar(star, at: sc, in: &dc)
@@ -84,7 +84,7 @@ extension EArtist {
         // borrow their serif italic family so the two label classes
         // read as one typographic voice. The currently-displayed star
         // gets a heavier weight as the only hierarchy distinction.
-        if let size = scaledLabelSize(for: dc.state.renderedScale) {
+        if let size = scaledLabelSize(for: dc.renderedScale) {
             let weight: Font.Weight = isCurrentlyDisplayed ? .heavy : .light
             dc.ctx.draw(
                 Text(star.displayName)

@@ -35,7 +35,7 @@ struct EarthGridLayer: EGridLayer {
                 negateUserLocation: true
             ) { t in
                 EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: decl)
-                    .sidereallyRotated(by: dc.state.localSiderealOffset)
+                    .sidereallyRotated(by: dc.localSiderealOffset)
             }
 
             // MARK: - DRAW
@@ -62,7 +62,7 @@ struct EarthGridLayer: EGridLayer {
             ) { t in
                 EPrecession.equatorialVector(ra: .radians(ra),
                                              dec: .radians((t - 0.5) * 2*Double.pi))
-                .sidereallyRotated(by: dc.state.localSiderealOffset)
+                .sidereallyRotated(by: dc.localSiderealOffset)
             }
             // MARK: - DRAW
             var local = dc

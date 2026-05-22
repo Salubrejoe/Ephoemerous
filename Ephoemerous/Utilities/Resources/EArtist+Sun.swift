@@ -37,7 +37,7 @@ extension EArtist {
     func drawSun(at sc: CGPoint, in dc: inout EGraphicContext) {
         // Border first so it reads as behind the body once the body
         // covers its inner half.
-        drawSunBorder(at: sc, time: dc.state.animationTime, in: &dc)
+        drawSunBorder(at: sc, time: dc.animationTime, in: &dc)
         drawSunBody(at: sc, in: &dc)
     }
 

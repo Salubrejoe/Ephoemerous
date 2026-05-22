@@ -63,7 +63,7 @@ extension EArtist {
                     + dec * AstroConstants.twinklePhaseDec
         let twinkle = 1.0
                     + AstroConstants.twinkleAmplitude
-                    * sin(dc.state.animationTime * AstroConstants.twinkleFrequency + phase)
+                    * sin(dc.animationTime * AstroConstants.twinkleFrequency + phase)
 
         
         let isSelected = dc.state.selectedStars.contains(star)
@@ -74,7 +74,7 @@ extension EArtist {
 
     func drawStar(_ star: EStar, at sc: CGPoint, in dc: inout EGraphicContext) {
         let baseR = starRadius(star, in: dc)
-        let r     = baseR * pow(dc.state.renderedScale, starZoomExp)
+        let r     = baseR * pow(dc.renderedScale, starZoomExp)
         // Sub-pixel stars are invisible on Retina anyway — skipping
         // them spares a `translate + rotate + scale + fill` that would
         // paint nothing readable.
@@ -114,7 +114,7 @@ extension EArtist {
         let dec   = star.declination.radians
         let phase = ra  * AstroConstants.twinklePhaseRA
                   + dec * AstroConstants.twinklePhaseDec
-        let s     = sin(dc.state.animationTime * AstroConstants.twinkleBulgeFrequency + phase)
+        let s     = sin(dc.animationTime * AstroConstants.twinkleBulgeFrequency + phase)
         let t     = (s + 1) / 2     // 0…1
         let n     = AstroConstants.twinkleBulgeBuckets
         return max(0, min(n - 1, Int((t * Double(n - 1)).rounded())))

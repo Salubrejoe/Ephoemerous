@@ -7,17 +7,17 @@ struct SunLayer: EGridLayer {
     private static var lastLoggedDate: Date = .distantPast
 
     func draw(in dc: inout EGraphicContext) {
-        let date   = dc.state.renderedObservationDate
+        let date   = dc.renderedObservationDate
         let lambda = ESunPosition.eclipticLongitude(for: date)
         let (sunRA, sunDec) = ESunPosition.equatorialCoords(lambda: lambda)
 
         if mode == .northSouth, abs(date.timeIntervalSince(Self.lastLoggedDate)) > 0.5 {
             Self.lastLoggedDate = date
             logPipeline(date: date, lambda: lambda, ra: sunRA, dec: sunDec,
-                        siderealOffset: dc.state.localSiderealOffset)
+                        siderealOffset: dc.localSiderealOffset)
         }
 
-        let th = dc.state.localSiderealOffset.radians
+        let th = dc.localSiderealOffset.radians
         let (c, s) = (cos(th), sin(th))
         
         

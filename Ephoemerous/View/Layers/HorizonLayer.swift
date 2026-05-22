@@ -48,7 +48,7 @@ struct HorizonLayer: EGridLayer {
             ) { t in
                 EPrecession
                     .equatorialVector(ra: .radians(t * .twoPi), dec: decl)
-                    .sidereallyRotated(by: bands.state.localSiderealOffset)
+                    .sidereallyRotated(by: bands.localSiderealOffset)
             }.compactMap { $0 }
             guard pts.count >= 8 else { continue }
 //            bands.strokeCurve(pts, color: artist.sunsetStrokeColor)
@@ -70,7 +70,7 @@ struct HorizonLayer: EGridLayer {
         ) { t in
             EPrecession
                 .equatorialVector(ra: .radians(t * .twoPi), dec: .horizon)
-                .sidereallyRotated(by: rim.state.localSiderealOffset)
+                .sidereallyRotated(by: rim.localSiderealOffset)
         }.compactMap { $0 }
         guard pts.count >= 8 else { return }
         rim.strokeCurve(bumped(pts), color: artist.horizonFillColor, width: width)

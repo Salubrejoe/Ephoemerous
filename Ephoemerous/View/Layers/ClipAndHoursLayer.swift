@@ -14,9 +14,9 @@ struct ClipAndHoursLayer: EGridLayer {
         guard opacity > 0.001 else { return }
         let scale = dc.state.chromeRadiusScale
 
-        let cx     = dc.size.width  / 2 + dc.state.renderedOffset.y
-        let cy     = dc.size.height / 2 + dc.state.renderedOffset.x
-        let innerR = dc.state.renderedScale * artist.clipRadius * scale
+        let cx     = dc.size.width  / 2 + dc.renderedOffset.y
+        let cy     = dc.size.height / 2 + dc.renderedOffset.x
+        let innerR = dc.renderedScale * artist.clipRadius * scale
         let outerR = innerR + crownWidth * scale
         // Fixed orientation: RA=0h at bottom, RA=12h at top. Never rotates.
         let theta: Double = -.pi / 2

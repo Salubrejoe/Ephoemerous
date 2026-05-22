@@ -30,9 +30,9 @@ struct ConstellationLinesLayer: EGridLayer {
 
     private func projected(_ star: EStar, in dc: EGraphicContext) -> CGPoint? {
         let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
-                                              to: dc.state.renderedObservationDate)
+                                              to: dc.renderedObservationDate)
         let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
-            .sidereallyRotated(by: dc.state.localSiderealOffset)
+            .sidereallyRotated(by: dc.localSiderealOffset)
         guard let proj = EProjection.project(Q, appState: dc.state, mode: mode) else { return nil }
         return dc.toScreen(proj)
     }
