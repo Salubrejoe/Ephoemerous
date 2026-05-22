@@ -75,7 +75,8 @@ struct CelestialCanva: View {
                         renderedOffset:          state.renderedOffset,
                         renderedObservationDate: state.renderedObservationDate,
                         localSiderealOffset:     state.localSiderealOffset,
-                        animationTime:           state.animationTime
+                        animationTime:           state.animationTime,
+                        viewpoint:               state.viewpoint
                     )
                     for layer in layers { layer.draw(in: &dc) }
                 }

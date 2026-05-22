@@ -25,6 +25,16 @@ extension EAppState {
         Angle.spherePoint(latitude: nsOrigin.latitude, longitude: nsOrigin.longitude)
     }
 
+    /// Per-frame snapshot of the three projection vectors. Resolved once
+    /// in `CelestialCanva` and threaded through `EGraphicContext` so the
+    /// per-point `EProjection.project` calls never re-read observable
+    /// origin / plane state. See `EProjection.Viewpoint`.
+    var viewpoint: EProjection.Viewpoint {
+        EProjection.Viewpoint(originVector:   originVector,
+                              planeVector:    planeVector,
+                              nsOriginVector: nsOriginVector)
+    }
+
     /// The direction of the zenith in equatorial coordinates at the rendered observation time.
     /// The Local Sidereal Time rotates the sky so that the meridian lines up with the observer.
     var observerZenith: SIMD3<Double> {

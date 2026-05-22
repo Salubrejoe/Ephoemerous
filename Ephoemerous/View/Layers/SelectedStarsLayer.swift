@@ -31,7 +31,7 @@ struct SelectedStarsLayer: EGridLayer {
 
             guard let proj = EProjection.project(
                 Q,
-                appState: dc.state,
+                viewpoint: dc.viewpoint,
                 mode: mode
             ) else { continue }
             let sc = dc.toScreen(proj)

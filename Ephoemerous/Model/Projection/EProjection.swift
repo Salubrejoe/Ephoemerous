@@ -3,12 +3,24 @@ import simd
 
 
 enum EProjection {
-    
+
     enum ProjectionFrame {
         case northSouth
         case userLocation
     }
-    
+
+    /// Per-frame snapshot of the observer geometry the projection needs.
+    /// `originVector` / `planeVector` / `nsOriginVector` are computed
+    /// `@Observable` properties on `EAppState`; resolving them once per
+    /// frame (see `EGraphicContext`) and threading this value keeps the
+    /// per-point `project()` calls — 10k+ a frame — off the observation
+    /// graph entirely.
+    struct Viewpoint {
+        let originVector:   SIMD3<Double>
+        let planeVector:    SIMD3<Double>
+        let nsOriginVector: SIMD3<Double>
+    }
+
     static var obliquity: Angle { AstroConstants.obliquity }
     
     static func project(_ Q      : SIMD3<Double>,
@@ -33,7 +45,7 @@ enum EProjection {
     }
     
     static func project(_ Q     : SIMD3<Double>,
-                        appState: EAppState,
+                        viewpoint: Viewpoint,
                         mode: ProjectionFrame,
                         negateUserLocation: Bool = true) -> CGPoint? {
         if mode == .northSouth {
@@ -44,7 +56,7 @@ enum EProjection {
             // reduces to the historical hardcoded behaviour.
             return project(
                 Q,
-                origin: appState.nsOriginVector,
+                origin: viewpoint.nsOriginVector,
                 plane:  .south
             )
         } else {
@@ -57,8 +69,8 @@ enum EProjection {
             // the horizon" view).
             guard let p = project(
                 Q,
-                origin: appState.originVector,
-                plane: appState.planeVector
+                origin: viewpoint.originVector,
+                plane: viewpoint.planeVector
             ) else { return nil }
             // Manual π rotation: `baseVectors()`'s singular fallback at
             // P=(0,0,-1) (used by NS) is opposite its continuous limit at
@@ -77,36 +89,37 @@ enum EProjection {
     
     
     static func sampleCurve(steps: Int = 360,
-                            appState: EAppState,
+                            viewpoint: Viewpoint,
                             mode: ProjectionFrame,
                             negateUserLocation: Bool = true,
                             point: (Double) -> SIMD3<Double>) -> [CGPoint?] {
         (0...steps).map { i in
             project(
                 point(Double(i) / Double(steps)),
-                appState:           appState,
+                viewpoint:          viewpoint,
                 mode:               mode,
                 negateUserLocation: negateUserLocation
             )
         }
     }
-    
+
     static func sampleEcliptic(
         steps: Int = 360,
-        appState: EAppState,
-        mode: ProjectionFrame
+        viewpoint: Viewpoint,
+        mode: ProjectionFrame,
+        siderealOffset: Angle
     ) -> [CGPoint?] {
-        
+
         // Ecliptic -> β = 0.0
         (0...steps).map { i in
             let t = Double(i) / Double(steps)
             let Q = EPrecession.eclipticVector(
                 atStep: t,
-                siderealOffset: appState.localSiderealOffset
+                siderealOffset: siderealOffset
             )
             return EProjection.project(
                 Q,
-                appState: appState,
+                viewpoint: viewpoint,
                 mode: mode
             )
         }

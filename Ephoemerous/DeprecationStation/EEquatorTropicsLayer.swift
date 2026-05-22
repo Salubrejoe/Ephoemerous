@@ -29,9 +29,9 @@ struct EEquatorTropicsLayer: EGridLayer {
             Angle.degrees(30),
             Angle.degrees(20),
         ] {
-            let pts = EProjection.sampleCurve(appState: dc.state, mode: mode) { t in
+            let pts = EProjection.sampleCurve(viewpoint: dc.viewpoint, mode: mode) { t in
                 EPrecession.equatorialVector(ra: .radians(.twoPi * t), dec: parallel)
-                    .sidereallyRotated(by: dc.state.localSiderealOffset)
+                    .sidereallyRotated(by: dc.localSiderealOffset)
             }
 //            dc.fillCurve(pts, color: artist.color)
             dc.strokeCurve(pts, color: .secondary.opacity(0.1),

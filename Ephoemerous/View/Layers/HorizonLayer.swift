@@ -42,7 +42,7 @@ struct HorizonLayer: EGridLayer {
         }
         for decl in Angle.sunsets where decl != .zero {
             let pts = EProjection.sampleCurve(
-                appState:           bands.state,
+                viewpoint:          bands.viewpoint,
                 mode:               .userLocation,
                 negateUserLocation: false
             ) { t in
@@ -64,7 +64,7 @@ struct HorizonLayer: EGridLayer {
         var rim = dc
         if let shape = chromeShape { rim.ctx.clip(to: shape) }
         let pts = EProjection.sampleCurve(
-            appState:           rim.state,
+            viewpoint:          rim.viewpoint,
             mode:               .userLocation,
             negateUserLocation: false
         ) { t in

@@ -61,7 +61,7 @@ struct ConstellationNamesLayer: EGridLayer {
                                                   to: dc.renderedObservationDate)
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
                 .sidereallyRotated(by: dc.localSiderealOffset)
-            guard let proj = EProjection.project(Q, appState: dc.state, mode: mode) else { continue }
+            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { continue }
             let sc = dc.toScreen(proj)
 
             artist.drawConstellationLabel(cons, at: sc, size: size, in: &dc)

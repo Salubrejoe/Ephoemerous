@@ -28,6 +28,7 @@ struct EGraphicContext {
     let renderedObservationDate: Date
     let localSiderealOffset:     Angle
     let animationTime:           Double
+    let viewpoint:               EProjection.Viewpoint
 
     // MARK: Coordinate helpers
 

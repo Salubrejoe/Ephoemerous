@@ -25,7 +25,7 @@ struct SunLayer: EGridLayer {
         let eq = SIMD3<Double>.eclipticPoint(lambda: lambda)
         let Q = SIMD3(eq.x * c - eq.y * s, eq.x * s + eq.y * c, eq.z)
 
-        guard let proj = EProjection.project(Q, appState: dc.state, mode: mode) else { return }
+        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { return }
         let sc = dc.toScreen(proj)
         let pos = sc; let state = dc.state
         DispatchQueue.main.async { state.sunScreenPosition = pos }

@@ -44,7 +44,7 @@ struct EMilkyWayLayer: EGridLayer {
     // projection drop-outs / back-side discontinuities.
     private func galacticPlanePath(in dc: EGraphicContext, offset: Angle) -> Path {
         let projected = EProjection.sampleCurve(steps: sampleSteps,
-                                                appState: dc.state, mode: mode) { t in
+                                                viewpoint: dc.viewpoint, mode: mode) { t in
             EGalacticCoords.equatorialVector(l: t * .twoPi, b: 0)
                 .sidereallyRotated(by: offset)
         }
@@ -76,7 +76,7 @@ struct EMilkyWayLayer: EGridLayer {
     private func drawGalacticCentreGlow(in dc: inout EGraphicContext, offset: Angle) {
         let gc = EGalacticCoords.equatorialVector(l: 0, b: 0)
             .sidereallyRotated(by: offset)
-        guard let proj = EProjection.project(gc, appState: dc.state, mode: mode)
+        guard let proj = EProjection.project(gc, viewpoint: dc.viewpoint, mode: mode)
         else { return }
         let p = dc.toScreen(proj)
 

@@ -33,7 +33,7 @@ struct ConstellationLinesLayer: EGridLayer {
                                               to: dc.renderedObservationDate)
         let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
             .sidereallyRotated(by: dc.localSiderealOffset)
-        guard let proj = EProjection.project(Q, appState: dc.state, mode: mode) else { return nil }
+        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { return nil }
         return dc.toScreen(proj)
     }
 }

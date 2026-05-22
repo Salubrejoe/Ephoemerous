@@ -30,7 +30,7 @@ struct EarthGridLayer: EGridLayer {
 
         for decl in Angle.parallels {
             let pts = EProjection.sampleCurve(
-                appState:           dc.state,
+                viewpoint:          dc.viewpoint,
                 mode:               .userLocation,
                 negateUserLocation: true
             ) { t in
@@ -56,7 +56,7 @@ struct EarthGridLayer: EGridLayer {
         for h in stride(from: 0.0, to: 12.0, by: 1.0) {
             let ra  = h / 24.0 * Double.twoPi
             let pts = EProjection.sampleCurve(
-                appState:           dc.state,
+                viewpoint:          dc.viewpoint,
                 mode:               mode,
                 negateUserLocation: true
             ) { t in

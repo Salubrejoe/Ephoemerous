@@ -10,7 +10,7 @@ struct EPlanetsLayer: EGridLayer {
         let pairs = EPlanetPosition.allVectors(for: dc.renderedObservationDate,
                                                siderealOffset: dc.localSiderealOffset)
         for (planet, vec, _, _) in pairs {
-            guard let proj = EProjection.project(vec, appState: dc.state, mode: mode) else { continue }
+            guard let proj = EProjection.project(vec, viewpoint: dc.viewpoint, mode: mode) else { continue }
             let sc = dc.toScreen(proj)
             guard dc.onScreen(sc, margin: 30) else { continue }
             artist.drawPlanet(planet, at: sc, showLabel: dc.state.scale >= 90, in: &dc)

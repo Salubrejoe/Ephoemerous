@@ -8,7 +8,7 @@ struct EMoonLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, ra, dec) = EMoonPosition.vector(for: dc.renderedObservationDate,
                                                       siderealOffset: dc.localSiderealOffset)
-guard let proj = EProjection.project(moonVec, appState: dc.state, mode: mode) else { return }
+guard let proj = EProjection.project(moonVec, viewpoint: dc.viewpoint, mode: mode) else { return }
         let sc = dc.toScreen(proj)
         guard dc.onScreen(sc, margin: 40) else { return }
 

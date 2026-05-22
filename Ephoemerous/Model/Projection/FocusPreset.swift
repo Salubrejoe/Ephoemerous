@@ -188,7 +188,7 @@ extension EAppState {
         let (c, s) = (cos(th), sin(th))
         let v = EPrecession.equatorialVector(ra: pRA, dec: pDec)
         let Q = SIMD3(v.x * c - v.y * s, v.x * s + v.y * c, v.z)
-        guard let proj = EProjection.project(Q, appState: self, mode: .northSouth) else { return nil }
+        guard let proj = EProjection.project(Q, viewpoint: self.viewpoint, mode: .northSouth) else { return nil }
         let sx = canvasSize.width  / 2 + proj.x * renderedScale + renderedOffset.y
         let sy = canvasSize.height / 2 - proj.y * renderedScale + renderedOffset.x
         return CGPoint(x: sx, y: sy)
