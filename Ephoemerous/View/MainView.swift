@@ -9,7 +9,7 @@ struct MainView: View {
     
     var body: some View {
         ZStack {
-            Color.secondarySystemBackground
+            Color.tertiarySystemBackground
                 .ignoresSafeArea()
                 
             // Travel backdrop moved into CelestialCanva's travel group so it

@@ -13,7 +13,7 @@ extension EArtist {
     /// Extra screen-space gap added to each end of a segment, *on top*
     /// of the projected star radius. Keeps a visible halo of bare canvas
     /// around every star regardless of zoom.
-    var constellationLineGapPad     : Double { 3.0 }
+    var constellationLineGapPad     : Double { 0.2 }
 
     /// Magnitude cutoff above which we don't bother drawing a segment.
     /// Set generously — figure-stars are almost always Vmag < 4 anyway.

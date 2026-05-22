@@ -7,7 +7,7 @@ import SwiftUI
 // planets, stars) without competing for attention.
 extension EArtist {
 
-    var gridWidth      : Double { 0.3 }
+    var gridWidth      : Double { 0.15 }
     var gridColor      : Color  { .secondarySystemBackground }
     var gridBrightness : Double { 0.2 }
 }

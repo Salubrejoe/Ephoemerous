@@ -22,23 +22,23 @@ struct WatchRimLayer: EGridLayer {
 
         var local = dc.ctx
         local.opacity = opacity
-        local.addFilter(
-            .shadow(
-//                color: .secondary,
-                color: .tertiary,
-                radius: 2,
-                x: 0,
-                y: 1,
-//                blendMode: .destinationOver,
-//                options: .shadowAbove
-            )
-        )
-//        local.addFilter(.shadow(color: .tertiary, radius: 2))
+//        local.addFilter(
+//            .shadow(
+////                color: .secondary,
+//                color: .tertiary,
+//                radius: 2,
+//                x: 0,
+//                y: 1,
+////                blendMode: .destinationOver,
+////                options: .shadowAbove
+//            )
+//        )
+////        local.addFilter(.shadow(color: .tertiary, radius: 2))
 
         
         let ringR = r + 6 * scale
         let ring  = Path(ellipseIn: CGRect(x: cx - ringR, y: cy - ringR,
                                            width: 2 * ringR, height: 2 * ringR))
-        local.stroke(ring, with: .color(.secondarySystemBackground), lineWidth: 2 * scale)
+        local.stroke(ring, with: .color(.tertiarySystemBackground), lineWidth: 2 * scale)
     }
 }

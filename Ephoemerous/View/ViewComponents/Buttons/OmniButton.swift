@@ -12,7 +12,7 @@ struct OmniButton: View {
                 .symbolColorRenderingMode(.gradient)
                 .foregroundStyle(prColor)
                 .padding(8)
-                .glassEffect(.clear.tint(.baseOrange).interactive(), in: Squircle(corners: 12, bulge: 2.5, rotation: .zero))
+                .glassEffect(.clear.interactive(), in: Squircle(corners: 12, bulge: 2.5, rotation: .zero))
 //                .background(
 //                    Squircle(corners: 7, bulge: 3.5, rotation: .zero)
 //                        .fill(.regularMaterial)

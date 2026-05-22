@@ -9,7 +9,7 @@ import SwiftUI
 // keeps neighbouring stars from sharing rotations.
 extension EArtist {
 
-    var starZoomExp : Double { 0.3 }   // sub-linear: r ∝ scale^starZoomExp
+    var starZoomExp : Double { 0.01 }   // sub-linear: r ∝ scale^starZoomExp
 
     private static let starCorners: Int = 5
 
@@ -73,12 +73,12 @@ extension EArtist {
     }
 
     func drawStar(_ star: EStar, at sc: CGPoint, in dc: inout EGraphicContext) {
-        let baseR = starRadius(star, in: dc) * 0.5
+        let baseR = starRadius(star, in: dc)
         let r     = baseR * pow(dc.state.renderedScale, starZoomExp)
         // Sub-pixel stars are invisible on Retina anyway — skipping
         // them spares a `translate + rotate + scale + fill` that would
         // paint nothing readable.
-        guard r >= 0.5 else { return }
+        guard r >= 0.3 else { return }
         let spin  = starSpin(of: star)
         let bulge = bulgeBucket(for: star, in: dc)
 

@@ -15,16 +15,16 @@ struct WatchBackgroundLayer: EGridLayer {
         var local = dc.ctx
         local.opacity = opacity
         
-        local.addFilter(
-            .shadow(
-                color: .systemBackground,
-                radius: 4,
-                x: 0,
-                y: 1,
-//                blendMode: .destinationOver,
-//                options: .shadowAbove
-            )
-        )
+//        local.addFilter(
+//            .shadow(
+//                color: .systemBackground,
+//                radius: 4,
+//                x: 0,
+//                y: 1,
+////                blendMode: .destinationOver,
+////                options: .shadowAbove
+//            )
+//        )
         
 //        local.addFilter(.brightness(0.1))
         local.fill(artist.chromePath(in: dc), with: .color(.systemBackground))
