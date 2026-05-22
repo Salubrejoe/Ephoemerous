@@ -63,12 +63,13 @@ enum EProjection {
             // Manual π rotation: `baseVectors()`'s singular fallback at
             // P=(0,0,-1) (used by NS) is opposite its continuous limit at
             // any non-pole observer (used by UL). Negating the UL output
-            // realigns the two bases on screen so the sun, moon, stars
-            // and ecliptic share their NS orientation across the mode
-            // flip. EarthGridLayer and HorizonLayer opt out via
-            // `negateUserLocation: false` because they never used the NS
-            // basis to begin with — flipping them by π would just rotate
-            // a layer that already looked correct.
+            // realigns the two bases on screen so the sun, moon, stars,
+            // constellations, ecliptic — and the RA/Dec EarthGrid —
+            // share one celestial frame: drag the observer and they all
+            // track together. Only HorizonLayer opts out via
+            // `negateUserLocation: false`, because the horizon is the
+            // observer's *local* frame and is meant to slide against the
+            // sky, not with it.
             return negateUserLocation ? CGPoint(x: -p.x, y: -p.y) : p
         }
     }

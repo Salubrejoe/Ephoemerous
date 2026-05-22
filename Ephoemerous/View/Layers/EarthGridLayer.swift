@@ -12,8 +12,17 @@ struct EarthGridLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         var blur = dc.ctx
         blur.addFilter(.blur(radius: 4))
-        drawMeridians(in: &dc)
-        drawParallels(in: &dc)
+
+        // In clock mode the grid is confined to the watch disc. Clip a
+        // local copy of the context — every layer shares the same
+        // `inout dc`, so clipping `dc` directly would leak the region
+        // into the horizon / stars / chrome drawn after this layer.
+        var clipped = dc
+        if dc.state.appMode == .clock {
+            clipped.ctx.clip(to: artist.chromePath(in: dc))
+        }
+        drawMeridians(in: &clipped)
+        drawParallels(in: &clipped)
     }
     
     func drawParallels(in dc: inout EGraphicContext) {
@@ -23,7 +32,7 @@ struct EarthGridLayer: EGridLayer {
             let pts = EProjection.sampleCurve(
                 appState:           dc.state,
                 mode:               .userLocation,
-                negateUserLocation: false
+                negateUserLocation: true
             ) { t in
                 EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: decl)
                     .sidereallyRotated(by: dc.state.localSiderealOffset)
@@ -49,7 +58,7 @@ struct EarthGridLayer: EGridLayer {
             let pts = EProjection.sampleCurve(
                 appState:           dc.state,
                 mode:               mode,
-                negateUserLocation: false
+                negateUserLocation: true
             ) { t in
                 EPrecession.equatorialVector(ra: .radians(ra),
                                              dec: .radians((t - 0.5) * 2*Double.pi))
