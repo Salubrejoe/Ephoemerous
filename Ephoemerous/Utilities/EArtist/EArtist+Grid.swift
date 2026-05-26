@@ -1,14 +1,11 @@
 import SwiftUI
-import LoreKit
 
 // MARK: - Grid
-// Visual tuning for the coordinate grid drawn by `EarthGridLayer`
-// (meridians, parallels, equator, tropics). Strokes are kept thin and
-// desaturated so they sit behind the bright content (sun, moon,
-// planets, stars) without competing for attention.
+// Coordinate grid drawn by `EarthGridLayer` — meridians, parallels,
+// pole + RA labels. Thin, desaturated tint so the grid sits behind
+// the bright content (sun, moon, planets, stars) without competing.
 extension EArtist {
 
-    var gridWidth      : Double { 0.55 }
-    var gridColor      : Color  { .green }
-    var gridBrightness : Double { 0.0 }
+    var gridColor : Color  { .secondary.opacity(0.4) }
+    var gridWidth : Double { 0.55 }
 }

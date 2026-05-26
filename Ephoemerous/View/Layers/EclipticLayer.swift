@@ -134,8 +134,8 @@ struct EclipticLayer: EGridLayer {
             local.rotate(by: .radians(θ))
             local.draw(
                 Text(sign.symbol)
-                    .font(.caption2)
-                    .foregroundStyle(artist.sunBorderColor),
+                    .font(.footnote)
+                    .foregroundStyle(artist.eclColor),
                 at:     .zero,
                 anchor: .center
             )

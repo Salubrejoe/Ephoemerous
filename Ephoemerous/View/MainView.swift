@@ -10,7 +10,7 @@ struct MainView: View {
     
     var body: some View {
         ZStack {
-            Color.secondarySystemBackground
+            EArtist.shared.canvasBackground
                 .ignoresSafeArea()
 
             CelestialCanva()

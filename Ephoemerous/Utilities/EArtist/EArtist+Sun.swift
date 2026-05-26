@@ -12,12 +12,14 @@ import LoreKit
 // rotate + fill / stroke.
 extension EArtist {
 
-    var sunColor          : Color   { EHRClass.G.adaptiveColor(for: .light) }
+    var sunColor          : Color   { .primary }
+//    var sunColor          : Color   { EHRClass.G.adaptiveColor(for: .light) }
     // Spectral class G — the Sun's own. Sits in the OBAFGKM palette
     // alongside the star colours instead of jumping out as system
     // `.yellow`; swap to `EHRClass.K.color` for a warmer "setting sun"
     // feel if the cream reads too pale on your device.
-    var sunBorderColor    : Color   { EHRClass.G.adaptiveColor(for: .light) }
+    var sunBorderColor    : Color   { .primary}
+//    var sunBorderColor    : Color   { EHRClass.G.adaptiveColor(for: .light) }
     var sunGlowBlur       : Double  { 1.2 }      // legacy — kept for the commented-out glow experiments
     var sunBodyRadius     : CGFloat { 12.0 }
     var sunBorderMinScale : CGFloat { 1.2 }      // × sunBodyRadius at breath trough — fully inside body

@@ -1,13 +1,11 @@
 import SwiftUI
 
 // MARK: - Horizon
-// Visual tuning for the horizon rim + twilight bands drawn by
-// `HorizonLayer`. The layer owns its own corners / bulge / stroke
-// width; these constants are the older shared knobs (still kept so
-// fallback / NS-mode rendering can reach for them).
+// Visible-sky fill drawn by `HorizonLayer` — a soft wash inside the
+// alt = 0 great circle marking the patch of sky currently above the
+// observer's horizon. The bumped squircle border + stroke width
+// live on the layer itself.
 extension EArtist {
 
-    var horizonFillColor  : Color  { .blue.opacity(0.3) }
-    var sunsetStrokeColor : Color  { .tertiary }
-    var sunsetStrokeWidth : Double { 1.0 }
+    var horizonFillColor : Color { .primary.opacity(0.08) }
 }

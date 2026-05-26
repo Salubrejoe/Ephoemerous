@@ -6,19 +6,17 @@ import SwiftUI
 // breathing gap so the line never touches the star dot.
 extension EArtist {
 
-    var constellationLineColor      : Color  { .green }
-//    var constellationLineOpacity    : Double { 0.35 }
-    var constellationLineOpacity    : Double { 0.85 }
-    var constellationLineWidth      : Double { 0.6 }
+    var constellationLineColor : Color  { .secondary }
+    var constellationLineWidth : Double { 0.6 }
 
     /// Extra screen-space gap added to each end of a segment, *on top*
     /// of the projected star radius. Keeps a visible halo of bare canvas
     /// around every star regardless of zoom.
-    var constellationLineGapPad     : Double { 0.2 }
+    var constellationLineGapPad    : Double { 0.2 }
 
     /// Magnitude cutoff above which we don't bother drawing a segment.
     /// Set generously — figure-stars are almost always Vmag < 4 anyway.
-    var constellationLineMagCutoff  : Double { 6.5 }
+    var constellationLineMagCutoff : Double { 6.5 }
 
     /// Trim a screen-space segment by `inset` points on each end and
     /// stroke what's left. Returns silently if the segment is shorter
@@ -42,7 +40,7 @@ extension EArtist {
         path.addLine(to: p1)
         dc.ctx.stroke(
             path,
-            with: .color(constellationLineColor.opacity(constellationLineOpacity)),
+            with:      .color(constellationLineColor),
             lineWidth: constellationLineWidth
         )
     }
