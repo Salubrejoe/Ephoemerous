@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // The watch-face disc fill that sits behind the celestial content in
 // clock mode. Visibility and scale are driven by `state.chromeOpacity`

@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import LoreKit
 
 struct MainView: View {
     @Environment(EAppState.self) var state

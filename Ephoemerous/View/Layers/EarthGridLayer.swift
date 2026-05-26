@@ -2,6 +2,7 @@
 
 import SwiftUI
 import simd
+import LoreKit
 
 
 struct EarthGridLayer: EGridLayer {

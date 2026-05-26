@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import LoreKit
 
 // MARK: - WatchMaskView (sky-anchored crown)
 // Bands & equator are projected through the SAME pipeline as the sky

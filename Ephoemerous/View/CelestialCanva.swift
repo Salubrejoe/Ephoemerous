@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import CoreLocation
+import LoreKit
 
 
 struct CelestialCanva: View {

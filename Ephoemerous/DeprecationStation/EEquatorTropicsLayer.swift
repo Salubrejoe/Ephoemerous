@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 struct EEquatorTropicsLayer: EGridLayer {
     let artist = EArtist.shared

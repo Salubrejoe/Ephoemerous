@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // MARK: - EAppState + Stars
 // Star filtering, magnitude caching, selection history, and recently viewed.

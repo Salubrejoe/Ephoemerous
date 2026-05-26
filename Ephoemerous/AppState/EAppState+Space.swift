@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // MARK: - EAppState + Space
 // Observer geometry: converts the stored origin/plane angles into

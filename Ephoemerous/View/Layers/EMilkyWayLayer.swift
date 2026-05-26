@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // Approximate Milky Way: two soft blurred passes along the galactic plane
 // (a brighter core + a wide faint halo) plus a warmer galactic-centre glow.

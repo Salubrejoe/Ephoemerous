@@ -1,17 +1,30 @@
 import simd
 import SwiftUI
+import LoreKit
 
-
+// MARK: - SIMD3 (astronomy)
+// Domain-coupled `SIMD3<Double>` helpers — celestial north / south
+// unit vectors, the ecliptic-point factory, and the `sidereallyRotated`
+// alias for LoreKit's generic Z-axis rotation. The pure 3D math
+// (`baseVectors`, `rotateAbout{X,Y,Z}Axis`, `rotatedAboutZAxis`) lives
+// in LoreKit's `SIMD3+Math.swift`.
 extension SIMD3 where Scalar == Double {
-    
+
+    /// Celestial north pole — `+Z` on the unit sphere in equatorial
+    /// coords. Named for astronomy readability; mathematically just
+    /// `(0, 0, 1)`.
     static var north: SIMD3 {
         Angle.spherePoint(latitude: .degrees(90), longitude: .zero)
     }
-    
+
+    /// Celestial south pole — `-Z`. Same disclaimer as `.north`.
     static var south: SIMD3 {
         Angle.spherePoint(latitude: .degrees(-90), longitude: .zero)
     }
-    
+
+    /// Point on the ecliptic at ecliptic longitude λ (β = 0). Uses
+    /// `AstroConstants.obliquity` to tilt the ecliptic out of the
+    /// equator.
     static func eclipticPoint(lambda: Angle) -> SIMD3 {
         let obliquity = AstroConstants.obliquity
         return SIMD3(
@@ -20,45 +33,11 @@ extension SIMD3 where Scalar == Double {
             sin(lambda.radians) * sin(obliquity.radians)
         )
     }
-    
-    func baseVectors() -> (e1: SIMD3, e2: SIMD3) {
-        let north = SIMD3.north
-        var e1 = simd_cross(simd_cross(self, north), self)
-        if simd_length_squared(e1) < 1e-10 { e1 = SIMD3(1, 0, 0) }
-        e1 = simd_normalize(e1)
-        let e2 = simd_normalize(simd_cross(self, e1))
-        return (e1, e2)
-    }
-    
-    mutating func rotateAboutXAxis(by θ: Angle) {
-        self = SIMD3(
-            self.x,
-            self.y * cos(θ.radians) - self.z * sin(θ.radians),
-            self.y * sin(θ.radians) + self.z * cos(θ.radians)
-        )
-    }
 
-    mutating func rotateAboutYAxis(by θ: Angle) {
-        self = SIMD3(
-            self.x * cos(θ.radians) + self.z * sin(θ.radians),
-            self.y,
-            self.z * cos(θ.radians) - self.x * sin(θ.radians)
-        )
-    }
-    
-    mutating func rotateAboutZAxis(by θ: Angle) {
-        self = SIMD3(
-            self.x * cos(θ.radians) - self.y * sin(θ.radians),
-            self.x * sin(θ.radians) + self.y * cos(θ.radians),
-            self.z
-        )
-    }
-    
+    /// Sidereal rotation = rotation about the celestial Z axis by the
+    /// local sidereal time. Domain-named alias for the generic
+    /// `rotatedAboutZAxis(by:)` so call sites read in astronomy.
     func sidereallyRotated(by θ: Angle) -> SIMD3 {
-        SIMD3(
-            self.x * cos(θ.radians) - self.y * sin(θ.radians),
-            self.x * sin(θ.radians) + self.y * cos(θ.radians),
-            self.z
-        )
+        rotatedAboutZAxis(by: θ)
     }
 }

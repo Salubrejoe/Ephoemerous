@@ -1,5 +1,6 @@
 
 import SwiftUI
+import LoreKit
 
 let eButtonHeight: CGFloat = 55
 let corner: CGFloat = 48

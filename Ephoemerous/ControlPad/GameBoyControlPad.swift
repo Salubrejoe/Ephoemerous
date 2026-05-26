@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // Prototype — Game-Boy-style control surface for the bottom third.
 // Left: a four-way D-pad nudging the observer (lat = up/down,
