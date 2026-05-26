@@ -80,7 +80,8 @@ class EAppState {
     var showStarView:          Bool = false
     var showConstellationView: Bool = false
     var showMagnFilter:        Bool = false
-    var isShowingDatePicker:   Bool = false
+    var isShowingDatePicker:     Bool = false
+    var isShowingLocationPicker: Bool = false
 
     // MARK: - Layer visibility
     var showEquatorTropics: Bool = true

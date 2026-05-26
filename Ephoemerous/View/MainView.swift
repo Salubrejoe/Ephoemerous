@@ -12,12 +12,22 @@ struct MainView: View {
         ZStack {
             Color.tertiarySystemBackground
                 .ignoresSafeArea()
-                
+
             CelestialCanva()
             ObjectsTrackingOverlay()
+
+            // Bottom toolbar: date + location pills with inline
+            // expandable panels above them. Pinned to the bottom safe
+            // area; the canvas stays full-bleed behind it.
+            VStack {
+                Spacer()
+                MainToolbar()
+                    .padding(.horizontal, 24)
+                    .padding(.bottom,     0)
+            }
         }
-        .ignoresSafeArea()
-        
+        .ignoresSafeArea(.container, edges: .top)
+
     }
 }
 

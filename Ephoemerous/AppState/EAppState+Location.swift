@@ -41,6 +41,18 @@ extension EAppState {
         let authorised = auth == .authorizedWhenInUse || auth == .authorizedAlways
         return authorised && ELocationService.shared.location == nil
     }
+
+    /// Show or hide the inline location picker. Mirrors
+    /// `toggleDatePicker()`: opening resets the viewport so the picker
+    /// isn't fighting a tracking transition, and closes the date picker
+    /// to avoid two inline panels stacking in the bottom slot.
+    func toggleLocationPicker() {
+        if !isShowingLocationPicker {
+            resetView()
+            isShowingDatePicker = false
+        }
+        isShowingLocationPicker.toggle()
+    }
 }
 
 // MARK: - EOriginTransition

@@ -67,9 +67,14 @@ extension EAppState {
     }
 
     /// Show or hide the inline date picker. Opening it first resets the
-    /// viewport so the picker isn't fighting a tracking transition.
+    /// viewport so the picker isn't fighting a tracking transition, and
+    /// closes the location picker if it's open (the two inline panels
+    /// share the bottom slot and shouldn't stack).
     func toggleDatePicker() {
-        if !isShowingDatePicker { resetView() }
+        if !isShowingDatePicker {
+            resetView()
+            isShowingLocationPicker = false
+        }
         isShowingDatePicker.toggle()
     }
 
