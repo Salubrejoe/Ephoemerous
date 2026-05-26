@@ -65,13 +65,13 @@ struct CardinalLabelsLayer: EGridLayer {
                           y: sc.y + dy / d * labelInset)
                 : sc
 
-            dc.ctx.draw(
-                Text(label)
-                    .font(labelFont)
-                    .foregroundStyle(labelColor),
-                at:     pos,
-                anchor: .center
-            )
+//            dc.ctx.draw(
+//                Text(label)
+//                    .font(labelFont)
+//                    .foregroundStyle(labelColor),
+//                at:     pos,
+//                anchor: .center
+//            )
         }
     }
 }

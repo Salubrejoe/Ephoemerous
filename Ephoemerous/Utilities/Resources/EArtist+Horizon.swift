@@ -7,7 +7,7 @@ import SwiftUI
 // fallback / NS-mode rendering can reach for them).
 extension EArtist {
 
-    var horizonFillColor  : Color  { .secondary }
+    var horizonFillColor  : Color  { .tertiary }
     var sunsetStrokeColor : Color  { .tertiary }
     var sunsetStrokeWidth : Double { 1.0 }
 }

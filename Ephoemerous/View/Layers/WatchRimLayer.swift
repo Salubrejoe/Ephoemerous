@@ -39,6 +39,6 @@ struct WatchRimLayer: EGridLayer {
         let ringR = r + 6 * scale
         let ring  = Path(ellipseIn: CGRect(x: cx - ringR, y: cy - ringR,
                                            width: 2 * ringR, height: 2 * ringR))
-        local.stroke(ring, with: .color(.tertiarySystemBackground), lineWidth: 2 * scale)
+//        local.stroke(ring, with: .color(.tertiarySystemBackground), lineWidth: 2 * scale)
     }
 }
