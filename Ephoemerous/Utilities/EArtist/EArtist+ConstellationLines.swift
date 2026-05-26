@@ -6,8 +6,9 @@ import SwiftUI
 // breathing gap so the line never touches the star dot.
 extension EArtist {
 
-    var constellationLineColor      : Color  { .secondary }
-    var constellationLineOpacity    : Double { 0.35 }
+    var constellationLineColor      : Color  { .green }
+//    var constellationLineOpacity    : Double { 0.35 }
+    var constellationLineOpacity    : Double { 0.85 }
     var constellationLineWidth      : Double { 0.6 }
 
     /// Extra screen-space gap added to each end of a segment, *on top*

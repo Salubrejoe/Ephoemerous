@@ -22,65 +22,92 @@ struct DatePickerPanel: View {
     private static let yearSpan: Int = 100
 
     var body: some View {
-        HStack(spacing: 0) {
-            Picker("Day", selection: dayBinding) {
-                ForEach(1...daysInCurrentMonth, id: \.self) { d in
-                    Text("\(d)").tag(d)
-                        .font(.footnote)
-                }
-            }
-            .pickerStyle(.wheel)
-            .frame(maxWidth: .infinity)
-            .clipped()
+        VStack(spacing: 8) {
+            actionRow
 
-            Picker("Month", selection: monthBinding) {
-                ForEach(1...12, id: \.self) { m in
-                    Text(Self.monthName(m)).tag(m)
-                        
-                        .font(.footnote)
+            HStack(spacing: 0) {
+                Picker("Day", selection: dayBinding) {
+                    ForEach(1...daysInCurrentMonth, id: \.self) { d in
+                        Text("\(d)").tag(d)
+                            .font(.footnote)
+                    }
                 }
-            }
-            .pickerStyle(.wheel)
-            .frame(maxWidth: .infinity)
-            .clipped()
+                .pickerStyle(.wheel)
+                .frame(maxWidth: .infinity)
+                .clipped()
 
-            Picker("Year", selection: yearBinding) {
-                ForEach(yearRange, id: \.self) { y in
-                    Text(String(y)).tag(y)
-                        .font(.footnote)
+                Picker("Month", selection: monthBinding) {
+                    ForEach(1...12, id: \.self) { m in
+                        Text(Self.monthName(m)).tag(m)
+                            .font(.footnote)
+                    }
                 }
-            }
-            .pickerStyle(.wheel)
-            .frame(maxWidth: .infinity)
-            .clipped()
+                .pickerStyle(.wheel)
+                .frame(maxWidth: .infinity)
+                .clipped()
 
-            Picker("Hour", selection: hourBinding) {
-                ForEach(0...23, id: \.self) { h in
-                    Text(String(format: "%02d", h)).tag(h)
-                        .font(.footnote)
+                Picker("Year", selection: yearBinding) {
+                    ForEach(yearRange, id: \.self) { y in
+                        Text(String(y)).tag(y)
+                            .font(.footnote)
+                    }
                 }
-            }
-            .pickerStyle(.wheel)
-            .frame(maxWidth: .infinity)
-            .clipped()
+                .pickerStyle(.wheel)
+                .frame(maxWidth: .infinity)
+                .clipped()
 
-            Picker("Minute", selection: minuteBinding) {
-                ForEach(0...59, id: \.self) { m in
-                    Text(String(format: "%02d", m)).tag(m)
-                        .font(.footnote)
+                Picker("Hour", selection: hourBinding) {
+                    ForEach(0...23, id: \.self) { h in
+                        Text(String(format: "%02d", h)).tag(h)
+                            .font(.footnote)
+                    }
                 }
+                .pickerStyle(.wheel)
+                .frame(maxWidth: .infinity)
+                .clipped()
+
+                Picker("Minute", selection: minuteBinding) {
+                    ForEach(0...59, id: \.self) { m in
+                        Text(String(format: "%02d", m)).tag(m)
+                            .font(.footnote)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .frame(maxWidth: .infinity)
+                .clipped()
             }
-            .pickerStyle(.wheel)
-            .frame(maxWidth: .infinity)
-            .clipped()
+            .labelsHidden()
+            .frame(height: 160)
         }
-        
-        .labelsHidden()
-        .frame(height: 160)
         .padding(.horizontal, 8)
-        .padding(.vertical,   4)
+        .padding(.vertical,   8)
         .glassEffect(.clear.interactive(),
                      in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    // MARK: - Action row
+
+    /// Mirrors LocationPickerPanel's "Here" — a one-tap shortcut to
+    /// the current real-world value. Commits via
+    /// `commitPickedObservationDate(_:)` so the sky animates / jumps
+    /// using the same rules wheel edits do, then dismisses the panel.
+    private var actionRow: some View {
+        HStack {
+            Button {
+                state.commitPickedObservationDate(.now)
+                state.isShowingDatePicker = false
+            } label: {
+                Label("Now", systemImage: "clock.fill")
+                    .font(.callout.weight(.medium))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical,    9)
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .glassEffect(.clear.interactive(), in: .capsule)
+
+            Spacer()
+        }
     }
 
     // MARK: - Component bindings

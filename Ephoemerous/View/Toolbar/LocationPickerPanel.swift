@@ -163,19 +163,18 @@ struct LocationPickerPanel: View {
             } label: {
                 Label("Here", systemImage: "location.fill")
                     .font(.callout.weight(.medium))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical,    9)
                     .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
-            .glassEffect(.clear.interactive(), in: .capsule)
+            .buttonStyle(.glass)
 
             Spacer()
 
             // Coordinate readout — what "Set" will commit to.
             Text(coordinateLabel)
-                .font(.caption.monospacedDigit())
+                .font(.subheadline.monospacedDigit())
+                .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
+                .shadow(radius: 2)
                 .lineLimit(1)
 
             Spacer()
@@ -185,12 +184,9 @@ struct LocationPickerPanel: View {
             } label: {
                 Text("Travel")
                     .font(.callout.weight(.semibold))
-                    .padding(.horizontal, 18)
-                    .padding(.vertical,    9)
                     .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
-            .glassEffect(.clear.tint(.accentColor).interactive(), in: .capsule)
+            .buttonStyle(.glassProminent)
         }
     }
 
@@ -204,7 +200,7 @@ struct LocationPickerPanel: View {
     private var coordinateLabel: String {
         let lat = centerCoordinate.latitude
         let lon = centerCoordinate.longitude
-        return String(format: "%.3f°%@  %.3f°%@",
+        return String(format: "%.2f°%@  %.2f°%@",
                       abs(lat), lat >= 0 ? "N" : "S",
                       abs(lon), lon >= 0 ? "E" : "W")
     }

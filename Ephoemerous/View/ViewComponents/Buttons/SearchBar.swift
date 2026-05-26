@@ -20,9 +20,9 @@ struct SearchBar: View {
                     .font(.caption)
                     .foregroundStyle(.gray)
                 }
-                .padding(.horizontal)
-                .padding(.vertical)
-                .glassEffect()
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .glassEffect(.clear.interactive(), in: .capsule)
                 .animation(.bouncy, value: state.showStarList)
             }
         }

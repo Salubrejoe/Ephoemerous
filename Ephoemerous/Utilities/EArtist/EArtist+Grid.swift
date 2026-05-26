@@ -9,6 +9,6 @@ import LoreKit
 extension EArtist {
 
     var gridWidth      : Double { 0.55 }
-    var gridColor      : Color  { .tertiary }
+    var gridColor      : Color  { .green }
     var gridBrightness : Double { 0.0 }
 }

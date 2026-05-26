@@ -51,6 +51,8 @@ struct MainToolbar: View {
                                      in: .capsule)
                 }
             }
+            
+            SearchBar()
         }
         .animation(.easeInOut(duration: 0.25), value: state.isShowingDatePicker)
         .animation(.easeInOut(duration: 0.25), value: state.isShowingLocationPicker)
@@ -73,10 +75,9 @@ struct MainToolbar: View {
     private var locationButton: some View {
         Button(action: state.toggleLocationPicker) {
             HStack(spacing: 6) {
-                Image(systemName: state.isShowingLocationPicker
-                      ? "xmark"
-                      : "location.fill")
-                    .font(.headline)
+                Image(systemName: locationButtonSymbol)
+                    .font(.callout)
+                    .contentTransition(.symbolEffect(.replace))
                 if !state.isShowingLocationPicker {
                     Text(locationLabel)
                         .font(.callout.weight(.medium))
@@ -121,6 +122,17 @@ struct MainToolbar: View {
     }
 
     // MARK: - Pill labels
+
+    /// Three-state SF Symbol for the location pill:
+    ///   • `xmark`         — picker is open (tap closes it)
+    ///   • `location.fill` — observer is at the device's current location
+    ///   • `location`      — observer has been moved elsewhere
+    /// Driven through `.contentTransition(.symbolEffect(.replace))`
+    /// so swaps animate.
+    private var locationButtonSymbol: String {
+        if state.isShowingLocationPicker { return "xmark" }
+        return state.isAtDeviceLocation ? "location.fill" : "location"
+    }
 
     /// Locality name if we've got one, else "lat°/lon°" as a fallback.
     /// The name is async-resolved via `refreshLocalityName()` and
