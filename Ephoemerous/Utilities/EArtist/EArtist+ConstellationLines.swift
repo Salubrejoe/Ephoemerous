@@ -9,6 +9,10 @@ extension EArtist {
     var constellationLineColor : Color  { .secondary }
     var constellationLineWidth : Double { 0.6 }
 
+    /// Centre-to-centre spacing between dots along a stick-figure
+    /// segment. Tunable — increase for sparser, decrease for denser.
+    var constellationLineDotPitch : Double { 2.4 }
+
     /// Extra screen-space gap added to each end of a segment, *on top*
     /// of the projected star radius. Keeps a visible halo of bare canvas
     /// around every star regardless of zoom.
@@ -38,10 +42,18 @@ extension EArtist {
         var path = Path()
         path.move(to: p0)
         path.addLine(to: p1)
+        // Dotted stroke: `dash: [0]` with `.round` cap renders each
+        // dash as a single round dot of diameter = lineWidth,
+        // spaced by `constellationLineDotPitch`. Same colour, just
+        // rhythmised across the segment.
         dc.ctx.stroke(
             path,
-            with:      .color(constellationLineColor),
-            lineWidth: constellationLineWidth
+            with: .color(constellationLineColor),
+            style: StrokeStyle(
+                lineWidth: constellationLineWidth,
+                lineCap:   .round,
+                dash:      [0, constellationLineDotPitch]
+            )
         )
     }
 }
