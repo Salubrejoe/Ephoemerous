@@ -32,7 +32,7 @@ enum POIGlyph {
 
 enum POICategory {
     case constellation
-    case followedStar
+    case followedStar(EStar)
     case sun
     case moon
     case planet(EPlanet)
@@ -89,10 +89,14 @@ extension EArtist {
                 badgeIn:         80,
                 textIn:          130
             )
-        case .followedStar:
+        case .followedStar(let star):
+            // Tint the badge to the star's spectral class — O blue,
+            // M red, etc. The two-mode colour pair on EHRClass
+            // gives us a natural light → deep ramp for the gradient.
+            let g = star.spectralClass.badgeGradient
             return POICategoryStyle(
-                gradientTop:     Color(red: 1.00, green: 0.84, blue: 0.40),
-                gradientBottom:  Color(red: 0.91, green: 0.64, blue: 0.16),
+                gradientTop:     g.top,
+                gradientBottom:  g.bottom,
                 border:          .primary,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,

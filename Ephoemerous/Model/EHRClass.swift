@@ -36,4 +36,15 @@ enum EHRClass: String, CaseIterable {
     func adaptiveColor(for colorScheme: ColorScheme) -> Color {
         colorScheme == .dark ? color : lightColor
     }
+
+    // MARK: - POI badge gradient
+    /// Top + bottom colours used by the followed-star POI badge so
+    /// the badge tints to its spectral class — pale `color` at the
+    /// top, deep `lightColor` at the bottom. The two variants were
+    /// designed for opposite mode contrasts; pairing them gives a
+    /// natural light-to-deep ramp that reads instantly as "this is
+    /// a hot blue O" vs "this is a red M dwarf".
+    var badgeGradient: (top: Color, bottom: Color) {
+        (color, lightColor)
+    }
 }

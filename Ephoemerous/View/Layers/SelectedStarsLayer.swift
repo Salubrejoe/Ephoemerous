@@ -56,7 +56,7 @@ struct SelectedStarsLayer: EGridLayer {
                 at:       sc,
                 glyph:    .sfSymbol("star.fill"),
                 text:     star.displayName,
-                category: .followedStar,
+                category: .followedStar(star),
                 in:       &dc
             )
         }
