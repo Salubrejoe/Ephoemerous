@@ -31,7 +31,7 @@ struct ZenithButton: View {
 // MARK: - Presentation
 extension ZenithButton {
 
-    private var buttonSymbol: Strings.Symbols {
+    private var buttonSymbol: AppSymbol {
         state.isAtDeviceLocation ? .locationFill : .location
     }
 

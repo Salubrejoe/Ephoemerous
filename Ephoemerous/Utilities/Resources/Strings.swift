@@ -62,50 +62,10 @@ struct Strings {
         static let fault   = "[FAULT]"
     }
     
-    // MARK: - Symbols
-    enum Symbols: String {
-        
-        case calendar      = "calendar"
-        case checkmark     = "checkmark"
-        case chevronUpDown = "chevron.up.chevron.down"
-        case circle        = "circle"
-        case declination   = "lines.measurement.vertical"
-        case cup           = "cup.and.heat.waves"
-        case cupEmpty      = "cup.and.saucer"
-        case distance      = "point.topright.arrow.triangle.backward.to.point.bottomleft.scurvepath"
-        case drop          = "drop.fill"
-        case eyes          = "eyes"
-        case flame         = "flame"
-        case hrClass       = "thermometer.sun"
-        case location      = "location"
-        case locationFill  = "location.fill"
-        case magnitudeIcon = "slider.horizontal.below.sun.max"
-        case plus          = "plus"
-        case rightAscension = "lines.measurement.horizontal"
-        case record        = "smallcircle.filled.circle"
-        case reset         = "arrow.counterclockwise"
-        case resetClock    = "clock.arrow.circlepath"
-        case save          = "square.and.arrow.down"
-        case scalemass     = "scalemass"
-        case search        = "magnifyingglass"
-        case sort          = "line.3.horizontal.decrease.circle"
-        case sparkles      = "sparkles"
-        case sparkle       = "sparkle"
-        case star          = "star"
-        case starFill      = "star.fill"
-        case stopFill      = "stop.fill"
-        case target        = "target"
-        case timer         = "timer"
-        case trash         = "trash"
-        case thumbsup      = "hand.thumbsup"
-        case warning       = "exclamationmark.triangle.fill"
-        case xmark         = "xmark"
-        case xmarkCircle   = "xmark.circle"
-        
-        var description: String { self.rawValue }
-        
-    }
-    
+    // Symbols moved out to top-level `AppSymbol` — see Utilities/Resources/AppSymbol.swift.
+    // `Strings` is now strictly user-facing copy + format specifiers; API
+    // identifiers like SF Symbol names live as their own typed enum.
+
     struct Format {
         static let magnFormat         = "%.1f mag"
     }
