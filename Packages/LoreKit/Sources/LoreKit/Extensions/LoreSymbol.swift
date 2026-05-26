@@ -35,6 +35,7 @@ public enum LoreSymbol: String, Sendable, CaseIterable {
     case hrClass        = "thermometer.sun"
     case location       = "location"
     case locationFill   = "location.fill"
+    case locationCircle = "location.circle"
     case magnitudeIcon  = "slider.horizontal.below.sun.max"
     case plus           = "plus"
     case rightAscension = "lines.measurement.horizontal"

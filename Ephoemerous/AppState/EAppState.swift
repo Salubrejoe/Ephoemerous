@@ -45,6 +45,12 @@ class EAppState {
     // MARK: - Spatial state  (logic → EAppState+Space.swift)
     var origin:   Origin
     var plane:    Plane
+    // Best-effort locality name for the current origin (e.g. "London"),
+    // resolved asynchronously via `LocalityResolver`. `nil` while the
+    // geocode is in flight or has failed — the toolbar falls back to
+    // raw coordinates in that case. Refreshed via
+    // `refreshLocalityName()` (see EAppState+Locality.swift).
+    var localityName: String? = nil
     var scale:    Double   = AstroConstants.defaultScale
     var offset:   CGPoint  = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
     var _originTransition:     EOriginTransition?     = nil   // defined in EAppState+Location.swift

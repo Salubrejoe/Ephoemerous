@@ -33,7 +33,7 @@ struct LocationPickerPanel: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            searchField
+            actionRow
 
             if !completer.suggestions.isEmpty {
                 suggestionList
@@ -41,11 +41,12 @@ struct LocationPickerPanel: View {
                 mapView
             }
 
-            actionRow
+            searchField
         }
-        .padding(10)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .glassEffect(.clear,
-                     in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                     in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .onAppear {
             // Seed the camera at the current observer location so the
             // picker opens "where you are now."
@@ -81,7 +82,6 @@ struct LocationPickerPanel: View {
         .font(.callout)
         .padding(.horizontal, 12)
         .padding(.vertical,    9)
-        .glassEffect(.clear, in: .capsule)
     }
 
     private var suggestionList: some View {
@@ -122,7 +122,7 @@ struct LocationPickerPanel: View {
                 .onMapCameraChange(frequency: .continuous) { ctx in
                     centerCoordinate = ctx.camera.centerCoordinate
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 16,
+                .clipShape(RoundedRectangle(cornerRadius: 22,
                                             style: .continuous))
 
             // Fixed centred crosshair — whatever's under it is the
@@ -183,14 +183,14 @@ struct LocationPickerPanel: View {
             Button {
                 commitCenter()
             } label: {
-                Text("Set")
+                Text("Travel")
                     .font(.callout.weight(.semibold))
                     .padding(.horizontal, 18)
                     .padding(.vertical,    9)
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
-            .glassEffect(.clear.interactive(), in: .capsule)
+            .glassEffect(.clear.tint(.accentColor).interactive(), in: .capsule)
         }
     }
 
