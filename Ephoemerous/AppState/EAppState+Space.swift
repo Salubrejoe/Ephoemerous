@@ -17,23 +17,13 @@ extension EAppState {
         Angle.spherePoint(latitude: plane.latitude, longitude: plane.longitude)
     }
 
-    /// Unit vector for the NS projection's origin. Defaults to `.north`
-    /// (celestial north pole); displaced from there by the two-finger
-    /// origin nudge so the NS sky tilts in step with the UL horizon.
-    /// The NS projection's plane stays hardcoded at `.south`, so this
-    /// is the only knob that moves.
-    var nsOriginVector: SIMD3<Double> {
-        Angle.spherePoint(latitude: nsOrigin.latitude, longitude: nsOrigin.longitude)
-    }
-
-    /// Per-frame snapshot of the three projection vectors. Resolved once
-    /// in `CelestialCanva` and threaded through `EGraphicContext` so the
+    /// Per-frame snapshot of the projection vectors. Resolved once in
+    /// `CelestialCanva` and threaded through `EGraphicContext` so the
     /// per-point `EProjection.project` calls never re-read observable
     /// origin / plane state. See `EProjection.Viewpoint`.
     var viewpoint: EProjection.Viewpoint {
-        EProjection.Viewpoint(originVector:   originVector,
-                              planeVector:    planeVector,
-                              nsOriginVector: nsOriginVector)
+        EProjection.Viewpoint(originVector: originVector,
+                              planeVector:  planeVector)
     }
 
     /// The direction of the zenith in equatorial coordinates at the rendered observation time.

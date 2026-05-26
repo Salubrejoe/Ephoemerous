@@ -14,8 +14,10 @@ struct CoordinatesTile: View {
         return String(format: "%@%.1f°", d >= 0 ? "E " : "W ", abs(d))
     }
     
-    private var latActive: Bool { state.coupledAxis == .vertical }
-    private var lonActive: Bool { state.coupledAxis == .horizontal }
+    // Axis-lock state is gone (gesture refactor removed coupledAxis); both
+    // active flags pin to false so this deprecated tile still compiles.
+    private var latActive: Bool { false }
+    private var lonActive: Bool { false }
     
     var body: some View {
         HStack(alignment: .center, spacing: 8) {

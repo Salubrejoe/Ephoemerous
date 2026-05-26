@@ -11,15 +11,17 @@ enum EProjection {
     }
 
     /// Per-frame snapshot of the observer geometry the projection needs.
-    /// `originVector` / `planeVector` / `nsOriginVector` are computed
-    /// `@Observable` properties on `EAppState`; resolving them once per
-    /// frame (see `EGraphicContext`) and threading this value keeps the
-    /// per-point `project()` calls — 10k+ a frame — off the observation
-    /// graph entirely.
+    /// `originVector` / `planeVector` are computed `@Observable`
+    /// properties on `EAppState`; resolving them once per frame (see
+    /// `EGraphicContext`) and threading this value keeps the per-point
+    /// `project()` calls — 10k+ a frame — off the observation graph
+    /// entirely. The NS-projection origin used to live here too but is
+    /// now hardcoded to celestial north (`(0, 0, 1)`) — the dynamic NS
+    /// tilt that the two-finger gesture drove is gone, so the runtime
+    /// value never moves.
     struct Viewpoint {
-        let originVector:   SIMD3<Double>
-        let planeVector:    SIMD3<Double>
-        let nsOriginVector: SIMD3<Double>
+        let originVector: SIMD3<Double>
+        let planeVector:  SIMD3<Double>
     }
 
     static var obliquity: Angle { AstroConstants.obliquity }
@@ -50,14 +52,13 @@ enum EProjection {
                         mode: ProjectionFrame,
                         negateUserLocation: Bool = true) -> CGPoint? {
         if mode == .northSouth {
-            // NS origin is dynamic so the two-finger drag can tilt the
-            // celestial frame in step with the UL horizon. The plane
-            // stays fixed at `.south` — only the origin is displaced.
-            // At rest, `nsOriginVector` resolves to `.north`, so this
-            // reduces to the historical hardcoded behaviour.
+            // NS projection: origin = celestial north, plane = south.
+            // Used to be dynamic (two-finger drag tilted the celestial
+            // frame in step with the UL horizon), but that gesture is
+            // gone and `.north` is the only value it ever held.
             return project(
                 Q,
-                origin: viewpoint.nsOriginVector,
+                origin: .north,
                 plane:  .south
             )
         } else {

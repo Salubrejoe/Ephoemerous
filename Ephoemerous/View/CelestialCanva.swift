@@ -123,13 +123,12 @@ struct ECanvasSchedule: TimelineSchedule {
 
 extension CelestialCanva {
     private var isAnimating: Bool {
-        gestures.isInteracting          ||
-        state._activeTransition  != nil ||
-        state._dateTransition    != nil ||
-        state._originTransition   != nil ||
-        state._nsOriginTransition != nil ||
+        gestures.isInteracting         ||
+        state._activeTransition != nil ||
+        state._dateTransition   != nil ||
+        state._originTransition != nil ||
         state._inertiaTransition != nil ||
-        state._chromeTransition  != nil
+        state._chromeTransition != nil
     }
     private var schedule: ECanvasSchedule { ECanvasSchedule(isAnimating: isAnimating) }
 }

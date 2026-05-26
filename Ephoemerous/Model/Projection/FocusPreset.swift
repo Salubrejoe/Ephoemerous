@@ -212,5 +212,6 @@ extension EAppState {
 
 // EOriginTransition and animateOrigin moved to EAppState+Location.swift.
 
-// EInertiaTransition moved to CelestialGestureCoordinator.swift (it is the
-// momentum of a viewport flick — a gesture concern, not a focus preset).
+// `EInertiaTransition` was generalised and is now `LoreKit.FlingInertia`
+// (exponential-decay momentum, no app coupling). The gesture-side wiring
+// that emits one on pan release lives in CelestialGestureCoordinator+Inertia.

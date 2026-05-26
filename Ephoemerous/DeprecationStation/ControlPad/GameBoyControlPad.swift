@@ -137,26 +137,21 @@ private extension GameBoyControlPad {
         }
     }
 
+    // `state.coupledAxis = ...` writes removed — the axis-lock state was
+    // dropped in the gesture refactor and this view is deprecated anyway.
+    // The setOrigin calls still work; the axis-highlight side effect just
+    // no longer fires.
     func nudgeLatitude(by delta: Double) {
-        
-        state.coupledAxis = .vertical
         let lat = (state.origin.latitude.degrees + delta).clamped(to: -89 ... 89)
         state.setOrigin(lat: .degrees(lat), lon: state.origin.longitude)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-            state.coupledAxis = .none
-        }
     }
 
     func nudgeLongitude(by delta: Double) {
-        state.coupledAxis = .horizontal
         var lon = (state.origin.longitude.degrees + delta)
             .truncatingRemainder(dividingBy: 360)
         if lon >  180 { lon -= 360 }
         if lon < -180 { lon += 360 }
         state.setOrigin(lat: state.origin.latitude, lon: .degrees(lon))
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-            state.coupledAxis = .none
-        }
     }
 }
 

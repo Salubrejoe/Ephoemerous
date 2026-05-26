@@ -97,24 +97,4 @@ extension EAppState {
             onCompletion: onCompletion
         )
     }
-
-    /// Animate `nsOrigin` back to a target lat / lon. Same envelope and
-    /// smoothstep curve as `animateOrigin` — used by the two-finger
-    /// drag's spring-back so the NS sky drops back to its starting tilt
-    /// in lockstep with the UL origin.
-    func animateNSOrigin(to lat: Angle,
-                         lon: Angle,
-                         duration: Double = 0.6,
-                         onCompletion: (() -> Void)? = nil) {
-        _nsOriginTransition = EOriginTransition(
-            fromLat:      nsOrigin.latitude.radians,
-            fromLon:      nsOrigin.longitude.radians,
-            toLat:        lat.radians,
-            toLon:        lon.radians,
-            startTime:    Date.now.timeIntervalSinceReferenceDate,
-            duration:     duration,
-            updatePlane:  false,   // NS has no plane to update — `.south` is hardcoded
-            onCompletion: onCompletion
-        )
-    }
 }
