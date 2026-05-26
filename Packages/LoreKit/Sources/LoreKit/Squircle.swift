@@ -13,19 +13,25 @@ import SwiftUI
 //   • bulge → ∞           → approaches a regular n-gon
 //
 // See https://thatsmaths.com/2016/07/14/squircles/ for the squircle case.
-struct Squircle: Shape {
+public struct Squircle: Shape {
 
-    var corners  : Int     = 4
-    var bulge    : CGFloat = 4
-    var rotation : Angle   = .zero
+    public var corners  : Int     = 4
+    public var bulge    : CGFloat = 4
+    public var rotation : Angle   = .zero
+
+    public init(corners: Int = 4, bulge: CGFloat = 4, rotation: Angle = .zero) {
+        self.corners  = corners
+        self.bulge    = bulge
+        self.rotation = rotation
+    }
 
     // Animate `bulge` smoothly; `corners` is discrete and not animated.
-    var animatableData: CGFloat {
+    public var animatableData: CGFloat {
         get { bulge }
         set { bulge = newValue }
     }
 
-    func path(in rect: CGRect) -> Path {
+    public func path(in rect: CGRect) -> Path {
         var path = Path()
         for (i, p) in vertices(in: rect).enumerated() {
             if i == 0 { path.move   (to: p) }
@@ -36,9 +42,9 @@ struct Squircle: Shape {
     }
 
     /// Sampled rim of the squircle. Useful when you want to feed the points
-    /// through your own drawing pipeline (e.g. `EGraphicContext.strokeCurve`)
-    /// rather than letting SwiftUI fill/stroke a `Path` directly.
-    func vertices(in rect: CGRect, segments: Int = 240) -> [CGPoint] {
+    /// through your own drawing pipeline (e.g. a Canvas `strokeCurve`) rather
+    /// than letting SwiftUI fill/stroke a `Path` directly.
+    public func vertices(in rect: CGRect, segments: Int = 240) -> [CGPoint] {
         let cx = rect.midX
         let cy = rect.midY
         let rx = rect.width  / 2
@@ -62,8 +68,9 @@ struct Squircle: Shape {
 
     /// The bulge function in isolation. Exposed so other layers can apply
     /// the same radial modulation to non-circular curves (e.g. a projected
-    /// horizon that has deformed away from a true circle).
-    static func lameRadius(angle t: CGFloat, corners n: CGFloat, bulge p: CGFloat) -> CGFloat {
+    /// horizon that has deformed away from a true circle, or to deform an
+    /// hour ring so it tracks a squircle disc).
+    public static func lameRadius(angle t: CGFloat, corners n: CGFloat, bulge p: CGFloat) -> CGFloat {
         let a = abs(cos(n * t / 4))
         let b = abs(sin(n * t / 4))
         return pow(pow(a, p) + pow(b, p), -1 / p)

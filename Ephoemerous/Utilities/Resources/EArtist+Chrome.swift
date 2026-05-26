@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - Watch chrome
 // Geometry + colour for the watch-face disc and the hour ring around

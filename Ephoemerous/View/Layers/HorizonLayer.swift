@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 /*
  let cx   = dc.size.width  / 2 + dc.state.renderedOffset.y
@@ -17,7 +18,7 @@ struct HorizonLayer: EGridLayer {
 
     private let corners : Int     = 90
     private let bulge   : CGFloat = 2.1
-    private let width   : CGFloat = 2
+    private let width   : CGFloat = 1
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showHorizon else { return }

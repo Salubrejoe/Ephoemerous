@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // Renders the ecliptic as two 12-bulge rims, locked to the zodiac.
 //

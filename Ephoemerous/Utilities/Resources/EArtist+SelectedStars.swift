@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - Selected stars
 // Two visual treatments, both routed through `drawSelectedStar`:

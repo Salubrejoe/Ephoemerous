@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 struct OmniButton: View {
     @Environment(\.colorScheme) var colorScheme

@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - Stars
 // Every star is a small filled 5-point squircle whose `bulge` is

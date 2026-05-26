@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 
 struct ClipAndHoursLayer: EGridLayer {
@@ -35,10 +36,20 @@ struct ClipAndHoursLayer: EGridLayer {
         let midR     = (innerR + outerR) / 2
         let tzOffset = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
 
+        // The watch face is a squircle, not a circle — deform the hour
+        // ring by the same Lamé radius so every number rides the square's
+        // perimeter: corners pushed out, side midpoints flush. Uses the
+        // chrome's own corners / bulge, so the ring tracks the disc shape
+        // if it's ever retuned.
+        let corn = CGFloat(artist.chromeCorners)
+        let blg  = artist.chromeBulge
+
         for h in 0..<24 {
             let angle = theta - Double(h) * .pi / 12.0
-            let lx    = cx + cos(angle) * midR
-            let ly    = cy - sin(angle) * midR
+            let k     = Double(Squircle.lameRadius(angle: CGFloat(angle),
+                                                   corners: corn, bulge: blg))
+            let lx    = cx + cos(angle) * midR * k
+            let ly    = cy - sin(angle) * midR * k
 
             context.draw(
                 Text("\((h + tzOffset + 24) % 24)")
