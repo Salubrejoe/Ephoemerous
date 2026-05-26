@@ -5,7 +5,7 @@ admission rule: **no dependency on app state, no reach into anyone's
 environment, no domain types.** If it can't be lifted into any future
 project without bringing baggage, it doesn't belong here.
 
-## What's in v1
+## What's in here
 
 - **`Squircle`** — Lamé-curve superellipse with adjustable corners + bulge
   and an animatable `bulge` channel. The shape used as the watch-face
@@ -14,6 +14,12 @@ project without bringing baggage, it doesn't belong here.
   circle. Includes a static `lameRadius(angle:corners:bulge:)` helper
   for callers that want to apply the same radial modulation to their
   own non-circular curves.
+- **`SFSymbolShape`** — Any SF Symbol resolved to a `Shape` via
+  `VNDetectContoursRequest`. Lets you fill / stroke / animate /
+  rotate / sample any SF Symbol as a first-class `Shape`. Cached per
+  (name, weight) so the Vision pass is paid once per symbol.
+  iOS-only (`#if canImport(UIKit)`); the rest of LoreKit still builds
+  on macOS.
 
 ## Roadmap
 
@@ -23,7 +29,6 @@ behind the same package.
 
 Future candidates (still in Ephoemerous, not yet migrated):
 
-- `SFSymbolShape` — SF Symbol resolved to a `Shape` via `VNDetectContoursRequest`.
 - Generic glass / blur / breathing-ring view modifiers.
 - Geometry helpers (`Angle` extensions, SIMD helpers) that aren't
   astronomy-specific.

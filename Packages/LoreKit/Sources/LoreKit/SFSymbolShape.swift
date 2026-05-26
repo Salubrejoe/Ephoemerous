@@ -1,3 +1,5 @@
+#if canImport(UIKit)
+
 import SwiftUI
 import Vision
 import UIKit
@@ -5,7 +7,7 @@ import UIKit
 // MARK: - SFSymbolShape
 // Any SF Symbol exposed as a SwiftUI `Shape`, mirroring `Squircle`'s
 // API (`path(in:)` + `vertices(in:segments:)` so the rim can be fed
-// through `EGraphicContext.strokeCurve`).
+// through any sampled-curve pipeline).
 //
 // Why Vision instead of Core Text: SF Symbols aren't really font
 // glyphs you can resolve by PUA codepoint via `UIFont.systemFont(...)`
@@ -23,28 +25,45 @@ import UIKit
 //     collapse to their outermost outline.
 //   • Very fine details may simplify slightly under contour detection.
 //     Bump `referencePointSize` if the symbol's small features matter.
-struct SFSymbolShape: Shape {
+//
+// Availability: `#if canImport(UIKit)` — the resolver uses
+// `UIImage(systemName:)` and friends, which only exist where UIKit is.
+// On macOS this file contributes no symbols; LoreKit still compiles.
+public struct SFSymbolShape: Shape {
 
-    var systemName : String
-    var weight     : UIImage.SymbolWeight = .regular
-    var rotation   : Angle                = .zero
+    public var systemName : String
+    public var weight     : UIImage.SymbolWeight
+    public var rotation   : Angle
+
+    public init(systemName: String,
+                weight: UIImage.SymbolWeight = .regular,
+                rotation: Angle              = .zero) {
+        self.systemName = systemName
+        self.weight     = weight
+        self.rotation   = rotation
+    }
 
     /// Reference render size for the symbol bitmap before contour
     /// detection. Bigger = sharper detail at higher cost — `256` is a
     /// reasonable sweet spot for most symbols.
-    static var referencePointSize: CGFloat = 256
+    ///
+    /// `nonisolated(unsafe)` because in practice this is only ever
+    /// touched from the main thread (Shape resolution runs in the
+    /// SwiftUI render pass), and a one-time global tuning knob isn't
+    /// worth an actor.
+    public nonisolated(unsafe) static var referencePointSize: CGFloat = 256
 
-    func path(in rect: CGRect) -> Path {
-        let key = CacheKey(name: systemName, weight: weight)
-        guard let cgPath = Self.cachedOrResolved(key: key) else { return Path() }
+    public func path(in rect: CGRect) -> Path {
+        let key = CacheKey(name: systemName, weightRaw: weight.rawValue)
+        guard let cgPath = Self.cachedOrResolved(key: key, weight: weight) else { return Path() }
         return transformed(cgPath, in: rect)
     }
 
     /// Sampled rim of the symbol's outline at evenly-spaced arclength
     /// positions across all subpaths concatenated. Mirrors
-    /// `Squircle.vertices(in:segments:)` so the two shapes can be fed
-    /// through the same `strokeCurve` pipeline.
-    func vertices(in rect: CGRect, segments: Int = 240) -> [CGPoint] {
+    /// `Squircle.vertices(in:segments:)` so the two shapes feed the
+    /// same stroke-curve pipeline.
+    public func vertices(in rect: CGRect, segments: Int = 240) -> [CGPoint] {
         path(in: rect).cgPath.evenlySpacedPoints(count: segments + 1)
     }
 
@@ -71,9 +90,14 @@ struct SFSymbolShape: Shape {
 
 private extension SFSymbolShape {
 
-    struct CacheKey: Hashable {
-        let name   : String
-        let weight : UIImage.SymbolWeight
+    /// Keyed on the weight's raw `Int` rather than `UIImage.SymbolWeight`
+    /// so the type stays plainly `Sendable` — `UIImage.SymbolWeight` is
+    /// main-actor-isolated in Swift 6, which would taint the synthesized
+    /// `Hashable` conformance and conflict with `nonisolated(unsafe)`
+    /// static storage.
+    struct CacheKey: Hashable, Sendable {
+        let name      : String
+        let weightRaw : Int
     }
 
     /// Process-wide cache of resolved silhouettes. SF Symbol paths are
@@ -81,17 +105,17 @@ private extension SFSymbolShape {
     /// keep the result for the lifetime of the app.
     nonisolated(unsafe) static var pathCache: [CacheKey: CGPath] = [:]
 
-    static func cachedOrResolved(key: CacheKey) -> CGPath? {
+    static func cachedOrResolved(key: CacheKey, weight: UIImage.SymbolWeight) -> CGPath? {
         if let cached = pathCache[key] { return cached }
-        guard let cgPath = resolve(key: key) else { return nil }
+        guard let cgPath = resolve(name: key.name, weight: weight) else { return nil }
         pathCache[key] = cgPath
         return cgPath
     }
 
-    static func resolve(key: CacheKey) -> CGPath? {
+    static func resolve(name: String, weight: UIImage.SymbolWeight) -> CGPath? {
         // 1. Pull the SF Symbol UIImage at a generous reference size.
-        let config = UIImage.SymbolConfiguration(pointSize: referencePointSize, weight: key.weight)
-        guard let image = UIImage(systemName: key.name, withConfiguration: config) else {
+        let config = UIImage.SymbolConfiguration(pointSize: referencePointSize, weight: weight)
+        guard let image = UIImage(systemName: name, withConfiguration: config) else {
             return nil
         }
 
@@ -247,9 +271,8 @@ private func midpoint(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
     VStack(spacing: 20) {
         // Filled — single-layer symbol, comes out as a clean silhouette.
         SFSymbolShape(systemName: "location.fill")
-//            .fill(.pink)
-//            .frame(width: 120, height: 120)
-            .glassEffect(.clear.tint(.orange).interactive(), in: SFSymbolShape(systemName: "location.fill"))
+            .fill(.pink)
+            .frame(width: 120, height: 120)
 
         // Stroked + rotated, weight bumped to bold so the outline is
         // clearly different from the regular version.
@@ -267,3 +290,5 @@ private func midpoint(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
     }
     .padding()
 }
+
+#endif
