@@ -2,31 +2,27 @@ import SwiftUI
 import LoreKit
 
 // MARK: - Stars
-// Every star is a small filled 5-point squircle whose `bulge` is
-// snapped to one of a handful of cached unit-rect paths
-// (`starBulgePaths`). At render time we just pick the bucket the
-// star's current twinkle phase lands in — no `Path` allocations in
-// the hot loop. A deterministic per-star spin (derived from RA / Dec)
-// keeps neighbouring stars from sharing rotations.
+// Every star is a small filled 5-point squircle with a fixed bulge,
+// rendered from one cached unit-rect path. A deterministic per-star
+// spin (RA / Dec derived) keeps neighbouring stars from sharing
+// rotations. Radius twinkles via `starRadius` for the selected
+// stars; the shape-bulge bucketing that used to twinkle the path
+// itself is deprecated — one shape, all stars.
 extension EArtist {
 
     var starZoomExp : Double { 0.01 }   // sub-linear: r ∝ scale^starZoomExp
 
-    private static let starCorners: Int = 5
+    private static let starCorners: Int    = 5
+    private static let starBulge:   CGFloat = 6
 
-    // Cached unit-rect (−1…1) star paths, one per bulge bucket. Built
-    // once at type-load; never re-allocated.
-    private static let starBulgePaths: [Path] = {
-        let n  = AstroConstants.twinkleBulgeBuckets
-        let lo = AstroConstants.twinkleBulgeMin
-        let hi = AstroConstants.twinkleBulgeMax
-        return (0..<n).map { i in
-            let t = Double(i) / Double(max(n - 1, 1))
-            let b = lo + (hi - lo) * t
-            return Squircle(corners: starCorners, bulge: CGFloat(b))
-                .path(in: CGRect(x: -1, y: -1, width: 2, height: 2))
-        }
-    }()
+    /// Single cached unit-rect (−1…1) star path. Built once at
+    /// type-load; per-frame work is just translate + rotate + scale
+    /// + fill against this one shape.
+    private static let starPath: Path = Squircle(
+        corners: starCorners,
+        bulge:   starBulge
+    )
+    .path(in: CGRect(x: -1, y: -1, width: 2, height: 2))
 
     func starPointFallsWithinMarigin(_ screenPoint: CGPoint,
                                      in dc: EGraphicContext,
@@ -80,15 +76,14 @@ extension EArtist {
         // them spares a `translate + rotate + scale + fill` that would
         // paint nothing readable.
         guard r >= 0.3 else { return }
-        let spin  = starSpin(of: star)
-        let bulge = bulgeBucket(for: star, in: dc)
+        let spin = starSpin(of: star)
 
         var local = dc.ctx
         local.translateBy(x: sc.x, y: sc.y)
         local.rotate(by: spin)
         local.scaleBy(x: r, y: r)
         local.fill(
-            Self.starBulgePaths[bulge],
+            Self.starPath,
             with: .color(
                 dc.state.selectedStars.contains(star) ? star.spectralClass.color.opacity(0.9) : .tertiary
             )
@@ -102,22 +97,5 @@ extension EArtist {
         let raw = star.rightAscension.radians * 73
                 + star.declination.radians   * 137
         return .radians(raw.truncatingRemainder(dividingBy: 2 * .pi))
-    }
-
-    /// Pick a cached path whose bulge matches the current shape phase.
-    /// Per-star RA / Dec offset desyncs neighbours; no random jitter
-    /// and a slow dedicated frequency make the shape ease between
-    /// buckets rather than flicker. Sin naturally lingers near the
-    /// extremes, so wide bulge ranges read as a slow "breathe in /
-    /// breathe out".
-    private func bulgeBucket(for star: EStar, in dc: EGraphicContext) -> Int {
-        let ra    = star.rightAscension.radians
-        let dec   = star.declination.radians
-        let phase = ra  * AstroConstants.twinklePhaseRA
-                  + dec * AstroConstants.twinklePhaseDec
-        let s     = sin(dc.animationTime * AstroConstants.twinkleBulgeFrequency + phase)
-        let t     = (s + 1) / 2     // 0…1
-        let n     = AstroConstants.twinkleBulgeBuckets
-        return max(0, min(n - 1, Int((t * Double(n - 1)).rounded())))
     }
 }

@@ -215,20 +215,13 @@ enum AstroConstants {
     static let dotMagRatio:       Double = 0.55   // multiplier per +1 magnitude
     static let dotMaxRadius:      Double = 4.0    // cap → Sirius display radius = 2 px (after EArtist halves)
     static let dotMinRadius:      Double = 0.02   // floor — keeps mag 8+ as sub-pixel specks rather than zero
-    /// Twinkle animation
+    /// Twinkle animation — radius-only now. The shape (bulge)
+    /// twinkle was deprecated when star rendering moved to a single
+    /// cached path per star.
     static let twinkleAmplitude:  Double = 0.05
     static let twinkleFrequency:  Double = 0.5
     static let twinklePhaseRA:    Double = 17.3
     static let twinklePhaseDec:   Double =  7.9
-    /// Twinkle shape modulation — `bulge` oscillates in this range; the
-    /// renderer snaps to one of `twinkleBulgeBuckets` cached paths.
-    static let twinkleBulgeMin:       Double = 3
-    static let twinkleBulgeMax:       Double = 10
-    static let twinkleBulgeBuckets:   Int    = 22
-    /// Shape modulation runs on its own (slower) clock — independent of the
-    /// radius twinkle, with no random jitter, so the bulge eases between
-    /// values rather than flickering.
-    static let twinkleBulgeFrequency: Double = 0.4    // rad/s ⇒ ~15 s period
     /// Planet dot: max(planetDotMinR, (planetDotScale − baseMag) × planetDotFactor) / 2
     static let planetDotScale:    Double = 5.0
     static let planetDotFactor:   Double = 0.55
