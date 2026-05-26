@@ -166,15 +166,31 @@ private extension SFSymbolShape {
         return combined.isEmpty ? nil : combined
     }
 
-    /// Recursive contour collector. Adds the contour's path to `out`
-    /// unless its bbox is essentially the unit square (Vision's
-    /// rendering of the bitmap boundary), then descends into children
-    /// either way so a symbol nested inside the boundary contour still
-    /// gets picked up.
+    /// Recursive contour collector. Skips two categories of artifact
+    /// contour, then descends into children either way so symbols
+    /// nested inside a discarded contour still come through:
+    ///
+    ///   • **Image-boundary** — bbox fills the unit square. The
+    ///     rasterised bitmap's own outer perimeter.
+    ///
+    ///   • **Edge-hugging slim** — bbox touches a unit-edge AND is
+    ///     very thin (< 5 %) in one dimension. Catches the SF Symbol's
+    ///     own baseline / alignment indicator that rasterises
+    ///     alongside the glyph, plus any leftover bitmap-perimeter
+    ///     fragments. Symbol-interior thin detail (clock hands inside
+    ///     a clock face, the diagonals of an `xmark`, the lines in a
+    ///     `calendar` grid) fails the edge check so it stays.
     static func collect(_ contour: VNContour, into out: CGMutablePath) {
         let b = contour.normalizedPath.boundingBoxOfPath
+
         let isImageBoundary = b.width > 0.95 && b.height > 0.95
-        if !isImageBoundary {
+
+        let touchesEdge  = b.minX < 0.02 || b.maxX > 0.98
+                        || b.minY < 0.02 || b.maxY > 0.98
+        let isSliver     = b.width < 0.05 || b.height < 0.05
+        let isEdgeArtifact = touchesEdge && isSliver
+
+        if !isImageBoundary && !isEdgeArtifact {
             out.addPath(contour.normalizedPath)
         }
         for child in contour.childContours {
@@ -307,7 +323,7 @@ private func midpoint(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
         // Stroked + rotated, weight bumped to bold so the outline is
         // clearly different from the regular version.
         SFSymbolShape(systemName: "heart.fill",
-                      weight:    .bold,
+                      weight:    .heavy,
                       rotation:  .degrees(20))
             .stroke(.yellow, lineWidth: 2)
             .frame(width: 120, height: 120)

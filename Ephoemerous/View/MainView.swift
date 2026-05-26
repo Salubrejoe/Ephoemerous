@@ -13,38 +13,13 @@ struct MainView: View {
             Color.tertiarySystemBackground
                 .ignoresSafeArea()
                 
-            // Travel backdrop moved into CelestialCanva's travel group so it
-            // cross-fades with the sky on the same blend.
             CelestialCanva()
             ObjectsTrackingOverlay()
             
+            OmniButton()
         }
         .ignoresSafeArea()
-        .overlay {
-            VStack {
-                GameBoyControlPad()
-            }.padding(.horizontal, 32)
-                .frame(maxWidth: 400, maxHeight: 700, alignment: .bottom)
-        }
-        .onChange(of: state.layerVisibilitySignature) { state.persistLayerVisibility() }
-        .onChange(of: state.magnitudeFilter)          { state.persistLayerVisibility() }
         
-        
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                VStack(spacing: 12) {
-                    CoordinatesTile(origin: state.origin)
-                    OmniButton()
-                }
-            }
-        }
-        
-        .sheet(isPresented: Bindable(state).showStarList) {
-            NavigationStack {
-                EListView()
-                    .sheetFormat()
-            }
-        }
     }
 }
 
@@ -63,3 +38,31 @@ extension View {
         MainView().environment(EAppState())
     }
 }
+
+/*
+ .overlay {
+ VStack {
+ GameBoyControlPad()
+ }.padding(.horizontal, 32)
+ .frame(maxWidth: 400, maxHeight: 700, alignment: .bottom)
+ }
+ .onChange(of: state.layerVisibilitySignature) { state.persistLayerVisibility() }
+ .onChange(of: state.magnitudeFilter)          { state.persistLayerVisibility() }
+ 
+ 
+ .toolbar {
+ ToolbarItem(placement: .principal) {
+ VStack(spacing: 12) {
+ CoordinatesTile(origin: state.origin)
+ OmniButton()
+ }
+ }
+ }
+ 
+ .sheet(isPresented: Bindable(state).showStarList) {
+ NavigationStack {
+ EListView()
+ .sheetFormat()
+ }
+ }
+ */
