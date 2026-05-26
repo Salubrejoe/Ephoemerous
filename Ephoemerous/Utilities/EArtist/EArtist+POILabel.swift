@@ -212,15 +212,21 @@ extension EArtist {
             case .standard:
                 return (0.78, 0.06, 0.50, 0.85, 0.75, 0.50)
             }
+//            return (0.0,  0.0,  0.0, 0.62, 0.0, 0.32)
         }()
         let normDec = max(-1.0, min(1.0, dec / 90.0))
         // `+ 1` then mod 1 keeps the hue in [0, 1) for negative dec
         // shifts (Swift's `truncatingRemainder` returns the same
         // sign as the dividend).
         let hue = (h + normDec * dh + 1.0).truncatingRemainder(dividingBy: 1.0)
+//        return (
+//            top:    Color(hue: hue, saturation: sT, brightness: bT),
+//            bottom: Color(hue: hue, saturation: sB, brightness: bB)
+//        )
+        
         return (
-            top:    Color(hue: hue, saturation: sT, brightness: bT),
-            bottom: Color(hue: hue, saturation: sB, brightness: bB)
+            top: .quaternaryLabel,
+            bottom: .tertiary
         )
     }
 

@@ -52,11 +52,15 @@ struct SelectedStarsLayer: EGridLayer {
 
             // Apple-Maps-style badge replaces the star dot at this
             // screen position. The halo above reads as "behind" it.
+            // `drawDot: true` shows a small tinted dot below the
+            // badge-in threshold so a followed star is still visible
+            // when the user zooms out.
             artist.drawPOILabel(
                 at:       sc,
                 glyph:    .sfSymbol("star"),
                 text:     star.displayName,
                 category: .followedStar(star),
+                drawDot:  true,
                 in:       &dc
             )
         }
