@@ -1,65 +1,31 @@
 import SwiftUI
 
 // MARK: - Moon
-// The Moon is a layered illustration: a soft radial-gradient glow
-// behind a dark body, a clipped lit crescent whose width tracks the
-// illumination fraction, and a thin rim outline. In NS mode the Moon
-// also picks up a breathing-ring tap affordance on top.
+// The moon's POI badge uses a phase-matched SF Symbol so the glyph
+// shows roughly today's illumination rather than a generic "moon".
+// We only have the illuminated fraction (no waxing / waning bit), so
+// we approximate: 0 → new, 1 → full, with first / last quarter and
+// crescent / gibbous in between. Good enough at 24 × 24 pt; the
+// detail sheet shows the precise phase when wired back up.
+//
+// The richer layered illustration (glow + dark body + lit crescent
+// + rim + breathing ring) used to live in `drawMoon(at:fraction:
+// showRing:in:)`. Since the moon is now an Apple-Maps-style POI
+// badge like the other solar-system bodies, that helper is gone —
+// the layered version lives in the git history if it comes back.
 extension EArtist {
 
-    var moonBodyColor : Color { .gray.opacity(0.55) }
-
-    func drawMoon(at sc: CGPoint, fraction: Double, showRing: Bool,
-                  in dc: inout EGraphicContext) {
-        let baseRadius = 4.0
-        let glowRadius = baseRadius * AstroConstants.moonGlowRatio
-
-        // Glow.
-        dc.ctx.fill(
-            Path(ellipseIn: CGRect(x: sc.x - glowRadius, y: sc.y - glowRadius,
-                                   width: glowRadius * 2, height: glowRadius * 2)),
-            with: .radialGradient(
-                Gradient(stops: [
-                    .init(color: .white.opacity(AstroConstants.moonGlowOpacity * fraction), location: 0),
-                    .init(color: .white.opacity(0),                                         location: 1)
-                ]),
-                center: sc, startRadius: 0, endRadius: glowRadius
-            )
-        )
-
-        // Dark body.
-        dc.ctx.fill(
-            Path(ellipseIn: CGRect(x: sc.x - baseRadius, y: sc.y - baseRadius,
-                                   width: baseRadius * 2, height: baseRadius * 2)),
-            with: .color(moonBodyColor)
-        )
-
-        // Lit crescent — clipped to the body so it never spills past.
-        let shift = baseRadius * CGFloat(1.0 - 2.0 * fraction)
-        var clipped = dc.ctx
-        clipped.clip(to: Path(ellipseIn: CGRect(x: sc.x - baseRadius, y: sc.y - baseRadius,
-                                                width: baseRadius * 2, height: baseRadius * 2)))
-        clipped.fill(
-            Path(ellipseIn: CGRect(x: sc.x - baseRadius + shift, y: sc.y - baseRadius,
-                                   width: baseRadius * 2, height: baseRadius * 2)),
-            with: .color(.white.opacity(AstroConstants.moonLimbOpacity))
-        )
-
-        // Rim.
-        dc.ctx.stroke(
-            Path(ellipseIn: CGRect(x: sc.x - baseRadius, y: sc.y - baseRadius,
-                                   width: baseRadius * 2, height: baseRadius * 2)),
-            with: .color(.white.opacity(AstroConstants.moonRimOpacity)),
-            lineWidth: 0.5
-        )
-
-        // NS-only tap affordance.
-        if showRing {
-            drawBreathingRing(at:     sc,
-                              radius: baseRadius + breathRingGap,
-                              color:  .white,
-                              time:   dc.animationTime,
-                              in:     &dc)
+    /// Map an illuminated fraction (0…1) to an SF Symbol name in the
+    /// `moonphase.…` family. Symmetric — without a waxing / waning
+    /// flag we use the same "first quarter" symbol for both half
+    /// phases.
+    func moonPhaseSymbol(fraction: Double) -> String {
+        switch fraction {
+        case ..<0.03:     return "moonphase.new.moon"
+        case 0.03..<0.22: return "moonphase.waxing.crescent"
+        case 0.22..<0.47: return "moonphase.first.quarter"
+        case 0.47..<0.78: return "moonphase.waxing.gibbous"
+        default:          return "moonphase.full.moon"
         }
     }
 }

@@ -30,7 +30,19 @@ struct SunLayer: EGridLayer {
         let pos = sc; let state = dc.state
         DispatchQueue.main.async { state.sunScreenPosition = pos }
 
-        artist.drawSun(at: sc, in: &dc)
+        // Breathing crown (the slow-spinning squircle border) stays
+        // as the sun's signature "I'm alive" animation, drawn behind
+        // the POI badge.
+        artist.drawSunBorder(at: sc, time: dc.animationTime, in: &dc)
+
+        // Apple-Maps-style POI badge replaces the sun disc.
+        artist.drawPOILabel(
+            at:       sc,
+            glyph:    .sfSymbol("sun.max.fill"),
+            text:     Strings.Bodies.sun,
+            category: .sun,
+            in:       &dc
+        )
     }
 
     private func logPipeline(date: Date, lambda: Angle, ra: Angle, dec: Angle, siderealOffset: Angle) {

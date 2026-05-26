@@ -20,7 +20,7 @@ struct EclipticLayer: EGridLayer {
     let artist = EArtist.shared
 
     private let corners   : Int     = 12
-    private let bulge     : CGFloat = 2.5
+    private let bulge     : CGFloat = 2.8
     private let width     : CGFloat = 2
     private let sunMargin : CGFloat = 10   // screen px — sun disc + a touch
     

@@ -5,8 +5,8 @@ struct EMoonLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        let (moonVec, ra, dec) = EMoonPosition.vector(for: dc.renderedObservationDate,
-                                                      siderealOffset: dc.localSiderealOffset)
+        let (moonVec, _, _) = EMoonPosition.vector(for: dc.renderedObservationDate,
+                                                   siderealOffset: dc.localSiderealOffset)
         guard let proj = EProjection.project(moonVec, viewpoint: dc.viewpoint) else { return }
         let sc = dc.toScreen(proj)
         guard dc.onScreen(sc, margin: 40) else { return }
@@ -14,10 +14,16 @@ struct EMoonLayer: EGridLayer {
         let pos = sc; let state = dc.state
         DispatchQueue.main.async { state.moonScreenPosition = pos }
 
+        // Phase-aware glyph: pick the SF Symbol matching the moon's
+        // current illumination so the badge reads as "the moon, today",
+        // not just an abstract moon icon.
         let fraction = EMoonPosition.illuminatedFraction(for: dc.renderedObservationDate)
-        // Ring is a clock-mode decoration (the watch face's moon-phase
-        // indicator). Travel mode shows just the bare disc.
-        artist.drawMoon(at: sc, fraction: fraction,
-                        showRing: dc.state.appMode == .clock, in: &dc)
+        artist.drawPOILabel(
+            at:       sc,
+            glyph:    .sfSymbol(artist.moonPhaseSymbol(fraction: fraction)),
+            text:     Strings.Bodies.moon,
+            category: .moon,
+            in:       &dc
+        )
     }
 }

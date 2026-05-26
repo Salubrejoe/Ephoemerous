@@ -52,7 +52,7 @@ struct MainToolbar: View {
                 }
             }
             
-            SearchBar()
+//            SearchBar()
         }
         .animation(.easeInOut(duration: 0.25), value: state.isShowingDatePicker)
         .animation(.easeInOut(duration: 0.25), value: state.isShowingLocationPicker)

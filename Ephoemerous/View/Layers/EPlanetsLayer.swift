@@ -12,7 +12,13 @@ struct EPlanetsLayer: EGridLayer {
             guard let proj = EProjection.project(vec, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
             guard dc.onScreen(sc, margin: 30) else { continue }
-            artist.drawPlanet(planet, at: sc, showLabel: dc.state.scale >= 90, in: &dc)
+            artist.drawPOILabel(
+                at:       sc,
+                glyph:    .unicode(artist.planetGlyph(planet)),
+                text:     planet.name,
+                category: .planet(planet),
+                in:       &dc
+            )
         }
     }
 }

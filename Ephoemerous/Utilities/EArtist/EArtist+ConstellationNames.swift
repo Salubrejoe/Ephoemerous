@@ -63,18 +63,17 @@ extension EArtist {
         .system(size: size, weight: weight, design: .serif).italic()
     }
 
-    /// Returns the all-caps form Stellarium-style labels use (e.g.
-    /// "CASSIOPEIA"). Falls back to the IAU abbrev if no full name.
+    /// Title-cased constellation name as it appears on the POI
+    /// label (e.g. "Cassiopeia"). The previous Stellarium-style
+    /// ALL CAPS render is gone now that labels share Apple-Maps's
+    /// mixed-case voice.
     func constellationLabelText(for cons: EConstellation) -> String {
-        cons.fullName.uppercased()
+        cons.fullName
     }
 
-    func drawConstellationLabel(_ cons: EConstellation, at sc: CGPoint,
-                                size: CGFloat, in dc: inout EGraphicContext) {
-        let text = Text(constellationLabelText(for: cons))
-            .font(serifLabelFont(size: size))
-            .tracking(constellationLabelTracking)
-            .foregroundStyle(constellationLabelColor.opacity(constellationLabelOpacity))
-        dc.ctx.draw(text, at: sc, anchor: .center)
-    }
+    // The Apple-Maps-style constellation badge is drawn by
+    // `drawPOILabel(.constellation, …)` in `ConstellationNamesLayer`.
+    // What remains in this file is the shared sizing / typography /
+    // horizon-cull utilities; the bespoke text-only label helper is
+    // gone.
 }

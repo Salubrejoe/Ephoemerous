@@ -29,9 +29,7 @@ struct ConstellationNamesLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         let stateRef = dc.state
-        guard dc.state.showConstellationNames,
-              let size = artist.scaledLabelSize(for: dc.renderedScale)
-        else {
+        guard dc.state.showConstellationNames else {
             DispatchQueue.main.async { stateRef.constellationLabelHitRects = [:] }
             return
         }
@@ -42,9 +40,10 @@ struct ConstellationNamesLayer: EGridLayer {
         let observerLat   = dc.state.origin.latitude.degrees
 
         // Tap targets only exist once zoomed past `labelTapMinScale`;
-        // below it the labels still draw but the hit-test work (text
-        // measurement + rect) is skipped entirely.
+        // below it the badges still draw but the hit-test work is
+        // skipped entirely.
         let tappable = dc.renderedScale >= artist.labelTapMinScale
+        let badgeSize = artist.poiStyle(for: .constellation).badgeSize
 
         var rects: [EConstellation: CGRect] = [:]
         if tappable { rects.reserveCapacity(ConstellationLines.shared.labelAnchors.count) }
@@ -63,22 +62,24 @@ struct ConstellationNamesLayer: EGridLayer {
             guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
 
-            artist.drawConstellationLabel(cons, at: sc, size: size, in: &dc)
+            artist.drawPOILabel(
+                at:       sc,
+                glyph:    .sfSymbol("sparkles"),
+                text:     artist.constellationLabelText(for: cons),
+                category: .constellation,
+                drawDot:  true,
+                in:       &dc
+            )
 
             guard tappable else { continue }
 
-            // Measure the rendered word so the hit capsule is exactly as
-            // wide as the text — tiny label, tiny target. Geometry only,
-            // so the measured Text skips colour/opacity.
-            let measured = Text(artist.constellationLabelText(for: cons))
-                .font(artist.serifLabelFont(size: size))
-                .tracking(artist.constellationLabelTracking)
-            let unbounded = CGSize(width:  CGFloat.greatestFiniteMagnitude,
-                                   height: CGFloat.greatestFiniteMagnitude)
-            let textSize  = dc.ctx.resolve(measured).measure(in: unbounded)
-            let w = textSize.width  + artist.constellationHitPadH
-            let h = textSize.height + artist.constellationHitPadV
-            rects[cons] = CGRect(x: sc.x - w / 2, y: sc.y - h / 2, width: w, height: h)
+            // Hit capsule hugs the badge with a small touch-friendly
+            // padding (44 pt min — Apple HIG). Text-tier labels could
+            // be wider than the badge, but the badge is the visual
+            // tap target so we centre the rect on it.
+            let hit: CGFloat = max(44, badgeSize + 16)
+            rects[cons] = CGRect(x: sc.x - hit / 2, y: sc.y - hit / 2,
+                                 width: hit, height: hit)
         }
 
         let snapshot = rects

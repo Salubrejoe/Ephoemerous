@@ -53,48 +53,8 @@ extension EArtist {
                      lineWidth: 0.2)
     }
 
-    func drawSelectedStar(_ star: EStar, at sc: CGPoint,
-                          isSelected: Bool, isCurrentlyDisplayed: Bool,
-                          showLabel: Bool, in dc: inout EGraphicContext) {
-        if isSelected {
-            // Halo size opts out of twinkle so the slow breath isn't
-            // also pulsing at the star's twinkle frequency — twinkle
-            // belongs to the star body underneath, breath belongs to
-            // the halo.
-            let starR = CGFloat(starRadius(star, in: dc, twinkling: false)) * 0.5
-                      * CGFloat(pow(dc.renderedScale, starZoomExp))
-            drawBreathingHalo(at:         sc,
-                              starRadius: starR,
-//                              color:      .primary,
-                              color:    star.spectralClass.color,
-                              time:       dc.animationTime,
-                              in:         &dc)
-            // Re-paint the star body so the halo reads as "behind" it.
-            drawStar(star, at: sc, in: &dc)
-        } else {
-            let r    = constellationStarRingRadius
-            let ring = Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
-                                              width: r * 2, height: r * 2))
-            dc.ctx.stroke(ring,
-                          with: .color(.primary),
-                          lineWidth: constellationStarRingWidth)
-        }
-
-        // Star labels share the constellation labels' reveal curve —
-        // hidden below `labelMinScale`, growing gently with zoom — and
-        // borrow their serif italic family so the two label classes
-        // read as one typographic voice. The currently-displayed star
-        // gets a heavier weight as the only hierarchy distinction.
-        if let size = scaledLabelSize(for: dc.renderedScale) {
-            let weight: Font.Weight = isCurrentlyDisplayed ? .heavy : .light
-            dc.ctx.draw(
-                Text(star.displayName)
-                    .font(serifLabelFont(size: size, weight: weight))
-                    .foregroundStyle(.primary),
-                at:     CGPoint(x: sc.x + starLabelOffset.x,
-                                y: sc.y + starLabelOffset.y),
-                anchor: .leading
-            )
-        }
-    }
+    // The Apple-Maps-style "followed star" badge is drawn by
+    // `drawPOILabel(.followedStar, …)` in `SelectedStarsLayer`. The
+    // breathing halo above continues to live in front of it as the
+    // "this one is followed" signal.
 }

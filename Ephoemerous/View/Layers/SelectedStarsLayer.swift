@@ -40,13 +40,25 @@ struct SelectedStarsLayer: EGridLayer {
                 guard dx * dx + dy * dy < chromeR2 else { continue }
             }
 
-            let isSelected  = dc.state.selectedStars.contains(where: { $0.name == star.name })
-            let isDisplayed = dc.state.currentlyDisplayedStar == star
-            artist.drawSelectedStar(star, at: sc,
-                                    isSelected: isSelected,
-                                    isCurrentlyDisplayed: isDisplayed,
-                                    showLabel: dc.state.scale >= dc.state.canvasSize.height / 6,
-                                    in: &dc)
+            // Breathing halo behind the badge — kept as the "this
+            // star is followed" signal at all zoom levels.
+            let starR = CGFloat(artist.starRadius(star, in: dc, twinkling: false)) * 0.5
+                      * CGFloat(pow(dc.renderedScale, artist.starZoomExp))
+            artist.drawBreathingHalo(at:         sc,
+                                     starRadius: starR,
+                                     color:      star.spectralClass.color,
+                                     time:       dc.animationTime,
+                                     in:         &dc)
+
+            // Apple-Maps-style badge replaces the star dot at this
+            // screen position. The halo above reads as "behind" it.
+            artist.drawPOILabel(
+                at:       sc,
+                glyph:    .sfSymbol("star.fill"),
+                text:     star.displayName,
+                category: .followedStar,
+                in:       &dc
+            )
         }
     }
 }
