@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - Tab model
 enum EListTab: String, CaseIterable, Identifiable {

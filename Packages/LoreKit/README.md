@@ -20,6 +20,17 @@ project without bringing baggage, it doesn't belong here.
   (name, weight) so the Vision pass is paid once per symbol.
   iOS-only (`#if canImport(UIKit)`); the rest of LoreKit still builds
   on macOS.
+- **`LoreSymbol` + `Image(symbol:)`** — Curated SF Symbol vocabulary
+  (the classics: calendar, checkmark, plus, xmark, search… plus
+  whatever else gets added over time). Ships with a concrete
+  `Image(symbol: LoreSymbol)` init so `Image(symbol: .checkmark)`
+  works in any consumer with zero per-project boilerplate. A generic
+  `Image(symbol:)` for any `RawRepresentable<String>` enum is in
+  `Image+Symbol.swift` for unusual one-off vocabularies.
+- **`Angle`/`Double`/`Array`/`Color`/`SIMD3`/`Date`** — small
+  context-free utilities: `Angle.pi(over:)`, `.clamped(to:)`,
+  `Array.uniqued(by:)`, `Color(hex:)`, system colour wrappers,
+  `SIMD3` rotations + orthonormal basis, `Date.timeString`.
 
 ## Roadmap
 

@@ -1,20 +1,24 @@
-import Foundation
+import SwiftUI
 
-// MARK: - AppSymbol
-// The app's SF Symbol vocabulary — a String-raw enum that turns
-// stringly-typed `Image(systemName: "checkmark")` into compile-checked
-// `Image(symbol: .checkmark)` via the specialised init in
-// `Image+init.swift`. The underlying generic plumbing
-// (`Image(symbol: S) where S.RawValue == String`) lives in LoreKit.
+// MARK: - LoreSymbol
+// LoreKit's curated SF Symbol vocabulary — the set of symbols that any
+// of my projects might reach for. A String-raw enum so each case
+// pairs a Swift identifier with its SF Symbol name, and a concrete
+// `Image(symbol:)` init below turns it into a compile-checked
+// `Image(symbol: .checkmark)` everywhere LoreKit is imported.
 //
-// Naming: singular per Swift convention (`Color.red`, `Edge.top`); a
-// future MenuSymbol / ToolbarSymbol would coexist cleanly.
+// Why concrete: a *generic* `Image(symbol: S) where S.RawValue == String`
+// init still lives at `Image+Symbol.swift` for any project that wants
+// to pass its own enum, but Swift can't resolve a leading-dot shorthand
+// against a generic constraint. A concrete init taking `LoreSymbol`
+// gives every consumer `.checkmark`-style ergonomics with zero
+// per-project boilerplate.
 //
-// Add new cases as the app picks up symbols. Keep the raw value
-// explicit even when it matches the case name — a few cases legitimately
-// differ (`chevronUpDown` → `"chevron.up.chevron.down"`), and uniform
-// `case x = "x"` formatting reads as one block at a glance.
-enum AppSymbol: String {
+// Add new cases as the personal toolkit picks up symbols. Keep the raw
+// value explicit even when it matches the case name — a few cases
+// legitimately differ (`chevronUpDown` → `"chevron.up.chevron.down"`),
+// and uniform `case x = "x"` formatting reads as one block at a glance.
+public enum LoreSymbol: String, Sendable, CaseIterable {
 
     case calendar       = "calendar"
     case checkmark      = "checkmark"
@@ -52,4 +56,13 @@ enum AppSymbol: String {
     case warning        = "exclamationmark.triangle.fill"
     case xmark          = "xmark"
     case xmarkCircle    = "xmark.circle"
+}
+
+// MARK: - Image(symbol: LoreSymbol)
+// Concrete leading-dot-friendly init. Lives next to the enum it's
+// specialised on so they ship as one unit.
+public extension Image {
+    init(symbol: LoreSymbol) {
+        self.init(systemName: symbol.rawValue)
+    }
 }

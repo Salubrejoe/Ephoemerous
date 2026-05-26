@@ -62,9 +62,11 @@ struct Strings {
         static let fault   = "[FAULT]"
     }
     
-    // Symbols moved out to top-level `AppSymbol` — see Utilities/Resources/AppSymbol.swift.
-    // `Strings` is now strictly user-facing copy + format specifiers; API
-    // identifiers like SF Symbol names live as their own typed enum.
+    // Symbols moved to LoreKit as `LoreSymbol` — leading-dot ergonomics
+    // come from the concrete `Image(symbol: LoreSymbol)` init shipped
+    // alongside. `Strings` is now strictly user-facing copy + format
+    // specifiers; API identifiers like SF Symbol names live in the
+    // package.
 
     struct Format {
         static let magnFormat         = "%.1f mag"

@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import LoreKit
 
 struct ZenithButton: View {
     @Environment(EAppState.self) var state
@@ -31,7 +32,7 @@ struct ZenithButton: View {
 // MARK: - Presentation
 extension ZenithButton {
 
-    private var buttonSymbol: AppSymbol {
+    private var buttonSymbol: LoreSymbol {
         state.isAtDeviceLocation ? .locationFill : .location
     }
 

@@ -1,5 +1,6 @@
 
 import SwiftUI
+import LoreKit
 
 struct SearchBar: View {
     @Environment(EAppState.self) var state
