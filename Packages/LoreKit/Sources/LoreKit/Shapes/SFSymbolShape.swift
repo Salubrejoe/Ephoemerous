@@ -71,8 +71,12 @@ public struct SFSymbolShape: Shape {
 
     /// Centre the resolved silhouette path in `rect`, uniform-scale to
     /// fit the smaller dimension, rotate around the rect's centre.
-    /// Vision returns paths in upper-left-origin normalised coords —
-    /// matches SwiftUI / Core Graphics, no Y flip needed.
+    ///
+    /// Vision returns paths in *lower-left* origin normalised coords —
+    /// SwiftUI / Core Graphics are upper-left. The `y: -scale` factor
+    /// flips the Y axis as part of the scale step. Rotation lands
+    /// *after* the flip (positive = clockwise on screen, which matches
+    /// the natural reading of `rotation: .degrees(20)`).
     private func transformed(_ cgPath: CGPath, in rect: CGRect) -> Path {
         let bbox = cgPath.boundingBoxOfPath
         guard bbox.width > 0, bbox.height > 0 else { return Path() }
@@ -80,7 +84,7 @@ public struct SFSymbolShape: Shape {
         var t = CGAffineTransform.identity
             .translatedBy(x: rect.midX,    y: rect.midY)
             .rotated(by:   rotation.radians)
-            .scaledBy(x:   scale,          y: scale)
+            .scaledBy(x:   scale,          y: -scale)
             .translatedBy(x: -bbox.midX,   y: -bbox.midY)
         return Path(cgPath.copy(using: &t) ?? cgPath)
     }
@@ -146,10 +150,36 @@ private extension SFSymbolShape {
         }
         guard let observation = request.results?.first else { return nil }
 
-        // 4. `normalizedPath` concatenates every detected contour into
-        //    a single CGPath in [0, 1] × [0, 1] coords — exactly what
-        //    `transformed(_:in:)` expects.
-        return observation.normalizedPath
+        // 4. `observation.normalizedPath` concatenates *every* detected
+        //    contour — including the rasterised bitmap's own outer
+        //    boundary, which Vision picks up as one big contour around
+        //    the whole image. That'd render as a ghost rectangle around
+        //    the symbol after a stroke (and visibly so once the symbol
+        //    is rotated — see the heart in the #Preview). Walk the
+        //    contour tree instead and skip any contour whose bbox fills
+        //    the unit square, keeping the real symbol shapes (and any
+        //    nested children like the hole in a donut).
+        let combined = CGMutablePath()
+        for top in observation.topLevelContours {
+            collect(top, into: combined)
+        }
+        return combined.isEmpty ? nil : combined
+    }
+
+    /// Recursive contour collector. Adds the contour's path to `out`
+    /// unless its bbox is essentially the unit square (Vision's
+    /// rendering of the bitmap boundary), then descends into children
+    /// either way so a symbol nested inside the boundary contour still
+    /// gets picked up.
+    static func collect(_ contour: VNContour, into out: CGMutablePath) {
+        let b = contour.normalizedPath.boundingBoxOfPath
+        let isImageBoundary = b.width > 0.95 && b.height > 0.95
+        if !isImageBoundary {
+            out.addPath(contour.normalizedPath)
+        }
+        for child in contour.childContours {
+            collect(child, into: out)
+        }
     }
 }
 
@@ -276,7 +306,7 @@ private func midpoint(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
 
         // Stroked + rotated, weight bumped to bold so the outline is
         // clearly different from the regular version.
-        SFSymbolShape(systemName: "star.fill",
+        SFSymbolShape(systemName: "heart.fill",
                       weight:    .bold,
                       rotation:  .degrees(20))
             .stroke(.yellow, lineWidth: 2)
