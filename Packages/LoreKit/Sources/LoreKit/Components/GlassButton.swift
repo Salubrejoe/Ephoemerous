@@ -102,7 +102,8 @@ public extension GlassButton where S == SFSymbolShape, Label == AnyView {
 
 #Preview {
     ZStack {
-        LinearGradient(colors: [.yellow, .green], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [.secondary, .primary], startPoint: .top, endPoint: .bottom)
+            .ignoresSafeArea()
         
         if #available(iOS 26, *) {
             VStack(spacing: 24) {
@@ -119,10 +120,10 @@ public extension GlassButton where S == SFSymbolShape, Label == AnyView {
                 }
                 
                 // SF-Symbol-shaped blob, accentColor tint.
-                GlassButton(symbol: .checkmark, weight: .heavy, tint: .black) {
+                GlassButton(symbol: .gearCicleFill, weight: .heavy, tint: .white) {
                     print("checkmark tap")
                 }
-                .tint(.black)
+                .tint(.white)
                 .frame(width: 80, height: 80)
                 
                 // Heart-shaped blob, pink tint.

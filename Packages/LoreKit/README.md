@@ -37,14 +37,23 @@ project without bringing baggage, it doesn't belong here.
   `GlassButton(symbol: .checkmark, tint: .accentColor) { … }`.
   iOS 26+, `@available`-gated so the rest of LoreKit stays usable
   on iOS 17+.
+- **`Ring`** — Annulus shape (outer circle minus inner circle).
+  `thickness:` parameter, animatable. Fills cleanly under default
+  non-zero winding (no even-odd tax). Use anywhere a `Shape` is
+  expected: `.fill`, `.stroke`, `.clipShape`, `.glassEffect(_:in:)`.
+- **`GlassRing`** — Decorative Liquid-Glass annulus. The `Ring` +
+  `.glassEffect` combo, named so the call site reads cleanly:
+  `GlassRing(thickness: 8, tint: .accentColor).frame(...)`. iOS 26+,
+  non-interactive (wrap in `GlassButton(in: Ring(...))` if you want
+  tappable).
 
 ## Layout
 
 ```
 Sources/LoreKit/
-├── Shapes/        Squircle, SFSymbolShape
+├── Shapes/        Squircle, SFSymbolShape, Ring
 ├── Extensions/    Angle / Double / Array / Color / Date / SIMD3 / Image / LoreSymbol
-└── Components/    GlassButton
+└── Components/    GlassButton, GlassRing
 ```
 
 ## Roadmap

@@ -31,6 +31,7 @@ public enum LoreSymbol: String, Sendable, CaseIterable {
     case drop           = "drop.fill"
     case eyes           = "eyes"
     case flame          = "flame"
+    case gearCicleFill  = "gearshape.circle.fill"
     case hrClass        = "thermometer.sun"
     case location       = "location"
     case locationFill   = "location.fill"
