@@ -8,7 +8,7 @@ import LoreKit
 // planets, stars) without competing for attention.
 extension EArtist {
 
-    var gridWidth      : Double { 0.15 }
-    var gridColor      : Color  { .secondarySystemBackground }
-    var gridBrightness : Double { 0.2 }
+    var gridWidth      : Double { 0.55 }
+    var gridColor      : Color  { .tertiary }
+    var gridBrightness : Double { 0.0 }
 }

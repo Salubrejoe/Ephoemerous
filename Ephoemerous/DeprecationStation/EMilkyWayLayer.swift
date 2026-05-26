@@ -15,17 +15,13 @@ import LoreKit
 // never double-draws in travel).
 struct EMilkyWayLayer: EGridLayer {
 
-    let mode: EProjection.ProjectionFrame
-
     private let sampleSteps = 64
 
     func draw(in dc: inout EGraphicContext) {
-        // skyLayers carries the .northSouth instance (clock); travelLayers
-        // the .userLocation one (travel). Only the matching one does work.
-        let isClockFrame = (mode == .northSouth)
-        guard (isClockFrame && dc.state.appMode == .clock)
-           || (!isClockFrame && dc.state.appMode == .travel) else { return }
-
+        // Deprecated — kept for reference. Used to gate on layerMode
+        // to avoid double-drawing across NS/UL passes; with the single
+        // projection there's no double-draw, but this layer is still
+        // off-canvas (not in CelestialCanva.layers).
         let offset = dc.localSiderealOffset
         let plane  = galacticPlanePath(in: dc, offset: offset)
         guard !plane.isEmpty else { return }
@@ -45,7 +41,7 @@ struct EMilkyWayLayer: EGridLayer {
     // projection drop-outs / back-side discontinuities.
     private func galacticPlanePath(in dc: EGraphicContext, offset: Angle) -> Path {
         let projected = EProjection.sampleCurve(steps: sampleSteps,
-                                                viewpoint: dc.viewpoint, mode: mode) { t in
+                                                viewpoint: dc.viewpoint) { t in
             EGalacticCoords.equatorialVector(l: t * .twoPi, b: 0)
                 .sidereallyRotated(by: offset)
         }
@@ -77,8 +73,7 @@ struct EMilkyWayLayer: EGridLayer {
     private func drawGalacticCentreGlow(in dc: inout EGraphicContext, offset: Angle) {
         let gc = EGalacticCoords.equatorialVector(l: 0, b: 0)
             .sidereallyRotated(by: offset)
-        guard let proj = EProjection.project(gc, viewpoint: dc.viewpoint, mode: mode)
-        else { return }
+        guard let proj = EProjection.project(gc, viewpoint: dc.viewpoint) else { return }
         let p = dc.toScreen(proj)
 
         var bulge = dc.ctx

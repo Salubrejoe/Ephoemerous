@@ -13,36 +13,27 @@ struct CelestialCanva: View {
 
     // MARK: - Layers
     //
-    // Rebuilt each render so the six NS/UL-parametrised layers pick up
-    // the current `state.layerMode` (= .northSouth in clock, .userLocation
-    // in travel). The mode flip happens at the end (forward) or start
-    // (reverse) of the origin slerp — at lat 90° the two projections are
-    // identical, so the swap is invisible.
-    //
-    // EarthGridLayer + HorizonLayer are always UL: they're the visible
-    // animation during the slerp (the horizon morphs as the observer
-    // travels to / from the pole).
-    //
-    // Chrome layers (WatchBackgroundLayer + ClipAndHoursLayer) self-gate
-    // on `appMode == .clock` so they disappear / reappear in lockstep
-    // with the flip.
+    // One projection for everything — observer-centred stereographic
+    // (see EProjection.project). Clock mode = "observer pinned at lat
+    // 90°"; chrome layers (WatchBackgroundLayer + ClipAndHoursLayer)
+    // self-gate on `appMode == .clock` so they appear / disappear with
+    // the mode flip.
     private var layers: [any EGridLayer] {
-        let m = state.layerMode
-        return [
-            WatchBackgroundLayer(),
-            EarthGridLayer(mode: .userLocation),
+        [
+//            WatchBackgroundLayer(),
+            EarthGridLayer(),
             HorizonLayer(),
             CardinalLabelsLayer(),
-            ConstellationLinesLayer(mode: m),
-            StarsLayer(mode: m),
-            ConstellationNamesLayer(mode: m),
-            EclipticLayer(mode: m),
-            SunLayer(mode: m),
-            EMoonLayer(mode: m),
-            EPlanetsLayer(mode: m),
-            SelectedStarsLayer(mode: m),
-            ClipAndHoursLayer(),
-            WatchRimLayer(),
+            ConstellationLinesLayer(),
+            StarsLayer(),
+            ConstellationNamesLayer(),
+            EclipticLayer(),
+            SunLayer(),
+            EMoonLayer(),
+            EPlanetsLayer(),
+            SelectedStarsLayer(),
+//            ClipAndHoursLayer(),
+//            WatchRimLayer(),
         ]
     }
 

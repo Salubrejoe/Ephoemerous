@@ -2,7 +2,6 @@ import SwiftUI
 
 struct StarsLayer: EGridLayer {
     let artist = EArtist.shared
-    let mode: EProjection.ProjectionFrame
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showStars else { return }
@@ -19,7 +18,7 @@ struct StarsLayer: EGridLayer {
                                                   to: dc.renderedObservationDate)
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
                 .sidereallyRotated(by: dc.localSiderealOffset)
-            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { continue }
+            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
             if inClock {
                 let dx = sc.x - chrome.centre.x

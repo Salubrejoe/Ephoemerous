@@ -26,7 +26,6 @@ import simd
 // tap threshold the dict is published as `[:]`.
 struct ConstellationNamesLayer: EGridLayer {
     let artist = EArtist.shared
-    let mode: EProjection.ProjectionFrame
 
     func draw(in dc: inout EGraphicContext) {
         let stateRef = dc.state
@@ -61,7 +60,7 @@ struct ConstellationNamesLayer: EGridLayer {
                                                   to: dc.renderedObservationDate)
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
                 .sidereallyRotated(by: dc.localSiderealOffset)
-            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { continue }
+            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
 
             artist.drawConstellationLabel(cons, at: sc, size: size, in: &dc)

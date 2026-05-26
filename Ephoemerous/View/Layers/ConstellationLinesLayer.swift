@@ -7,7 +7,6 @@ import simd
 // the segment never touches the star dot.
 struct ConstellationLinesLayer: EGridLayer {
     let artist = EArtist.shared
-    let mode: EProjection.ProjectionFrame
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showConstellationLines else { return }
@@ -33,7 +32,7 @@ struct ConstellationLinesLayer: EGridLayer {
                                               to: dc.renderedObservationDate)
         let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
             .sidereallyRotated(by: dc.localSiderealOffset)
-        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { return nil }
+        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return nil }
         return dc.toScreen(proj)
     }
 }

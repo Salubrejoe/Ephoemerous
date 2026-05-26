@@ -5,23 +5,46 @@ import LoreKit
 
 enum EProjection {
 
-    enum ProjectionFrame {
-        case northSouth
-        case userLocation
-    }
-
     /// Per-frame snapshot of the observer geometry the projection needs.
     /// `originVector` / `planeVector` are computed `@Observable`
     /// properties on `EAppState`; resolving them once per frame (see
     /// `EGraphicContext`) and threading this value keeps the per-point
     /// `project()` calls — 10k+ a frame — off the observation graph
-    /// entirely. The NS-projection origin used to live here too but is
-    /// now hardcoded to celestial north (`(0, 0, 1)`) — the dynamic NS
-    /// tilt that the two-finger gesture drove is gone, so the runtime
-    /// value never moves.
+    /// entirely.
+    ///
+    /// `originVector` is the observer's zenith direction (in the
+    /// sidereally-rotated equatorial frame the projection runs in);
+    /// `planeVector` is the antipodal nadir.
     struct Viewpoint {
         let originVector: SIMD3<Double>
         let planeVector:  SIMD3<Double>
+
+        /// Returns a 3-D point on the observer's local sky at the given
+        /// altitude above the horizon, parametrised by `t ∈ 0...1`
+        /// around the small-circle of constant altitude.
+        ///
+        /// - `altitude = 0` traces the local horizon great circle
+        ///   (perpendicular to the zenith) — a circle of radius 2 in
+        ///   projection units, centred at screen centre.
+        /// - `altitude < 0` traces a small circle below the horizon
+        ///   (twilight zones).
+        /// - `altitude > 0` traces a parallel of constant altitude
+        ///   above the horizon (zenith → altitude = π/2 collapses to
+        ///   the zenith point).
+        ///
+        /// Built on `baseVectors(zenith)` so the parametrisation uses
+        /// the same orthonormal basis the projection itself uses — the
+        /// stereographic image of any altitude small-circle is
+        /// guaranteed to be a true circle on screen, centred on the
+        /// projection origin.
+        func skyPoint(altitude: Angle, at t: Double) -> SIMD3<Double> {
+            let (e1, e2) = originVector.baseVectors()
+            let phi      = t * 2.0 * Double.pi
+            let sa       = sin(altitude.radians)
+            let ca       = cos(altitude.radians)
+            return sa * originVector
+                 + ca * (cos(phi) * e1 + sin(phi) * e2)
+        }
     }
 
     static var obliquity: Angle { AstroConstants.obliquity }
@@ -47,60 +70,39 @@ enum EProjection {
         return CGPoint(x: v, y: u)
     }
     
+    /// Observer-centred stereographic projection: source = the observer's
+    /// nadir, plane = the observer's zenith. Visible sky (alt > 0) maps
+    /// INSIDE a horizon circle of radius 2, the zenith lands at screen
+    /// centre, below-horizon stars project outside / to infinity.
+    ///
+    /// Orientation: `baseVectors(zenith)` naturally produces a basis
+    /// where `e1` points celestial north and `e2` points celestial
+    /// west, so the unnegated screen output puts north at the top —
+    /// the planetarium convention. The observer-latitude clamp
+    /// (±89.999°, see `setOrigin`) keeps us off `baseVectors`'s
+    /// singular fallback, so the basis stays continuous everywhere.
+    ///
+    /// Clock mode is "this projection with the observer pinned at
+    /// lat 90°" — zenith collapses onto the celestial north pole, the
+    /// horizon onto the celestial equator. No separate code path.
     static func project(_ Q     : SIMD3<Double>,
-                        viewpoint: Viewpoint,
-                        mode: ProjectionFrame,
-                        negateUserLocation: Bool = true) -> CGPoint? {
-        if mode == .northSouth {
-            // NS projection: origin = celestial north, plane = south.
-            // Used to be dynamic (two-finger drag tilted the celestial
-            // frame in step with the UL horizon), but that gesture is
-            // gone and `.north` is the only value it ever held.
-            return project(
-                Q,
-                origin: .north,
-                plane:  .south
-            )
-        } else {
-            // No -Q sign flip. With the projection source = observer zenith
-            // and plane tangent at the nadir, projecting Q directly gives an
-            // "external observer at zenith looking down" view. At observer
-            // = NP this collapses to the same math as the NS branch, so the
-            // clock↔travel slerp is geometrically continuous and ends with
-            // Polaris off-screen (the user's "looking south from NP through
-            // the horizon" view).
-            guard let p = project(
-                Q,
-                origin: viewpoint.originVector,
-                plane: viewpoint.planeVector
-            ) else { return nil }
-            // Manual π rotation: `baseVectors()`'s singular fallback at
-            // P=(0,0,-1) (used by NS) is opposite its continuous limit at
-            // any non-pole observer (used by UL). Negating the UL output
-            // realigns the two bases on screen so the sun, moon, stars,
-            // constellations, ecliptic — and the RA/Dec EarthGrid —
-            // share one celestial frame: drag the observer and they all
-            // track together. Only HorizonLayer opts out via
-            // `negateUserLocation: false`, because the horizon is the
-            // observer's *local* frame and is meant to slide against the
-            // sky, not with it.
-            return negateUserLocation ? CGPoint(x: -p.x, y: -p.y) : p
-        }
+                        viewpoint: Viewpoint) -> CGPoint? {
+        project(
+            Q,
+            origin: viewpoint.planeVector,    // observer's nadir
+            plane:  viewpoint.originVector    // observer's zenith
+        )
     }
  
     
     
     static func sampleCurve(steps: Int = 360,
                             viewpoint: Viewpoint,
-                            mode: ProjectionFrame,
-                            negateUserLocation: Bool = true,
                             point: (Double) -> SIMD3<Double>) -> [CGPoint?] {
         (0...steps).map { i in
             project(
                 point(Double(i) / Double(steps)),
-                viewpoint:          viewpoint,
-                mode:               mode,
-                negateUserLocation: negateUserLocation
+                viewpoint: viewpoint
             )
         }
     }
@@ -108,7 +110,6 @@ enum EProjection {
     static func sampleEcliptic(
         steps: Int = 360,
         viewpoint: Viewpoint,
-        mode: ProjectionFrame,
         siderealOffset: Angle
     ) -> [CGPoint?] {
 
@@ -119,11 +120,7 @@ enum EProjection {
                 atStep: t,
                 siderealOffset: siderealOffset
             )
-            return EProjection.project(
-                Q,
-                viewpoint: viewpoint,
-                mode: mode
-            )
+            return EProjection.project(Q, viewpoint: viewpoint)
         }
     }
 }

@@ -3,7 +3,6 @@ import simd
 
 struct SelectedStarsLayer: EGridLayer {
     let artist = EArtist.shared
-    let mode: EProjection.ProjectionFrame
 
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showSelectedStars else { return }
@@ -29,11 +28,7 @@ struct SelectedStarsLayer: EGridLayer {
             let v = EPrecession.equatorialVector(ra: pRA, dec: pDec)
             let Q = SIMD3(v.x * c - v.y * s, v.x * s + v.y * c, v.z)
 
-            guard let proj = EProjection.project(
-                Q,
-                viewpoint: dc.viewpoint,
-                mode: mode
-            ) else { continue }
+            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
 
             let name = star.name; let pos = sc; let state = dc.state

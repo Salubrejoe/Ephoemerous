@@ -3,7 +3,6 @@ import simd
 
 struct SunLayer: EGridLayer {
     let artist = EArtist.shared
-    let mode: EProjection.ProjectionFrame
     private static var lastLoggedDate: Date = .distantPast
 
     func draw(in dc: inout EGraphicContext) {
@@ -11,7 +10,10 @@ struct SunLayer: EGridLayer {
         let lambda = ESunPosition.eclipticLongitude(for: date)
         let (sunRA, sunDec) = ESunPosition.equatorialCoords(lambda: lambda)
 
-        if mode == .northSouth, abs(date.timeIntervalSince(Self.lastLoggedDate)) > 0.5 {
+        // Throttled clock-mode debug log (kept gated to clock so the
+        // travel-mode interactive frame rate isn't burned on logging).
+        if dc.state.appMode == .clock,
+           abs(date.timeIntervalSince(Self.lastLoggedDate)) > 0.5 {
             Self.lastLoggedDate = date
             logPipeline(date: date, lambda: lambda, ra: sunRA, dec: sunDec,
                         siderealOffset: dc.localSiderealOffset)
@@ -19,13 +21,11 @@ struct SunLayer: EGridLayer {
 
         let th = dc.localSiderealOffset.radians
         let (c, s) = (cos(th), sin(th))
-        
-        
-    // *
-        let eq = SIMD3<Double>.eclipticPoint(lambda: lambda)
-        let Q = SIMD3(eq.x * c - eq.y * s, eq.x * s + eq.y * c, eq.z)
 
-        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { return }
+        let eq = SIMD3<Double>.eclipticPoint(lambda: lambda)
+        let Q  = SIMD3(eq.x * c - eq.y * s, eq.x * s + eq.y * c, eq.z)
+
+        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return }
         let sc = dc.toScreen(proj)
         let pos = sc; let state = dc.state
         DispatchQueue.main.async { state.sunScreenPosition = pos }

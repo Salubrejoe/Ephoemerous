@@ -14,15 +14,6 @@ enum EAppMode {
 // MARK: - EAppState + AppMode
 extension EAppState {
 
-    /// The projection mode the NS/UL-parametrised layers should use, derived
-    /// purely from `appMode`. Clock = .northSouth (sky locked to the watch);
-    /// Travel = .userLocation (sky follows the observer). At observer = NP
-    /// the two projections coincide, which is what lets the mode flip on
-    /// either end of the origin slerp without a visual jump.
-    var layerMode: EProjection.ProjectionFrame {
-        appMode == .clock ? .northSouth : .userLocation
-    }
-
     /// Clock↔Travel transition.
     ///
     ///   Clock → Travel:

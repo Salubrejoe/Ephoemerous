@@ -18,8 +18,7 @@ import LoreKit
 struct EclipticLayer: EGridLayer {
     
     let artist = EArtist.shared
-    let mode  : EProjection.ProjectionFrame
-    
+
     private let corners   : Int     = 12
     private let bulge     : CGFloat = 2.5
     private let width     : CGFloat = 2
@@ -32,7 +31,7 @@ struct EclipticLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showEcliptic else { return }
         
-        let samples = EProjection.sampleEcliptic(viewpoint: dc.viewpoint, mode: mode,
+        let samples = EProjection.sampleEcliptic(viewpoint:      dc.viewpoint,
                                                  siderealOffset: dc.localSiderealOffset)
             .compactMap { $0 }
         guard samples.count >= 8 else { return }
@@ -92,7 +91,7 @@ struct EclipticLayer: EGridLayer {
             let Q      = SIMD3(eq.x * c - eq.y * s,
                                eq.x * s + eq.y * c,
                                eq.z)
-            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { return nil }
+            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return nil }
             let dx = proj.x - centre.x
             let dy = proj.y - centre.y
             let d  = hypot(dx, dy)
@@ -121,7 +120,7 @@ struct EclipticLayer: EGridLayer {
             let Q      = SIMD3(eq.x * c - eq.y * s,
                                eq.x * s + eq.y * c,
                                eq.z)
-            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint, mode: mode) else { continue }
+            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
             // Rotation that makes the text's "up" point along the
             // outward radial — atan2(Nx, −Ny) inverts the y because

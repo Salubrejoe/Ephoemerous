@@ -3,8 +3,7 @@ import LoreKit
 
 struct EEquatorTropicsLayer: EGridLayer {
     let artist = EArtist.shared
-    let mode: EProjection.ProjectionFrame
-    
+
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showEquatorTropics else { return }
 //        for parallel in Angle.parallels {
@@ -30,7 +29,7 @@ struct EEquatorTropicsLayer: EGridLayer {
             Angle.degrees(30),
             Angle.degrees(20),
         ] {
-            let pts = EProjection.sampleCurve(viewpoint: dc.viewpoint, mode: mode) { t in
+            let pts = EProjection.sampleCurve(viewpoint: dc.viewpoint) { t in
                 EPrecession.equatorialVector(ra: .radians(.twoPi * t), dec: parallel)
                     .sidereallyRotated(by: dc.localSiderealOffset)
             }

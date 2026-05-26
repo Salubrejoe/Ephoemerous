@@ -15,8 +15,6 @@ struct MainView: View {
                 
             CelestialCanva()
             ObjectsTrackingOverlay()
-            
-            OmniButton()
         }
         .ignoresSafeArea()
         

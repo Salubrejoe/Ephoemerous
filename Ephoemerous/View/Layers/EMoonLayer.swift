@@ -3,12 +3,11 @@ import simd
 
 struct EMoonLayer: EGridLayer {
     let artist = EArtist.shared
-    let mode: EProjection.ProjectionFrame
 
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, ra, dec) = EMoonPosition.vector(for: dc.renderedObservationDate,
                                                       siderealOffset: dc.localSiderealOffset)
-guard let proj = EProjection.project(moonVec, viewpoint: dc.viewpoint, mode: mode) else { return }
+        guard let proj = EProjection.project(moonVec, viewpoint: dc.viewpoint) else { return }
         let sc = dc.toScreen(proj)
         guard dc.onScreen(sc, margin: 40) else { return }
 
@@ -16,6 +15,9 @@ guard let proj = EProjection.project(moonVec, viewpoint: dc.viewpoint, mode: mod
         DispatchQueue.main.async { state.moonScreenPosition = pos }
 
         let fraction = EMoonPosition.illuminatedFraction(for: dc.renderedObservationDate)
-        artist.drawMoon(at: sc, fraction: fraction, showRing: mode == .northSouth, in: &dc)
+        // Ring is a clock-mode decoration (the watch face's moon-phase
+        // indicator). Travel mode shows just the bare disc.
+        artist.drawMoon(at: sc, fraction: fraction,
+                        showRing: dc.state.appMode == .clock, in: &dc)
     }
 }

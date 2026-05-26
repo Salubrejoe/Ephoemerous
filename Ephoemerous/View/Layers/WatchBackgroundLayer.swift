@@ -14,11 +14,11 @@ struct WatchBackgroundLayer: EGridLayer {
         guard opacity > 0.001 else { return }
 
         var local = dc.ctx
-        local.opacity = opacity
-        
+//        local.opacity = opacity
+//        
 //        local.addFilter(
 //            .shadow(
-//                color: .systemBackground,
+//                color: .secondary,
 //                radius: 4,
 //                x: 0,
 //                y: 1,
@@ -26,8 +26,8 @@ struct WatchBackgroundLayer: EGridLayer {
 ////                options: .shadowAbove
 //            )
 //        )
-        
+//        
 //        local.addFilter(.brightness(0.1))
-        local.fill(artist.chromePath(in: dc), with: .color(.systemBackground))
+//        local.fill(artist.chromePath(in: dc), with: .color(.secondarySystemBackground))
     }
 }

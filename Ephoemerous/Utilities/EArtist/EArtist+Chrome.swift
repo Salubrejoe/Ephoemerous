@@ -29,8 +29,8 @@ extension EArtist {
     // MARK: Disc shape
     // Tweak corners / bulge to retune the disc; HorizonLayer's clip
     // and WatchBackgroundLayer's fill both follow.
-    var chromeCorners : Int     { 4 }
-    var chromeBulge   : CGFloat { 4 }
+    var chromeCorners : Int     { 24 }
+    var chromeBulge   : CGFloat { 2.1 }
 
     /// Screen-space centre + radius of the watch chrome disc. Cheap
     /// `(dx² + dy²) < r²` rejection tests use this — `StarsLayer` and
