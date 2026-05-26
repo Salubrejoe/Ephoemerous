@@ -31,6 +31,21 @@ project without bringing baggage, it doesn't belong here.
   context-free utilities: `Angle.pi(over:)`, `.clamped(to:)`,
   `Array.uniqued(by:)`, `Color(hex:)`, system colour wrappers,
   `SIMD3` rotations + orthonormal basis, `Date.timeString`.
+- **`GlassButton<S: Shape, Label: View>`** — Liquid Glass button
+  keyed off an arbitrary `Shape` silhouette. Plug in a `Squircle`,
+  an `SFSymbolShape`, or anything else. One-liner SF Symbol form:
+  `GlassButton(symbol: .checkmark, tint: .accentColor) { … }`.
+  iOS 26+, `@available`-gated so the rest of LoreKit stays usable
+  on iOS 17+.
+
+## Layout
+
+```
+Sources/LoreKit/
+├── Shapes/        Squircle, SFSymbolShape
+├── Extensions/    Angle / Double / Array / Color / Date / SIMD3 / Image / LoreSymbol
+└── Components/    GlassButton
+```
 
 ## Roadmap
 
