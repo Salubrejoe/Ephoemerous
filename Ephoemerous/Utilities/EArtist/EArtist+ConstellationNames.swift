@@ -48,6 +48,19 @@ extension EArtist {
         abs(observerLatitude - decDegrees) < 90 + constellationVisibilityMargin
     }
 
+    /// `true` when the constellation's centroid never sets at the
+    /// observer's latitude — i.e. the centroid sits within |φ| of
+    /// the observer's celestial pole. Same hemisphere as observer
+    /// (north + north, south + south); a southern observer's
+    /// circumpolar constellations live at negative dec.
+    func constellationCircumpolar(decDegrees: Double, observerLatitude: Double) -> Bool {
+        if observerLatitude >= 0 {
+            return decDegrees >= 90 - observerLatitude
+        } else {
+            return decDegrees <= -(90 + observerLatitude)
+        }
+    }
+
     /// Scale-driven font size, or `nil` when the label should be hidden
     /// because we're below `labelMinScale`. Callers can use the `nil`
     /// case to short-circuit projection + layout work.

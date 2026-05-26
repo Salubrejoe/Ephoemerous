@@ -38,7 +38,7 @@ struct SunLayer: EGridLayer {
         // Apple-Maps-style POI badge replaces the sun disc.
         artist.drawPOILabel(
             at:       sc,
-            glyph:    .sfSymbol("sun.max.fill"),
+            glyph:    .sfSymbol("sun.max"),
             text:     Strings.Bodies.sun,
             category: .sun,
             in:       &dc

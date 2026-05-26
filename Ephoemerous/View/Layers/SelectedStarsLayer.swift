@@ -54,7 +54,7 @@ struct SelectedStarsLayer: EGridLayer {
             // screen position. The halo above reads as "behind" it.
             artist.drawPOILabel(
                 at:       sc,
-                glyph:    .sfSymbol("star.fill"),
+                glyph:    .sfSymbol("star"),
                 text:     star.displayName,
                 category: .followedStar(star),
                 in:       &dc

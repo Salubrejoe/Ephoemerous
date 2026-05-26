@@ -30,8 +30,27 @@ enum POIGlyph {
     case unicode(String)
 }
 
+/// Visibility / cultural tier driving the constellation badge palette.
+/// Resolved per-frame from the constellation's centroid declination,
+/// the observer's latitude, and a static zodiac lookup — see
+/// `ConstellationNamesLayer`.
+enum POIConstellationKind {
+    /// Never rises at the observer's latitude. Muted gray.
+    case foreverInvisible
+    /// Never sets at the observer's latitude. Teal.
+    case circumpolar
+    /// One of the IAU 13 ecliptic constellations (incl. Ophiuchus). Blue.
+    case zodiac
+    /// Rises and sets seasonally. Default purple.
+    case standard
+}
+
 enum POICategory {
-    case constellation
+    /// Carries the kind (palette tier) and the centroid declination
+    /// in degrees. The declination drives a per-constellation hue
+    /// rotation on top of the kind's base palette, so each label
+    /// reads as a unique-by-position member of its tier.
+    case constellation(POIConstellationKind, dec: Double)
     case followedStar(EStar)
     case sun
     case moon
@@ -50,6 +69,11 @@ extension EArtist {
         let textColor:       Color
         let badgeSize:       CGFloat
         let symbolPointSize: CGFloat
+        /// Number of squircle corners — each category carries its
+        /// own polygon so you can tell tracked-object classes apart
+        /// at a glance (constellations square, stars pentagonal,
+        /// sun hex, moon triangular, planets heptagonal).
+        let badgeCorners:    Int
         /// Renderered-scale at which the badge appears (tier 0 → 1).
         let badgeIn:         Double
         /// Renderered-scale at which the text appears (tier 1 → 2).
@@ -61,34 +85,74 @@ extension EArtist {
     /// solar-system body carries its own tint — sun warm, moon
     /// cool, each planet matched to its canonical colour.
     func poiStyle(for category: POICategory) -> POICategoryStyle {
-        // Shared knobs for every solar-system body.
-        func solarStyle(top: Color, bottom: Color) -> POICategoryStyle {
+        // Solar-system bodies share thresholds; corners + gradient
+        // vary per body (sun = hex, moon = triangle).
+        func solarStyle(top: Color, bottom: Color, corners: Int) -> POICategoryStyle {
             POICategoryStyle(
                 gradientTop:     top,
                 gradientBottom:  bottom,
-                border:          .primary,
+                border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
                 badgeSize:       18,
-                symbolPointSize: 12,
+                symbolPointSize: 9,
+                badgeCorners:    corners,
+                badgeIn:         0,    // always badge — top-priority bodies
+                textIn:          80
+            )
+        }
+        
+        func moonStyle(top: Color, bottom: Color, corners: Int) -> POICategoryStyle {
+            POICategoryStyle(
+                gradientTop:     top,
+                gradientBottom:  bottom,
+                border:          .systemBackground,
+                symbolColor:     .white,
+                textColor:       .primary,
+                badgeSize:       18,
+                symbolPointSize: 9,
+                badgeCorners:    corners,
                 badgeIn:         0,    // always badge — top-priority bodies
                 textIn:          80
             )
         }
 
-        switch category {
-        case .constellation:
-            return POICategoryStyle(
-                gradientTop:     Color(red: 0.71, green: 0.49, blue: 0.86),
-                gradientBottom:  Color(red: 0.42, green: 0.29, blue: 0.72),
-                border:          .primary,
+        func planetStyle(top: Color, bottom: Color) -> POICategoryStyle {
+            POICategoryStyle(
+                gradientTop:     top,
+                gradientBottom:  bottom,
+                border:          .systemBackground,
+                symbolColor:     .systemBackground,
+                textColor:       .primary,
+                badgeSize:       16,
+                symbolPointSize: 8,
+                badgeCorners:    6,    // heptagon
+                badgeIn:         60,
+                textIn:          100
+            )
+        }
+
+        // Shared knobs for every constellation kind — only the
+        // gradient differs by kind, and within a kind by dec.
+        func constellationStyle(top: Color, bottom: Color) -> POICategoryStyle {
+            POICategoryStyle(
+                gradientTop:     top,
+                gradientBottom:  bottom,
+                border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
                 badgeSize:       12,
-                symbolPointSize: 11,
-                badgeIn:         80,
+                symbolPointSize: 6,
+                badgeCorners:    4,    // rounded square
+                badgeIn:         90,
                 textIn:          130
             )
+        }
+
+        switch category {
+        case .constellation(let kind, let dec):
+            let g = constellationGradient(kind: kind, dec: dec)
+            return constellationStyle(top: g.top, bottom: g.bottom)
         case .followedStar(let star):
             // Tint the badge to the star's spectral class — O blue,
             // M red, etc. The two-mode colour pair on EHRClass
@@ -101,29 +165,68 @@ extension EArtist {
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
                 badgeSize:       18,
-                symbolPointSize: 11,
-                badgeIn:         60,
+                symbolPointSize: 9,
+                badgeCorners:    5,    // pentagon — star
+                badgeIn:         70,
                 textIn:          100
             )
         case .sun:
             return solarStyle(
-                top:    Color(red: 1.00, green: 0.83, blue: 0.30),
-                bottom: Color(red: 0.95, green: 0.45, blue: 0.10)
+                top:     Color(red: 1.00, green: 0.83, blue: 0.30),
+                bottom:  Color(red: 0.95, green: 0.45, blue: 0.10),
+                corners: 8     // hexagon
             )
         case .moon:
-            return solarStyle(
-                top:    Color(red: 0.92, green: 0.94, blue: 1.00),
-                bottom: Color(red: 0.55, green: 0.62, blue: 0.78)
+            return moonStyle(
+                top:     Color(red: 0.92, green: 0.94, blue: 1.00),
+                bottom:  Color(red: 0.55, green: 0.62, blue: 0.78),
+                corners: 7     // triangle
             )
         case .planet(let p):
             let g = planetGradient(p)
-            return solarStyle(top: g.top, bottom: g.bottom)
+            return planetStyle(top: g.top, bottom: g.bottom)
         }
     }
 
-    /// Squircle parameters shared by every badge. Tweak here.
-    var poiBadgeCorners: Int     { 12 }
-    var poiBadgeBulge:   CGFloat { 2.0 }
+    /// HSB-based constellation gradient with a small per-constellation
+    /// hue rotation driven by the centroid declination — so two
+    /// constellations of the same kind don't read as identical.
+    /// Each kind picks a (baseHue, top saturation/brightness,
+    /// bottom saturation/brightness); dec rotates the hue by up to
+    /// ±`hueRange` at the celestial poles. Grays use saturation 0
+    /// so their "rotation" is invisible but the rest of the kinds
+    /// shift through neighbouring tints.
+    func constellationGradient(
+        kind: POIConstellationKind,
+        dec:  Double
+    ) -> (top: Color, bottom: Color) {
+        // (baseHue 0…1, hueRange 0…1, sTop, bTop, sBot, bBot)
+        let (h, dh, sT, bT, sB, bB): (Double, Double, Double, Double, Double, Double) = {
+            switch kind {
+            case .foreverInvisible:
+                return (0.0,  0.0,  0.0, 0.62, 0.0, 0.32)
+            case .circumpolar:
+                return (0.50, 0.06, 0.55, 0.90, 0.85, 0.55)
+            case .zodiac:
+                return (0.59, 0.06, 0.60, 0.95, 0.85, 0.60)
+            case .standard:
+                return (0.78, 0.06, 0.50, 0.85, 0.75, 0.50)
+            }
+        }()
+        let normDec = max(-1.0, min(1.0, dec / 90.0))
+        // `+ 1` then mod 1 keeps the hue in [0, 1) for negative dec
+        // shifts (Swift's `truncatingRemainder` returns the same
+        // sign as the dividend).
+        let hue = (h + normDec * dh + 1.0).truncatingRemainder(dividingBy: 1.0)
+        return (
+            top:    Color(hue: hue, saturation: sT, brightness: bT),
+            bottom: Color(hue: hue, saturation: sB, brightness: bB)
+        )
+    }
+
+    /// Squircle bulge shared by every badge — corner count is
+    /// per-category, see `POICategoryStyle.badgeCorners`.
+    var poiBadgeBulge: CGFloat { 2.6 }
     /// Horizontal gap between the badge's right edge and the text's
     /// left edge — keeps the pill from feeling crowded.
     var poiTextLeadingGap: CGFloat { 5 }
@@ -173,8 +276,8 @@ extension EArtist {
             width:  style.badgeSize,
             height: style.badgeSize
         )
-        let badgePath = Squircle(corners: poiBadgeCorners,
-                                  bulge:   poiBadgeBulge)
+        let badgePath = Squircle(corners: style.badgeCorners,
+                                 bulge:   poiBadgeBulge)
             .path(in: badgeRect)
 
         // Apple-Maps-style soft drop shadow under the badge. Scoped

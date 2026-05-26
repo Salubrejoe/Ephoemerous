@@ -23,10 +23,11 @@ struct MainView: View {
                 Spacer()
                 MainToolbar()
                     .padding(.horizontal, 24)
-                    .padding(.bottom,     0)
+                    .padding(.bottom,     32)
             }
         }
-        .ignoresSafeArea(.container, edges: .top)
+        .ignoresSafeArea()
+//        .ignoresSafeArea(.container, edges: .top)
 
     }
 }

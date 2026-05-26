@@ -34,27 +34,20 @@ struct ConstellationNamesLayer: EGridLayer {
             return
         }
 
-        // Clock mode has a horizon — drop constellations that never rise
-        // for this observer. Travel mode sees the whole sphere.
-        let cullByHorizon = dc.state.appMode == .clock
-        let observerLat   = dc.state.origin.latitude.degrees
+        let observerLat = dc.state.origin.latitude.degrees
 
         // Tap targets only exist once zoomed past `labelTapMinScale`;
         // below it the badges still draw but the hit-test work is
         // skipped entirely.
         let tappable = dc.renderedScale >= artist.labelTapMinScale
-        let badgeSize = artist.poiStyle(for: .constellation).badgeSize
+        // Badge size is identical across kinds + decs, so a probe
+        // with any kind / dec returns the right hit dimensions.
+        let badgeSize = artist.poiStyle(for: .constellation(.standard, dec: 0)).badgeSize
 
         var rects: [EConstellation: CGRect] = [:]
         if tappable { rects.reserveCapacity(ConstellationLines.shared.labelAnchors.count) }
 
         for (cons, anchor) in ConstellationLines.shared.labelAnchors {
-            if cullByHorizon,
-               !artist.constellationEverVisible(decDegrees: anchor.dec.degrees,
-                                                observerLatitude: observerLat) {
-                continue
-            }
-
             let (pRA, pDec) = EPrecession.precess(ra: anchor.ra, dec: anchor.dec,
                                                   to: dc.renderedObservationDate)
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
@@ -62,16 +55,22 @@ struct ConstellationNamesLayer: EGridLayer {
             guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
 
+            let kind = constellationKind(cons,
+                                         decDegrees:       anchor.dec.degrees,
+                                         observerLatitude: observerLat)
+
             artist.drawPOILabel(
                 at:       sc,
                 glyph:    .sfSymbol("sparkles"),
                 text:     artist.constellationLabelText(for: cons),
-                category: .constellation,
+                category: .constellation(kind, dec: anchor.dec.degrees),
                 drawDot:  true,
                 in:       &dc
             )
 
-            guard tappable else { continue }
+            // Skip tap-targets for forever-invisible constellations —
+            // they're decorative gray badges, not interactable.
+            guard tappable, kind != .foreverInvisible else { continue }
 
             // Hit capsule hugs the badge with a small touch-friendly
             // padding (44 pt min — Apple HIG). Text-tier labels could
@@ -84,5 +83,24 @@ struct ConstellationNamesLayer: EGridLayer {
 
         let snapshot = rects
         DispatchQueue.main.async { stateRef.constellationLabelHitRects = snapshot }
+    }
+
+    /// Resolve the constellation's badge tier from the centroid's
+    /// declination + the observer's latitude. Zodiac wins over
+    /// visibility (an ecliptic constellation is always "zodiac",
+    /// even if it never rises for a polar observer).
+    private func constellationKind(_ cons: EConstellation,
+                                   decDegrees: Double,
+                                   observerLatitude: Double) -> POIConstellationKind {
+        if cons.isZodiac { return .zodiac }
+        if !artist.constellationEverVisible(decDegrees:       decDegrees,
+                                            observerLatitude: observerLatitude) {
+            return .foreverInvisible
+        }
+        if artist.constellationCircumpolar(decDegrees:       decDegrees,
+                                           observerLatitude: observerLatitude) {
+            return .circumpolar
+        }
+        return .standard
     }
 }
