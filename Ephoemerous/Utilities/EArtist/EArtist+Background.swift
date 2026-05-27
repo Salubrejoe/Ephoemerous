@@ -8,5 +8,5 @@ import LoreKit
 // is reachable through the same EArtist namespace.
 extension EArtist {
 
-    var canvasBackground : Color { .systemBackground }
+    var canvasBackground : Color { .secondarySystemBackground }
 }

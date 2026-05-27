@@ -45,23 +45,19 @@ extension EArtist {
         }
     }
 
-    /// Resolve a constellation's POI tier from its centroid
-    /// declination + the observer's latitude. Zodiac wins over
-    /// visibility (an ecliptic constellation is always "zodiac",
-    /// even if it never rises for a polar observer).
+    /// Resolve a constellation's POI kind:
+    ///   • `.foreverInvisible` when the centroid never rises at
+    ///     the observer's latitude — recessive gray override.
+    ///   • `.entity(_)` otherwise — colour-coded by the
+    ///     mythological cycle from `constellation_categories.json`.
     func constellationKind(_ cons: EConstellation,
                            decDegrees: Double,
                            observerLatitude: Double) -> POIConstellationKind {
-        if cons.isZodiac { return .zodiac }
         if !constellationEverVisible(decDegrees:       decDegrees,
                                      observerLatitude: observerLatitude) {
             return .foreverInvisible
         }
-        if constellationCircumpolar(decDegrees:       decDegrees,
-                                    observerLatitude: observerLatitude) {
-            return .circumpolar
-        }
-        return .standard
+        return .entity(constellationEntity(of: cons))
     }
 
     /// Title-cased constellation name as it appears on the POI

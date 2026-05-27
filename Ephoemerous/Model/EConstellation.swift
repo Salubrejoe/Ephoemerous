@@ -229,18 +229,6 @@ enum EConstellation: String, CaseIterable {
     }
   }
 
-  /// IAU 13-constellation zodiac: the classical twelve plus
-  /// Ophiuchus (the Sun spends ~19 days/year in Oph by IAU
-  /// boundaries). Used by the POI label tinting so the badge
-  /// reads "ecliptic" wherever it lands.
-  var isZodiac: Bool {
-    switch self {
-    case .Ari, .Cnc, .Cap, .Gem, .Psc, .Vir, .Lib, .Aqr, .Sgr,
-         .Tau, .Leo, .Sco, .Oph : true
-    default: false
-    }
-  }
-  
   var isCool: Bool {
     switch self {
     case .Ari, .Boo, .Cep, .Cyg, .CMa, .CMi, .Ori, .Per, .Aur, .And, .Cnc, .Cap, .Gem, .Psc, .Vir, .Lib, .Aqr, .Sgr, .Tau, .Leo, .Sco, .UMa, .UMi, .Cas : true

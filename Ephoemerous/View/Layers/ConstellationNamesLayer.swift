@@ -30,9 +30,9 @@ struct ConstellationNamesLayer: EGridLayer {
         let observerLat = dc.state.origin.latitude.degrees
 
         let tappable  = dc.renderedScale >= artist.labelTapMinScale
-        // Badge size is identical across kinds + decs, so a probe
-        // with any kind / dec returns the right hit dimensions.
-        let badgeSize = artist.poiStyle(for: .constellation(.standard, dec: 0)).badgeSize
+        // Badge size is identical across kinds, so a probe with
+        // any kind returns the right hit dimensions.
+        let badgeSize = artist.poiStyle(for: .constellation(.entity(.none))).badgeSize
 
         var rects: [EConstellation: CGRect] = [:]
         if tappable { rects.reserveCapacity(ConstellationLines.shared.labelAnchors.count) }
@@ -53,14 +53,15 @@ struct ConstellationNamesLayer: EGridLayer {
                 at:       sc,
                 glyph:    .sfSymbol("sparkles"),
                 text:     artist.constellationLabelText(for: cons),
-                category: .constellation(kind, dec: anchor.dec.degrees),
+                category: .constellation(kind),
                 drawDot:  true,
                 in:       &dc
             )
 
             // Skip tap-targets for forever-invisible constellations —
             // they're decorative gray badges, not interactable.
-            guard tappable, kind != .foreverInvisible else { continue }
+            guard tappable else { continue }
+            if case .foreverInvisible = kind { continue }
 
             // Hit capsule hugs the badge with a small touch-friendly
             // padding (44 pt min — Apple HIG). Text-tier labels could

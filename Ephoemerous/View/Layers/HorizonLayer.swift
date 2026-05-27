@@ -42,7 +42,7 @@ struct HorizonLayer: EGridLayer {
         // are altitudes, not declinations — e.g. `.civil` = -6° below
         // the horizon, `.astronomical` = -18°). Filled with reduced
         // opacity so they stack into a smooth twilight gradient.
-        for alt in Angle.parallels where alt != .horizon {
+        for alt in Angle.sunsets where alt != .horizon {
             let pts = EProjection.sampleCurve(viewpoint: bands.viewpoint) { t in
                 bands.viewpoint.skyPoint(altitude: alt, at: t)
             }.compactMap { $0 }
@@ -50,8 +50,8 @@ struct HorizonLayer: EGridLayer {
             bands.strokeCurve(artist.bumpedHorizonRim(pts),
                               color: .tertiary,
                               width: 12 / abs(alt.degrees))
-//            bands.fillCurve(pts, color: artist.horizonFillColor.opacity(0.4))
-//            bands.strokeCurve(pts, color: artist.sunsetStrokeColor)
+            bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
+                                   color: artist.horizonFillColor.opacity(0.1))
         }
 
         // Horizon great circle as a deformable squircle: each projection

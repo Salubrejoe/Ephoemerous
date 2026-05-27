@@ -214,7 +214,7 @@ enum AstroConstants {
     static let dotBaseRadius:     Double = 2.7    // r at magnitude 0
     static let dotMagRatio:       Double = 0.55   // multiplier per +1 magnitude
     static let dotMaxRadius:      Double = 4.0    // cap → Sirius display radius = 2 px (after EArtist halves)
-    static let dotMinRadius:      Double = 0.02   // floor — keeps mag 8+ as sub-pixel specks rather than zero
+    static let dotMinRadius:      Double = 0.2   // floor — keeps mag 8+ as sub-pixel specks rather than zero
     /// Twinkle animation — radius-only now. The shape (bulge)
     /// twinkle was deprecated when star rendering moved to a single
     /// cached path per star.

@@ -30,27 +30,37 @@ enum POIGlyph {
     case unicode(String)
 }
 
-/// Visibility / cultural tier driving the constellation badge palette.
-/// Resolved per-frame from the constellation's centroid declination,
-/// the observer's latitude, and a static zodiac lookup — see
-/// `ConstellationNamesLayer`.
-enum POIConstellationKind {
-    /// Never rises at the observer's latitude. Muted gray.
-    case foreverInvisible
-    /// Never sets at the observer's latitude. Teal.
-    case circumpolar
-    /// One of the IAU 13 ecliptic constellations (incl. Ophiuchus). Blue.
+/// Mythological cycle a constellation belongs to — pulled from
+/// `constellation_categories.json` via
+/// `EArtist.constellationEntity(of:)`. Drives the badge gradient
+/// so a Hercules constellation reads in the same hue as every
+/// other Hercules one, a Zodiac one in the zodiac hue, etc.
+///
+/// Raw values match the strings in the JSON `myths` array — keep
+/// in sync if you add a new myth there.
+enum POIConstellationEntity: String, CaseIterable {
+    case perseus
+    case hercules
     case zodiac
-    /// Rises and sets seasonally. Default purple.
-    case standard
+    case argo
+    case zeus
+    case orion
+    case orpheus
+    /// Constellations with no myth in the JSON (Lacaille / Bayer /
+    /// Hevelius modern additions, mostly).
+    case none
+}
+
+/// Top-level kind for a constellation badge. Either it's never
+/// visible to this observer (forever-invisible override → gray),
+/// or it carries its entity colour.
+enum POIConstellationKind {
+    case foreverInvisible
+    case entity(POIConstellationEntity)
 }
 
 enum POICategory {
-    /// Carries the kind (palette tier) and the centroid declination
-    /// in degrees. The declination drives a per-constellation hue
-    /// rotation on top of the kind's base palette, so each label
-    /// reads as a unique-by-position member of its tier.
-    case constellation(POIConstellationKind, dec: Double)
+    case constellation(POIConstellationKind)
     case followedStar(EStar)
     case sun
     case moon
@@ -150,8 +160,8 @@ extension EArtist {
         }
 
         switch category {
-        case .constellation(let kind, let dec):
-            let g = constellationGradient(kind: kind, dec: dec)
+        case .constellation(let kind):
+            let g = constellationGradient(kind: kind)
             return constellationStyle(top: g.top, bottom: g.bottom)
         case .followedStar(let star):
             // Tint the badge to the star's spectral class — O blue,
@@ -188,46 +198,18 @@ extension EArtist {
         }
     }
 
-    /// HSB-based constellation gradient with a small per-constellation
-    /// hue rotation driven by the centroid declination — so two
-    /// constellations of the same kind don't read as identical.
-    /// Each kind picks a (baseHue, top saturation/brightness,
-    /// bottom saturation/brightness); dec rotates the hue by up to
-    /// ±`hueRange` at the celestial poles. Grays use saturation 0
-    /// so their "rotation" is invisible but the rest of the kinds
-    /// shift through neighbouring tints.
-    func constellationGradient(
-        kind: POIConstellationKind,
-        dec:  Double
-    ) -> (top: Color, bottom: Color) {
-        // (baseHue 0…1, hueRange 0…1, sTop, bTop, sBot, bBot)
-        let (h, dh, sT, bT, sB, bB): (Double, Double, Double, Double, Double, Double) = {
-            switch kind {
-            case .foreverInvisible:
-                return (0.0,  0.0,  0.0, 0.62, 0.0, 0.32)
-            case .circumpolar:
-                return (0.6, 0.01, 0.95, 0.90, 0.85, 0.55)
-            case .zodiac:
-                return (0.89, 0.01, 0.60, 0.95, 0.85, 0.60)
-            case .standard:
-                return (0.78, 0.06, 0.50, 0.85, 0.75, 0.50)
-            }
-//            return (0.0,  0.0,  0.0, 0.62, 0.0, 0.32)
-        }()
-        let normDec = max(-1.0, min(1.0, dec / 90.0))
-        // `+ 1` then mod 1 keeps the hue in [0, 1) for negative dec
-        // shifts (Swift's `truncatingRemainder` returns the same
-        // sign as the dividend).
-        let hue = (h + normDec * dh + 1.0).truncatingRemainder(dividingBy: 1.0)
-        return (
-            top:    Color(hue: hue, saturation: sT, brightness: bT),
-            bottom: Color(hue: hue, saturation: sB, brightness: bB)
-        )
-        
-//        return (
-//            top: .quaternaryLabel,
-//            bottom: .tertiary
-//        )
+    /// Resolve the (top, bottom) badge gradient for a constellation
+    /// kind. `foreverInvisible` overrides with a recessive gray;
+    /// everything else dispatches to the entity palette defined in
+    /// `EArtist+ConstellationEntity.swift` — that's where to tweak
+    /// colours per entity.
+    func constellationGradient(kind: POIConstellationKind) -> (top: Color, bottom: Color) {
+        switch kind {
+        case .foreverInvisible:
+            return constellationForeverInvisibleGradient
+        case .entity(let entity):
+            return constellationEntityGradient(entity)
+        }
     }
 
     /// Squircle bulge shared by every badge — corner count is

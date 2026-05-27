@@ -9,9 +9,9 @@ import LoreKit
 // reads as a soft scallop rather than a clean circle.
 extension EArtist {
 
-    var horizonFillColor   : Color  { .primary.opacity(0.08) }
-    var horizonBumpCorners : Int    { 90 }
-    var horizonBumpBulge   : CGFloat { 2.1 }
+    var horizonFillColor   : Color  { .tertiary }
+    var horizonBumpCorners : Int    { 12 }
+    var horizonBumpBulge   : CGFloat { 2.2 }
 
     /// Push each sample radially outward from the curve's centroid
     /// by `Squircle.lameRadius(θ, corners: horizonBumpCorners,
