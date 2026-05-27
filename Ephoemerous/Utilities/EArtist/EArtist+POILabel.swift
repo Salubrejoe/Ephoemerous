@@ -161,7 +161,7 @@ extension EArtist {
             return POICategoryStyle(
                 gradientTop:     g.top,
                 gradientBottom:  g.bottom,
-                border:          .primary,
+                border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
                 badgeSize:       18,
@@ -174,13 +174,13 @@ extension EArtist {
             return solarStyle(
                 top:     Color(red: 1.00, green: 0.83, blue: 0.30),
                 bottom:  Color(red: 0.95, green: 0.45, blue: 0.10),
-                corners: 8     // hexagon
+                corners: 12     // hexagon
             )
         case .moon:
             return moonStyle(
-                top:     Color(red: 0.92, green: 0.94, blue: 1.00),
-                bottom:  Color(red: 0.55, green: 0.62, blue: 0.78),
-                corners: 7     // triangle
+                top:     .gray,
+                bottom:  .black,
+                corners: 3     // triangle
             )
         case .planet(let p):
             let g = planetGradient(p)
