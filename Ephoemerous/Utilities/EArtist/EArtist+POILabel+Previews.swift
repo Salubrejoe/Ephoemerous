@@ -124,7 +124,7 @@ private let betelgeusePreviewStar: EStar = EStar(
             title:    "Ursa Minor",
             glyph:    .sfSymbol("sparkles"),
             text:     "Ursa Minor",
-            category: .constellation(.entity(.zeus))
+            category: .constellation(.myth(.zeus))
         )
     }
     .padding()
@@ -161,7 +161,7 @@ private let betelgeusePreviewStar: EStar = EStar(
             title:    "Ursa Minor",
             glyph:    .sfSymbol("sparkles"),
             text:     "Ursa Minor",
-            category: .constellation(.entity(.zeus)),
+            category: .constellation(.myth(.zeus)),
             scale:    100   // ≥ badgeIn (80), < textIn (130)
         )
     }

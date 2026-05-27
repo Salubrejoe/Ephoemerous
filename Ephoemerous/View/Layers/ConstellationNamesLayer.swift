@@ -27,7 +27,7 @@ struct ConstellationNamesLayer: EGridLayer {
         let tappable  = dc.renderedScale >= artist.labelTapMinScale
         // Badge size is identical across kinds, so a probe with
         // any kind returns the right hit dimensions.
-        let badgeSize = artist.poiStyle(for: .constellation(.entity(.none))).badgeSize
+        let badgeSize = artist.poiStyle(for: .constellation(.myth(.none))).badgeSize
 
         var rects: [EConstellation: CGRect] = [:]
         if tappable { rects.reserveCapacity(ConstellationLines.shared.labelAnchors.count) }
@@ -40,13 +40,18 @@ struct ConstellationNamesLayer: EGridLayer {
             guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
 
-            let kind = artist.constellationKind(cons,
-                                                decDegrees:       anchor.dec.degrees,
-                                                observerLatitude: observerLat)
+            let kind   = artist.constellationKind(cons,
+                                                  decDegrees:       anchor.dec.degrees,
+                                                  observerLatitude: observerLat)
+            // Colour comes from the myth (encoded in `kind`); the
+            // badge symbol comes from the entity ("what is this
+            // depicting?") — hero / animal / instrument / etc.
+            let entity = artist.constellationEntity(of: cons)
+            let symbol = artist.constellationEntitySymbol(entity)
 
             artist.drawPOILabel(
                 at:       sc,
-                glyph:    .sfSymbol("sparkles"),
+                glyph:    .sfSymbol(symbol),
                 text:     artist.constellationLabelText(for: cons),
                 category: .constellation(kind),
                 drawDot:  true,

@@ -41,13 +41,13 @@ enum POIDotShape {
 
 /// Mythological cycle a constellation belongs to — pulled from
 /// `constellation_categories.json` via
-/// `EArtist.constellationEntity(of:)`. Drives the badge gradient
+/// `EArtist.constellationMyth(of:)`. Drives the badge GRADIENT
 /// so a Hercules constellation reads in the same hue as every
 /// other Hercules one, a Zodiac one in the zodiac hue, etc.
 ///
 /// Raw values match the strings in the JSON `myths` array — keep
 /// in sync if you add a new myth there.
-enum POIConstellationEntity: String, CaseIterable {
+enum POIConstellationMyth: String, CaseIterable {
     case perseus
     case hercules
     case zodiac
@@ -60,12 +60,31 @@ enum POIConstellationEntity: String, CaseIterable {
     case none
 }
 
+/// What the constellation *depicts* — the JSON `types` axis.
+/// Drives the badge SYMBOL (a hero gets `figure.stand`, an animal
+/// gets `pawprint.fill`, an instrument gets `ruler.fill`, …), so
+/// the silhouette inside the pill tells you "what is this thing"
+/// while the colour tells you "what story does it belong to".
+///
+/// Raw values match the strings in the JSON `types` array.
+enum POIConstellationEntity: String, CaseIterable {
+    case hero
+    case animal
+    case creature
+    case object
+    case instrument
+    case deity
+    /// Constellations with no `types` entry — falls back to a
+    /// generic glyph.
+    case none
+}
+
 /// Top-level kind for a constellation badge. Either it's never
 /// visible to this observer (forever-invisible override → gray),
-/// or it carries its entity colour.
+/// or it carries its myth colour.
 enum POIConstellationKind {
     case foreverInvisible
-    case entity(POIConstellationEntity)
+    case myth(POIConstellationMyth)
 }
 
 enum POICategory {
@@ -224,15 +243,15 @@ extension EArtist {
 
     /// Resolve the (top, bottom) badge gradient for a constellation
     /// kind. `foreverInvisible` overrides with a recessive gray;
-    /// everything else dispatches to the entity palette defined in
-    /// `EArtist+ConstellationEntity.swift` — that's where to tweak
-    /// colours per entity.
+    /// everything else dispatches to the myth palette defined in
+    /// `EArtist+ConstellationMyth.swift` — that's where to tweak
+    /// colours per myth cycle.
     func constellationGradient(kind: POIConstellationKind) -> (top: Color, bottom: Color) {
         switch kind {
         case .foreverInvisible:
             return constellationForeverInvisibleGradient
-        case .entity(let entity):
-            return constellationEntityGradient(entity)
+        case .myth(let myth):
+            return constellationMythGradient(myth)
         }
     }
 
@@ -245,8 +264,8 @@ extension EArtist {
     /// Shadow under both the badge and the trailing text — same
     /// envelope so the pill reads as one shape.
     var poiShadow: GraphicsContext.Filter {
-        .shadow(color: .black.opacity(0.22),
-                radius: 2.5, x: 0, y: 1.2)
+        .shadow(color: .systemBackground,
+                radius: 1, x: 0, y: 0)
     }
 
     /// Draws an Apple-Maps-style POI label at `sc`.
@@ -358,13 +377,24 @@ extension EArtist {
         )
         var textCtx = dc.ctx
         textCtx.addFilter(poiShadow)
+//        textCtx.draw(
+//            Text(text)
+////                .font(.footnote.weight(.bold))
+//                .font(.system(size: 10, weight: .bold))
+//                .foregroundStyle(Color.systemBackground),
+//            at:     CGPoint(x: badgeRect.maxX + poiTextLeadingGap,
+//                            y: sc.y),
+//            anchor: .leading
+//        )
         textCtx.draw(
             Text(text)
-                .font(.subheadline.weight(.semibold))
+                .font(.footnote.weight(.bold))
+//                .font(.system(size: 9.5, weight: .bold))
                 .foregroundStyle(textGradient),
             at:     CGPoint(x: badgeRect.maxX + poiTextLeadingGap,
                             y: sc.y),
             anchor: .leading
         )
+        
     }
 }
