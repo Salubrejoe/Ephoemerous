@@ -73,7 +73,11 @@ struct HorizonLayer: EGridLayer {
             rim.viewpoint.skyPoint(altitude: .horizon, at: t)
         }.compactMap { $0 }
         guard pts.count >= 8 else { return }
-        rim.fillCurve(artist.bumpedHorizonRim(pts),
-                      color: artist.horizonFillColor)
+        // Fill *outside* the rim, leaving the visible-sky disc bare.
+        // The below-horizon region (everywhere outside the alt = 0
+        // circle) reads as tinted, so the rim becomes a window onto
+        // the sky rather than a small wash sitting on top of it.
+        rim.fillOutsideCurve(artist.bumpedHorizonRim(pts),
+                             color: artist.horizonFillColor)
     }
 }

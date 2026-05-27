@@ -127,8 +127,8 @@ extension EArtist {
                 badgeSize:       16,
                 symbolPointSize: 8,
                 badgeCorners:    6,    // heptagon
-                badgeIn:         60,
-                textIn:          100
+                badgeIn:         80,
+                textIn:          130
             )
         }
 
@@ -144,8 +144,8 @@ extension EArtist {
                 badgeSize:       12,
                 symbolPointSize: 6,
                 badgeCorners:    4,    // rounded square
-                badgeIn:         90,
-                textIn:          130
+                badgeIn:         130,
+                textIn:          190
             )
         }
 
@@ -168,7 +168,7 @@ extension EArtist {
                 symbolPointSize: 9,
                 badgeCorners:    5,    // pentagon — star
                 badgeIn:         70,
-                textIn:          100
+                textIn:          120
             )
         case .sun:
             return solarStyle(
@@ -206,7 +206,7 @@ extension EArtist {
             case .foreverInvisible:
                 return (0.0,  0.0,  0.0, 0.62, 0.0, 0.32)
             case .circumpolar:
-                return (0.40, 0.9, 0.55, 0.90, 0.85, 0.55)
+                return (0.6, 0.01, 0.95, 0.90, 0.85, 0.55)
             case .zodiac:
                 return (0.89, 0.01, 0.60, 0.95, 0.85, 0.60)
             case .standard:

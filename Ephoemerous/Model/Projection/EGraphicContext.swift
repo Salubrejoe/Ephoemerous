@@ -98,6 +98,48 @@ struct EGraphicContext {
         }
         ctx.fill(path, with: .color(color))
     }
+
+    /// Fill everything *outside* the curve. Builds the same screen-
+    /// space path as `fillCurve` and unions it with a canvas-sized
+    /// outer rectangle; an even-odd fill rule then turns the inner
+    /// curve into a hole. Used by the horizon to tint the
+    /// below-horizon region while leaving the visible-sky disc bare.
+    mutating func fillOutsideCurve(_ pts: [CGPoint?], color: Color) {
+        var inner = Path()
+        var prev: CGPoint? = nil
+
+        for pt in pts {
+            guard let pt else { prev = nil; continue }
+            let sc = toScreen(pt)
+            if let p = prev {
+                let dx = sc.x - p.x, dy = sc.y - p.y
+                if dx * dx + dy * dy < 80_000 {
+                    inner.addLine(to: sc)
+                } else {
+                    inner.move(to: sc)
+                }
+            } else {
+                inner.move(to: sc)
+            }
+            prev = sc
+        }
+        inner.closeSubpath()
+
+        // Generously oversize the outer rect (3× the canvas in each
+        // direction) so panning / zooming can never leave a corner
+        // of the canvas un-tinted.
+        var compound = Path(
+            CGRect(x:      -size.width,
+                   y:      -size.height,
+                   width:  3 * size.width,
+                   height: 3 * size.height)
+        )
+        compound.addPath(inner)
+
+        ctx.fill(compound,
+                 with: .color(color),
+                 style: FillStyle(eoFill: true))
+    }
     
     mutating func fillDot(at sc: CGPoint, radius: CGFloat, color: Color) {
         
