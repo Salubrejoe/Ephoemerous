@@ -4,8 +4,6 @@ struct StarsLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        guard dc.state.showStars else { return }
-
         // Clock mode → cull to the chrome disc (sub-pixel hypot² check
         // against r²). Travel mode → fall back to the canvas-margin
         // rectangle since there's no chrome.
@@ -32,10 +30,8 @@ struct StarsLayer: EGridLayer {
     }
     
     func starsToShow(in dc: EGraphicContext) -> [EStar] {
-        if dc.state.appMode != .travel && dc.state.showHorizon {
-            dc.state.stars
-        } else {
-            dc.state.travelStars
-        }
+        // Clock mode: horizon-filtered list so the watch face only
+        // shows visible-sky stars. Travel mode: full sphere.
+        dc.state.appMode == .travel ? dc.state.travelStars : dc.state.stars
     }
 }

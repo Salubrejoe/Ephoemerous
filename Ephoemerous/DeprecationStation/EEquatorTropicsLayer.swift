@@ -5,7 +5,6 @@ struct EEquatorTropicsLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        guard dc.state.showEquatorTropics else { return }
 //        for parallel in Angle.parallels {
         for parallel in [
             Angle.degrees(-89.99),

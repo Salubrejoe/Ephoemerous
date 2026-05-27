@@ -5,7 +5,6 @@ struct EPlanetsLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        guard dc.state.showPlanets else { return }
         let pairs = EPlanetPosition.allVectors(for: dc.renderedObservationDate,
                                                siderealOffset: dc.localSiderealOffset)
         for (planet, vec, _, _) in pairs {

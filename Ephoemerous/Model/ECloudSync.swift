@@ -1,6 +1,11 @@
 import Foundation
 
 // MARK: - ECloudSync
+// iCloud key-value persistence for the three pieces of state worth
+// syncing across devices: the user's selected + recent stars, and
+// the magnitude filter slider. Per-layer visibility toggles used to
+// live here too; they're gone — every layer is always visible now,
+// so only the magnitude slider remains as a user-facing display knob.
 @MainActor
 final class ECloudSync {
 
@@ -11,24 +16,14 @@ final class ECloudSync {
     private enum Key {
         static let selectedStars    = "selectedStarNames"
         static let recentStars      = "recentStarNames"
-        static let showEquator      = "layerShowEquator"
-        static let showEcliptic     = "layerShowEcliptic"
-        static let showNSMeridians  = "layerShowNSMeridians"
-        static let showULMeridians  = "layerShowULMeridians"
-        static let showHorizon      = "layerShowHorizon"
-        static let showStars        = "layerShowStars"
-        static let showPlanets      = "layerShowPlanets"
-        static let showSelectedStars = "layerShowSelectedStars"
-        static let showConstellationLines = "layerShowConstellationLines"
-        static let showConstellationNames = "layerShowConstellationNames"
         static let magnitudeFilter  = "magnitudeFilter"
     }
 
     // MARK: - Bootstrap
     func start(appState: EAppState) {
-        appState.selectedStars       = resolve(key: Key.selectedStars)
+        appState.selectedStars = resolve(key: Key.selectedStars)
         appState.setRecentStars(resolve(key: Key.recentStars))
-        loadLayerVisibility(into: appState)
+        loadMagnitudeFilter(into: appState)
 
         NotificationCenter.default.addObserver(
             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
@@ -39,7 +34,7 @@ final class ECloudSync {
                 guard let self, let appState else { return }
                 appState.selectedStars = self.resolve(key: Key.selectedStars)
                 appState.setRecentStars(self.resolve(key: Key.recentStars))
-                self.loadLayerVisibility(into: appState)
+                self.loadMagnitudeFilter(into: appState)
                 ELogger.selectedStars("iCloud pushed updates")
             }
         }
@@ -58,7 +53,13 @@ final class ECloudSync {
         store.synchronize()
     }
 
+    func saveMagnitudeFilter(_ value: Double) {
+        store.set(value, forKey: Key.magnitudeFilter)
+        store.synchronize()
+    }
+
     // MARK: - Read
+
     private func resolve(key: String) -> [EStar] {
         guard let names = store.array(forKey: key) as? [String] else { return [] }
         let all = db.workableStars
@@ -71,34 +72,9 @@ final class ECloudSync {
         }
     }
 
-    // MARK: - Layer visibility
-    
-    func saveLayerVisibility(_ state: EAppState) {
-        store.set(state.showEquatorTropics,   forKey: Key.showEquator)
-        store.set(state.showEcliptic,         forKey: Key.showEcliptic)
-        store.set(state.showNSMeridians,      forKey: Key.showNSMeridians)
-        store.set(state.showULMeridians,      forKey: Key.showULMeridians)
-        store.set(state.showHorizon,          forKey: Key.showHorizon)
-        store.set(state.showStars,            forKey: Key.showStars)
-        store.set(state.showPlanets,          forKey: Key.showPlanets)
-        store.set(state.showSelectedStars,        forKey: Key.showSelectedStars)
-        store.set(state.showConstellationLines,   forKey: Key.showConstellationLines)
-        store.set(state.showConstellationNames,   forKey: Key.showConstellationNames)
-        store.set(state.magnitudeFilter,          forKey: Key.magnitudeFilter)
-        store.synchronize()
-    }
-
-    func loadLayerVisibility(into state: EAppState) {
-        if store.object(forKey: Key.showEquator)       != nil { state.showEquatorTropics  = store.bool(forKey: Key.showEquator) }
-        if store.object(forKey: Key.showEcliptic)      != nil { state.showEcliptic        = store.bool(forKey: Key.showEcliptic) }
-        if store.object(forKey: Key.showNSMeridians)   != nil { state.showNSMeridians     = store.bool(forKey: Key.showNSMeridians) }
-        if store.object(forKey: Key.showULMeridians)   != nil { state.showULMeridians     = store.bool(forKey: Key.showULMeridians) }
-        if store.object(forKey: Key.showHorizon)       != nil { state.showHorizon         = store.bool(forKey: Key.showHorizon) }
-        if store.object(forKey: Key.showStars)         != nil { state.showStars           = store.bool(forKey: Key.showStars) }
-        if store.object(forKey: Key.showPlanets)       != nil { state.showPlanets         = store.bool(forKey: Key.showPlanets) }
-        if store.object(forKey: Key.showSelectedStars)      != nil { state.showSelectedStars       = store.bool(forKey: Key.showSelectedStars) }
-        if store.object(forKey: Key.showConstellationLines) != nil { state.showConstellationLines  = store.bool(forKey: Key.showConstellationLines) }
-        if store.object(forKey: Key.showConstellationNames) != nil { state.showConstellationNames  = store.bool(forKey: Key.showConstellationNames) }
-        if store.object(forKey: Key.magnitudeFilter)        != nil { state.magnitudeFilter         = store.double(forKey: Key.magnitudeFilter) }
+    private func loadMagnitudeFilter(into state: EAppState) {
+        if store.object(forKey: Key.magnitudeFilter) != nil {
+            state.magnitudeFilter = store.double(forKey: Key.magnitudeFilter)
+        }
     }
 }

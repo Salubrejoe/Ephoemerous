@@ -87,7 +87,7 @@ struct EListView: View {
     @Environment(EAppState.self) var state
     @Environment(\.dismiss) var dismiss
     @State private var searchText    = ""
-    @State private var showSortSheet = false
+    
     @State private var sortOrder     = EStarSort.magnitude
     @State private var activeTab     = EListTab.recents
     private let magnitudeRange = -2.0...8.0
@@ -164,9 +164,6 @@ struct EListView: View {
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $searchText, prompt: Strings.Prompts.searchBar)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button { showSortSheet = true } label: { Image(symbol: .magnitudeIcon) }
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 if activeTab == .stars {
                     Menu {
@@ -198,15 +195,7 @@ struct EListView: View {
             }
             
         }
-        .sheet(isPresented: $showSortSheet) {
-            FilterView(
-                magnitudeCap: Bindable(state).magnitudeFilter,
-                magnitudeRange: -2.0...8.0,
-                starCount: displayedStars.count
-            )
-            .presentationDetents([.height(320)])
-            .presentationDragIndicator(.visible)
-        }
+       
     }
 
 

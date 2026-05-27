@@ -89,18 +89,6 @@ class EAppState {
     var isShowingDatePicker:     Bool = false
     var isShowingLocationPicker: Bool = false
 
-    // MARK: - Layer visibility
-    var showEquatorTropics: Bool = true
-    var showEcliptic:       Bool = true
-    var showNSMeridians:    Bool = true
-    var showULMeridians:    Bool = true
-    var showHorizon:        Bool = true
-    var showStars:          Bool = true
-    var showPlanets:        Bool = true
-    var showSelectedStars:  Bool = true
-    var showConstellationLines: Bool = true
-    var showConstellationNames: Bool = true
-
     // MARK: - Preset backing store  (logic → EViewPreset.swift)
     var _activeTransition: EPresetTransition? = nil
 

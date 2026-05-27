@@ -21,12 +21,7 @@ struct ConstellationNamesLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        let stateRef = dc.state
-        guard dc.state.showConstellationNames else {
-            DispatchQueue.main.async { stateRef.constellationLabelHitRects = [:] }
-            return
-        }
-
+        let stateRef    = dc.state
         let observerLat = dc.state.origin.latitude.degrees
 
         let tappable  = dc.renderedScale >= artist.labelTapMinScale

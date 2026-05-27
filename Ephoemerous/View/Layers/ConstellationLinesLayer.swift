@@ -9,8 +9,6 @@ struct ConstellationLinesLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        guard dc.state.showConstellationLines else { return }
-
         for (_, segs) in ConstellationLines.shared.segments {
             for seg in segs {
                 guard let pa = projected(seg.a, in: dc),

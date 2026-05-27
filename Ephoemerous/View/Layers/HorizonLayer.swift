@@ -17,8 +17,6 @@ struct HorizonLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        guard dc.state.showHorizon else { return }
-
         // Two separate local copies of the graphics context: `fillCurve`
         // clips cumulatively, so the band-loop's clips would otherwise
         // eat into the horizon squircle drawn afterwards.
@@ -51,7 +49,7 @@ struct HorizonLayer: EGridLayer {
                               color: .tertiary,
                               width: 12 / abs(alt.degrees))
             bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
-                                   color: artist.horizonFillColor.opacity(0.1))
+                                   color: artist.horizonFillColor.opacity(0.0001))
         }
 
         // Horizon great circle as a deformable squircle: each projection

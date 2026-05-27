@@ -93,6 +93,7 @@ struct DatePickerPanel: View {
     /// using the same rules wheel edits do, then dismisses the panel.
     private var actionRow: some View {
         HStack {
+            Spacer()
             Button {
                 state.commitPickedObservationDate(.now)
                 state.isShowingDatePicker = false
@@ -106,7 +107,7 @@ struct DatePickerPanel: View {
             .buttonStyle(.plain)
             .glassEffect(.clear.interactive(), in: .capsule)
 
-            Spacer()
+            
         }
     }
 

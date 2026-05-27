@@ -23,7 +23,7 @@ struct Strings {
     
     // MARK: - Prompts
     struct Prompts {
-        static let searchBar   = "Search, filter, follow..."
+        static let searchBar   = "Search, remember..."
         static let searchBar2  = "Name, constellation, class..."
     }
     

@@ -29,8 +29,6 @@ struct EclipticLayer: EGridLayer {
     //    private let zodiacOpacity  : Double  = 0.5
     
     func draw(in dc: inout EGraphicContext) {
-        guard dc.state.showEcliptic else { return }
-        
         let samples = EProjection.sampleEcliptic(viewpoint:      dc.viewpoint,
                                                  siderealOffset: dc.localSiderealOffset)
             .compactMap { $0 }

@@ -20,35 +20,31 @@ struct MainToolbar: View {
             // Inline expandable panels live above the toolbar. Both
             // animate in/out via the same transition so the toolbar
             // feels like a single coherent surface.
-            if state.isShowingLocationPicker {
-                LocationPickerPanel()
-                    .transition(.move(edge: .bottom)
-                        .combined(with: .opacity)
-                        .combined(with: .blurReplace)
-                        .combined(with: .scale))
-            }
-
-            if state.isShowingDatePicker {
-                DatePickerPanel()
-                    .transition(.move(edge: .bottom)
-                        .combined(with: .opacity)
-                        .combined(with: .blurReplace)
-                        .combined(with: .scale))
-            }
 
             GlassEffectContainer {
                 HStack(spacing: 0) {
                     locationButton
-                        .padding(.horizontal, 0)
-//                        .padding(.vertical,   8)
                         .glassEffect(.clear.interactive(),
                                      in: .capsule)
                     Spacer()
                     dateButton
-                        .padding(.horizontal, 0)
-//                        .padding(.vertical,   8)
                         .glassEffect(.clear.interactive(),
                                      in: .capsule)
+                }
+                if state.isShowingLocationPicker {
+                    LocationPickerPanel()
+                        .transition(.move(edge: .top)
+                            .combined(with: .opacity)
+                            .combined(with: .blurReplace)
+                            .combined(with: .scale))
+                }
+                
+                if state.isShowingDatePicker {
+                    DatePickerPanel()
+                        .transition(.move(edge: .top)
+                            .combined(with: .opacity)
+                            .combined(with: .blurReplace)
+                            .combined(with: .scale))
                 }
             }
             

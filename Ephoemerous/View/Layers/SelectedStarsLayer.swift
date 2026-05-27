@@ -5,7 +5,6 @@ struct SelectedStarsLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        guard dc.state.showSelectedStars else { return }
         // Opening a constellation no longer paints its figure-stars as
         // selected — constellations are now their own tap-target class
         // (ConstellationNamesLayer + ObjectsTrackingOverlay), so this

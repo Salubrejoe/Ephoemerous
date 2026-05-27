@@ -30,6 +30,15 @@ enum POIGlyph {
     case unicode(String)
 }
 
+/// Shape for the tier-0 "dot" marker — what the POI collapses to
+/// when zoomed below `badgeIn`. Most categories want a plain
+/// circle; followed stars want a tiny pentagon-squircle so the
+/// silhouette already reads as a star at the smallest scale.
+enum POIDotShape {
+    case circle
+    case squircle(corners: Int, bulge: CGFloat)
+}
+
 /// Mythological cycle a constellation belongs to — pulled from
 /// `constellation_categories.json` via
 /// `EArtist.constellationEntity(of:)`. Drives the badge gradient
@@ -84,6 +93,11 @@ extension EArtist {
         /// at a glance (constellations square, stars pentagonal,
         /// sun hex, moon triangular, planets heptagonal).
         let badgeCorners:    Int
+        /// Shape used for the tier-0 dot marker.
+        let dotShape:        POIDotShape
+        /// Radius of the tier-0 marker (circle radius / squircle
+        /// half-extent).
+        let dotRadius:       CGFloat
         /// Renderered-scale at which the badge appears (tier 0 → 1).
         let badgeIn:         Double
         /// Renderered-scale at which the text appears (tier 1 → 2).
@@ -107,11 +121,13 @@ extension EArtist {
                 badgeSize:       18,
                 symbolPointSize: 9,
                 badgeCorners:    corners,
+                dotShape:        .circle,
+                dotRadius:       2.5,
                 badgeIn:         0,    // always badge — top-priority bodies
                 textIn:          80
             )
         }
-        
+
         func moonStyle(top: Color, bottom: Color, corners: Int) -> POICategoryStyle {
             POICategoryStyle(
                 gradientTop:     top,
@@ -122,6 +138,8 @@ extension EArtist {
                 badgeSize:       18,
                 symbolPointSize: 9,
                 badgeCorners:    corners,
+                dotShape:        .circle,
+                dotRadius:       2.5,
                 badgeIn:         0,    // always badge — top-priority bodies
                 textIn:          80
             )
@@ -137,6 +155,8 @@ extension EArtist {
                 badgeSize:       16,
                 symbolPointSize: 8,
                 badgeCorners:    6,    // heptagon
+                dotShape:        .circle,
+                dotRadius:       2.5,
                 badgeIn:         80,
                 textIn:          130
             )
@@ -154,6 +174,8 @@ extension EArtist {
                 badgeSize:       12,
                 symbolPointSize: 6,
                 badgeCorners:    4,    // rounded square
+                dotShape:        .circle,
+                dotRadius:       1.0,  // smaller — constellations recede at low zoom
                 badgeIn:         130,
                 textIn:          190
             )
@@ -177,6 +199,8 @@ extension EArtist {
                 badgeSize:       18,
                 symbolPointSize: 9,
                 badgeCorners:    5,    // pentagon — star
+                dotShape:        .squircle(corners: 5, bulge: poiBadgeBulge),
+                dotRadius:       2.5,
                 badgeIn:         70,
                 textIn:          120
             )
@@ -245,14 +269,22 @@ extension EArtist {
         let style = poiStyle(for: category)
         let scale = dc.renderedScale
 
-        // Tier 0 — maybe-dot.
+        // Tier 0 — maybe-dot. Shape (circle / squircle) and radius
+        // come from the category style so a followed star
+        // collapses to a tiny pentagon rather than a plain dot.
         if scale < style.badgeIn {
             if drawDot {
-                let r: CGFloat = 2.5
-                dc.ctx.fill(
-                    Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
-                                           width: 2 * r, height: 2 * r)),
-                    with: .color(style.gradientBottom))
+                let r    = style.dotRadius
+                let rect = CGRect(x: sc.x - r, y: sc.y - r,
+                                  width: 2 * r, height: 2 * r)
+                let path: Path
+                switch style.dotShape {
+                case .circle:
+                    path = Path(ellipseIn: rect)
+                case .squircle(let corners, let bulge):
+                    path = Squircle(corners: corners, bulge: bulge).path(in: rect)
+                }
+                dc.ctx.fill(path, with: .color(style.gradientBottom))
             }
             return
         }
