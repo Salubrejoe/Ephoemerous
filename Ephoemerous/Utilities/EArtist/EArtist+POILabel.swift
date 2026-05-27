@@ -206,9 +206,9 @@ extension EArtist {
             case .foreverInvisible:
                 return (0.0,  0.0,  0.0, 0.62, 0.0, 0.32)
             case .circumpolar:
-                return (0.50, 0.06, 0.55, 0.90, 0.85, 0.55)
+                return (0.40, 0.9, 0.55, 0.90, 0.85, 0.55)
             case .zodiac:
-                return (0.59, 0.06, 0.60, 0.95, 0.85, 0.60)
+                return (0.89, 0.01, 0.60, 0.95, 0.85, 0.60)
             case .standard:
                 return (0.78, 0.06, 0.50, 0.85, 0.75, 0.50)
             }
@@ -219,15 +219,15 @@ extension EArtist {
         // shifts (Swift's `truncatingRemainder` returns the same
         // sign as the dividend).
         let hue = (h + normDec * dh + 1.0).truncatingRemainder(dividingBy: 1.0)
-//        return (
-//            top:    Color(hue: hue, saturation: sT, brightness: bT),
-//            bottom: Color(hue: hue, saturation: sB, brightness: bB)
-//        )
-        
         return (
-            top: .quaternaryLabel,
-            bottom: .tertiary
+            top:    Color(hue: hue, saturation: sT, brightness: bT),
+            bottom: Color(hue: hue, saturation: sB, brightness: bB)
         )
+        
+//        return (
+//            top: .quaternaryLabel,
+//            bottom: .tertiary
+//        )
     }
 
     /// Squircle bulge shared by every badge — corner count is

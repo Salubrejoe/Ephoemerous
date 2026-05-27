@@ -21,17 +21,17 @@ struct CelestialCanva: View {
     private var layers: [any EGridLayer] {
         [
 //            WatchBackgroundLayer(),
-            EarthGridLayer(),
             HorizonLayer(),
+            EarthGridLayer(),
             CardinalLabelsLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
+            SelectedStarsLayer(),
             EclipticLayer(),
+            EPlanetsLayer(),
             SunLayer(),
             EMoonLayer(),
-            EPlanetsLayer(),
-            SelectedStarsLayer(),
 //            ClipAndHoursLayer(),
 //            WatchRimLayer(),
         ]

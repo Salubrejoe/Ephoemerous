@@ -16,10 +16,6 @@ struct HorizonLayer: EGridLayer {
 
     let artist = EArtist.shared
 
-    private let corners : Int     = 90
-    private let bulge   : CGFloat = 2.1
-    private let width   : CGFloat = 1
-
     func draw(in dc: inout EGraphicContext) {
         guard dc.state.showHorizon else { return }
 
@@ -38,7 +34,7 @@ struct HorizonLayer: EGridLayer {
         // leaving an unpainted gap otherwise.
         var bands = dc
         if let shape = chromeShape {
-            bands.ctx.clip(to: shape)
+//            bands.ctx.clip(to: shape)
 //            bands.ctx.fill(shape, with: .color(.tertiarySystemFill))
         }
         // Twilight bands: small circles at constant altitude just
@@ -46,12 +42,15 @@ struct HorizonLayer: EGridLayer {
         // are altitudes, not declinations — e.g. `.civil` = -6° below
         // the horizon, `.astronomical` = -18°). Filled with reduced
         // opacity so they stack into a smooth twilight gradient.
-        for alt in Angle.sunsets where alt != .horizon {
+        for alt in Angle.parallels where alt != .horizon {
             let pts = EProjection.sampleCurve(viewpoint: bands.viewpoint) { t in
                 bands.viewpoint.skyPoint(altitude: alt, at: t)
             }.compactMap { $0 }
             guard pts.count >= 8 else { continue }
-//            bands.fillCurve(pts, color: artist.sunsetStrokeColor.opacity(0.4))
+            bands.strokeCurve(artist.bumpedHorizonRim(pts),
+                              color: .tertiary,
+                              width: 12 / abs(alt.degrees))
+//            bands.fillCurve(pts, color: artist.horizonFillColor.opacity(0.4))
 //            bands.strokeCurve(pts, color: artist.sunsetStrokeColor)
         }
 
@@ -74,25 +73,7 @@ struct HorizonLayer: EGridLayer {
             rim.viewpoint.skyPoint(altitude: .horizon, at: t)
         }.compactMap { $0 }
         guard pts.count >= 8 else { return }
-        rim.fillCurve(bumped(pts), color: artist.horizonFillColor)
-//        rim.strokeCurve(bumped(pts), color: artist.horizonFillColor, width: width)
-    }
-
-    /// Push each sample radially outward from the curve's centroid by
-    /// `Squircle.lameRadius(θ)`. Lays the squircle's bulge pattern over
-    /// whatever shape the projection produces — circle in pure
-    /// stereographic, deformed conic otherwise.
-    private func bumped(_ pts: [CGPoint]) -> [CGPoint?] {
-        let n    = CGFloat(pts.count)
-        let cx   = pts.map(\.x).reduce(0, +) / n
-        let cy   = pts.map(\.y).reduce(0, +) / n
-        let corn = CGFloat(corners)
-        return pts.map { p in
-            let dx = p.x - cx
-            let dy = p.y - cy
-            let θ  = atan2(dy, dx)
-            let k  = Squircle.lameRadius(angle: θ, corners: corn, bulge: bulge)
-            return CGPoint(x: cx + dx * k, y: cy + dy * k)
-        }
+        rim.fillCurve(artist.bumpedHorizonRim(pts),
+                      color: artist.horizonFillColor)
     }
 }

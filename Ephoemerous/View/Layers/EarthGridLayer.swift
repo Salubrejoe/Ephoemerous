@@ -80,19 +80,10 @@ struct EarthGridLayer: EGridLayer {
             (.degrees(-89.99), "S"),
         ]
         for (dec, text) in poles {
-            let q = EPrecession
-                .equatorialVector(ra: .zero, dec: dec)
-                .sidereallyRotated(by: dc.localSiderealOffset)
-            guard let p = EProjection.project(q, viewpoint: dc.viewpoint) else { continue }
-            let sc = dc.toScreen(p)
-            guard dc.onScreen(sc, margin: 12) else { continue }
-            dc.ctx.draw(
-                Text(text)
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(artist.gridColor),
-                at:     sc,
-                anchor: .center
-            )
+            guard let sc = projectedScreenPoint(ra: .zero, dec: dec, in: dc),
+                  dc.onScreen(sc, margin: 12)
+            else { continue }
+            artist.drawGridLabel(text, at: sc, weight: .semibold, in: &dc)
         }
     }
 
@@ -105,19 +96,22 @@ struct EarthGridLayer: EGridLayer {
     func drawHourLabels(in dc: inout EGraphicContext) {
         for h in [0.0, 6.0, 12.0, 18.0] {
             let ra = Angle.radians(h / 24.0 * Double.twoPi)
-            let q  = EPrecession
-                .equatorialVector(ra: ra, dec: .zero)
-                .sidereallyRotated(by: dc.localSiderealOffset)
-            guard let p = EProjection.project(q, viewpoint: dc.viewpoint) else { continue }
-            let sc = dc.toScreen(p)
-            guard dc.onScreen(sc, margin: 12) else { continue }
-            dc.ctx.draw(
-                Text("\(Int(h))h")
-                    .font(.footnote)
-                    .foregroundStyle(artist.gridColor),
-                at:     sc,
-                anchor: .center
-            )
+            guard let sc = projectedScreenPoint(ra: ra, dec: .zero, in: dc),
+                  dc.onScreen(sc, margin: 12)
+            else { continue }
+            artist.drawGridLabel("\(Int(h))h", at: sc, in: &dc)
         }
+    }
+
+    /// Sidereally-rotated equatorial → screen projection. Shared
+    /// by both label loops — they only differ in (ra, dec) tuples.
+    private func projectedScreenPoint(ra:  Angle,
+                                      dec: Angle,
+                                      in dc: EGraphicContext) -> CGPoint? {
+        let q = EPrecession
+            .equatorialVector(ra: ra, dec: dec)
+            .sidereallyRotated(by: dc.localSiderealOffset)
+        guard let p = EProjection.project(q, viewpoint: dc.viewpoint) else { return nil }
+        return dc.toScreen(p)
     }
 }

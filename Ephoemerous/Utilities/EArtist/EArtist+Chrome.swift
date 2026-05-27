@@ -9,22 +9,17 @@ import LoreKit
 // with the fill.
 extension EArtist {
 
-    // MARK: Crown stroke
-    var crownBorderColor : Color  { .primary }
-    var crownBorderWidth : Double { 2.0 }
-
     // MARK: Disc / clip geometry
-    // Shared by the sky clip, sky background, crown and pan bounds.
-    //   • clipRadius  — disc radius in NS projection units (dec −30°)
-    //   • clipBleed   — px clipped past the disc so the rim is real
-    //                   content, not a jagged clip seam
-    //   • bezelWidth  — background-tinted ring laid over the old edge;
-    //                   (clipBleed − bezelWidth) px peeks past it
-    //   • hourRingGap — gap from the disc to the hour-number midline
-    var clipRadius  : Double { 2 * sqrt(3) }
-    var clipBleed   : Double { 8 }
-    var bezelWidth  : Double { 4 }
-    var hourRingGap : Double { 20 }
+    // Shared by the sky clip, sky background, and pan bounds.
+    //   • clipRadius — disc radius in projection units; the
+    //                  Stars / SelectedStars layers use it to cull
+    //                  off-disc stars in clock mode, and Horizon
+    //                  uses `chromePath` to clip its fill to the
+    //                  watch face.
+    //   • clipBleed  — px clipped past the disc so the rim is real
+    //                  content, not a jagged clip seam.
+    var clipRadius : Double { 2 * sqrt(3) }
+    var clipBleed  : Double { 8 }
 
     // MARK: Disc shape
     // Tweak corners / bulge to retune the disc; HorizonLayer's clip

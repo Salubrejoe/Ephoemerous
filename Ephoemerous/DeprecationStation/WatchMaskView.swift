@@ -32,7 +32,7 @@ struct WatchMaskView: View {
 
             ForEach(0..<24, id: \.self) { h in
                 let angle   = -(-.pi / 2 - Double(h) * .pi / 12.0)
-                let midR    = (discR + ringW / 2) + EArtist.shared.hourRingGap
+                let midR    = (discR + ringW / 2) + 20    // legacy hourRingGap
                 let tz      = TimeZone.current.secondsFromGMT(for: state.observationDate) / 3600
                 let label   = (h + tz + 24) % 24
                 let hour    = Calendar.current.component(.hour, from: Date())
@@ -99,7 +99,7 @@ struct WatchMaskView: View {
         // Background-tinted rim over the old hard seam: content fills to
         // discR, this ring sits at [discR, discR+bezelWidth], then the
         // remaining clipBleed−bezelWidth px of content peeks past it.
-        let bw   = EArtist.shared.bezelWidth
+        let bw   = 4.0    // legacy bezelWidth
         let bezR = discR + bw / 2
         ctx.stroke(
             Path(ellipseIn: CGRect(x: cc.x - bezR, y: cc.y - bezR,
