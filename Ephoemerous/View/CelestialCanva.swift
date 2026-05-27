@@ -32,6 +32,7 @@ struct CelestialCanva: View {
             EPlanetsLayer(),
             SunLayer(),
             EMoonLayer(),
+            UserLocationLayer(),   // "you are here" puck — drawn last so it sits on top
 //            ClipAndHoursLayer(),
 //            WatchRimLayer(),
         ]

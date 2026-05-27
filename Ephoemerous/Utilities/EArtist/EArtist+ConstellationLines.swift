@@ -6,8 +6,8 @@ import SwiftUI
 // breathing gap so the line never touches the star dot.
 extension EArtist {
 
-    var constellationLineColor : Color  { .primary }
-    var constellationLineWidth : Double { 0.6 }
+    var constellationLineColor : Color  { .tertiary }
+    var constellationLineWidth : Double { 0.7 }
 
     /// Centre-to-centre spacing between dots along a stick-figure
     /// segment. Tunable — increase for sparser, decrease for denser.
@@ -16,7 +16,7 @@ extension EArtist {
     /// Extra screen-space gap added to each end of a segment, *on top*
     /// of the projected star radius. Keeps a visible halo of bare canvas
     /// around every star regardless of zoom.
-    var constellationLineGapPad    : Double { 0.2 }
+    var constellationLineGapPad    : Double { 0.7 }
 
     /// Magnitude cutoff above which we don't bother drawing a segment.
     /// Set generously — figure-stars are almost always Vmag < 4 anyway.
