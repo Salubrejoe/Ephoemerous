@@ -19,17 +19,66 @@ extension EAppState {
     // MARK: Public entry points
 
     /// Open the detail sheet for `obj` and pan to it.
+    ///
+    /// If a *different* detail is already showing, this routes through
+    /// a nil → delay → new sequence rather than assigning straight to
+    /// `obj`. SwiftUI's `.sheet(item:)` is documented to dismiss +
+    /// represent on identity change, but in practice it often keeps
+    /// the `UIPresentationController` alive and only swaps content —
+    /// and when it does, the new content's `.presentationDetents`
+    /// doesn't always re-apply, so the new sheet ends up at full
+    /// height instead of the configured `.fraction(1/3)`. The
+    /// two-step forces a clean teardown so the new presentation
+    /// reads detents from scratch.
+    ///
+    /// `_focusEpoch` is bumped on every call (here and in
+    /// `dismissDetail()`), and the deferred block aborts if the
+    /// epoch has moved on — so a flurry of taps during the dismiss
+    /// window settles on the last one rather than racing.
     func focus(on obj: ESkyObject) {
+        _focusEpoch &+= 1
+        let epoch = _focusEpoch
+
+        if let current = detailDestination, current.id != obj.id {
+            detailDestination = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
+                guard let self, self._focusEpoch == epoch else { return }
+                self.detailDestination = obj
+                self.panTo(obj)
+            }
+            return
+        }
+
         detailDestination = obj
+        panTo(obj)
+    }
+
+    /// Pan the camera to `obj` WITHOUT changing the detail
+    /// destination — used when an inner navigation (e.g. pushing
+    /// from a constellation card to its star) wants the canvas to
+    /// follow without dismissing / re-presenting the sheet. Also
+    /// called from each detail view's `.onAppear` so a pop-back
+    /// from a pushed detail re-pans to the underlying view's
+    /// object.
+    func panTo(_ obj: ESkyObject) {
         guard let sc = screenPosition(of: obj) else { return }
         panFocus(toward: sc)
     }
 
     /// Close the detail sheet. Camera stays where the user left it
-    /// (intentional — Apple Maps doesn't snap back either).
+    /// (intentional — Apple Maps doesn't snap back either). Bumps
+    /// the focus epoch so any in-flight deferred `focus(on:)` from
+    /// the previous interaction can't bring the sheet back.
     func dismissDetail() {
+        _focusEpoch &+= 1
         detailDestination = nil
     }
+
+    /// Roughly the iOS sheet dismiss-animation duration — long
+    /// enough that the existing sheet has fully torn down before
+    /// the new one presents, short enough to feel like a single
+    /// fluid swap to the user.
+    private var sheetSwapDelay: TimeInterval { 0.35 }
 
     // MARK: Screen-position lookup
 

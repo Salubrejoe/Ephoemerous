@@ -115,6 +115,13 @@ class EAppState {
     // The root sheet in MainView binds to this; canvas taps go through
     // `focus(on:)` which sets it and pans the camera.
     var detailDestination: ESkyObject? = nil
+    /// Monotonic counter bumped on every `focus(on:)` / `dismissDetail()`
+    /// call. The deferred re-presentation in `focus(on:)` captures the
+    /// epoch it scheduled with and aborts if anything else has happened
+    /// since — so rapid taps can't race a pending `detailDestination`
+    /// assignment back on top of a newer one. Observation-ignored:
+    /// pure internal coordination, no view should redraw on it.
+    @ObservationIgnored var _focusEpoch: UInt64 = 0
 
     // MARK: - Sheet state  (list + filter + inline pickers — modal flow
     // that hasn't been re-architected yet)

@@ -28,12 +28,13 @@ struct EStarDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:    star.displayName,
-                subtitle: subtitleText,
-                accent:   accent,
-                icon:     { POIBadgeView(category: .followedStar(star)) },
-                onShare:  {},
-                onDismiss: { state.dismissDetail() }
+                title:         star.displayName,
+                subtitle:      subtitleText,
+                accent:        accent,
+                icon:          { POIBadgeView(category: .followedStar(star)) },
+                leadingSymbol: "chevron.backward",
+                onLeading:     { dismiss() },
+                onDismiss:     { state.dismissDetail() }
             )
             RememberButton(obj: .star(star))
                 .padding(.horizontal, 16)
@@ -43,6 +44,23 @@ struct EStarDetailView: View {
             Spacer(minLength: 0)
         }
         .background(glowBackground())
+        // Hide the system NavigationStack chrome on this view
+        // specifically. DetailHost already hides the bar for the
+        // *root* view of the stack, but pushed destinations (this
+        // view, when reached from a constellation card) get their
+        // own bar back unless they suppress it themselves.
+        .toolbar(.hidden, for: .navigationBar)
+        .onAppear {
+            // Pan the canvas to this star whether we arrived here via
+            // canvas-tap (focus already panned — this is a harmless
+            // re-pan to the same point) or via a push from a
+            // constellation card (only trigger). Also captures the
+            // star as a recently-viewed item regardless of entry path
+            // (the navigationDestination wrapper used to do this for
+            // the constellation-push case only).
+            state.panTo(.star(star))
+            state.recordViewed(star)
+        }
     }
 
     // MARK: Stats row

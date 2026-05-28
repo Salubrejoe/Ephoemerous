@@ -4,37 +4,43 @@ import SwiftUI
 // Apple-Maps place-card-style header used by every detail view in the
 // bottom-third sheet.
 //
-//   [share]        TITLE        [xmark]
+//   [leading]      TITLE        [xmark]
 //                 subtitle
 //                  [icon]
 //
-// Share button (top-leading) is wired but currently no-ops — the
-// system share sheet for sky-object IDs will come later. X-mark
-// (top-trailing) dismisses via the host's closure. The icon below
-// the subtitle is a small category cue (star symbol, constellation
-// entity glyph, planet sigil) tinted to the same accent as the
-// object's badge so the header reads as part of the same visual
-// species as the canvas POI.
+// Leading button is parameterised (`leadingSymbol` + `onLeading`) so
+// different detail surfaces can use it for different jobs — share for
+// constellation / planet today, back-chevron for star (which can be
+// reached via a push from the constellation roster, so it needs an
+// affordance to pop). X-mark (top-trailing) dismisses the sheet via
+// the host's closure.
+//
+// The icon below the subtitle is a small category cue (`POIBadgeView`
+// for stars / planets, an SF Symbol for constellations) so the header
+// reads as part of the same visual species as the canvas POI.
 struct DetailHeader<Icon: View>: View {
-    let title:     String
-    let subtitle:  String
-    let accent:    Color
-    let icon:      Icon
-    let onShare:   () -> Void
-    let onDismiss: () -> Void
+    let title:         String
+    let subtitle:      String
+    let accent:        Color
+    let icon:          Icon
+    let leadingSymbol: String
+    let onLeading:     () -> Void
+    let onDismiss:     () -> Void
 
-    init(title:    String,
-         subtitle: String,
-         accent:   Color,
+    init(title:         String,
+         subtitle:      String,
+         accent:        Color,
          @ViewBuilder icon: () -> Icon,
-         onShare:   @escaping () -> Void,
-         onDismiss: @escaping () -> Void) {
-        self.title     = title
-        self.subtitle  = subtitle
-        self.accent    = accent
-        self.icon      = icon()
-        self.onShare   = onShare
-        self.onDismiss = onDismiss
+         leadingSymbol: String,
+         onLeading:     @escaping () -> Void,
+         onDismiss:     @escaping () -> Void) {
+        self.title         = title
+        self.subtitle      = subtitle
+        self.accent        = accent
+        self.icon          = icon()
+        self.leadingSymbol = leadingSymbol
+        self.onLeading     = onLeading
+        self.onDismiss     = onDismiss
     }
 
     var body: some View {
@@ -58,9 +64,9 @@ struct DetailHeader<Icon: View>: View {
             .frame(maxWidth: .infinity)
 
             HStack {
-                CircleIconButton(systemName: "square.and.arrow.up", action: onShare)
+                CircleIconButton(systemName: leadingSymbol, action: onLeading)
                 Spacer()
-                CircleIconButton(systemName: "xmark",                action: onDismiss)
+                CircleIconButton(systemName: "xmark",       action: onDismiss)
             }
             .padding(.horizontal, 16)
         }

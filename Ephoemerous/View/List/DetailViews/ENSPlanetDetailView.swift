@@ -17,12 +17,13 @@ struct ENSPlanetDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:    planet.name,
-                subtitle: planet.mythology,
-                accent:   accent,
-                icon:     { POIBadgeView(category: .planet(planet)) },
-                onShare:  {},
-                onDismiss: { state.dismissDetail() }
+                title:         planet.name,
+                subtitle:      planet.mythology,
+                accent:        accent,
+                icon:          { POIBadgeView(category: .planet(planet)) },
+                leadingSymbol: "square.and.arrow.up",
+                onLeading:     {},
+                onDismiss:     { state.dismissDetail() }
             )
             // No RememberButton — planets, sun, and moon aren't
             // favouritable. The favourites system is for the things

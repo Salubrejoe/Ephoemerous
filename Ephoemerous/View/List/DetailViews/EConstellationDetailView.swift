@@ -1,9 +1,19 @@
 import SwiftUI
 
+// MARK: - EConstellationDetailView
+// Detail sheet for a constellation. Header + Remember button + a
+// horizontal scroll of `StarCard`s that each NavigationLink to the
+// corresponding `EStarDetailView`. Pushing into a star pans the
+// canvas to that star (via the star detail's onAppear); popping
+// back re-pans here (via this view's onAppear) — Apple-Maps-style
+// "the canvas follows the navigation".
+
 struct EConstellationDetailView: View {
     @Environment(EAppState.self) var state
     let constellation: EConstellation
 
+    /// Brightest dozen figure-stars of the constellation, sorted
+    /// by apparent magnitude.
     private var stars: [EStar] {
         StarDatabase.shared.workableStars
             .filter { $0.constellation == constellation && $0.name != "Unknown" }
@@ -33,7 +43,8 @@ struct EConstellationDetailView: View {
     }
 
     /// Entity symbol from the existing POI palette — same SF Symbol
-    /// the constellation's POI badge shows on the canvas.
+    /// the constellation's POI badge used on the canvas when it
+    /// still had a badge.
     private var iconSymbolName: String {
         EArtist.shared.constellationEntitySymbol(
             EArtist.shared.constellationEntity(of: constellation)
@@ -43,68 +54,85 @@ struct EConstellationDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:    constellation.fullName,
-                subtitle: subtitleText,
-                accent:   accent,
-                icon:     { Image(systemName: iconSymbolName) },
-                onShare:  {},
-                onDismiss: { state.dismissDetail() }
+                title:         constellation.fullName,
+                subtitle:      subtitleText,
+                accent:        accent,
+                icon:          { Image(systemName: iconSymbolName) },
+                leadingSymbol: "square.and.arrow.up",
+                onLeading:     {},
+                onDismiss:     { state.dismissDetail() }
             )
             RememberButton(obj: .constellation(constellation))
                 .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-            List {
-                Section {
-                    if !stars.isEmpty {
-                        ForEach(stars.prefix(12)) { star in
-                            NavigationLink(value: star) {
-                                EConstellationStarRow(star: star)
-                            }
-                            .padding(.leading, 33)
-                            .overlay {
-                                FavouriteButton(star: star)
-                                    .scaleEffect(0.6)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                        if stars.count > 12 {
-                            Text("...and \(stars.count - 12) more")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                        }
+                .padding(.bottom, 12)
+            roster
+            Spacer(minLength: 0)
+        }
+        // The constellation is the *underlying* detail when a star
+        // card is pushed onto the stack. When the user pops back,
+        // this view reappears — `.onAppear` re-pans the canvas to
+        // the constellation centroid so the underlying map matches
+        // the active card again. Fires once on initial open too,
+        // harmlessly re-panning to where `focus(on:)` already put
+        // the camera.
+        .onAppear { state.panTo(.constellation(constellation)) }
+        .navigationDestination(for: EStar.self) { s in
+            EStarDetailView(star: s)
+        }
+    }
+
+    // MARK: Roster
+
+    /// Same 100-pt fixed-height row + tile padding as the star
+    /// detail's stats grid so the two surfaces share a rhythm.
+    private var rosterHeight: CGFloat { 100 }
+
+    private var roster: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(stars.prefix(12)) { star in
+                    NavigationLink(value: star) {
+                        StarCard(star: star)
                     }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, 16)
         }
-        // No side effects on the sky from this view itself — no
-        // auto-tracking the brightest star, no border selection — it
-        // just renders the constellation's roster. The opening flow
-        // (which sets `detailDestination` and pans the canvas) lives
-        // in `EAppState.focus(on:)`.
-        .navigationDestination(for: EStar.self) { s in
-            EStarDetailView(star: s).onAppear { state.recordViewed(s) }
-        }
+        .frame(height: rosterHeight)
     }
 }
 
-// MARK: - Star row
-
-private struct EConstellationStarRow: View {
+// MARK: - StarCard
+// Compact card representing one figure-star of the constellation.
+// Same internal slot grid as the star detail's stats tiles
+// (icon 24, value 22, label 14) so a card and a tile read as the
+// same visual species. Wrapped in `NavigationLink(value: star)` by
+// the caller, so tap → push to that star's detail.
+private struct StarCard: View {
     let star: EStar
 
     var body: some View {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(star.displayName)
-                    .font(.body)
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(String(format: "%.1f mag", star.magnitude))
-                        .font(.caption)
-                        .monospacedDigit()
-                        .fontDesign(.serif)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        
+        VStack(spacing: 6) {
+            POIBadgeView(category: .followedStar(star), size: 24)
+                .frame(height: 24)
+            Text(star.displayName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .frame(height: 22)
+            Text(String(format: "%.1f mag", star.magnitude))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+                .frame(height: 14)
+        }
+        .frame(width: 110)
+        .frame(maxHeight: .infinity)
+        .padding(.vertical, 14)
+        .background(Color(.tertiarySystemFill),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
