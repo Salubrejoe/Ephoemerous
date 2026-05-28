@@ -1,22 +1,18 @@
 import SwiftUI
 import simd
 
-// Constellation badges anchored at each constellation's figure-star
-// centroid. Anchors are precomputed once at load time and live on
-// `ConstellationLines.labelAnchors`.
+// MARK: - ConstellationNamesLayer
+// Plain-text constellation labels, town-label style à la Apple Maps.
+// Three zoom tiers (nothing / placeholder pill / text) live inside
+// `EArtist.drawConstellationLabel(...)`; this layer is the projection
+// + per-constellation dispatch + hit-rect bookkeeping.
 //
-// All styling — tier classification, hue rotation by dec, badge
-// shape, dotted-tier fallback — comes from `drawPOILabel(…)`. This
-// layer is the projection pipeline + hit-rect bookkeeping.
-//
-// As a side effect the layer publishes a hit-test capsule rect for
-// every tappable badge to `state.constellationLabelHitRects` so
-// `ObjectsTrackingOverlay` can drop transparent tap targets that
-// hug each badge. Tap targets only exist past `labelTapMinScale` so
-// the medium-scale tap-cluster can't ambush a pinch-to-zoom; below
-// that the dict is published as `[:]`. Forever-invisible badges
-// stay un-tappable at every scale (decorative greys, no detail
-// sheet behind them).
+// Hit-rects are only published when the *text* tier is reached —
+// placeholders are visual-only, and tier 0 (nothing) has nothing to
+// tap. Pan and pinch dominate the canvas, so the rects we publish
+// are deliberately tight (text bounds + a few points) — accidental
+// taps shouldn't ambush a gesture, but a deliberate tap on a label
+// should still land.
 struct ConstellationNamesLayer: EGridLayer {
     let artist = EArtist.shared
 
@@ -24,22 +20,13 @@ struct ConstellationNamesLayer: EGridLayer {
         let stateRef    = dc.state
         let observerLat = dc.state.origin.latitude.degrees
 
-        let tappable  = dc.renderedScale >= artist.labelTapMinScale
-        // Badge size is identical across kinds, so a probe with
-        // any kind returns the right hit dimensions.
-        let badgeSize = artist.poiStyle(for: .constellation(.myth(.none))).badgeSize
-
-        // Favourited constellations have their badge drawn by
-        // `FavouritesLayer` (with the heart overlay) — skip drawing
-        // them here so there's no double-render. Hit-rects are still
-        // published for them so they remain tappable through the
-        // existing `ObjectsTrackingOverlay` constellation pipeline.
+        // One observable read per frame — every constellation in
+        // the loop shares the same favourite-set lookup.
         let favouriteIDs: Set<String> = Set(
             dc.state.favouriteConstellations.map(\.rawValue)
         )
 
         var rects: [EConstellation: CGRect] = [:]
-        if tappable { rects.reserveCapacity(ConstellationLines.shared.labelAnchors.count) }
 
         for (cons, anchor) in ConstellationLines.shared.labelAnchors {
             let (pRA, pDec) = EPrecession.precess(ra: anchor.ra, dec: anchor.dec,
@@ -49,42 +36,39 @@ struct ConstellationNamesLayer: EGridLayer {
             guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
 
-            let kind   = artist.constellationKind(cons,
-                                                  decDegrees:       anchor.dec.degrees,
-                                                  observerLatitude: observerLat)
+            let kind = artist.constellationKind(cons,
+                                                 decDegrees:       anchor.dec.degrees,
+                                                 observerLatitude: observerLat)
 
-            // Skip drawing if this constellation is a favourite —
-            // FavouritesLayer takes over with the heart treatment.
-            // Hit-rect publishing below still runs for it.
-            if !favouriteIDs.contains(cons.rawValue) {
-                // Colour comes from the myth (encoded in `kind`); the
-                // badge symbol comes from the entity ("what is this
-                // depicting?") — hero / animal / instrument / etc.
-                let entity = artist.constellationEntity(of: cons)
-                let symbol = artist.constellationEntitySymbol(entity)
-
-                artist.drawPOILabel(
-                    at:       sc,
-                    glyph:    .sfSymbol(symbol),
-                    text:     artist.constellationLabelText(for: cons),
-                    category: .constellation(kind),
-                    drawDot:  true,
-                    in:       &dc
-                )
-            }
-
-            // Skip tap-targets for forever-invisible constellations —
-            // they're decorative gray badges, not interactable.
-            guard tappable else { continue }
+            // Forever-invisible constellations are hidden entirely
+            // now — no placeholder, no text, no hit-rect.
             if case .foreverInvisible = kind { continue }
 
-            // Hit capsule hugs the badge with a small touch-friendly
-            // padding (44 pt min — Apple HIG). Text-tier labels could
-            // be wider than the badge, but the badge is the visual
-            // tap target so we centre the rect on it.
-            let hit: CGFloat = max(44, badgeSize + 16)
-            rects[cons] = CGRect(x: sc.x - hit / 2, y: sc.y - hit / 2,
-                                 width: hit, height: hit)
+            let isFavourite = favouriteIDs.contains(cons.rawValue)
+            // Heart tint mirrors the favourite line colour for the
+            // same constellation, so the inline ♥ reads as part of
+            // the same coloured shape as the stick-figure.
+            let heartColor  = artist.constellationGradient(kind: kind).top
+
+            guard let textRect = artist.drawConstellationLabel(
+                at:          sc,
+                fullName:    cons.fullName,
+                isFavourite: isFavourite,
+                heartColor:  heartColor,
+                in:          &dc
+            ) else { continue }    // tier 0 / placeholder → no tap target
+
+            // Tight tap rect: text bounds + small padding. Pan /
+            // pinch are the primary gestures on this canvas, so we
+            // don't enforce the 44pt HIG minimum here — labels are
+            // dense, and a label that's *just* big enough to read
+            // is also big enough to aim at intentionally.
+            let padH: CGFloat = 6
+            let padV: CGFloat = 4
+            rects[cons] = CGRect(x: textRect.minX - padH,
+                                 y: textRect.minY - padV,
+                                 width:  textRect.width  + 2 * padH,
+                                 height: textRect.height + 2 * padV)
         }
 
         let snapshot = rects
