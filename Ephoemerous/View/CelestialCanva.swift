@@ -101,7 +101,13 @@ struct CelestialCanva: View {
 
 // MARK: - Schedule
 
-// Switches between 60fps (gestures/transitions) and 10fps (idle).
+// Switches between 120fps (gestures/transitions) and 10fps (idle).
+// No continuous "ambient" animations on the canvas — favourites are
+// a static heart marker, the sun's breathing crown is gone, stars
+// don't twinkle. All animation happens via discrete transitions
+// (focus-pan, date-pick, origin-move, projection-blend) which all
+// set their own `_*Transition` flag, flipping the schedule to 120Hz
+// for the duration.
 struct ECanvasSchedule: TimelineSchedule {
     let isAnimating: Bool
 

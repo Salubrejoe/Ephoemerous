@@ -65,29 +65,32 @@ struct FavouritesLayer: EGridLayer {
             guard dx * dx + dy * dy < chromeR2 else { return }
         }
 
-        // Breathing halo behind the badge — the universal "this is a
-        // favourite" signal. Same `drawBreathingHalo` helper used since
-        // selection-as-tracking days; only the meaning of the wrapper
-        // (favourites vs. selection) has changed.
-        let starR = CGFloat(artist.starRadius(star, in: dc, twinkling: false)) * 0.5
-                  * CGFloat(pow(dc.renderedScale, artist.starZoomExp))
-        artist.drawBreathingHalo(at:         sc,
-                                 starRadius: starR,
-                                 color:      star.spectralClass.color,
-                                 time:       dc.animationTime,
-                                 in:         &dc)
+        // Favourite signal — a static heart. No more breathing halo,
+        // no per-frame animation cost.
+        //
+        //   Tier 0 (scale < badgeIn): the heart IS the marker.
+        //                             Drawn at the projected position,
+        //                             replacing the squircle dot.
+        //   Tier 1+ (scale ≥ badgeIn): regular POI badge with the
+        //                              heart overlaid on the
+        //                              top-leading corner.
+        let style      = artist.poiStyle(for: .followedStar(star))
+        let heartColor = star.spectralClass.color
+        if dc.renderedScale < style.badgeIn {
+            artist.drawFavouriteHeart(at: sc, size: 8, color: heartColor, in: &dc)
+            return
+        }
 
-        // Apple-Maps-style badge at this screen position. The halo
-        // above reads as "behind" it. `drawDot: true` shows a small
-        // spectral dot below the badge-in threshold so a favourite
-        // star stays visible at the very lowest zooms.
         artist.drawPOILabel(
             at:       sc,
             glyph:    .sfSymbol("star"),
             text:     star.displayName,
             category: .followedStar(star),
-            drawDot:  true,
+            drawDot:  false,    // heart handles the low-zoom case
             in:       &dc
         )
+        let heartCorner = CGPoint(x: sc.x - style.badgeSize / 2,
+                                  y: sc.y - style.badgeSize / 2)
+        artist.drawFavouriteHeart(at: heartCorner, size: 7, color: heartColor, in: &dc)
     }
 }

@@ -37,36 +37,21 @@ extension EArtist {
     /// per-star twinkle when `twinkling` is true. Pass `false` from
     /// callers that drive their own slow animation (e.g. the selected-
     /// star halo's breath) so twinkle and breath don't compound into
-    /// shimmer.
+    /// Magnitude-driven on-screen radius for a star, in points (no
+    /// zoom factor applied — the caller folds in `renderedScale` for
+    /// the actual draw). Twinkle is gone (used to apply a sin-wave
+    /// modulation to favourited stars; favourites are now signalled
+    /// with the static heart marker in FavouritesLayer instead).
+    /// `twinkling` is kept on the signature for callers that still
+    /// pass `false` — semantically a no-op now.
     func starRadius(_ star: EStar, in dc: EGraphicContext, twinkling: Bool = true) -> Double {
         // Brightness drops by ~2.512× per magnitude step; we follow
         // the same shape but with a tunable ratio so the contrast on
         // screen is much steeper than a linear mapping would give.
         let raw     = AstroConstants.dotBaseRadius
                     * pow(AstroConstants.dotMagRatio, star.magnitude)
-        let clamped = min(AstroConstants.dotMaxRadius,
-                          max(AstroConstants.dotMinRadius, raw))
-
-        guard twinkling else { return clamped }
-
-        // Phase is deterministic on RA / Dec — the 17.3 / 7.9 multipliers
-        // are big enough to decorrelate even neighbouring stars. The
-        // previous `.random(in: -1...1)` here was a bug + a hot spot:
-        // a per-frame RNG call per star (60k+/s) that also jittered the
-        // sine, so the twinkle never read as a smooth pulse.
-        let ra      = star.rightAscension.radians
-        let dec     = star.declination.radians
-        let phase   = ra  * AstroConstants.twinklePhaseRA
-                    + dec * AstroConstants.twinklePhaseDec
-        let twinkle = 1.0
-                    + AstroConstants.twinkleAmplitude
-                    * sin(dc.animationTime * AstroConstants.twinkleFrequency + phase)
-
-        
-        let isFavourite     = dc.state.isFavouriteStar(star)
-        let returedTwinkle  = isFavourite ? twinkle : 1.0
-        
-        return clamped * returedTwinkle
+        return min(AstroConstants.dotMaxRadius,
+                   max(AstroConstants.dotMinRadius, raw))
     }
 
     func drawStar(_ star: EStar, at sc: CGPoint, in dc: inout EGraphicContext) {

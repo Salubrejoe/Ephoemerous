@@ -11,7 +11,7 @@ import LoreKit
 // work is just translate + scale + rotate + stroke.
 extension EArtist {
 
-    var selectedHaloMinScale : CGFloat { 0.5 }   // × star radius at breath trough — hidden behind body
+    var selectedHaloMinScale : CGFloat { 1.5 }   // × star radius at breath trough — hidden behind body
     var selectedHaloMaxScale : CGFloat { 2.5 }   // × star radius at breath peak  — visible past body
     var selectedHaloPeriod   : Double  { 5.0 }   // seconds per breath cycle
     var selectedHaloSpinRate : Double  { 0.2 }   // rad/s — gentle rotation

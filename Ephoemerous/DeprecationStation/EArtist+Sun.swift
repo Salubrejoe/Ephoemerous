@@ -12,7 +12,7 @@ import LoreKit
 // + scale + stroke.
 extension EArtist {
 
-    var sunBorderColor    : Color   { .primary }
+    var sunBorderColor    : Color   { .yellow }
     var sunBodyRadius     : CGFloat { 12.0 }
     var sunBorderMinScale : CGFloat { 1.2 }      // × sunBodyRadius at breath trough
     var sunBorderMaxScale : CGFloat { 1.3 }      // × sunBodyRadius at breath peak
@@ -34,6 +34,7 @@ extension EArtist {
         let spin  = Angle.radians(t * sunBorderSpinRate)
 
         var local = dc.ctx
+        local.addFilter(.blur(radius: 3))
         local.translateBy(x: sc.x, y: sc.y)
         local.rotate(by: spin)
         local.scaleBy(x: r, y: r)

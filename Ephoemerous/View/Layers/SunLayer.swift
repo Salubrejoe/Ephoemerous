@@ -30,12 +30,9 @@ struct SunLayer: EGridLayer {
         let pos = sc; let state = dc.state
         DispatchQueue.main.async { state.sunScreenPosition = pos }
 
-        // Breathing crown (the slow-spinning squircle border) stays
-        // as the sun's signature "I'm alive" animation, drawn behind
-        // the POI badge.
-        artist.drawSunBorder(at: sc, time: dc.animationTime, in: &dc)
-
         // Apple-Maps-style POI badge replaces the sun disc.
+        // (The slow breathing crown that used to ring the badge is
+        // gone — see EArtist+Sun.swift in DeprecationStation.)
         artist.drawPOILabel(
             at:       sc,
             glyph:    .sfSymbol("sun.max"),
