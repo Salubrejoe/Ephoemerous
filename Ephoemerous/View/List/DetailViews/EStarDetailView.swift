@@ -28,13 +28,15 @@ struct EStarDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         star.displayName,
-                subtitle:      subtitleText,
-                accent:        accent,
-                icon:          { POIBadgeView(category: .followedStar(star)) },
-                leadingSymbol: "chevron.backward",
-                onLeading:     { dismiss() },
-                onDismiss:     { state.dismissDetail() }
+                title:                  star.displayName,
+                subtitle:               subtitleText,
+                accent:                 accent,
+                icon:                   { POIBadgeView(category: .followedStar(star)) },
+                leadingSymbol:          "chevron.backward",
+                onLeading:              { dismiss() },
+                secondaryLeadingSymbol: "square.and.arrow.up",
+                onSecondaryLeading:     {},
+                onDismiss:              { state.dismissDetail() }
             )
             RememberButton(obj: .star(star))
                 .padding(.horizontal, 16)
