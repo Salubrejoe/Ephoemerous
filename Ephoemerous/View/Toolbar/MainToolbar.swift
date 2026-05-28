@@ -24,14 +24,14 @@ struct MainToolbar: View {
             GlassEffectContainer {
                 HStack(spacing: 0) {
                     
-                    dateButton
-                        .glassEffect(.clear.interactive(),
-                                     in: .capsule)
-                    Spacer()
                     locationButton
-                        .glassEffect(.clear.interactive(),
-                                     in: .capsule)
+                    Divider()
+                        .padding(.vertical, 8)
+                    dateButton
                 }
+                .frame(height: 32)
+                .glassEffect(.clear.interactive(),
+                             in: .capsule)
                 if state.isShowingLocationPicker {
                     LocationPickerPanel()
                         .transition(.move(edge: .top)
@@ -135,10 +135,16 @@ struct MainToolbar: View {
         return state.isAtDeviceLocation ? "location.fill" : "location"
     }
 
-    /// Locality name if we've got one, else "lat°/lon°" as a fallback.
-    /// The name is async-resolved via `refreshLocalityName()` and
-    /// driven off `localityKey` below.
+    /// Locality label, three tiers from terse to verbose:
+    ///   • observer is at the device's current fix → "Here"
+    ///   • locality name resolved by the geocoder   → that name
+    ///   • neither                                  → "lat°/lon°"
+    /// The "Here" override mirrors the date pill's "Now" — when the
+    /// observation matches the device's real-world state right now,
+    /// the pill says so directly instead of repeating the resolved
+    /// city name.
     private var locationLabel: String {
+        if state.isAtDeviceLocation { return "Here" }
         if let name = state.localityName, !name.isEmpty {
             return name
         }
@@ -158,15 +164,19 @@ struct MainToolbar: View {
                state.origin.longitude.degrees)
     }
 
-    /// Three tiers, from terse to verbose:
-    ///   • today               → "HH:mm"
-    ///   • same year, other day → "d MMM HH:mm"
-    ///   • other year          → "d MMM yyyy HH:mm"
-    /// The year only appears once it's actually different from the
-    /// current one, so the pill stays compact for the common case.
+    /// Four tiers, from terse to verbose:
+    ///   • observation within 60 s of real now → "Now"
+    ///   • today                               → "HH:mm"
+    ///   • same year, other day                → "d MMM HH:mm"
+    ///   • other year                          → "d MMM yyyy HH:mm"
+    /// The 60-second window matches `DatePickerPanel`'s Now-button
+    /// disabled threshold so the pill says "Now" exactly when the
+    /// Now button is greyed out.
     private var dateLabel: String {
-        let cal  = Calendar.current
         let date = state.observationDate
+        if abs(date.timeIntervalSinceNow) < 60 { return "Now" }
+
+        let cal = Calendar.current
         let format: String
         if cal.isDateInToday(date) {
             format = "HH:mm"
