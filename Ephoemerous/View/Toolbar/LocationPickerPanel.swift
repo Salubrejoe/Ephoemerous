@@ -33,15 +33,15 @@ struct LocationPickerPanel: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            actionRow
+            searchField
 
             if !completer.suggestions.isEmpty {
                 suggestionList
             } else {
                 mapView
             }
-
-            searchField
+            actionRow
+            
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -156,16 +156,21 @@ struct LocationPickerPanel: View {
 
     private var actionRow: some View {
         HStack(spacing: 8) {
-            // "Here": snap to device location.
+            // "Here": snap to device location. Disabled when the
+            // observer is already within ~111 km of the device fix
+            // (the tolerance `state.isAtDeviceLocation` already uses
+            // elsewhere) — tapping there would be a no-op.
             Button {
                 state.goToDeviceLocation()
                 state.isShowingLocationPicker = false
             } label: {
-                Label("Here", systemImage: "location.fill")
+                Text("Here")
+//                Label("Here", systemImage: "location.fill")
                     .font(.callout.weight(.medium))
                     .contentShape(Capsule())
             }
             .buttonStyle(.glass)
+            .disabled(state.isAtDeviceLocation)
 
             Spacer()
 
@@ -179,6 +184,11 @@ struct LocationPickerPanel: View {
 
             Spacer()
 
+            // "Travel": commit the map's centre as the new origin.
+            // Disabled when the map is already centred on the
+            // current origin (panning hasn't moved it). Tolerance
+            // ~0.001° (≈ 110 m) lets onMapCameraChange noise pass
+            // without spuriously enabling the button.
             Button {
                 commitCenter()
             } label: {
@@ -187,7 +197,17 @@ struct LocationPickerPanel: View {
                     .contentShape(Capsule())
             }
             .buttonStyle(.glassProminent)
+            .disabled(centerMatchesOrigin)
         }
+    }
+
+    /// `true` when the map's centre coordinate is essentially the
+    /// current observer origin — no panning has happened, so the
+    /// Travel button would commit no change.
+    private var centerMatchesOrigin: Bool {
+        let dLat = abs(centerCoordinate.latitude  - state.origin.latitude.degrees)
+        let dLon = abs(centerCoordinate.longitude - state.origin.longitude.degrees)
+        return dLat < 0.001 && dLon < 0.001
     }
 
     // MARK: - Helpers

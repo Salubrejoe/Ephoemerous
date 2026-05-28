@@ -98,7 +98,8 @@ struct DatePickerPanel: View {
                 state.commitPickedObservationDate(.now)
                 state.isShowingDatePicker = false
             } label: {
-                Label("Now", systemImage: "clock.fill")
+//                Label("Now", systemImage: "clock.fill")
+                Text("Now")
                     .font(.callout.weight(.medium))
                     .padding(.horizontal, 14)
                     .padding(.vertical,    9)
@@ -106,8 +107,12 @@ struct DatePickerPanel: View {
             }
             .buttonStyle(.plain)
             .glassEffect(.clear.interactive(), in: .capsule)
+            // Greyed-and-blocked when the observation is already at
+            // real-world now — same rule the detail-sheet Now pills
+            // use, so all the Now surfaces feel consistent.
+            .disabled(abs(state.observationDate.timeIntervalSinceNow) < 60)
 
-            
+
         }
     }
 
