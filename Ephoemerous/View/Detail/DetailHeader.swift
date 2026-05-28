@@ -32,6 +32,8 @@ struct DetailHeader<Icon: View>: View {
     let onLeading:              () -> Void
     let secondaryLeadingSymbol: String?
     let onSecondaryLeading:     (() -> Void)?
+    let onNow:                  (() -> Void)?
+    let nowIsActive:            Bool
     let onDismiss:              () -> Void
 
     init(title:                  String,
@@ -42,6 +44,8 @@ struct DetailHeader<Icon: View>: View {
          onLeading:              @escaping () -> Void,
          secondaryLeadingSymbol: String?           = nil,
          onSecondaryLeading:     (() -> Void)?     = nil,
+         onNow:                  (() -> Void)?     = nil,
+         nowIsActive:            Bool              = false,
          onDismiss:              @escaping () -> Void) {
         self.title                  = title
         self.subtitle               = subtitle
@@ -51,6 +55,8 @@ struct DetailHeader<Icon: View>: View {
         self.onLeading              = onLeading
         self.secondaryLeadingSymbol = secondaryLeadingSymbol
         self.onSecondaryLeading     = onSecondaryLeading
+        self.onNow                  = onNow
+        self.nowIsActive            = nowIsActive
         self.onDismiss              = onDismiss
     }
 
@@ -84,9 +90,12 @@ struct DetailHeader<Icon: View>: View {
                     CircleIconButton(systemName: sym, action: act)
                 }
                 Spacer()
+                if let onNow {
+                    NowPillButton(action: onNow, isDisabled: nowIsActive)
+                }
                 CircleIconButton(systemName: "xmark", action: onDismiss)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 10)
         }
         .padding(.top, 12)
         .padding(.bottom, 8)
@@ -94,8 +103,10 @@ struct DetailHeader<Icon: View>: View {
 }
 
 // MARK: - CircleIconButton
-// Small circular toolbar button matching the Apple-Maps place-card
-// idiom — tinted glass / system fill with a centred SF Symbol.
+// Small circular toolbar button — Liquid-Glass capsule with a
+// centred SF Symbol. Matches the canvas-toolbar buttons (Image-
+// magnitudeIcon, etc.) so the header reads as part of the same
+// chrome system.
 private struct CircleIconButton: View {
     let systemName: String
     let action:     () -> Void
@@ -106,9 +117,38 @@ private struct CircleIconButton: View {
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(.primary)
                 .frame(width: 36, height: 36)
-                .background(Color(.tertiarySystemFill), in: Circle())
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .glassEffect(.clear.interactive(), in: .circle)
+    }
+}
+
+// MARK: - NowPillButton
+// "Now" shortcut — same glass capsule + Label idiom the
+// DatePickerPanel toolbar uses for its own Now action, so the two
+// surfaces feel like the same gesture. Tap commits whatever the
+// caller wants (e.g. `state.observationDate = .now`).
+//
+// `isDisabled` greys the pill out and blocks taps when the
+// observation date is already at real-world now — no point firing
+// the same gesture twice.
+private struct NowPillButton: View {
+    let action:     () -> Void
+    let isDisabled: Bool
+
+    var body: some View {
+        Button(action: action) {
+            Label("Now", systemImage: "clock.fill")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(isDisabled ? .secondary : .primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical,    9)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.clear.interactive(), in: .capsule)
+        .opacity(isDisabled ? 0.55 : 1.0)
+        .disabled(isDisabled)
     }
 }
