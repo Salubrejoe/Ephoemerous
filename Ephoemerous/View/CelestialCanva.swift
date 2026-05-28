@@ -21,12 +21,18 @@ struct CelestialCanva: View {
     private var layers: [any EGridLayer] {
         [
 //            WatchBackgroundLayer(),
-            HorizonLayer(),
             EarthGridLayer(),
-            CardinalLabelsLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
+            // HorizonLayer now sits on top of grid + lines + stars + zodiac
+            // glyphs, so its translucent `horizonFillColor` wash and the
+            // squircle-bumped twilight rings *dim* the below-horizon region
+            // instead of just tinting the canvas under it. Anything that
+            // should always pop (selected stars, ecliptic, badges, user
+            // puck) is drawn after.
+            HorizonLayer(),
+            CardinalLabelsLayer(),
             SelectedStarsLayer(),
             EclipticLayer(),
             EPlanetsLayer(),
