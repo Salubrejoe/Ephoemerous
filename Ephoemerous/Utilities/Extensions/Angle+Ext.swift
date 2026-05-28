@@ -34,7 +34,7 @@ extension Angle {
     static let astronomical : Angle = .radians(-0.31)
 
     static let sunsets: [Angle] = [
-        .goldenHor,
+//        .goldenHor,
         .horizon,
         .civil,
         .naval,
