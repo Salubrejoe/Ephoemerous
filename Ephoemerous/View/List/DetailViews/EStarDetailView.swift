@@ -1,6 +1,10 @@
 import SwiftUI
 
 // MARK: - EStarDetailView
+// Three-tile compact star detail. Fits the bottom-third sheet detent
+// without scrolling: header + Remember button + a single HStack of
+// Class / Distance / Magnitude tiles. SF Symbols carry the meaning;
+// negative space carries the calm.
 
 struct EStarDetailView: View {
     @Environment(EAppState.self) var state
@@ -33,56 +37,88 @@ struct EStarDetailView: View {
             )
             RememberButton(obj: .star(star))
                 .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    spectralSection
-                    Divider().padding(.bottom, 24)
-                    distanceSection
-                    Divider().padding(.bottom, 24)
-                    magnitudeSection
-                    Divider().padding(.bottom, 24)
-                    coordinatesSection
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
-                .padding(.bottom, 28)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                .padding(.bottom, 12)
+            statsRow
+                .padding(.horizontal, 16)
+            Spacer(minLength: 0)
         }
         .background(glowBackground())
     }
 
-    private var spectralSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Spectral class")
-            SpectralClassRow(spectralClass: star.spectralClass)
-                .padding(.bottom, 28)
+    // MARK: Stats row
+
+    /// Fixed row height — every tile fills this exactly, guaranteeing
+    /// the three backgrounds line up regardless of which SF Symbol
+    /// happens to render slightly shorter than the others. Bump if
+    /// the content needs more breathing room.
+    private var statsRowHeight: CGFloat { 100 }
+
+    /// Three equal-width SF-Symbol tiles. The Class tile picks up
+    /// the spectral accent so the star's colour shows up exactly
+    /// once on the canvas-of-the-detail; the other two tiles stay
+    /// neutral so the eye doesn't get pulled three ways at once.
+    private var statsRow: some View {
+        HStack(spacing: 8) {
+            tile(icon:     "thermometer.medium",
+                 iconTint: accent,
+                 value:    star.spectralClass.rawValue,
+                 label:    "Class")
+            tile(icon:     "ruler",
+                 iconTint: .secondary,
+                 value:    distanceText,
+                 label:    "Distance")
+            tile(icon:     "sparkles",
+                 iconTint: .secondary,
+                 value:    magnitudeText,
+                 label:    "Magnitude")
         }
+        .frame(height: statsRowHeight)
     }
 
-    private var distanceSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Distance")
-            DistanceHero(distanceLY: star.distanceLY)
-                .padding(.bottom, 28)
+    private func tile(icon: String, iconTint: Color, value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            // Fixed-height slot for the icon so the value + label
+            // rows below land at the same baseline across all three
+            // tiles regardless of the SF Symbol's intrinsic height
+            // (thermometer tall, ruler short, sparkles medium).
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(iconTint)
+                .frame(height: 24)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .monospacedDigit()
+                .frame(height: 22)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+                .frame(height: 14)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 14)
+        .background(Color(.tertiarySystemFill),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    private var magnitudeSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Apparent magnitude")
-            MagnitudeRow(magnitude: star.magnitude, accent: accent)
-                .padding(.bottom, 28)
-        }
+    // MARK: Value formatting
+
+    private var distanceText: String {
+        guard let ly = star.distanceLY else { return "—" }
+        return ly >= 100
+            ? "\(Int(ly)) ly"
+            : String(format: "%.1f ly", ly)
     }
 
-    private var coordinatesSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Equatorial coordinates")
-            ECoordinateDials(ra: star.rightAscension, dec: star.declination, accent: accent)
-        }
+    private var magnitudeText: String {
+        String(format: "%.1f", star.magnitude)
     }
+
+    // MARK: Glow
 
     @ViewBuilder
     private func glowBackground() -> some View {
@@ -95,152 +131,6 @@ struct EStarDetailView: View {
         }
         .ignoresSafeArea()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-    }
-}
-
-// MARK: - Spectral class row
-
-private struct SpectralClassRow: View {
-    let spectralClass: EHRClass
-    private let sequence: [EHRClass] = [.O, .B, .A, .F, .G, .K, .M]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                ForEach(sequence, id: \.self) { cls in
-                    ZStack {
-                        Circle()
-                            .fill(cls == spectralClass ? cls.color : Color.primary.opacity(0.06))
-                            .frame(width: 32, height: 32)
-                        Text(cls.rawValue)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(cls == spectralClass ? .black.opacity(0.7) : .secondary)
-                    }
-                }
-            }
-            HStack {
-                Text("hotter - bluer")
-                Spacer()
-                Text("cooler - redder")
-            }
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
-        }
-    }
-}
-
-// MARK: - Magnitude row
-
-private struct MagnitudeRow: View {
-    let magnitude: Double
-    let accent: Color
-
-    private let brightest = -1.46
-    private let faintest  =  6.5
-
-    private var scaleFraction: Double {
-        ((magnitude - brightest) / (faintest - brightest)).clamped(to: 0...1)
-    }
-
-    private var eyeLabel: String {
-        switch magnitude {
-        case ..<(-1):  return "brilliant"
-        case ..<0:     return "very bright"
-        case ..<2:     return "naked eye"
-        case ..<4:     return "easily visible"
-        case ..<6:     return "dark sky"
-        default:       return "limit"
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(String(format: "%.2f", magnitude))
-                    .font(.largeTitle)
-                    .fontWeight(.medium)
-                    .fontDesign(.serif)
-                    .monospacedDigit()
-                    .foregroundStyle(.primary)
-                Text(eyeLabel)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.primary.opacity(0.08))
-                        .frame(height: 3)
-                    Capsule()
-                        .fill(accent.opacity(0.5))
-                        .frame(width: geo.size.width * scaleFraction, height: 3)
-                    Circle()
-                        .fill(accent)
-                        .frame(width: 8, height: 8)
-                        .offset(x: max(0, geo.size.width * scaleFraction - 4))
-                }
-            }
-            .frame(height: 8)
-            HStack {
-                Text("brighter")
-                Spacer()
-                Text("fainter +6.5")
-            }
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
-        }
-    }
-}
-
-// MARK: - Distance hero
-
-private struct DistanceHero: View {
-    let distanceLY: Double?
-
-    private var parsecs: Double? { distanceLY.map { $0 / 3.26156 } }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if let ly = distanceLY {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(ly < 100 ? String(format: "%.1f", ly) : String(format: "%.0f", ly))
-                        .font(.largeTitle)
-                        .fontWeight(.medium)
-                        .fontDesign(.serif)
-                        .monospacedDigit()
-                        .foregroundStyle(.primary)
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
-                    Text("ly")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .fontDesign(.serif)
-                }
-                if let pc = parsecs {
-                    Text(String(format: "~%.0f pc", pc))
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .monospacedDigit()
-                        .fontDesign(.serif)
-                }
-            } else {
-                Text("Unknown")
-                    .font(.largeTitle)
-                    .fontWeight(.medium)
-                    .fontDesign(.serif)
-                    .monospacedDigit()
-                    .foregroundStyle(.tertiary)
-            }
-        }
-    }
-}
-
-// MARK: - Clamp helper
-
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
     }
 }
 
