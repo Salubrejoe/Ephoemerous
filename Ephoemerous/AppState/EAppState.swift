@@ -73,7 +73,16 @@ class EAppState {
     var _didAdoptDeviceLocation: Bool = false
 
     // MARK: - Star state  (logic → EAppState+Stars.swift)
-    var magnitudeFilter: Double = AstroConstants.defaultMagCap { didSet { invalidateStarCache() } }
+    // Persisted to iCloud on every change via the didSet — keeping
+    // the save here (rather than a `.onChange` in a view) means the
+    // sync survives toolbar / sheet refactors and there's only one
+    // source of truth for "magnitude filter changed".
+    var magnitudeFilter: Double = AstroConstants.defaultMagCap {
+        didSet {
+            invalidateStarCache()
+            ECloudSync.shared.saveMagnitudeFilter(magnitudeFilter)
+        }
+    }
 
     // MARK: - Favourites  (logic → EAppState+Favourites.swift)
     // Universal favourites list — any sky object the user has starred.

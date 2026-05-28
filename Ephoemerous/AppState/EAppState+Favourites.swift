@@ -45,4 +45,14 @@ extension EAppState {
             if case .star(let s) = obj { return s } else { return nil }
         }
     }
+
+    /// Just the constellation favourites. Used by
+    /// `ConstellationNamesLayer` for its skip-if-favourite check
+    /// (so the badge isn't drawn twice — `FavouritesLayer` takes
+    /// over the draw with a heart overlay).
+    var favouriteConstellations: [EConstellation] {
+        favourites.compactMap { obj in
+            if case .constellation(let c) = obj { return c } else { return nil }
+        }
+    }
 }

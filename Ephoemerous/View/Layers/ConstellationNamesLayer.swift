@@ -29,6 +29,15 @@ struct ConstellationNamesLayer: EGridLayer {
         // any kind returns the right hit dimensions.
         let badgeSize = artist.poiStyle(for: .constellation(.myth(.none))).badgeSize
 
+        // Favourited constellations have their badge drawn by
+        // `FavouritesLayer` (with the heart overlay) — skip drawing
+        // them here so there's no double-render. Hit-rects are still
+        // published for them so they remain tappable through the
+        // existing `ObjectsTrackingOverlay` constellation pipeline.
+        let favouriteIDs: Set<String> = Set(
+            dc.state.favouriteConstellations.map(\.rawValue)
+        )
+
         var rects: [EConstellation: CGRect] = [:]
         if tappable { rects.reserveCapacity(ConstellationLines.shared.labelAnchors.count) }
 
@@ -43,20 +52,26 @@ struct ConstellationNamesLayer: EGridLayer {
             let kind   = artist.constellationKind(cons,
                                                   decDegrees:       anchor.dec.degrees,
                                                   observerLatitude: observerLat)
-            // Colour comes from the myth (encoded in `kind`); the
-            // badge symbol comes from the entity ("what is this
-            // depicting?") — hero / animal / instrument / etc.
-            let entity = artist.constellationEntity(of: cons)
-            let symbol = artist.constellationEntitySymbol(entity)
 
-            artist.drawPOILabel(
-                at:       sc,
-                glyph:    .sfSymbol(symbol),
-                text:     artist.constellationLabelText(for: cons),
-                category: .constellation(kind),
-                drawDot:  true,
-                in:       &dc
-            )
+            // Skip drawing if this constellation is a favourite —
+            // FavouritesLayer takes over with the heart treatment.
+            // Hit-rect publishing below still runs for it.
+            if !favouriteIDs.contains(cons.rawValue) {
+                // Colour comes from the myth (encoded in `kind`); the
+                // badge symbol comes from the entity ("what is this
+                // depicting?") — hero / animal / instrument / etc.
+                let entity = artist.constellationEntity(of: cons)
+                let symbol = artist.constellationEntitySymbol(entity)
+
+                artist.drawPOILabel(
+                    at:       sc,
+                    glyph:    .sfSymbol(symbol),
+                    text:     artist.constellationLabelText(for: cons),
+                    category: .constellation(kind),
+                    drawDot:  true,
+                    in:       &dc
+                )
+            }
 
             // Skip tap-targets for forever-invisible constellations —
             // they're decorative gray badges, not interactable.

@@ -103,9 +103,8 @@ extension View {
  }.padding(.horizontal, 32)
  .frame(maxWidth: 400, maxHeight: 700, alignment: .bottom)
  }
- .onChange(of: state.magnitudeFilter) { state.persistMagnitudeFilter() }
- 
- 
+
+
  .toolbar {
  ToolbarItem(placement: .principal) {
  VStack(spacing: 12) {
@@ -114,7 +113,7 @@ extension View {
  }
  }
  }
- 
+
  .sheet(isPresented: Bindable(state).showStarList) {
  NavigationStack {
  EListView()

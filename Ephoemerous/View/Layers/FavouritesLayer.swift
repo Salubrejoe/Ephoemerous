@@ -27,7 +27,9 @@ struct FavouritesLayer: EGridLayer {
                                   inClock: inClock,
                                   chromeCentre: chrome.centre,
                                   chromeR2:     chromeR2)
-            case .sun, .moon, .planet, .constellation:
+            case .constellation(let cons):
+                drawConstellationFavourite(cons, in: &dc)
+            case .sun, .moon, .planet:
                 // Visual treatment for these categories ships when
                 // their detail UI gets a favourite button — they're
                 // stored in `favourites` but render silently for now.
@@ -92,5 +94,52 @@ struct FavouritesLayer: EGridLayer {
         let heartCorner = CGPoint(x: sc.x - style.badgeSize / 2,
                                   y: sc.y - style.badgeSize / 2)
         artist.drawFavouriteHeart(at: heartCorner, size: 7, color: heartColor, in: &dc)
+    }
+
+    /// Mirror of `drawStarFavourite` for `.constellation` favourites.
+    /// Reuses the same projection chain `ConstellationNamesLayer`
+    /// would have used — that layer skips favourited constellations
+    /// (to avoid double-render) but still publishes their hit-rects,
+    /// so taps continue to work via the existing constellation
+    /// tap-target pipeline.
+    private func drawConstellationFavourite(_ cons: EConstellation,
+                                            in dc: inout EGraphicContext) {
+        guard let anchor = ConstellationLines.shared.labelAnchors[cons] else { return }
+
+        let (pRA, pDec) = EPrecession.precess(ra: anchor.ra, dec: anchor.dec,
+                                              to: dc.renderedObservationDate)
+        let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
+            .sidereallyRotated(by: dc.localSiderealOffset)
+        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return }
+        let sc = dc.toScreen(proj)
+
+        let kind       = artist.constellationKind(cons,
+                                                   decDegrees:       anchor.dec.degrees,
+                                                   observerLatitude: dc.state.origin.latitude.degrees)
+        let style      = artist.poiStyle(for: .constellation(kind))
+        let heartColor = artist.constellationGradient(kind: kind).top
+
+        if dc.renderedScale < style.badgeIn {
+            artist.drawFavouriteHeart(at: sc, size: 8, color: heartColor, in: &dc)
+            return
+        }
+
+        let entity = artist.constellationEntity(of: cons)
+        let symbol = artist.constellationEntitySymbol(entity)
+        artist.drawPOILabel(
+            at:       sc,
+            glyph:    .sfSymbol(symbol),
+            text:     artist.constellationLabelText(for: cons),
+            category: .constellation(kind),
+            drawDot:  false,    // heart handles the low-zoom case
+            in:       &dc
+        )
+
+        // Constellation badges are 10pt vs star's 12pt — scale the
+        // heart overlay proportionally so it reads as the same
+        // decoration on the smaller pill.
+        let heartCorner = CGPoint(x: sc.x - style.badgeSize / 2,
+                                  y: sc.y - style.badgeSize / 2)
+        artist.drawFavouriteHeart(at: heartCorner, size: 6, color: heartColor, in: &dc)
     }
 }

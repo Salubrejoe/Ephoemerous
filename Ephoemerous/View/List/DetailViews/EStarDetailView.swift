@@ -9,32 +9,48 @@ struct EStarDetailView: View {
 
     private var accent: Color { star.spectralClass.color }
 
+    /// `Bayer designation · Constellation full name`, e.g.
+    /// "α · Orion". For unnamed stars (display name *is* the Bayer
+    /// designation) we skip the letter to avoid the title and subtitle
+    /// both leading with the same character.
+    private var subtitleText: String {
+        guard star.properName != nil else { return star.constellation.fullName }
+        let letter = star.name.split(separator: " ").first.map(String.init) ?? ""
+        return letter.isEmpty
+            ? star.constellation.fullName
+            : "\(letter) · \(star.constellation.fullName)"
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                EDetailSubtitle(text: star.name + " - " + star.constellation.fullName)
-                spectralSection
-                Divider().padding(.bottom, 24)
-                distanceSection
-                Divider().padding(.bottom, 24)
-                magnitudeSection
-                Divider().padding(.bottom, 24)
-                coordinatesSection
+        VStack(spacing: 0) {
+            DetailHeader(
+                title:    star.displayName,
+                subtitle: subtitleText,
+                accent:   accent,
+                icon:     { Image(systemName: "star.fill") },
+                onShare:  {},
+                onDismiss: { state.dismissDetail() }
+            )
+            RememberButton(obj: .star(star))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    spectralSection
+                    Divider().padding(.bottom, 24)
+                    distanceSection
+                    Divider().padding(.bottom, 24)
+                    magnitudeSection
+                    Divider().padding(.bottom, 24)
+                    coordinatesSection
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .navigationTitle(star.displayName)
-        .navigationBarTitleDisplayMode(.large)
         .background(glowBackground())
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                FavouriteButton(star: star)
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
     }
 
     private var spectralSection: some View {

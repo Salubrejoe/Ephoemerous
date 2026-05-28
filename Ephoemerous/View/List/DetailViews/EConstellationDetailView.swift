@@ -10,31 +10,72 @@ struct EConstellationDetailView: View {
             .sorted { $0.magnitude < $1.magnitude }
     }
 
+    /// "Hero in the Perseus Myth" — entity (what the constellation
+    /// depicts) + myth (which cycle it belongs to). The "none" cases
+    /// fall back to a sensible plain string so post-Hevelius modern
+    /// constellations still get a usable subtitle.
+    private var subtitleText: String {
+        let artist = EArtist.shared
+        let entity = artist.constellationEntity(of: constellation)
+        let myth   = artist.constellationMyth(of: constellation)
+        let entityStr = entity == .none ? "Constellation" : entity.rawValue.capitalized
+        if myth == .none { return entityStr }
+        return "\(entityStr) in the \(myth.rawValue.capitalized) Myth"
+    }
+
+    /// Top of the myth gradient — same accent used for the canvas badge.
+    private var accent: Color {
+        let artist = EArtist.shared
+        let kind   = artist.constellationKind(constellation,
+                                              decDegrees:       0,
+                                              observerLatitude: state.origin.latitude.degrees)
+        return artist.constellationGradient(kind: kind).top
+    }
+
+    /// Entity symbol from the existing POI palette — same SF Symbol
+    /// the constellation's POI badge shows on the canvas.
+    private var iconSymbolName: String {
+        EArtist.shared.constellationEntitySymbol(
+            EArtist.shared.constellationEntity(of: constellation)
+        )
+    }
+
     var body: some View {
-        List {
-            Section {
-                if !stars.isEmpty {
-                    ForEach(stars.prefix(12)) { star in
-                        NavigationLink(value: star) {
-                            EConstellationStarRow(star: star)
+        VStack(spacing: 0) {
+            DetailHeader(
+                title:    constellation.fullName,
+                subtitle: subtitleText,
+                accent:   accent,
+                icon:     { Image(systemName: iconSymbolName) },
+                onShare:  {},
+                onDismiss: { state.dismissDetail() }
+            )
+            RememberButton(obj: .constellation(constellation))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            List {
+                Section {
+                    if !stars.isEmpty {
+                        ForEach(stars.prefix(12)) { star in
+                            NavigationLink(value: star) {
+                                EConstellationStarRow(star: star)
+                            }
+                            .padding(.leading, 33)
+                            .overlay {
+                                FavouriteButton(star: star)
+                                    .scaleEffect(0.6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
-                        .padding(.leading, 33)
-                        .overlay {
-                            FavouriteButton(star: star)
-                                .scaleEffect(0.6)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                        if stars.count > 12 {
+                            Text("...and \(stars.count - 12) more")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
                         }
-                    }
-                    if stars.count > 12 {
-                        Text("...and \(stars.count - 12) more")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
                     }
                 }
             }
         }
-        .navigationTitle(constellation.fullName)
-        .navigationBarTitleDisplayMode(.large)
         // No side effects on the sky from this view itself — no
         // auto-tracking the brightest star, no border selection — it
         // just renders the constellation's roster. The opening flow

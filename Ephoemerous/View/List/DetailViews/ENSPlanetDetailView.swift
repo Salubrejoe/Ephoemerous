@@ -17,21 +17,31 @@ struct ENSPlanetDetailView: View {
     private var dec: Angle { position.map { .degrees($0.dec) } ?? .zero }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                EDetailSubtitle(text: "Solar system  magnitude " + String(format: "%.1f", planet.baseMagnitude))
-                Divider().padding(.bottom, 24)
-                coordinatesSection
-                Divider().padding(.bottom, 24)
-                physicalSection
+        VStack(spacing: 0) {
+            DetailHeader(
+                title:    planet.name,
+                subtitle: planet.mythology,
+                accent:   planet.color,
+                icon:     { Text(planet.astronomicalGlyph) },
+                onShare:  {},
+                onDismiss: { state.dismissDetail() }
+            )
+            RememberButton(obj: .planet(planet))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Divider().padding(.bottom, 24)
+                    coordinatesSection
+                    Divider().padding(.bottom, 24)
+                    physicalSection
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .navigationTitle(planet.name)
-        .navigationBarTitleDisplayMode(.large)
     }
 
     private var coordinatesSection: some View {
