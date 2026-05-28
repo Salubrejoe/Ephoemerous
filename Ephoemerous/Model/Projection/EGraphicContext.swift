@@ -29,13 +29,33 @@ struct EGraphicContext {
     let localSiderealOffset:     Angle
     let animationTime:           Double
     let viewpoint:               EProjection.Viewpoint
+    /// Sky-fixed canvas rotation. Applied to each projected point in
+    /// `toScreen` so "celestial up" lands by the device's DI edge
+    /// regardless of orientation. Set by `MainView` based on
+    /// `verticalSizeClass`. See `EAppState.canvasRotation`.
+    let canvasRotation:          Angle
 
     // MARK: Coordinate helpers
 
+    /// Project-unit point → screen pixel. The point is rotated by
+    /// `canvasRotation` around the projection origin first; the badge
+    /// shapes + labels drawn at the resulting screen position stay
+    /// axis-aligned. When `canvasRotation == 0` the rotation step is
+    /// skipped entirely.
     func toScreen(_ p: CGPoint) -> CGPoint {
-        CGPoint(
-            x: size.width  / 2 + p.x * renderedScale + renderedOffset.y,
-            y: size.height / 2 - p.y * renderedScale + renderedOffset.x
+        let pRot: CGPoint
+        if canvasRotation == .zero {
+            pRot = p
+        } else {
+            let θ    = canvasRotation.radians
+            let cosθ = cos(θ)
+            let sinθ = sin(θ)
+            pRot = CGPoint(x: p.x * cosθ - p.y * sinθ,
+                           y: p.x * sinθ + p.y * cosθ)
+        }
+        return CGPoint(
+            x: size.width  / 2 + pRot.x * renderedScale + renderedOffset.y,
+            y: size.height / 2 - pRot.y * renderedScale + renderedOffset.x
         )
     }
 //

@@ -8,21 +8,45 @@ import SwiftUI
 // at any new scale.
 extension CelestialGestureCoordinator {
 
+    /// Screen pixel → projection-unit point. Exact inverse of
+    /// `EGraphicContext.toScreen`. When `state.canvasRotation != 0`
+    /// the plain projection-space result is un-rotated so pan/pinch
+    /// math stays in sky coordinates regardless of how the device
+    /// is held.
     func skyPoint(under screen: CGPoint, state: EAppState) -> CGPoint {
         let size = state.canvasSize
-        return CGPoint(
+        let plain = CGPoint(
             x: (screen.x - size.width  / 2 - state.offset.y) / state.scale,
             y: (size.height / 2 + state.offset.x - screen.y) / state.scale
         )
+        if state.canvasRotation == .zero { return plain }
+        let θ    = state.canvasRotation.radians
+        let cosθ = cos(θ)
+        let sinθ = sin(θ)
+        // Rotate by -θ to undo toScreen's forward rotation.
+        return CGPoint(x:  plain.x * cosθ + plain.y * sinθ,
+                       y: -plain.x * sinθ + plain.y * cosθ)
     }
 
-    /// Offset that puts `sky` exactly under screen point `p` at `scale`.
+    /// Offset that puts `sky` (projection coords) exactly under
+    /// screen point `p` at `scale`. Applies the canvas rotation
+    /// forward so the pin holds when the device is rotated.
     func screenPin(sky: CGPoint, under p: CGPoint, scale: Double,
                    state: EAppState) -> CGPoint {
         let size = state.canvasSize
+        let skyRot: CGPoint
+        if state.canvasRotation == .zero {
+            skyRot = sky
+        } else {
+            let θ    = state.canvasRotation.radians
+            let cosθ = cos(θ)
+            let sinθ = sin(θ)
+            skyRot = CGPoint(x: sky.x * cosθ - sky.y * sinθ,
+                             y: sky.x * sinθ + sky.y * cosθ)
+        }
         return CGPoint(
-            x: p.y - size.height / 2 + sky.y * scale,
-            y: p.x - size.width  / 2 - sky.x * scale
+            x: p.y - size.height / 2 + skyRot.y * scale,
+            y: p.x - size.width  / 2 - skyRot.x * scale
         )
     }
 

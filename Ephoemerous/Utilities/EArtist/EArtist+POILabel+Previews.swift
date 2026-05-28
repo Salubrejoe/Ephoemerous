@@ -72,7 +72,8 @@ private func previewGraphicsContext(
         animationTime:           0,
         viewpoint:               EProjection.Viewpoint(
                                     originVector: .north,
-                                    planeVector:  .south)
+                                    planeVector:  .south),
+        canvasRotation:          .zero
     )
 }
 

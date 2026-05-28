@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CoreLocation
 import LoreKit
 
@@ -6,6 +7,13 @@ struct MainView: View {
     @Environment(EAppState.self) var state
     @Environment(\.verticalSizeClass) private var vSizeClass
     @State private var showSortSheet = false
+    /// Live device orientation. Updated from
+    /// `UIDevice.orientationDidChangeNotification`. We need the
+    /// actual orientation (not just `verticalSizeClass`) to tell
+    /// landscape-left from landscape-right — both are `.compact`
+    /// vertically, but the dynamic island sits on opposite sides,
+    /// so the sky-fixed rotation has opposite signs.
+    @State private var deviceOrientation: UIDeviceOrientation = UIDevice.current.orientation
 
     @State private var height : Double = 0.0
     @State private var width : Double = 0.0
@@ -17,6 +25,39 @@ struct MainView: View {
     /// sit flush.
     private var topPadding: CGFloat {
         vSizeClass == .compact ? 18 : 64
+    }
+
+    /// Sky-fixed canvas rotation. Portrait keeps the projection
+    /// upright (celestial-north → screen-top). Landscape rotates so
+    /// celestial-north → the dynamic-island edge of the device.
+    ///
+    /// Apple's `UIDeviceOrientation` naming is counter-intuitive:
+    ///   • `.landscapeLeft`  = home button on the RIGHT, DI on screen-LEFT
+    ///   • `.landscapeRight` = home button on the LEFT,  DI on screen-RIGHT
+    ///
+    /// So:
+    ///   • portrait          → 0°
+    ///   • landscape-left    → +90°  (celestial-up → screen-left)
+    ///   • landscape-right   → −90°  (celestial-up → screen-right)
+    ///   • face-up/face-down → fall back to vSizeClass-only logic so
+    ///                         the rotation doesn't jump to portrait
+    ///                         when the user holds the phone flat
+    ///                         mid-landscape.
+    private var canvasRotation: Angle {
+        switch deviceOrientation {
+        case .portrait, .portraitUpsideDown:
+            return .zero
+        case .landscapeLeft:
+            return .degrees(+90)
+        case .landscapeRight:
+            return .degrees(-90)
+        default:
+            // Unknown / face-up / face-down — use vSizeClass as a
+            // proxy. Defaults to landscape-left's rotation while in
+            // compact-vertical, which keeps a stable answer instead
+            // of snapping to portrait when the device goes flat.
+            return vSizeClass == .compact ? .degrees(+90) : .zero
+        }
     }
     
     var body: some View {
@@ -63,6 +104,28 @@ struct MainView: View {
             .padding(.bottom,     32)
         }
         .ignoresSafeArea()
+        // Push the sky-fixed rotation onto `state` whenever the size
+        // class OR the device orientation flips. The canvas reads
+        // `state.canvasRotation` per frame via `EGraphicContext`, so
+        // this is what makes celestial-up follow the device's DI edge
+        // when the user rotates.
+        .onAppear {
+            // Start the orientation notification stream and pick up
+            // the current orientation as the initial value (the
+            // @State default may be `.unknown` until the first
+            // notification fires).
+            UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+            deviceOrientation = UIDevice.current.orientation
+            state.canvasRotation = canvasRotation
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIDevice.orientationDidChangeNotification
+        )) { _ in
+            deviceOrientation = UIDevice.current.orientation
+        }
+        .onChange(of: canvasRotation) { _, new in
+            state.canvasRotation = new
+        }
         // The outer NavigationStack in EphoemerousApp.swift reserves a
         // ~44 pt navigation-bar slot at the top, which pushed the
         // landscape toolbar pills down regardless of any padding inside
