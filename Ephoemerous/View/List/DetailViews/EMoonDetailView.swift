@@ -53,6 +53,9 @@ struct EMoonDetailView: View {
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )
+            DayCapsule(events: dayEvents, gradient: .dayCapsuleMoon)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
             roster
                 .padding(.top, 16)
             Spacer(minLength: 0)
@@ -60,6 +63,17 @@ struct EMoonDetailView: View {
         .task(id: "\(lat),\(lon),\(state.observationDate)") {
             await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
         }
+    }
+
+    /// Moonrise + moonset on the 24h gradient. Phase /
+    /// illumination / physicals stay as cards — only the rise/set
+    /// times move onto the capsule per the design.
+    private var dayEvents: [DayCapsule.Event] {
+        guard let e = weather.moonEvents else { return [] }
+        var out: [DayCapsule.Event] = []
+        if let v = e.moonrise { out.append(.init(time: v, label: "Moonrise", color: accent)) }
+        if let v = e.moonset  { out.append(.init(time: v, label: "Moonset",  color: accent)) }
+        return out
     }
 
     // MARK: Roster
@@ -80,16 +94,15 @@ struct EMoonDetailView: View {
 
     // MARK: Card groups
 
+    /// Moonrise + moonset have moved onto the DayCapsule. Phase +
+    /// illumination remain as cards because they're not points in
+    /// time — phase is a state of being and illumination is a
+    /// percentage, neither maps onto a 24h timeline.
     @ViewBuilder
     private var eventCards: some View {
-        if let e = weather.moonEvents {
-            if let v = e.moonrise { card(icon: "moonrise",            accentTinted: true, value: v.timeString, label: "Moonrise") }
-            card(icon: phaseSymbol(for: phaseName), accentTinted: true, value: phaseName,   label: "Phase")
-            if let v = e.moonset  { card(icon: "moonset",             accentTinted: true, value: v.timeString, label: "Moonset") }
-        } else {
-            card(icon: phaseSymbol(for: phaseName), accentTinted: true, value: phaseName, label: "Phase")
-        }
-        card(icon: "circle.lefthalf.filled", accentTinted: true,
+        card(icon: phaseSymbol(for: phaseName), accentTinted: true,
+             value: phaseName, label: "Phase")
+        card(icon: "circle.lefthalf.filled",    accentTinted: true,
              value: String(format: "%.0f%%", moonData.fraction * 100),
              label: "Illumination")
     }
