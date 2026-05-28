@@ -4,10 +4,20 @@ import LoreKit
 
 struct MainView: View {
     @Environment(EAppState.self) var state
+    @Environment(\.verticalSizeClass) private var vSizeClass
     @State private var showSortSheet = false
-    
+
     @State private var height : Double = 0.0
     @State private var width : Double = 0.0
+
+    /// Portrait on iPhone is `.regular` vertically; landscape is
+    /// `.compact`. In portrait the 64 pt clears the dynamic island
+    /// + status bar zone. In landscape the island sits on the side
+    /// edge and the screen top is unobstructed, so the toolbar can
+    /// sit flush.
+    private var topPadding: CGFloat {
+        vSizeClass == .compact ? 18 : 64
+    }
     
     var body: some View {
         ZStack {
@@ -49,10 +59,17 @@ struct MainView: View {
                 .frame(height: 44)
             }
             .padding(.horizontal, 24)
-            .padding(.top,        64)
+            .padding(.top,        topPadding)
             .padding(.bottom,     32)
         }
         .ignoresSafeArea()
+        // The outer NavigationStack in EphoemerousApp.swift reserves a
+        // ~44 pt navigation-bar slot at the top, which pushed the
+        // landscape toolbar pills down regardless of any padding inside
+        // this view. We don't navigate from MainView itself (sheets
+        // host their own NavigationStacks), so the bar is pure ghost
+        // chrome — hide it and the toolbar can sit at topPadding = 0.
+        .toolbar(.hidden, for: .navigationBar)
         // Detail sheet — single sheet at the root level, item-bound to
         // `state.detailDestination`. Bottom third of the screen, canvas
         // stays interactive behind it, no drag indicator (the X-mark in

@@ -28,7 +28,8 @@ extension EAppState {
     var stars: [EStar] {
         if let cached = _starsCache { return cached }
         let result = StarDatabase.shared.workableStars
-            .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
+            .filter { $0.magnitude < magnitudeFilter }
+//            .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
         _starsCache = result
         return result
     }
