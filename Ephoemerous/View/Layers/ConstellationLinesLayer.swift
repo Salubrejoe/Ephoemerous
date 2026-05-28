@@ -9,20 +9,58 @@ struct ConstellationLinesLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        for (_, segs) in ConstellationLines.shared.segments {
+        // Precompute the favourite set once per frame — every segment
+        // of the same constellation shares the same favourite status,
+        // so we only need one observable read.
+        let favouriteIDs: Set<String> = Set(
+            dc.state.favouriteConstellations.map(\.rawValue)
+        )
+        let observerLat = dc.state.origin.latitude.degrees
+
+        for (cons, segs) in ConstellationLines.shared.segments {
+            let isFavourite = favouriteIDs.contains(cons.rawValue)
+            // Look up the myth tint only when needed — most
+            // constellations aren't favourites, so the lookup stays
+            // cold on the hot loop.
+            let favouriteColor: Color? = isFavourite
+                ? favouriteTint(for: cons, observerLatitude: observerLat)
+                : nil
+
             for seg in segs {
                 guard let pa = projected(seg.a, in: dc),
                       let pb = projected(seg.b, in: dc) else { continue }
                 let ra = artist.starRadius(seg.a, in: dc, twinkling: false)
                 let rb = artist.starRadius(seg.b, in: dc, twinkling: false)
                 let gap = artist.constellationLineGapPad
-                artist.drawConstellationSegment(
-                    from:   pa, to: pb,
-                    insetA: ra + gap, insetB: rb + gap,
-                    in:     &dc
-                )
+                if let color = favouriteColor {
+                    artist.drawConstellationSegmentFavourite(
+                        from:   pa, to: pb,
+                        insetA: ra + gap, insetB: rb + gap,
+                        color:  color,
+                        in:     &dc
+                    )
+                } else {
+                    artist.drawConstellationSegment(
+                        from:   pa, to: pb,
+                        insetA: ra + gap, insetB: rb + gap,
+                        in:     &dc
+                    )
+                }
             }
         }
+    }
+
+    /// Same colour the favourite heart on the POI badge uses — the
+    /// myth gradient's top stop (or recessive grey for forever-
+    /// invisible constellations). Centralising it here keeps the
+    /// "favourite is this hue" rule in one place.
+    private func favouriteTint(for cons: EConstellation,
+                               observerLatitude: Double) -> Color {
+        let anchorDec = ConstellationLines.shared.labelAnchors[cons]?.dec.degrees ?? 0
+        let kind      = artist.constellationKind(cons,
+                                                  decDegrees:       anchorDec,
+                                                  observerLatitude: observerLatitude)
+        return artist.constellationGradient(kind: kind).top
     }
 
     private func projected(_ star: EStar, in dc: EGraphicContext) -> CGPoint? {
