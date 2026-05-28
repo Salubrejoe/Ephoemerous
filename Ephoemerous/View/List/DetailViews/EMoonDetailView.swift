@@ -2,6 +2,10 @@ import SwiftUI
 import LoreKit
 
 // MARK: - EMoonDetailView
+// Moon detail. Mirror of the sun layout — DetailHeader + horizontal
+// scroll of 100-pt fact cards, no RememberButton. Tonight's events
+// (moonrise / phase / moonset / illumination) tint lunar blue;
+// physical + coordinate cards stay neutral.
 
 struct EMoonDetailView: View {
     @Environment(EAppState.self) var state
@@ -16,13 +20,14 @@ struct EMoonDetailView: View {
         return (ra, dec, fraction)
     }
 
-    private var ra:  Angle { .degrees(moonData.ra) }
-    private var dec: Angle { .degrees(moonData.dec) }
     private var lat: Double { state.origin.latitude.degrees }
     private var lon: Double { state.origin.longitude.degrees }
 
+    /// Cool moonlight tint — same colour the old detail view used.
     private let accent = Color(red: 0.75, green: 0.82, blue: 1.0)
 
+    /// Phase name from `moonData.fraction`, falling back through the
+    /// same threshold table the old view used.
     private var phaseName: String {
         switch moonData.fraction {
         case ..<AstroConstants.phaseNewMoon:        return Strings.MoonPhase.newMoon
@@ -38,140 +43,138 @@ struct EMoonDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                EDetailSubtitle(text: String(format: "%.1f%% illuminated  384,400 km", moonData.fraction * 100))
-                eventsSection
-                Divider().padding(.bottom, 24)
-                coordinatesSection
-                Divider().padding(.bottom, 24)
-                physicalSection
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 0) {
+            DetailHeader(
+                title:         "Selene",
+                subtitle:      String(format: "%.0f%% illuminated", moonData.fraction * 100),
+                accent:        accent,
+                icon:          { POIBadgeView(category: .moon) },
+                leadingSymbol: "square.and.arrow.up",
+                onLeading:     {},
+                onDismiss:     { state.dismissDetail() }
+            )
+            roster
+                .padding(.top, 16)
+            Spacer(minLength: 0)
         }
-        .navigationTitle("Selene")
-        .navigationBarTitleDisplayMode(.large)
         .task(id: "\(lat),\(lon),\(state.observationDate)") {
             await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
         }
     }
 
-    private var eventsSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Tonight")
-            MoonEventsTimeline(weather: weather, phaseName: phaseName)
-                .padding(.bottom, 28)
-        }
-    }
+    // MARK: Roster
 
-    private var coordinatesSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Equatorial coordinates")
-            ECoordinateDials(ra: ra, dec: dec, accent: accent)
-                .padding(.bottom, 28)
-        }
-    }
+    private var rosterHeight: CGFloat { 100 }
 
-    private var physicalSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Physical")
-            EDetailPhysicalRow(label: "Illumination",   value: String(format: "%.1f%%", moonData.fraction * 100), isLast: false)
-            EDetailPhysicalRow(label: "Distance",       value: "~384,400 km",  isLast: false)
-            EDetailPhysicalRow(label: "Diameter",       value: "3,474 km",     isLast: false)
-            EDetailPhysicalRow(label: "Orbital period", value: "27.3 days",    isLast: true)
-        }
-    }
-}
-
-// MARK: - Moon events timeline
-
-private struct MoonEventsTimeline: View {
-    let weather: EWeatherService
-    let phaseName: String
-
-    var body: some View {
-        if weather.isLoading {
-            Text("Fetching...")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        } else if let e = weather.moonEvents {
-            VStack(alignment: .leading, spacing: 0) {
-                let wkPhase = e.phaseLabel.isEmpty ? phaseName : e.phaseLabel
-                let wkEmoji = e.phaseEmoji
-                if let rise = e.moonrise {
-                    MoonEventRow(name: "Moonrise", emoji: nil,                                 time: rise, style: .rise,  isLast: false)
-                }
-                MoonEventRow(    name: wkPhase,    emoji: wkEmoji.isEmpty ? nil : wkEmoji,      time: nil,  style: .phase, isLast: e.moonset == nil)
-                if let set = e.moonset {
-                    MoonEventRow(name: "Moonset",  emoji: nil,                                 time: set,  style: .set,   isLast: true)
-                }
+    private var roster: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                eventCards
+                physicalCards
+                coordCards
             }
-        } else if let err = weather.error {
-            Text(err)
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            .padding(.horizontal, 16)
+        }
+        .frame(height: rosterHeight)
+    }
+
+    // MARK: Card groups
+
+    @ViewBuilder
+    private var eventCards: some View {
+        if let e = weather.moonEvents {
+            if let v = e.moonrise { card(icon: "moonrise",            accentTinted: true, value: v.timeString, label: "Moonrise") }
+            card(icon: phaseSymbol(for: phaseName), accentTinted: true, value: phaseName,   label: "Phase")
+            if let v = e.moonset  { card(icon: "moonset",             accentTinted: true, value: v.timeString, label: "Moonset") }
         } else {
-            Text(phaseName)
-                .font(.callout)
+            card(icon: phaseSymbol(for: phaseName), accentTinted: true, value: phaseName, label: "Phase")
+        }
+        card(icon: "circle.lefthalf.filled", accentTinted: true,
+             value: String(format: "%.0f%%", moonData.fraction * 100),
+             label: "Illumination")
+    }
+
+    private var physicalCards: some View {
+        Group {
+            card(icon: "ruler",         accentTinted: false, value: "~384k km", label: "Distance")
+            card(icon: "circle.dashed", accentTinted: false, value: "3,474 km", label: "Diameter")
+            card(icon: "clock",         accentTinted: false, value: "27.3 d",   label: "Period")
+        }
+    }
+
+    private var coordCards: some View {
+        Group {
+            card(icon: "arrow.left.arrow.right", accentTinted: false,
+                 value: raString,  label: "RA")
+            card(icon: "arrow.up.arrow.down", accentTinted: false,
+                 value: decString, label: "Dec")
+        }
+    }
+
+    // MARK: Card
+
+    /// Same fixed-slot card shape as the sun detail / constellation
+    /// roster — 110pt wide, 100pt tall row, icon 24 / value 22 /
+    /// label 14 slot heights. Kept private here rather than shared
+    /// because each detail view has slightly different layout
+    /// concerns and a generic Card<View> ends up trickier than two
+    /// inline copies.
+    private func card(icon: String, accentTinted: Bool, value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(accentTinted ? accent : .secondary)
+                .frame(height: 24)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .monospacedDigit()
+                .frame(height: 22)
+            Text(label)
+                .font(.caption2)
                 .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+                .lineLimit(1)
+                .frame(height: 14)
         }
-    }
-}
-
-private struct MoonEventRow: View {
-    enum RowStyle { case rise, phase, set }
-
-    let name:  String
-    let emoji: String?
-    let time:  Date?
-    let style: RowStyle
-    let isLast: Bool
-
-    private let moonAccent = Color(red: 0.75, green: 0.82, blue: 1.0)
-
-    private var dotColor: Color {
-        style == .phase ? moonAccent.opacity(0.4) : moonAccent
+        .frame(width: 110)
+        .frame(maxHeight: .infinity)
+        .padding(.vertical, 14)
+        .background(Color(.tertiarySystemFill),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                if !isLast {
-                    Rectangle()
-                        .fill(Color.primary.opacity(0.1))
-                        .frame(width: 0.5)
-                        .frame(maxHeight: .infinity)
-                        .offset(y: 14)
-                }
-                ZStack {
-                    if style == .phase {
-                        Circle()
-                            .fill(moonAccent.opacity(0.12))
-                            .frame(width: 16, height: 16)
-                    }
-                    Circle()
-                        .fill(dotColor)
-                        .frame(width: 7, height: 7)
-                }
-            }
-            .frame(width: 16, height: 44)
+    // MARK: Helpers
 
-            if let e = emoji { Text(e).font(.callout) }
-            Text(name)
-                .font(.callout)
-                .foregroundStyle(style == .phase ? .secondary : .primary)
-            Spacer()
-            if let t = time {
-                Text(t.timeString)
-                    .font(.callout)
-                    .monospacedDigit()
-                    .fontDesign(.serif)
-                    .foregroundStyle(style == .phase ? .secondary : .primary)
-            }
+    /// SF Symbol for the eight Moon phases — the canonical
+    /// `moonphase.*` family. Falls back to plain `moon` if a phase
+    /// string we don't recognise comes through.
+    private func phaseSymbol(for name: String) -> String {
+        switch name {
+        case Strings.MoonPhase.newMoon:        return "moonphase.new.moon"
+        case Strings.MoonPhase.waxingCrescent: return "moonphase.waxing.crescent"
+        case Strings.MoonPhase.firstQuarter:   return "moonphase.first.quarter"
+        case Strings.MoonPhase.waxingGibbous:  return "moonphase.waxing.gibbous"
+        case Strings.MoonPhase.fullMoon:       return "moonphase.full.moon"
+        case Strings.MoonPhase.waningGibbous:  return "moonphase.waning.gibbous"
+        case Strings.MoonPhase.lastQuarter:    return "moonphase.last.quarter"
+        case Strings.MoonPhase.waningCrescent: return "moonphase.waning.crescent"
+        default:                               return "moon"
         }
+    }
+
+    private var raString: String {
+        let hours = moonData.ra / 15
+        let h = Int(hours)
+        let m = Int((hours - Double(h)) * 60)
+        return String(format: "%dh%02dm", h, m)
+    }
+
+    private var decString: String {
+        "\(Int(moonData.dec.rounded()))°"
     }
 }
 

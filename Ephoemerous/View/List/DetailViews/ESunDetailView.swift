@@ -2,6 +2,13 @@ import SwiftUI
 import LoreKit
 
 // MARK: - ESunDetailView
+// Sun detail. DetailHeader on top, a single horizontal scroll of
+// 100pt-tall fact cards below — no RememberButton (sun isn't
+// favouritable). Mirrors the constellation roster's card shape so
+// the family of detail views shares one rhythm:
+//
+//   • event cards (civil dawn → civil dusk) tint yellow
+//   • physical + coordinate cards stay neutral
 
 struct ESunDetailView: View {
     @Environment(EAppState.self) var state
@@ -15,128 +22,123 @@ struct ESunDetailView: View {
     private let accent = Color.yellow
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                EDetailSubtitle(text: "G-type  5,778 K  radius 696,000 km")
-                eventsSection
-                Divider().padding(.bottom, 24)
-                coordinatesSection
-                Divider().padding(.bottom, 24)
-                physicalSection
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 0) {
+            DetailHeader(
+                title:         "Sol",
+                subtitle:      "G-type star",
+                accent:        accent,
+                icon:          { POIBadgeView(category: .sun) },
+                leadingSymbol: "square.and.arrow.up",
+                onLeading:     {},
+                onDismiss:     { state.dismissDetail() }
+            )
+            roster
+                .padding(.top, 16)
+            Spacer(minLength: 0)
         }
-        .navigationTitle("Sol")
-        .navigationBarTitleDisplayMode(.large)
         .task(id: "\(lat),\(lon),\(state.observationDate)") {
             await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
         }
     }
 
-    private var eventsSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Today")
-            SunEventsTimeline(weather: weather)
-                .padding(.bottom, 28)
-        }
-    }
+    // MARK: Roster
 
-    private var coordinatesSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Equatorial coordinates")
-            ECoordinateDials(ra: coords.ra, dec: coords.dec, accent: accent)
-                .padding(.bottom, 28)
-        }
-    }
+    /// Same 100-pt fixed row height as the constellation roster +
+    /// star detail's stats grid — keeps the detail family in rhythm.
+    private var rosterHeight: CGFloat { 100 }
 
-    private var physicalSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Physical")
-            EDetailPhysicalRow(label: "Apparent magnitude", value: "-26.74",   isLast: false)
-            EDetailPhysicalRow(label: "Distance",           value: "1.000 AU", isLast: false)
-            EDetailPhysicalRow(label: "Ecliptic longitude",
-                               value: String(format: "%.3f deg", lambda.degrees), isLast: true)
-        }
-    }
-}
-
-// MARK: - Sun events timeline
-
-private struct SunEventsTimeline: View {
-    let weather: EWeatherService
-
-    var body: some View {
-        if weather.isLoading {
-            Text("Fetching...")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        } else if let e = weather.sunEvents {
-            VStack(alignment: .leading, spacing: 0) {
-                if let v = e.civilDawn { SunEventRow(name: "Civil dawn",  time: v, style: .dim,    isLast: false) }
-                if let v = e.sunrise   { SunEventRow(name: "Sunrise",     time: v, style: .bright, isLast: false) }
-                if let v = e.solarNoon { SunEventRow(name: "Solar noon",  time: v, style: .noon,   isLast: false) }
-                if let v = e.sunset    { SunEventRow(name: "Sunset",      time: v, style: .bright, isLast: false) }
-                if let v = e.civilDusk { SunEventRow(name: "Civil dusk",  time: v, style: .dim,    isLast: true)  }
+    private var roster: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                eventCards
+                physicalCards
+                coordCards
             }
-        } else if let err = weather.error {
-            Text(err)
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            .padding(.horizontal, 16)
         }
+        .frame(height: rosterHeight)
     }
-}
-private struct SunEventRow: View {
-    enum DotStyle { case dim, bright, noon }
 
-    let name: String
-    let time: Date
-    let style: DotStyle
-    let isLast: Bool
+    // MARK: Card groups
 
-    private var dotColor: Color {
-        switch style {
-        case .dim:    return Color.primary.opacity(0.25)
-        case .bright: return Color.yellow
-        case .noon:   return Color.yellow
+    @ViewBuilder
+    private var eventCards: some View {
+        if let e = weather.sunEvents {
+            if let v = e.civilDawn { card(icon: "sunrise",      accentTinted: true, value: v.timeString, label: "Civil dawn") }
+            if let v = e.sunrise   { card(icon: "sunrise.fill", accentTinted: true, value: v.timeString, label: "Sunrise") }
+            if let v = e.solarNoon { card(icon: "sun.max.fill", accentTinted: true, value: v.timeString, label: "Noon") }
+            if let v = e.sunset    { card(icon: "sunset.fill",  accentTinted: true, value: v.timeString, label: "Sunset") }
+            if let v = e.civilDusk { card(icon: "sunset",       accentTinted: true, value: v.timeString, label: "Civil dusk") }
         }
     }
 
-    var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                if !isLast {
-                    Rectangle()
-                        .fill(Color.primary.opacity(0.1))
-                        .frame(width: 0.5)
-                        .frame(maxHeight: .infinity)
-                        .offset(y: 14)
-                }
-                ZStack {
-                    if style == .noon {
-                        Circle()
-                            .fill(Color.yellow.opacity(0.15))
-                            .frame(width: 16, height: 16)
-                    }
-                    Circle()
-                        .fill(dotColor)
-                        .frame(width: 7, height: 7)
-                }
-            }
-            .frame(width: 16, height: 44)
+    private var physicalCards: some View {
+        Group {
+            card(icon: "sparkles", accentTinted: false, value: "-26.7",   label: "Magnitude")
+            card(icon: "ruler",    accentTinted: false, value: "1.0 AU",  label: "Distance")
+        }
+    }
 
-            Text(name)
-                .font(.callout)
-                .foregroundStyle(style == .noon ? .primary : .secondary)
-            Spacer()
-            Text(time.timeString)
-                .font(.callout)
+    private var coordCards: some View {
+        Group {
+            card(icon: "arrow.left.arrow.right", accentTinted: false,
+                 value: raString,  label: "RA")
+            card(icon: "arrow.up.arrow.down", accentTinted: false,
+                 value: decString, label: "Dec")
+        }
+    }
+
+    // MARK: Card
+
+    /// Same card shape as `EConstellationDetailView.StarCard` —
+    /// fixed slot heights (icon 24, value 22, label 14), 110pt
+    /// width, tertiary-fill rounded rect. Inlined here rather than
+    /// shared because the moon detail will want a different default
+    /// icon size for its phase glyph and it's simpler to keep two
+    /// near-identical structs than fight a generic over it.
+    private func card(icon: String, accentTinted: Bool, value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(accentTinted ? accent : .secondary)
+                .frame(height: 24)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
                 .monospacedDigit()
-                .fontDesign(.serif)
-                .foregroundStyle(style == .noon ? .primary : .secondary)
+                .frame(height: 22)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+                .lineLimit(1)
+                .frame(height: 14)
         }
+        .frame(width: 110)
+        .frame(maxHeight: .infinity)
+        .padding(.vertical, 14)
+        .background(Color(.tertiarySystemFill),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: Coord formatting
+
+    /// RA → "Hh MMm" (round, no seconds — the bottom-third detent
+    /// doesn't have room for HH:MM:SS in a 110pt card).
+    private var raString: String {
+        let hours = coords.ra.degrees / 15
+        let h = Int(hours)
+        let m = Int((hours - Double(h)) * 60)
+        return String(format: "%dh%02dm", h, m)
+    }
+
+    /// Dec → "DD°" (round, no minutes/seconds).
+    private var decString: String {
+        let d = Int(coords.dec.degrees.rounded())
+        return "\(d)°"
     }
 }
 
