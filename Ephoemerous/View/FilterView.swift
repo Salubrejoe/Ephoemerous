@@ -14,18 +14,18 @@ struct FilterView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(Strings.Sort.brighterThan)
-                    .font(.subheadline.weight(.medium))
-                Spacer()
-                Text(String(format: Strings.Format.magnFormat, magnitudeCap))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("\(starCount) stars")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
+//            HStack {
+//                Text(Strings.Sort.brighterThan)
+//                    .font(.subheadline.weight(.medium))
+//                Spacer()
+//                Text(String(format: Strings.Format.magnFormat, magnitudeCap))
+//                    .monospacedDigit()
+//                    .foregroundStyle(.secondary)
+//                Spacer()
+//                Text("\(starCount) stars")
+//                    .font(.caption)
+//                    .foregroundStyle(.tertiary)
+//            }
             Slider(value: $magnitudeCap, in: magnitudeRange, step: 0.1)
                 .tint(.primary)
         }

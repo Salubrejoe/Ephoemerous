@@ -97,7 +97,8 @@ struct DetailHeader<Icon: View>: View {
             }
             .padding(.horizontal, 10)
         }
-        .padding(.top, 12)
+        .padding(.top, 16)
+        .padding(.horizontal, 6)
         .padding(.bottom, 8)
     }
 }

@@ -27,15 +27,24 @@ struct MainView: View {
                 
                 HStack {
                     Image(symbol: .magnitudeIcon)
-                        .foregroundStyle(.primary)
+                        .bold()
                         .frame(width:44, height: 44)
                         .contentShape(.circle)
                     .glassEffect(.clear.interactive(), in: .circle)
                     .onTapGesture {
                         showSortSheet = true
                     }
+                    Spacer()
+                    Image(symbol: .search)
+                        .bold()
+                        .frame(width:44, height: 44)
+                        .contentShape(.circle)
+                        .glassEffect(.clear.interactive(), in: .circle)
+                        .onTapGesture {
+                            //
+                        }
                     
-                    SearchBar()
+//                    SearchBar()
                 }
                 .frame(height: 44)
             }
@@ -62,8 +71,8 @@ struct MainView: View {
                 magnitudeRange: -2.0...8.0,
                 starCount: displayedStars.count
             )
-            .presentationDetents([.height(320)])
-            .presentationDragIndicator(.visible)
+            .presentationDetents([.height(55)])
+//            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: Bindable(state).showStarList) {
             NavigationStack {

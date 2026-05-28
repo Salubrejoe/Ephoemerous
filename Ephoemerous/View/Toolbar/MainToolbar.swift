@@ -23,11 +23,12 @@ struct MainToolbar: View {
 
             GlassEffectContainer {
                 HStack(spacing: 0) {
-                    locationButton
+                    
+                    dateButton
                         .glassEffect(.clear.interactive(),
                                      in: .capsule)
                     Spacer()
-                    dateButton
+                    locationButton
                         .glassEffect(.clear.interactive(),
                                      in: .capsule)
                 }
@@ -71,14 +72,17 @@ struct MainToolbar: View {
     private var locationButton: some View {
         Button(action: state.toggleLocationPicker) {
             HStack(spacing: 6) {
-                Image(systemName: locationButtonSymbol)
-                    .font(.callout)
-                    .contentTransition(.symbolEffect(.replace))
+                if state.isShowingLocationPicker {
+                    Image(symbol: .xmark)
+                        .font(.callout)
+                        
+                        .contentTransition(.symbolEffect(.replace))
+                }
                 if !state.isShowingLocationPicker {
                     Text(locationLabel)
-                        .font(.callout.weight(.medium))
+                        .font(.callout.weight(.bold))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.5)
                         .transition(.move(edge: .leading)
                             .combined(with: .opacity)
                             .combined(with: .blurReplace))
@@ -95,13 +99,14 @@ struct MainToolbar: View {
     private var dateButton: some View {
         Button(action: state.toggleDatePicker) {
             HStack(spacing: 6) {
-                Image(systemName: state.isShowingDatePicker
-                      ? "xmark"
-                      : "calendar")
-                    .font(.headline)
+                if state.isShowingDatePicker {
+                    
+                    Image(systemName: "xmark")
+                        .font(.headline)
+                }
                 if !state.isShowingDatePicker {
                     Text(dateLabel)
-                        .font(.callout.weight(.medium))
+                        .font(.callout.weight(.bold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                         .transition(.move(edge: .leading)
