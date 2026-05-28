@@ -44,6 +44,18 @@ struct MainView: View {
             .padding(.bottom,     32)
         }
         .ignoresSafeArea()
+        // Detail sheet — single sheet at the root level, item-bound to
+        // `state.detailDestination`. Bottom third of the screen, canvas
+        // stays interactive behind it, no drag indicator (the X-mark in
+        // DetailHost is the dismissal affordance). Canvas taps go
+        // through `state.focus(on:)`, which sets the destination and
+        // pans the object to the centre of the upper third.
+        .sheet(item: Bindable(state).detailDestination) { obj in
+            DetailHost(obj: obj)
+                .presentationDetents([.fraction(1.0 / 3.0)])
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.hidden)
+        }
         .sheet(isPresented: $showSortSheet) {
             FilterView(
                 magnitudeCap: Bindable(state).magnitudeFilter,

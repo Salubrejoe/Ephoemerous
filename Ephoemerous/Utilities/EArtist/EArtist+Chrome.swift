@@ -29,7 +29,7 @@ extension EArtist {
 
     /// Screen-space centre + radius of the watch chrome disc. Cheap
     /// `(dx² + dy²) < r²` rejection tests use this — `StarsLayer` and
-    /// `SelectedStarsLayer` pre-compute it once per frame to skip stars
+    /// `FavouritesLayer` pre-compute it once per frame to skip stars
     /// projected outside the visible disc in clock mode. The squircle
     /// rim's bumps push past `radius` by ~2 % at corners, so the cull
     /// is marginally tight — irrelevant visually, generous enough not

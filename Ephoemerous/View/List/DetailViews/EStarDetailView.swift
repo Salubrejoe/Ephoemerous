@@ -31,7 +31,7 @@ struct EStarDetailView: View {
         .background(glowBackground())
         .toolbar {
             ToolbarItem(placement: .automatic) {
-                SelectStarButton(star: star)
+                FavouriteButton(star: star)
             }
             .sharedBackgroundVisibility(.hidden)
         }
@@ -72,8 +72,7 @@ struct EStarDetailView: View {
     private func glowBackground() -> some View {
         ZStack {
             Circle()
-                .fill(state.selectedStars.contains(where: { $0.name == star.name })
-                      ? star.spectralClass.color : .clear)
+                .fill(state.isFavouriteStar(star) ? star.spectralClass.color : .clear)
                 .frame(width: 33, height: 33)
                 .blur(radius: 30)
                 .padding(25)

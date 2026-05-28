@@ -63,8 +63,8 @@ extension EArtist {
                     * sin(dc.animationTime * AstroConstants.twinkleFrequency + phase)
 
         
-        let isSelected = dc.state.selectedStars.contains(star)
-        let returedTwinkle = isSelected ? twinkle : 1.0
+        let isFavourite     = dc.state.isFavouriteStar(star)
+        let returedTwinkle  = isFavourite ? twinkle : 1.0
         
         return clamped * returedTwinkle
     }
@@ -87,7 +87,7 @@ extension EArtist {
             with: .color(star.spectralClass.color.opacity(0.9))
             /*
              .color(
-             dc.state.selectedStars.contains(star) ? star.spectralClass.color.opacity(0.9) : .tertiary
+             dc.state.isFavouriteStar(star) ? star.spectralClass.color.opacity(0.9) : .tertiary
              )
              */
         )

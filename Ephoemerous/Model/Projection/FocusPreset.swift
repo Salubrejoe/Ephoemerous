@@ -164,19 +164,19 @@ extension EAppState {
     }
 
     func applyStarTracking(_ star: EStar) {
-        guard let position = selectedStarPositions[star.name] ?? screenPosition(of: star) else {
-            ELogger.selectedStars("trackStar: could not compute position for \(star.name)")
+        guard let position = favouritePositions[ESkyObject.star(star).id] ?? screenPosition(of: star) else {
+            ELogger.favourites("trackStar: could not compute position for \(star.name)")
             return
         }
         beginTracking(toward: position)
-        ELogger.selectedStars("trackStar: \(star.name) → \(offset)")
+        ELogger.favourites("trackStar: \(star.name) → \(offset)")
     }
 }
 
 // MARK: - EAppState: Screen position helper
 extension EAppState {
 
-    /// Computes the screen position of a star without relying on the cached selectedStarPositions.
+    /// Computes the screen position of a star without relying on the cached favouritePositions.
     func screenPosition(of star: EStar) -> CGPoint? {
         guard canvasSize != .zero else { return nil }
         let (pRA, pDec) = EPrecession.precess(

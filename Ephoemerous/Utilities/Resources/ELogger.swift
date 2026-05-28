@@ -10,7 +10,7 @@ enum ELogger {
         case sun            = "Sun"
         case moon           = "Moon"
         case planet         = "Planet"
-        case selectedStars  = "SelectedStars"
+        case favourites     = "Favourites"
         case starDatabase   = "StarDatabase"
         case location       = "Location"
         case constellationLines = "ConstellationLines"
@@ -25,7 +25,7 @@ enum ELogger {
     static func sun(_ message: String)           { log(.sun,           message) }
     static func moon(_ message: String)          { log(.moon,          message) }
     static func planet(_ message: String)        { log(.planet,        message) }
-    static func selectedStars(_ message: String) { log(.selectedStars, message) }
+    static func favourites(_ message: String)    { log(.favourites,    message) }
     static func starDatabase(_ message: String)  { log(.starDatabase,  message) }
     static func location(_ message: String)      { log(.location,      message) }
     static func constellationLines(_ message: String) { log(.constellationLines, message) }

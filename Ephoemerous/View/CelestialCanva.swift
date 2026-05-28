@@ -25,19 +25,25 @@ struct CelestialCanva: View {
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
+            // Proper-named stars: hidden below `namedStarDotIn`, then
+            // dot → badge → text-tier reveal as the user zooms further
+            // in (handled by drawPOILabel + `.namedStar` thresholds).
+            // Sits between constellation names and the horizon wash so
+            // it dims when below horizon, same as constellation labels.
+            NamedStarsLayer(),
             // HorizonLayer now sits on top of grid + lines + stars + zodiac
             // glyphs, so its translucent `horizonFillColor` wash and the
             // squircle-bumped twilight rings *dim* the below-horizon region
             // instead of just tinting the canvas under it. Anything that
             // should always pop (selected stars, ecliptic, badges, user
             // puck) is drawn after.
-            HorizonLayer(),
             CardinalLabelsLayer(),
-            SelectedStarsLayer(),
+            FavouritesLayer(),
             EclipticLayer(),
             EPlanetsLayer(),
             SunLayer(),
             EMoonLayer(),
+            HorizonLayer(),
             UserLocationLayer(),   // "you are here" puck — drawn last so it sits on top
 //            ClipAndHoursLayer(),
 //            WatchRimLayer(),
@@ -113,7 +119,7 @@ struct ECanvasSchedule: TimelineSchedule {
         mutating func next() -> Date? {
             let current   = next_date
             next_date     = isAnimating
-            ? current.addingTimeInterval(1.0 / 60.0)
+            ? current.addingTimeInterval(1.0 / 120.0)
             : current.addingTimeInterval(1.0 / 10.0)
             return current
         }

@@ -2,7 +2,12 @@
 import SwiftUI
 import LoreKit
 
-
+// MARK: - ObjectsTrackingOverlay
+// Invisible hit-test layer on top of the canvas. Each child is a clear
+// shape positioned over the projected screen point of a tappable POI;
+// tapping calls `state.focus(on:)`, which sets `detailDestination` and
+// pans the camera. The sheet itself is hosted at `MainView` root — this
+// layer is purely about turning taps into intents.
 struct ObjectsTrackingOverlay: View {
     @Environment(EAppState.self) var state
 
@@ -10,53 +15,36 @@ struct ObjectsTrackingOverlay: View {
         ZStack {
             if let sunPoint = state.sunScreenPosition {
                 ClearCircle(at: sunPoint)
-                    .onTapGesture { state.presentSunInfo() }
+                    .onTapGesture { state.focus(on: .sun) }
             }
 
             if let moonPoint = state.moonScreenPosition {
                 ClearCircle(at: moonPoint)
-                    .onTapGesture { state.presentMoonInfo() }
+                    .onTapGesture { state.focus(on: .moon) }
             }
 
-            ForEach(state.selectedStars.uniqued(by: \.name), id: \.name) { star in
-                if let point = state.selectedStarPositions[star.name] {
+            // Favourited stars become tappable wherever the
+            // FavouritesLayer published their position. Keyed by
+            // `ESkyObject.id` so it generalises beyond stars later.
+            ForEach(state.favouriteStars.uniqued(by: \.name), id: \.name) { star in
+                if let point = state.favouritePositions[ESkyObject.star(star).id] {
                     ClearCircle(at: point)
-                        .onTapGesture { state.presentStarInfo(star) }
+                        .onTapGesture { state.focus(on: .star(star)) }
                 }
             }
 
             ForEach(Array(state.constellationLabelHitRects), id: \.key) { cons, rect in
                 ClearCapsule(in: rect)
-                    .onTapGesture { state.presentConstellationInfo(cons) }
+                    .onTapGesture { state.focus(on: .constellation(cons)) }
             }
-        }
-        .sheet(isPresented: Bindable(state).showSunInfo) {
-            NavigationStack {
-                ESunDetailView()
-                    .sheetFormat()
-            }
-        }
-        .sheet(isPresented: Bindable(state).showMoonInfo) {
-            NavigationStack {
-                EMoonDetailView()
-                    .sheetFormat()
-            }
-        }
-        .sheet(isPresented: Bindable(state).showStarView) {
-            NavigationStack {
-                if let star = state.currentlyDisplayedStar {
-                    EStarDetailView(star: star)
-                        .sheetFormat()
-                        .onDisappear { state.currentlyDisplayedStar = nil }
-                }
-            }
-        }
-        .sheet(isPresented: Bindable(state).showConstellationView) {
-            NavigationStack {
-                if let cons = state.currentlyDisplayedConstellation {
-                    EConstellationDetailView(constellation: cons)
-                        .sheetFormat()
-                        .onDisappear { state.currentlyDisplayedConstellation = nil }
+
+            // Proper-named stars become tappable above
+            // `namedStarTapMinScale`. The dict is keyed by the
+            // catalogue name; NamedStarsLayer hands us back the EStar.
+            ForEach(Array(state.namedStarHitRects), id: \.key) { name, rect in
+                if let star = NamedStarsLayer.star(named: name) {
+                    ClearCapsule(in: rect)
+                        .onTapGesture { state.focus(on: .star(star)) }
                 }
             }
         }

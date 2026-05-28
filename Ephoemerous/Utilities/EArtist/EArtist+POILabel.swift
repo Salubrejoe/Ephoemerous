@@ -90,6 +90,12 @@ enum POIConstellationKind {
 enum POICategory {
     case constellation(POIConstellationKind)
     case followedStar(EStar)
+    /// Proper-named star surfaced as a POI at high zoom. Visually a
+    /// quieter sibling of `.followedStar` — same pentagon silhouette
+    /// and spectral palette, but later thresholds so they only appear
+    /// when the user is clearly zoomed in. Selecting (following) a
+    /// named star promotes it to `.followedStar`.
+    case namedStar(EStar)
     case sun
     case moon
     case planet(EPlanet)
@@ -137,8 +143,8 @@ extension EArtist {
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
-                badgeSize:       18,
-                symbolPointSize: 9,
+                badgeSize:       22,
+                symbolPointSize: 11,
                 badgeCorners:    corners,
                 dotShape:        .circle,
                 dotRadius:       2.5,
@@ -171,7 +177,7 @@ extension EArtist {
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
-                badgeSize:       16,
+                badgeSize:       15,
                 symbolPointSize: 8,
                 badgeCorners:    6,    // heptagon
                 dotShape:        .circle,
@@ -190,7 +196,7 @@ extension EArtist {
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
-                badgeSize:       12,
+                badgeSize:       10,
                 symbolPointSize: 6,
                 badgeCorners:    4,    // rounded square
                 dotShape:        .circle,
@@ -215,13 +221,36 @@ extension EArtist {
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
-                badgeSize:       18,
-                symbolPointSize: 9,
+                badgeSize:       12,
+                symbolPointSize: 6,
                 badgeCorners:    5,    // pentagon — star
                 dotShape:        .squircle(corners: 5, bulge: poiBadgeBulge),
                 dotRadius:       2.5,
                 badgeIn:         70,
                 textIn:          120
+            )
+        case .namedStar(let star):
+            // Same pentagon silhouette + spectral palette as the
+            // followed-star badge so a named star reads as the same
+            // visual species — but the thresholds land much later in
+            // the zoom range, so the dot/badge/text only kick in when
+            // the user is clearly past constellation-name territory.
+            // Selecting one promotes it to `.followedStar` (which has
+            // the breathing halo + early thresholds).
+            let g = star.spectralClass.badgeGradient
+            return POICategoryStyle(
+                gradientTop:     g.top,
+                gradientBottom:  g.bottom,
+                border:          .systemBackground,
+                symbolColor:     .systemBackground,
+                textColor:       .primary,
+                badgeSize:       12,
+                symbolPointSize: 6,
+                badgeCorners:    5,    // pentagon — star
+                dotShape:        .squircle(corners: 5, bulge: poiBadgeBulge),
+                dotRadius:       2.0,  // slightly smaller than followedStar
+                badgeIn:         280,  // well past constellation textIn (190)
+                textIn:          360
             )
         case .sun:
             return solarStyle(
@@ -257,7 +286,7 @@ extension EArtist {
 
     /// Squircle bulge shared by every badge — corner count is
     /// per-category, see `POICategoryStyle.badgeCorners`.
-    var poiBadgeBulge: CGFloat { 2.6 }
+    var poiBadgeBulge: CGFloat { 2.8 }
     /// Horizontal gap between the badge's right edge and the text's
     /// left edge — keeps the pill from feeling crowded.
     var poiTextLeadingGap: CGFloat { 5 }

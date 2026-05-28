@@ -20,7 +20,7 @@ struct EConstellationDetailView: View {
                         }
                         .padding(.leading, 33)
                         .overlay {
-                            SelectStarButton(star: star)
+                            FavouriteButton(star: star)
                                 .scaleEffect(0.6)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -35,11 +35,11 @@ struct EConstellationDetailView: View {
         }
         .navigationTitle(constellation.fullName)
         .navigationBarTitleDisplayMode(.large)
-        // `currentlyDisplayedConstellation` is now owned by
-        // `presentConstellationInfo(_:)` and cleared on the overlay's
-        // sheet dismiss. The detail view itself does no side effects on
-        // the sky — no auto-tracking the brightest star, no border
-        // selection — it just renders the constellation's roster.
+        // No side effects on the sky from this view itself — no
+        // auto-tracking the brightest star, no border selection — it
+        // just renders the constellation's roster. The opening flow
+        // (which sets `detailDestination` and pans the canvas) lives
+        // in `EAppState.focus(on:)`.
         .navigationDestination(for: EStar.self) { s in
             EStarDetailView(star: s).onAppear { state.recordViewed(s) }
         }

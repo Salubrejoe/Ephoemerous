@@ -28,10 +28,19 @@ class EAppState {
     }
     var sunScreenPosition:           CGPoint?                    = nil
     var moonScreenPosition:          CGPoint?                    = nil
-    var selectedStarPositions:       [String: CGPoint]           = [:]
+    // Per-favourite screen position, republished every frame by
+    // FavouritesLayer. Keyed by `ESkyObject.id` so it generalises
+    // beyond stars — sun / moon / planets / constellations all get
+    // the same per-frame position channel once we wire them up.
+    var favouritePositions:          [String: CGPoint]           = [:]
     // Per-constellation label hit area (the capsule rect), republished
     // every frame by ConstellationNamesLayer; read by ObjectsTrackingOverlay.
     var constellationLabelHitRects:  [EConstellation: CGRect]    = [:]
+    // Per-named-star label hit area, republished every frame by
+    // NamedStarsLayer once the user zooms past `namedStarTapMinScale`.
+    // Keyed by `star.name` (the catalogue name, e.g. "α CMa"); the
+    // overlay resolves back to the EStar via NamedStarsLayer.star(named:).
+    var namedStarHitRects:           [String: CGRect]            = [:]
 
     // MARK: - App mode
     var appMode: EAppMode = .clock
@@ -65,27 +74,38 @@ class EAppState {
 
     // MARK: - Star state  (logic → EAppState+Stars.swift)
     var magnitudeFilter: Double = AstroConstants.defaultMagCap { didSet { invalidateStarCache() } }
-    var selectedStars:   [EStar] = [] {
+
+    // MARK: - Favourites  (logic → EAppState+Favourites.swift)
+    // Universal favourites list — any sky object the user has starred.
+    // For now FavouritesLayer only renders the `.star` cases (halo +
+    // pentagon badge); other cases are stored and ready to be wired
+    // up when their favourite-visual treatment ships. iCloud sync
+    // persists the .star subset to the existing key for back-compat.
+    var favourites: [ESkyObject] = [] {
         didSet {
-            let names = selectedStars.map(\.name).joined(separator: ", ")
-            ELogger.selectedStars("selection changed (\(selectedStars.count)) → [\(names)]")
-            ECloudSync.shared.saveSelectedStars(selectedStars)
+            let ids = favourites.map(\.id).joined(separator: ", ")
+            ELogger.favourites("favourites changed (\(favourites.count)) → [\(ids)]")
+            ECloudSync.shared.saveFavourites(favourites)
         }
     }
-    
+
     var recentStars:                         [EStar]        = []
-    var currentlyDisplayedStar:              EStar?
-    var currentlyDisplayedConstellation:     EConstellation?
     var _starsCache:                         [EStar]?        = nil
     var _travelStarsCache:                   [EStar]?        = nil
 
-    // MARK: - Sheet state  (helpers → EAppState+Sheets.swift)
-    var showSunInfo:           Bool = false
-    var showMoonInfo:          Bool = false
-    var showStarList:          Bool = false
-    var showStarView:          Bool = false
-    var showConstellationView: Bool = false
-    var showMagnFilter:        Bool = false
+    // MARK: - Detail destination  (logic → EAppState+Detail.swift)
+    // Single source of truth for "what detail is the user looking at?".
+    // Replaces the old four-boolean / four-modal-sheet system
+    // (showSunInfo / showMoonInfo / showStarView / showConstellationView
+    //  plus currentlyDisplayedStar / currentlyDisplayedConstellation).
+    // The root sheet in MainView binds to this; canvas taps go through
+    // `focus(on:)` which sets it and pans the camera.
+    var detailDestination: ESkyObject? = nil
+
+    // MARK: - Sheet state  (list + filter + inline pickers — modal flow
+    // that hasn't been re-architected yet)
+    var showStarList:            Bool = false
+    var showMagnFilter:          Bool = false
     var isShowingDatePicker:     Bool = false
     var isShowingLocationPicker: Bool = false
 

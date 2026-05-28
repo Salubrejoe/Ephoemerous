@@ -2,10 +2,17 @@ import Foundation
 
 // MARK: - ECloudSync
 // iCloud key-value persistence for the three pieces of state worth
-// syncing across devices: the user's selected + recent stars, and
+// syncing across devices: the user's favourites + recent stars, and
 // the magnitude filter slider. Per-layer visibility toggles used to
 // live here too; they're gone — every layer is always visible now,
 // so only the magnitude slider remains as a user-facing display knob.
+//
+// Favourites are stored generically as `[ESkyObject]` in app state, but
+// for now only the `.star` cases are persisted — the existing iCloud
+// key `selectedStarNames` (carrying Bayer designations) is preserved
+// for backward compatibility with already-synced devices. When sun /
+// moon / planet / constellation favourites get their own UI, extend
+// the encoder/decoder to handle their `ESkyObject.id` strings.
 @MainActor
 final class ECloudSync {
 
@@ -14,15 +21,15 @@ final class ECloudSync {
     private let db    = StarDatabase.shared
 
     private enum Key {
-        static let selectedStars    = "selectedStarNames"
+        static let favouriteStars   = "selectedStarNames"   // legacy key, keep
         static let recentStars      = "recentStarNames"
         static let magnitudeFilter  = "magnitudeFilter"
     }
 
     // MARK: - Bootstrap
     func start(appState: EAppState) {
-        appState.selectedStars = resolve(key: Key.selectedStars)
-        appState.setRecentStars(resolve(key: Key.recentStars))
+        appState.favourites = resolveFavourites()
+        appState.setRecentStars(resolveStars(key: Key.recentStars))
         loadMagnitudeFilter(into: appState)
 
         NotificationCenter.default.addObserver(
@@ -32,10 +39,10 @@ final class ECloudSync {
         ) { [weak self, weak appState] _ in
             MainActor.assumeIsolated {
                 guard let self, let appState else { return }
-                appState.selectedStars = self.resolve(key: Key.selectedStars)
-                appState.setRecentStars(self.resolve(key: Key.recentStars))
+                appState.favourites = self.resolveFavourites()
+                appState.setRecentStars(self.resolveStars(key: Key.recentStars))
                 self.loadMagnitudeFilter(into: appState)
-                ELogger.selectedStars("iCloud pushed updates")
+                ELogger.favourites("iCloud pushed updates")
             }
         }
 
@@ -43,8 +50,15 @@ final class ECloudSync {
     }
 
     // MARK: - Write
-    func saveSelectedStars(_ stars: [EStar]) {
-        store.set(stars.map(\.name), forKey: Key.selectedStars)
+
+    /// Persist the favourites list. For now only the `.star` cases are
+    /// encoded (under the legacy iCloud key) — non-star favourites
+    /// round-trip as a no-op until we extend the schema.
+    func saveFavourites(_ favs: [ESkyObject]) {
+        let starNames: [String] = favs.compactMap { obj in
+            if case .star(let s) = obj { return s.name } else { return nil }
+        }
+        store.set(starNames, forKey: Key.favouriteStars)
         store.synchronize()
     }
 
@@ -60,7 +74,14 @@ final class ECloudSync {
 
     // MARK: - Read
 
-    private func resolve(key: String) -> [EStar] {
+    /// Read favourites from iCloud. Currently the only encoded subset
+    /// is stars (legacy key, Bayer-designation strings) — wrap each in
+    /// `ESkyObject.star(...)` on the way back out.
+    private func resolveFavourites() -> [ESkyObject] {
+        resolveStars(key: Key.favouriteStars).map { ESkyObject.star($0) }
+    }
+
+    private func resolveStars(key: String) -> [EStar] {
         guard let names = store.array(forKey: key) as? [String] else { return [] }
         let all = db.workableStars
         var seen = Set<String>()
