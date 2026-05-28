@@ -101,13 +101,27 @@ struct CelestialCanva: View {
 
 // MARK: - Schedule
 
-// Switches between 120fps (gestures/transitions) and 10fps (idle).
-// No continuous "ambient" animations on the canvas — favourites are
-// a static heart marker, the sun's breathing crown is gone, stars
-// don't twinkle. All animation happens via discrete transitions
-// (focus-pan, date-pick, origin-move, projection-blend) which all
-// set their own `_*Transition` flag, flipping the schedule to 120Hz
-// for the duration.
+// Two states:
+//   • Animating (gesture or transition in flight) → 120 fps so the
+//     animation interpolates smoothly.
+//   • Idle → emit one tick at `start` then `.distantFuture`, i.e.
+//     stop firing. There are no continuous ambient animations on the
+//     canvas — favourites are a static heart, the sun's breathing
+//     crown is gone, stars don't twinkle. All animation happens via
+//     discrete `_*Transition` flags. When all of them are nil and no
+//     gesture is active, the sky is literally static and the
+//     timeline ticking does nothing but burn CPU on a redundant
+//     redraw of ~10k stars + constellation lines + 88 labels every
+//     100 ms.
+//
+// Canvas observes the @Observable state read from inside its
+// renderer closure (see the comment in `Canvas { … }` above), so
+// observable changes (user pans, picks a new date / location, etc.)
+// still redraw the sky without the timeline firing. The moment a
+// gesture starts or a transition is created, `isAnimating` flips
+// true via observation → view body re-evaluates → a fresh
+// `ECanvasSchedule(isAnimating: true)` is handed to TimelineView,
+// which resumes ticking at 120 Hz.
 struct ECanvasSchedule: TimelineSchedule {
     let isAnimating: Bool
 
@@ -123,10 +137,22 @@ struct ECanvasSchedule: TimelineSchedule {
             self.next_date   = start
         }
         mutating func next() -> Date? {
-            let current   = next_date
-            next_date     = isAnimating
-            ? current.addingTimeInterval(1.0 / 120.0)
-            : current.addingTimeInterval(1.0 / 10.0)
+            let current = next_date
+            if isAnimating {
+                next_date = current.addingTimeInterval(1.0 / 120.0)
+                return current
+            }
+            // Idle: emit one tick at start so the canvas paints once,
+            // then stay parked at `.distantFuture` forever. TimelineView
+            // schedules a fire for that date and effectively stops
+            // doing work. When `isAnimating` flips back to true via
+            // observation, the view body re-evaluates and TimelineView
+            // gets a new `ECanvasSchedule(isAnimating: true)` —
+            // discarding this iterator and starting the 120 Hz loop.
+            if current == .distantFuture {
+                return .distantFuture
+            }
+            next_date = .distantFuture
             return current
         }
     }
