@@ -1,21 +1,23 @@
 import SwiftUI
 
 // MARK: - EAppState + Viewport bounds
-// Map-like rule: the screen viewport stays inside the projected sky
-// disc (the alt = 0 great-circle image at the current scale).
 //
-// The disc has radius `scale · clipRadius` and is centred at
-// screenCentre + offset (offset.y = horizontal shift, offset.x = vertical —
-// see EGraphicContext.toScreen). Per axis the pan room is:
+// Two-zone rule for offset clamping:
 //
-//     maxOffset = max(0, discRadius − halfScreen)
+//   • s < defaultScale  → full rubber-band home. Limits are (0, 0),
+//     so any pan or zoom-out drags hit the rubber immediately and
+//     `settleWithinBounds` springs the view back to `defaultOffset`.
+//     This is the "launch detent" feel — the user is below the anchor
+//     zoom and the canvas wants to re-frame the disc.
 //
-//   • disc ≤ screen (zoomed out) → 0: the disc stays centred (nothing
-//     beyond it to pan to anyway).
-//   • disc > screen (zoomed in)  → discRadius − halfScreen, which GROWS
-//     with scale, so you can roam inside the visible-sky circle — more
-//     room the further you zoom. (The earlier abs() shrank this toward
-//     0 as you zoomed in, locking everything to centre.)
+//   • s ≥ defaultScale → free pan. Limits return `nil`, so
+//     `rubberOffset` and `hardClampedOffset` short-circuit and the
+//     view stays exactly where the user releases. The canvas extends
+//     past the projected horizon disc (below-horizon wash + ambient
+//     grid live there) so there's actual content to roam to.
+//
+// `defaultScale` is canvas-derived (see EAppState+Space.swift) so the
+// anchor zoom always frames the horizon to the device's shorter side.
 extension EAppState {
 
     func contentDiscRadius(atScale s: Double) -> Double {
@@ -27,15 +29,9 @@ extension EAppState {
         guard canvasSize.width  > 0,
               canvasSize.height > 0,
               s.isFinite else { return nil }
-        // `defaultScale` is the home detent: at or below it the clock is
-        // framed by design, so there is no resting position other than
-        // `defaultOffset`. Zero limits → still draggable (rubber), but any
-        // pan / zoom-out always springs back home. Roaming the disc is
-        // only meaningful once zoomed IN past default.
-        if s <= defaultScale { return (x: 0, y: 0) }
-        let r = contentDiscRadius(atScale: s)
-        return (x: max(0, r - canvasSize.height / 2),
-                y: max(0, r - canvasSize.width  / 2))
+        // Below the anchor zoom: rubber pulls everything home.
+        // At or above: free pan, no rubber.
+        return s < defaultScale ? (x: 0, y: 0) : nil
     }
 
     func viewportOffsetLimits() -> (x: Double, y: Double)? {

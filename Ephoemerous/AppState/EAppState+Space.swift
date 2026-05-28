@@ -45,15 +45,26 @@ extension EAppState {
         -EPrecession.gmstSiderealOffset(for: renderedObservationDate)
     }
 
-    /// Launch scale — the canvas zoom the app starts at and the
-    /// `resetView()` target. Single source of truth is
-    /// `AstroConstants.defaultScale`; tweak the number there.
-    /// (Used to be derived from canvas height with a magic divisor;
-    /// the canvas-relative formula always won over the constant,
-    /// which made the constant feel like a dead knob — it isn't
-    /// anymore.)
+    /// Launch / anchor scale — the canvas zoom the app starts at and
+    /// the rubber-band "home" detent. Computed from canvas size so
+    /// the projected horizon disc fits within the *shorter* device
+    /// side with a small padding margin on each side.
+    ///
+    /// The horizon great circle has radius 2 in projection units
+    /// (see `EProjection.project`), so the on-screen disc diameter
+    /// is `4 · scale`. Solving for "diameter = shorterSide − 2·pad"
+    /// gives `scale = (shorterSide − 2·pad) / 4`.
+    ///
+    /// Falls back to `AstroConstants.defaultScale` while `canvasSize`
+    /// is still zero — the very-first frame after launch. The
+    /// canvasSize didSet in EAppState.swift re-applies `defaultScale`
+    /// the moment the real size arrives, so the launch view always
+    /// lands at the canvas-derived value, not the fallback.
     var defaultScale: Double {
-        AstroConstants.defaultScale
+        let pad: Double = 24
+        let shorter = Swift.min(canvasSize.width, canvasSize.height)
+        guard shorter > 0 else { return AstroConstants.defaultScale }
+        return Swift.max(1, (shorter - 2 * pad) / 4)
     }
 
     /// Scale used when tracking a celestial object (zoomed in relative to default).
