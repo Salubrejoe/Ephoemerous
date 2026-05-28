@@ -12,7 +12,10 @@ struct EMoonLayer: EGridLayer {
         guard dc.onScreen(sc, margin: 40) else { return }
 
         let pos = sc; let state = dc.state
-        DispatchQueue.main.async { state.moonScreenPosition = pos }
+        // Equality-guard — see SunLayer for the rationale.
+        DispatchQueue.main.async {
+            if state.moonScreenPosition != pos { state.moonScreenPosition = pos }
+        }
 
         // Phase-aware glyph: pick the SF Symbol matching the moon's
         // current illumination so the badge reads as "the moon, today",

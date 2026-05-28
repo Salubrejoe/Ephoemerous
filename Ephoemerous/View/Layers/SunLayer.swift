@@ -28,7 +28,12 @@ struct SunLayer: EGridLayer {
         guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return }
         let sc = dc.toScreen(proj)
         let pos = sc; let state = dc.state
-        DispatchQueue.main.async { state.sunScreenPosition = pos }
+        // Equality-guard: at 10–120 Hz this layer would otherwise
+        // republish a byte-identical CGPoint every frame and trigger
+        // `ObjectsTrackingOverlay.body` invalidation for nothing.
+        DispatchQueue.main.async {
+            if state.sunScreenPosition != pos { state.sunScreenPosition = pos }
+        }
 
         // Apple-Maps-style POI badge replaces the sun disc.
         // (The slow breathing crown that used to ring the badge is

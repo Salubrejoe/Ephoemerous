@@ -4,8 +4,24 @@ import SwiftUI
 
 enum ESunPosition {
 
+    // MARK: - Per-frame cache
+    //
+    // SunLayer calls `eclipticLongitude(for:)` every draw. During pan
+    // and zoom the date doesn't change, so we recompute the same
+    // Meeus-low-precision series 119 times per second for nothing.
+    // Single-entry cache by exact `Date`: hit on pan/zoom (effectively
+    // always), miss on time scrub (correct — the user wants the sky
+    // to update). Main-thread-only by canvas contract.
+    private struct LongitudeCache {
+        let date:   Date
+        let lambda: Angle
+    }
+    nonisolated(unsafe) private static var longitudeCache: LongitudeCache?
+
     /// Apparent ecliptic longitude of the Sun (Meeus S25, low-precision).
     static func eclipticLongitude(for date: Date) -> Angle {
+        if let c = longitudeCache, c.date == date { return c.lambda }
+
         let T = EPrecession.julianCenturies(from: date)
         let AC = AstroConstants.self
 
@@ -37,7 +53,9 @@ enum ESunPosition {
         let lambda = sunLon
                     + AC.sun_aberration
                     + AC.sun_nutation * sin(omegaRad)
-        return .degrees(lambda)
+        let result = Angle.degrees(lambda)
+        longitudeCache = LongitudeCache(date: date, lambda: result)
+        return result
     }
 
     /// Equatorial RA and Dec from ecliptic longitude.

@@ -112,6 +112,13 @@ struct NamedStarsLayer: EGridLayer {
         }
 
         let snapshot = rects
-        DispatchQueue.main.async { stateRef.namedStarHitRects = snapshot }
+        // Equality-guard — at 120 Hz we'd otherwise republish the
+        // same ~hundred-entry dict every frame and re-invalidate
+        // ObjectsTrackingOverlay for no reason.
+        DispatchQueue.main.async {
+            if stateRef.namedStarHitRects != snapshot {
+                stateRef.namedStarHitRects = snapshot
+            }
+        }
     }
 }

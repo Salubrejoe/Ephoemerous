@@ -137,20 +137,48 @@ enum EPlanetPosition {
         return (L, B, R)
     }
 
+    // MARK: - Per-frame cache
+    //
+    // EPlanetsLayer calls `allVectors(for:siderealOffset:)` every
+    // draw. Each call evaluates seven VSOP87D series (truncated, but
+    // still ~30 trig calls per planet) — that's the dominant CPU cost
+    // in the layer. Single-entry cache keyed on (date, siderealOffset):
+    // hit on pan/zoom (where neither input changes), miss on time
+    // scrub or location animation. Main-thread-only by canvas
+    // contract.
+    typealias PlanetVector = (planet: EPlanet, vec: SIMD3<Double>, ra: Double, dec: Double)
+
+    private struct AllVectorsCache {
+        let date:           Date
+        let siderealOffset: Angle
+        let vectors:        [PlanetVector]
+    }
+    nonisolated(unsafe) private static var allVectorsCache: AllVectorsCache?
+
     static func allVectors(for date: Date, siderealOffset: Angle)
-        -> [(planet: EPlanet, vec: SIMD3<Double>, ra: Double, dec: Double)]
+        -> [PlanetVector]
     {
+        if let c = allVectorsCache,
+           c.date == date,
+           c.siderealOffset == siderealOffset {
+            return c.vectors
+        }
+
         let T = EPrecession.julianCenturies(from: date)
         let eps = meanObliquity(T)
         let (eLon, eR) = earth(T)
         let heliocentric = [mercury(T), venus(T), mars(T), jupiter(T),
                             saturn(T), uranus(T), neptune(T)]
-        return zip(EPlanet.all, heliocentric).map { planet, h in
+        let result: [PlanetVector] = zip(EPlanet.all, heliocentric).map { planet, h in
             let (gL, gB) = geocentric(Lp: h.0, Bp: h.1, Rp: h.2, Ls: eLon, Rs: eR)
             let (vec, ra, dec) = toVector(L: gL, B: gB, eps: eps,
                                           siderealOffset: siderealOffset)
             return (planet, vec, ra, dec)
         }
+        allVectorsCache = AllVectorsCache(date:           date,
+                                          siderealOffset: siderealOffset,
+                                          vectors:        result)
+        return result
     }
 }
 

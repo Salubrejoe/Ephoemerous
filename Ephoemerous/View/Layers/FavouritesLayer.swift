@@ -20,13 +20,26 @@ struct FavouritesLayer: EGridLayer {
         let chrome   = artist.chromeBounds(in: dc)
         let chromeR2 = chrome.radius * chrome.radius
 
+        // Collect all favourite screen positions into a local
+        // snapshot, then publish once at the end with an equality
+        // guard. Previously each draw call did one
+        // `DispatchQueue.main.async` per favourite (N async hops per
+        // frame at 120 Hz). Now: one hop total, and it no-ops when
+        // nothing moved. Also fixes a latent stale-key issue —
+        // unfavouriting a star used to leave its last position in
+        // `favouritePositions` forever.
+        var positions: [String: CGPoint] = [:]
+        positions.reserveCapacity(dc.state.favourites.count)
+
         for fav in dc.state.favourites {
             switch fav {
             case .star(let star):
-                drawStarFavourite(star, id: fav.id, in: &dc,
-                                  inClock: inClock,
-                                  chromeCentre: chrome.centre,
-                                  chromeR2:     chromeR2)
+                if let sc = drawStarFavourite(star, in: &dc,
+                                              inClock: inClock,
+                                              chromeCentre: chrome.centre,
+                                              chromeR2:     chromeR2) {
+                    positions[fav.id] = sc
+                }
             case .constellation, .sun, .moon, .planet:
                 // Constellation favourites are now signalled by
                 // `ConstellationNamesLayer` (inline ♥ in the plain-
@@ -38,19 +51,27 @@ struct FavouritesLayer: EGridLayer {
                 continue
             }
         }
+
+        let snapshot = positions
+        let stateRef = dc.state
+        DispatchQueue.main.async {
+            if stateRef.favouritePositions != snapshot {
+                stateRef.favouritePositions = snapshot
+            }
+        }
     }
 
     /// Full favourite treatment for a star — breathing halo behind a
     /// pentagon POI badge (early thresholds so the badge is visible at
-    /// default zoom). Identical to the legacy `SelectedStarsLayer`
-    /// behaviour, just routed through the new `favouritePositions`
-    /// channel and the unified favourites list.
+    /// default zoom). Returns the projected screen position for the
+    /// caller to collect into the per-frame snapshot, or `nil` when
+    /// the star's vector failed to project (off-globe / behind viewer).
+    @discardableResult
     private func drawStarFavourite(_ star: EStar,
-                                   id: String,
                                    in dc: inout EGraphicContext,
                                    inClock: Bool,
                                    chromeCentre: CGPoint,
-                                   chromeR2: CGFloat) {
+                                   chromeR2: CGFloat) -> CGPoint? {
         let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
                                               to: dc.renderedObservationDate)
         let th = dc.localSiderealOffset.radians
@@ -58,15 +79,13 @@ struct FavouritesLayer: EGridLayer {
         let v = EPrecession.equatorialVector(ra: pRA, dec: pDec)
         let Q = SIMD3(v.x * c - v.y * s, v.x * s + v.y * c, v.z)
 
-        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return }
-        let sc       = dc.toScreen(proj)
-        let stateRef = dc.state
-        DispatchQueue.main.async { stateRef.favouritePositions[id] = sc }
+        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return nil }
+        let sc = dc.toScreen(proj)
 
         if inClock {
             let dx = sc.x - chromeCentre.x
             let dy = sc.y - chromeCentre.y
-            guard dx * dx + dy * dy < chromeR2 else { return }
+            guard dx * dx + dy * dy < chromeR2 else { return sc }
         }
 
         // Favourite signal — a static heart. No more breathing halo,
@@ -82,7 +101,7 @@ struct FavouritesLayer: EGridLayer {
         let heartColor = star.spectralClass.color
         if dc.renderedScale < style.badgeIn {
             artist.drawFavouriteHeart(at: sc, size: 8, color: heartColor, in: &dc)
-            return
+            return sc
         }
 
         artist.drawPOILabel(
@@ -96,6 +115,7 @@ struct FavouritesLayer: EGridLayer {
         let heartCorner = CGPoint(x: sc.x - style.badgeSize / 2,
                                   y: sc.y - style.badgeSize / 2)
         artist.drawFavouriteHeart(at: heartCorner, size: 7, color: heartColor, in: &dc)
+        return sc
     }
 
 }

@@ -4,7 +4,31 @@ import simd
 
 enum EMoonPosition {
 
+    // MARK: - Per-frame cache
+    //
+    // EMoonLayer calls `vector(for:siderealOffset:)` every draw and
+    // the result depends on both `date` (the orbital series) and
+    // `siderealOffset` (the final rotation that puts the moon in
+    // canvas coordinates). Single-entry cache keyed on both: hits on
+    // pan/zoom (neither input changes), misses on time scrub or
+    // location animation (correct — the sky should update live).
+    // Main-thread-only by canvas contract.
+    private struct VectorCache {
+        let date:           Date
+        let siderealOffset: Angle
+        let vec:            SIMD3<Double>
+        let ra:             Double
+        let dec:            Double
+    }
+    nonisolated(unsafe) private static var vectorCache: VectorCache?
+
     static func vector(for date: Date, siderealOffset: Angle) -> (vec: SIMD3<Double>, ra: Double, dec: Double) {
+        if let c = vectorCache,
+           c.date == date,
+           c.siderealOffset == siderealOffset {
+            return (c.vec, c.ra, c.dec)
+        }
+
         let T = EPrecession.julianCenturies(from: date)
         let AC = AstroConstants.self
 
@@ -45,10 +69,26 @@ enum EMoonPosition {
         let ra  = atan2(y, x) * 180.0 / .pi
         let dec = asin(max(-1, min(1, z))) * 180.0 / .pi
         let vec = SIMD3<Double>(x, y, z).sidereallyRotated(by: siderealOffset)
-        return (vec, ra < 0 ? ra + 360 : ra, dec)
+        let normRA = ra < 0 ? ra + 360 : ra
+        vectorCache = VectorCache(date:           date,
+                                  siderealOffset: siderealOffset,
+                                  vec:            vec,
+                                  ra:             normRA,
+                                  dec:            dec)
+        return (vec, normRA, dec)
     }
 
+    // Called every frame from EMoonLayer to pick the phase glyph.
+    // Same cache rationale as `vector(for:siderealOffset:)`.
+    private struct IlluminationCache {
+        let date:     Date
+        let fraction: Double
+    }
+    nonisolated(unsafe) private static var illuminationCache: IlluminationCache?
+
     static func illuminatedFraction(for date: Date) -> Double {
+        if let c = illuminationCache, c.date == date { return c.fraction }
+
         let T  = EPrecession.julianCenturies(from: date)
         let AC = AstroConstants.self
         let D  = Angle.degrees((AC.moon_D_base.degrees  + AC.moon_D_c1  * T)
@@ -65,6 +105,8 @@ enum EMoonPosition {
             - AC.moon_phase_c4 * sin(2*D)
             - AC.moon_phase_c5 * sin(2*M)
             - AC.moon_phase_c6 * sin(D)
-        return (1.0 + cos(Angle.degrees(i).radians)) / 2.0
+        let fraction = (1.0 + cos(Angle.degrees(i).radians)) / 2.0
+        illuminationCache = IlluminationCache(date: date, fraction: fraction)
+        return fraction
     }
 }

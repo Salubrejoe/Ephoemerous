@@ -39,6 +39,13 @@ struct EPlanetsLayer: EGridLayer {
 
         let snapshot = positions
         let stateRef = dc.state
-        DispatchQueue.main.async { stateRef.planetPositions = snapshot }
+        // Equality-guard — see SunLayer for the rationale. Comparing
+        // a 7-key dict is cheap; firing @Observable invalidation 119×
+        // per second when nothing changed is not.
+        DispatchQueue.main.async {
+            if stateRef.planetPositions != snapshot {
+                stateRef.planetPositions = snapshot
+            }
+        }
     }
 }

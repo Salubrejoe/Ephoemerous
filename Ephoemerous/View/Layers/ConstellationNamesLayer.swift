@@ -72,6 +72,11 @@ struct ConstellationNamesLayer: EGridLayer {
         }
 
         let snapshot = rects
-        DispatchQueue.main.async { stateRef.constellationLabelHitRects = snapshot }
+        // Equality-guard — see SunLayer.
+        DispatchQueue.main.async {
+            if stateRef.constellationLabelHitRects != snapshot {
+                stateRef.constellationLabelHitRects = snapshot
+            }
+        }
     }
 }

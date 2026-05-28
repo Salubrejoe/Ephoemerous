@@ -40,9 +40,49 @@ enum EPrecession {
         gmst(for: date) + longitude
     }
 
-    static func precess(ra: Angle, dec: Angle, to date: Date) -> (ra: Angle, dec: Angle) {
+    // MARK: - Precession matrix cache
+    //
+    // The IAU-style precession formulas have two distinct cost layers:
+    //
+    //   1. Date-dependent constants — T (Julian centuries), zeta, z,
+    //      theta. These come from polynomial evaluations in T and don't
+    //      depend on the star being precessed. **One set per epoch.**
+    //
+    //   2. Per-star rotation — small trig dance using the constants
+    //      above + that star's RA/Dec.
+    //
+    // The old `precess(ra:dec:to:)` recomputed layer (1) on every call,
+    // i.e. for every star, every frame. With magnitude cap at 8 that's
+    // ~10k redundant polynomial evals per frame. The cache below
+    // collapses layer (1) to one evaluation per unique `date` — every
+    // layer drawing the same frame (NamedStars, Constellations,
+    // Favourites, …) shares the same matrix.
+    //
+    // We also pre-stash cos(theta) and sin(theta) in the matrix so the
+    // per-star path drops from ~10 trig calls to 5.
+    //
+    // Threading: Canvas draw closures execute on the main thread, and
+    // all layers in CelestialCanva are called sequentially within one
+    // draw call. So a non-synchronised single-entry cache is safe.
+    // `nonisolated(unsafe)` documents the contract for strict
+    // concurrency.
+
+    private struct PrecessionMatrix {
+        let date:     Date
+        let T:        Double
+        let zeta:     Double
+        let z:        Double
+        let theta:    Double
+        let cosTheta: Double
+        let sinTheta: Double
+    }
+
+    nonisolated(unsafe) private static var matrixCache: PrecessionMatrix?
+
+    private static func matrix(for date: Date) -> PrecessionMatrix {
+        if let m = matrixCache, m.date == date { return m }
+
         let T = julianCenturies(from: date)
-        guard abs(T) > 1e-6 else { return (ra, dec) }
         let k = Double.pi / (180.0 * 3600.0) // arc-seconds → radians
 
         let c0 = AstroConstants.prec_zeta_c0, c1 = AstroConstants.prec_zeta_c1
@@ -59,10 +99,31 @@ enum EPrecession {
         let t5 = AstroConstants.prec_theta_c5
         let theta = ((t0 + t1*T + t2*T*T)*T - (t3 + t2*T)*T*T - t5*T*T*T) * k
 
-        let A = cos(dec.radians) * sin(ra.radians + zeta)
-        let B = cos(theta) * cos(dec.radians) * cos(ra.radians + zeta) - sin(theta) * sin(dec.radians)
-        let C = sin(theta) * cos(dec.radians) * cos(ra.radians + zeta) + cos(theta) * sin(dec.radians)
-        let newRA  = (atan2(A, B) + z).truncatingRemainder(dividingBy: 2.0 * Double.pi)
+        let m = PrecessionMatrix(date:     date,
+                                 T:        T,
+                                 zeta:     zeta,
+                                 z:        z,
+                                 theta:    theta,
+                                 cosTheta: cos(theta),
+                                 sinTheta: sin(theta))
+        matrixCache = m
+        return m
+    }
+
+    static func precess(ra: Angle, dec: Angle, to date: Date) -> (ra: Angle, dec: Angle) {
+        let m = matrix(for: date)
+        guard abs(m.T) > 1e-6 else { return (ra, dec) }
+
+        let raPlusZeta = ra.radians + m.zeta
+        let cosDec     = cos(dec.radians)
+        let sinDec     = sin(dec.radians)
+        let cosRAz     = cos(raPlusZeta)
+        let sinRAz     = sin(raPlusZeta)
+
+        let A = cosDec * sinRAz
+        let B = m.cosTheta * cosDec * cosRAz - m.sinTheta * sinDec
+        let C = m.sinTheta * cosDec * cosRAz + m.cosTheta * sinDec
+        let newRA  = (atan2(A, B) + m.z).truncatingRemainder(dividingBy: 2.0 * Double.pi)
         let newDec = asin(max(-1, min(1, C)))
         return (.init(radians: newRA), .init(radians: newDec))
     }
