@@ -9,7 +9,6 @@ import LoreKit
 
 struct EMoonDetailView: View {
     @Environment(EAppState.self) var state
-    private let weather = EWeatherService.shared
 
     private var moonData: (ra: Double, dec: Double, fraction: Double) {
         let (_, ra, dec) = EMoonPosition.vector(
@@ -20,11 +19,27 @@ struct EMoonDetailView: View {
         return (ra, dec, fraction)
     }
 
-    private var lat: Double { state.origin.latitude.degrees }
-    private var lon: Double { state.origin.longitude.degrees }
-
     /// Cool moonlight tint — same colour the old detail view used.
     private let accent = Color(red: 0.75, green: 0.82, blue: 1.0)
+
+    /// `true` when `observationDate` is within 60s of real-world now.
+    /// Drives the Now button's disabled state — tapping Now while
+    /// you're already there is a no-op, so we visually disable it.
+    private var observationIsCurrentTime: Bool {
+        abs(state.observationDate.timeIntervalSinceNow) < 60
+    }
+
+    /// Civil-twilight anchors for the current observation date +
+    /// observer latitude. Moon visibility is the inverse of sun
+    /// visibility, so the moon gradient uses the SAME anchors — peak
+    /// moonlight at midnight, washout at noon, transitions at the
+    /// twilight points.
+    private var anchors: SunDayAnchors {
+        ESunPosition.dayAnchors(
+            for: state.observationDate,
+            latitude: state.origin.latitude.degrees
+        )
+    }
 
     /// Phase name from `moonData.fraction`, falling back through the
     /// same threshold table the old view used.
@@ -51,29 +66,27 @@ struct EMoonDetailView: View {
                 icon:          { POIBadgeView(category: .moon) },
                 leadingSymbol: "square.and.arrow.up",
                 onLeading:     {},
+                onNow:         { state.observationDate = .now },
+                nowIsActive:   observationIsCurrentTime,
                 onDismiss:     { state.dismissDetail() }
             )
-            DayCapsule(events: dayEvents, gradient: .dayCapsuleMoon)
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
+            // No event dots — `WeatherKit` only returns a ~10-day
+            // daily forecast, so out-of-range observation dates would
+            // either return nothing or hold the last fetched day's
+            // events stale on the capsule. The gradient + knob alone
+            // are honest. Re-add `events: dayEvents` here when we
+            // compute date-accurate moonrise / moonset ourselves.
+            DayCapsule(
+                gradient:   .dayCapsuleMoon(anchors: anchors),
+                knobSymbol: "moon.fill",
+                knobDate:   Bindable(state).observationDate
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
             roster
                 .padding(.top, 16)
             Spacer(minLength: 0)
         }
-        .task(id: "\(lat),\(lon),\(state.observationDate)") {
-            await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
-        }
-    }
-
-    /// Moonrise + moonset on the 24h gradient. Phase /
-    /// illumination / physicals stay as cards — only the rise/set
-    /// times move onto the capsule per the design.
-    private var dayEvents: [DayCapsule.Event] {
-        guard let e = weather.moonEvents else { return [] }
-        var out: [DayCapsule.Event] = []
-        if let v = e.moonrise { out.append(.init(time: v, label: "Moonrise", color: accent)) }
-        if let v = e.moonset  { out.append(.init(time: v, label: "Moonset",  color: accent)) }
-        return out
     }
 
     // MARK: Roster

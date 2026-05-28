@@ -12,14 +12,29 @@ import LoreKit
 
 struct ESunDetailView: View {
     @Environment(EAppState.self) var state
-    private let weather = EWeatherService.shared
 
     private var lambda: Angle { ESunPosition.eclipticLongitude(for: state.observationDate) }
     private var coords: (ra: Angle, dec: Angle) { ESunPosition.equatorialCoords(lambda: lambda) }
-    private var lat: Double { state.origin.latitude.degrees }
-    private var lon: Double { state.origin.longitude.degrees }
 
     private let accent = Color.yellow
+
+    /// `true` when `observationDate` is within 60s of real-world now.
+    /// Drives the Now button's disabled state — tapping Now while
+    /// you're already there is a no-op, so we visually disable it.
+    private var observationIsCurrentTime: Bool {
+        abs(state.observationDate.timeIntervalSinceNow) < 60
+    }
+
+    /// Civil-twilight anchors for the current observation date +
+    /// observer latitude — re-evaluated whenever either changes, so
+    /// the capsule's gradient stretches the bright zone for summer
+    /// and narrows it for winter.
+    private var anchors: SunDayAnchors {
+        ESunPosition.dayAnchors(
+            for: state.observationDate,
+            latitude: state.origin.latitude.degrees
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,34 +45,28 @@ struct ESunDetailView: View {
                 icon:          { POIBadgeView(category: .sun) },
                 leadingSymbol: "square.and.arrow.up",
                 onLeading:     {},
+                onNow:         { state.observationDate = .now },
+                nowIsActive:   observationIsCurrentTime,
                 onDismiss:     { state.dismissDetail() }
             )
-            DayCapsule(events: dayEvents)
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
+            // No event dots — `WeatherKit` only returns a ~10-day
+            // daily forecast, so out-of-range observation dates would
+            // either return nothing (dots disappear) or hold the last
+            // fetched day's events (dots stuck on "today"). The
+            // gradient alone is the time-of-day cue; the knob is the
+            // actual scrubber. Re-add `events: dayEvents` here when
+            // we compute date-accurate sun events ourselves.
+            DayCapsule(
+                gradient:   .dayCapsuleSun(anchors: anchors),
+                knobSymbol: "sun.max.fill",
+                knobDate:   Bindable(state).observationDate
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
             roster
                 .padding(.top, 16)
             Spacer(minLength: 0)
         }
-        .task(id: "\(lat),\(lon),\(state.observationDate)") {
-            await weather.fetch(latitude: lat, longitude: lon, date: state.observationDate)
-        }
-    }
-
-    /// Sun events for the DayCapsule — every event the weather
-    /// service knows about, positioned on the 24h gradient by their
-    /// wall-clock time. Bright events (sunrise / noon / sunset) get
-    /// the yellow accent; civil dawn / dusk fade to a softer tint
-    /// so the eye reads them as the bookends they are.
-    private var dayEvents: [DayCapsule.Event] {
-        guard let e = weather.sunEvents else { return [] }
-        var out: [DayCapsule.Event] = []
-        if let v = e.civilDawn { out.append(.init(time: v, label: "Civil dawn", color: Color.white.opacity(0.5))) }
-        if let v = e.sunrise   { out.append(.init(time: v, label: "Sunrise",    color: accent)) }
-        if let v = e.solarNoon { out.append(.init(time: v, label: "Noon",       color: accent)) }
-        if let v = e.sunset    { out.append(.init(time: v, label: "Sunset",     color: accent)) }
-        if let v = e.civilDusk { out.append(.init(time: v, label: "Civil dusk", color: Color.white.opacity(0.5))) }
-        return out
     }
 
     // MARK: Roster
