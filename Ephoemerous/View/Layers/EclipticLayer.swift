@@ -56,7 +56,7 @@ struct EclipticLayer: EGridLayer {
             //                    options: .shadowAbove
             //                )
             //            )
-//            local.ctx.addFilter(.brightness(0.2))
+            local.ctx.addFilter(.blur(radius: 1))
             local.strokeCurve(zodiacRim(extraOffset: offset, centre: centre, in: dc),
                               color: artist.eclColor,
                               width: artist.eclWidth)

@@ -7,6 +7,6 @@ import SwiftUI
 // colour matched to the rim).
 extension EArtist {
 
-    var eclColor : Color  { .primary }
-    var eclWidth : Double { 1.0 }
+    var eclColor : Color  { .secondary }
+    var eclWidth : Double { 0.5 }
 }
