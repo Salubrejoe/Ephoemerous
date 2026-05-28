@@ -27,9 +27,9 @@ struct DayCapsule: View {
         let color: Color
     }
 
-    let events:     [Event]
-    let gradient:   LinearGradient
-    let knobSymbol: String?
+    let events:    [Event]
+    let gradient:  LinearGradient
+    let knobGlyph: POIGlyph?
 
     /// Bound externally — `nil`-equivalent when no knob is wanted
     /// (init uses `.constant(.now)` so the binding always exists).
@@ -40,27 +40,28 @@ struct DayCapsule: View {
     /// Read-only capsule (no draggable knob).
     init(events: [Event],
          gradient: LinearGradient = .dayCapsuleSun()) {
-        self.events     = events
-        self.gradient   = gradient
-        self.knobSymbol = nil
-        self._knobDate  = .constant(.now)
+        self.events    = events
+        self.gradient  = gradient
+        self.knobGlyph = nil
+        self._knobDate = .constant(.now)
     }
 
-    /// Interactive capsule — a glass knob (SF Symbol `knobSymbol`)
-    /// rides on top of the gradient, bound to `knobDate`. Dragging
-    /// the capsule scrubs the date through the current calendar
-    /// day. `events` defaults to empty: today only WeatherKit-style
-    /// daily forecasts (~10 days) can populate accurate sunrise /
-    /// sunset / moonrise / moonset times, so callers pass dots
-    /// only when they're certain the data is date-accurate.
-    init(events:     [Event] = [],
-         gradient:   LinearGradient,
-         knobSymbol: String,
-         knobDate:   Binding<Date>) {
-        self.events     = events
-        self.gradient   = gradient
-        self.knobSymbol = knobSymbol
-        self._knobDate  = knobDate
+    /// Interactive capsule — a glass knob (SF Symbol or Unicode
+    /// astronomical glyph, via `POIGlyph`) rides on top of the
+    /// gradient, bound to `knobDate`. Dragging the capsule scrubs
+    /// the date through the current calendar day. `events` defaults
+    /// to empty: only ~10-day WeatherKit-style daily forecasts can
+    /// populate accurate sunrise / sunset / moonrise / moonset
+    /// times, so callers pass dots only when the data is
+    /// date-accurate.
+    init(events:    [Event] = [],
+         gradient:  LinearGradient,
+         knobGlyph: POIGlyph,
+         knobDate:  Binding<Date>) {
+        self.events    = events
+        self.gradient  = gradient
+        self.knobGlyph = knobGlyph
+        self._knobDate = knobDate
     }
 
     // MARK: Layout knobs
@@ -96,9 +97,8 @@ struct DayCapsule: View {
                         .accessibilityLabel("\(event.label) at \(event.time.timeString)")
                 }
 
-                if let symbol = knobSymbol {
-                    Image(systemName: symbol)
-                        .font(.body.weight(.semibold))
+                if let glyph = knobGlyph {
+                    knobView(for: glyph)
                         .frame(width: knobDiameter, height: knobDiameter)
                         .glassEffect(.clear.interactive(), in: .circle)
                         .position(
@@ -113,12 +113,30 @@ struct DayCapsule: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        guard knobSymbol != nil else { return }
+                        guard knobGlyph != nil else { return }
                         updateKnob(toX: value.location.x, width: geo.size.width)
                     }
             )
         }
         .frame(height: capsuleHeight)
+    }
+
+    /// Render either an SF Symbol or a Unicode astronomical glyph
+    /// at the knob's size. Mirrors the canvas `drawPOILabel` switch
+    /// so a planet detail's knob shows the same ♀ / ♂ / ♃ that
+    /// the canvas badge does.
+    @ViewBuilder
+    private func knobView(for glyph: POIGlyph) -> some View {
+        switch glyph {
+        case .sfSymbol(let name):
+            Image(systemName: name)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+        case .unicode(let str):
+            Text(str)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+        }
     }
 
     // MARK: Knob math
@@ -137,6 +155,12 @@ struct DayCapsule: View {
     /// finger's x-coordinate maps to inside the knob's usable
     /// range. Calendar Y-M-D stays put — only the hours / minutes
     /// / seconds change.
+    ///
+    /// Seconds are capped one second under a full day so dragging
+    /// to the very end of the capsule lands at 23:59:59 instead of
+    /// rolling over to 00:00 of the *next* day — that rollover
+    /// would re-read as `secondsOfDay == 0` and snap the knob back
+    /// to the left edge.
     private func updateKnob(toX rawX: CGFloat, width: CGFloat) {
         let r = knobDiameter / 2
         let usable = max(width - 2 * r, 0)
@@ -145,7 +169,7 @@ struct DayCapsule: View {
         let fraction = Double((clamped - r) / usable)
         let cal = Calendar.current
         let startOfDay = cal.startOfDay(for: knobDate)
-        let seconds = fraction * 86_400.0
+        let seconds = min(fraction * 86_400.0, 86_399.0)
         knobDate = startOfDay.addingTimeInterval(seconds)
     }
 

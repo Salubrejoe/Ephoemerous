@@ -77,9 +77,9 @@ struct EMoonDetailView: View {
             // are honest. Re-add `events: dayEvents` here when we
             // compute date-accurate moonrise / moonset ourselves.
             DayCapsule(
-                gradient:   .dayCapsuleMoon(anchors: anchors),
-                knobSymbol: "moon.fill",
-                knobDate:   Bindable(state).observationDate
+                gradient:  .dayCapsuleMoon(anchors: anchors),
+                knobGlyph: .sfSymbol("moon.fill"),
+                knobDate:  Bindable(state).observationDate
             )
             .padding(.horizontal, 16)
             .padding(.top, 12)

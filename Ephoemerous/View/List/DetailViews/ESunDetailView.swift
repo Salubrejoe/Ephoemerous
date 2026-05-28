@@ -57,9 +57,9 @@ struct ESunDetailView: View {
             // actual scrubber. Re-add `events: dayEvents` here when
             // we compute date-accurate sun events ourselves.
             DayCapsule(
-                gradient:   .dayCapsuleSun(anchors: anchors),
-                knobSymbol: "sun.max.fill",
-                knobDate:   Bindable(state).observationDate
+                gradient:  .dayCapsuleSun(anchors: anchors),
+                knobGlyph: .sfSymbol("sun.max.fill"),
+                knobDate:  Bindable(state).observationDate
             )
             .padding(.horizontal, 16)
             .padding(.top, 12)

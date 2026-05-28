@@ -14,6 +14,27 @@ struct ENSPlanetDetailView: View {
 
     private var facts: PlanetFacts? { PlanetFacts.lookup[planet.name] }
 
+    /// `true` when `observationDate` is within 60s of real-world now.
+    /// Drives the Now button's disabled state — same rule sun + moon
+    /// use, so the three solar-system detail surfaces feel the same.
+    private var observationIsCurrentTime: Bool {
+        abs(state.observationDate.timeIntervalSinceNow) < 60
+    }
+
+    /// Civil-twilight anchors for the current observation date +
+    /// observer latitude. Planets are night-sky objects (mostly
+    /// visible when the sun is below the horizon), so the moon
+    /// gradient — cool indigo / lavender / silver — reads as their
+    /// natural visibility window. The knob carries the planet's
+    /// astronomical Unicode glyph so each planet still feels
+    /// distinct.
+    private var anchors: SunDayAnchors {
+        ESunPosition.dayAnchors(
+            for: state.observationDate,
+            latitude: state.origin.latitude.degrees
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
@@ -23,6 +44,8 @@ struct ENSPlanetDetailView: View {
                 icon:          { POIBadgeView(category: .planet(planet)) },
                 leadingSymbol: "square.and.arrow.up",
                 onLeading:     {},
+                onNow:         { state.observationDate = .now },
+                nowIsActive:   observationIsCurrentTime,
                 onDismiss:     { state.dismissDetail() }
             )
             // No RememberButton — planets, sun, and moon aren't
@@ -30,6 +53,13 @@ struct ENSPlanetDetailView: View {
             // that *change in the sky*: stars (relationships) and
             // constellations (stories you return to). Solar-system
             // bodies are always there, always badged on the canvas.
+            DayCapsule(
+                gradient:  .dayCapsuleMoon(anchors: anchors),
+                knobGlyph: .unicode(planet.astronomicalGlyph),
+                knobDate:  Bindable(state).observationDate
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
             statsRow
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
