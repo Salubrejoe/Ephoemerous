@@ -47,6 +47,14 @@ struct NamedStarsLayer: EGridLayer {
         uniquingKeysWith: { first, _ in first }
     )
 
+    /// O(1) membership test used by `StarsLayer` to skip stars that
+    /// this layer is about to redraw on top. Without this, ~300
+    /// proper-named stars get a full `rotate + scale + fill` of their
+    /// star path *and* a dot/badge from `NamedStarsLayer` at every
+    /// frame above `namedStarDotIn` — the underlying star is then
+    /// hidden beneath the badge but still painted.
+    static let candidateNames: Set<String> = Set(candidates.map(\.name))
+
     /// Resolve a star from a published hit-rect key.
     static func star(named name: String) -> EStar? {
         candidatesByName[name]
