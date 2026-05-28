@@ -44,6 +44,11 @@ struct CelestialCanva: View {
             SunLayer(),
             EMoonLayer(),
             HorizonLayer(),
+            // Cartographic east/west horizon labels curving along the
+            // chrome rim. Sits after HorizonLayer so the text reads
+            // against the tinted below-horizon wash, before the user
+            // puck so the puck still draws on top of everything.
+            HorizonLabelsLayer(),
             UserLocationLayer(),   // "you are here" puck — drawn last so it sits on top
 //            ClipAndHoursLayer(),
 //            WatchRimLayer(),
@@ -58,10 +63,6 @@ struct CelestialCanva: View {
         // reschedules on the next render — no destructive .id() teardown.
         TimelineView(schedule) { timeline in
             ZStack {
-                if state.appMode == .travel {
-                    Color.systemBackground
-                }
-
                 Canvas { ctx, size in
                     state.advanceCanvasClock(
                         to:         timeline.date.timeIntervalSinceReferenceDate,
@@ -161,11 +162,10 @@ struct ECanvasSchedule: TimelineSchedule {
 extension CelestialCanva {
     private var isAnimating: Bool {
         gestures.isInteracting         ||
-        state._activeTransition != nil ||
-        state._dateTransition   != nil ||
-        state._originTransition != nil ||
-        state._inertiaTransition != nil ||
-        state._chromeTransition != nil
+        state._activeTransition  != nil ||
+        state._dateTransition    != nil ||
+        state._originTransition  != nil ||
+        state._inertiaTransition != nil
     }
     private var schedule: ECanvasSchedule { ECanvasSchedule(isAnimating: isAnimating) }
 }

@@ -1,3 +1,7 @@
+// DEPRECATED — references `chromeOpacity` / `chromeRadiusScale`,
+// removed alongside `appMode`. Wrapped in `#if false`.
+
+#if false
 import SwiftUI
 
 // The thin `.systemBackground`-coloured ring that haloes the watch
@@ -42,3 +46,4 @@ struct WatchRimLayer: EGridLayer {
 //        local.stroke(ring, with: .color(.tertiarySystemBackground), lineWidth: 2 * scale)
     }
 }
+#endif

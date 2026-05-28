@@ -10,10 +10,10 @@ struct SunLayer: EGridLayer {
         let lambda = ESunPosition.eclipticLongitude(for: date)
         let (sunRA, sunDec) = ESunPosition.equatorialCoords(lambda: lambda)
 
-        // Throttled clock-mode debug log (kept gated to clock so the
-        // travel-mode interactive frame rate isn't burned on logging).
-        if dc.state.appMode == .clock,
-           abs(date.timeIntervalSince(Self.lastLoggedDate)) > 0.5 {
+        // Throttled debug log — 0.5 s spacing keeps it useful without
+        // burning frame time. (The old gate to clock-mode is gone
+        // along with the rest of the appMode plumbing.)
+        if abs(date.timeIntervalSince(Self.lastLoggedDate)) > 0.5 {
             Self.lastLoggedDate = date
             logPipeline(date: date, lambda: lambda, ra: sunRA, dec: sunDec,
                         siderealOffset: dc.localSiderealOffset)

@@ -10,44 +10,26 @@ extension EAppState {
 
     // MARK: Cache management
 
-    /// Drop both star caches. Called automatically when observationDate,
+    /// Drop the star cache. Called automatically when observationDate,
     /// magnitudeFilter, or origin changes.
     func invalidateStarCache() {
-        _starsCache       = nil
-        _travelStarsCache = nil
+        _starsCache = nil
     }
 
     // MARK: Filtered star collections
 
-    /// Stars visible above the observer's horizon, filtered by magnitude.
-    /// Used in clock mode. Result is cached until the cache is invalidated
-    /// (origin / date / magnitude change) — the horizon precess + dot
-    /// runs once per rebuild, never per frame.
+    /// All workable stars filtered by magnitude. Cached until the
+    /// cache is invalidated (origin / date / magnitude change) so the
+    /// filter runs once per rebuild, never per frame. (Previously
+    /// there were two getters — `stars` with horizon culling for
+    /// clock mode and `travelStars` for travel mode — but the horizon
+    /// filter had been commented out, leaving the two identical, and
+    /// appMode itself is gone now.)
     var stars: [EStar] {
         if let cached = _starsCache { return cached }
-        // Zenith from the *stored* date so the cache key matches the data —
-        // `observerZenith` reads `renderedObservationDate`, which can be
-        // mid-step during a date transition.
-        let lst    = EPrecession.lst(for: observationDate, longitude: origin.longitude)
-        let zenith = Angle.spherePoint(latitude: origin.latitude, longitude: lst)
         let result = StarDatabase.shared.workableStars
             .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
-//            .filter { s in
-//                let precessed = EPrecession.precess(ra: s.rightAscension, dec: s.declination, to: observationDate)
-//                let starVec   = Angle.spherePoint(latitude: precessed.dec, longitude: precessed.ra)
-//                return simd_dot(starVec, zenith) > 0.0     // above horizon
-//            }
         _starsCache = result
-        return result
-    }
-
-    /// All named stars filtered by magnitude, without any horizon clipping.
-    /// Used in travel mode where the full sky is always visible.
-    var travelStars: [EStar] {
-        if let cached = _travelStarsCache { return cached }
-        let result = StarDatabase.shared.workableStars
-            .filter { $0.name != "Unknown" && $0.magnitude < magnitudeFilter }
-        _travelStarsCache = result
         return result
     }
 

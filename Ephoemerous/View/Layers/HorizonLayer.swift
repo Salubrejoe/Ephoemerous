@@ -17,24 +17,10 @@ struct HorizonLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        // Two separate local copies of the graphics context: `fillCurve`
-        // clips cumulatively, so the band-loop's clips would otherwise
-        // eat into the horizon squircle drawn afterwards.
-        // The chrome shape is shared with `WatchBackgroundLayer` via
-        // `EArtist.chromePath` — clip + disc fill always agree.
-        let chromeShape: Path? = dc.state.appMode == .clock
-            ? artist.chromePath(in: dc)
-            : nil
+        // (Old chrome-shape clip lived here gated to clock mode; both
+        // the clip and the gate are gone now that appMode is.)
 
-        // Twilight bands. The chrome interior is pre-filled with the
-        // band colour so the band ring reaches the disc edge — the
-        // outermost projected band stops well short of the chrome,
-        // leaving an unpainted gap otherwise.
         var bands = dc
-        if let shape = chromeShape {
-//            bands.ctx.clip(to: shape)
-//            bands.ctx.fill(shape, with: .color(.tertiarySystemFill))
-        }
         // Twilight bands: small circles at constant altitude just
         // above / below the horizon (the values in `Angle.sunsets`
         // are altitudes, not declinations — e.g. `.civil` = -6° below
@@ -66,7 +52,6 @@ struct HorizonLayer: EGridLayer {
         // moon inside this rim are above the horizon right now;
         // outside are below.
         var rim = dc
-//        if let shape = chromeShape { rim.ctx.clip(to: shape) }
         let pts = EProjection.sampleCurve(viewpoint: rim.viewpoint) { t in
             rim.viewpoint.skyPoint(altitude: .horizon, at: t)
         }.compactMap { $0 }

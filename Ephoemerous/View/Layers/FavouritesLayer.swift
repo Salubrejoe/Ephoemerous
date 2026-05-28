@@ -12,14 +12,6 @@ struct FavouritesLayer: EGridLayer {
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        // Clock-mode disc cull, computed once. Favourites projected
-        // outside the chrome still get their screen position recorded
-        // (other UI reads `favouritePositions`) but skip the breathing
-        // halo + badge draw — both would render off-disc.
-        let inClock  = dc.state.appMode == .clock
-        let chrome   = artist.chromeBounds(in: dc)
-        let chromeR2 = chrome.radius * chrome.radius
-
         // Collect all favourite screen positions into a local
         // snapshot, then publish once at the end with an equality
         // guard. Previously each draw call did one
@@ -34,10 +26,7 @@ struct FavouritesLayer: EGridLayer {
         for fav in dc.state.favourites {
             switch fav {
             case .star(let star):
-                if let sc = drawStarFavourite(star, in: &dc,
-                                              inClock: inClock,
-                                              chromeCentre: chrome.centre,
-                                              chromeR2:     chromeR2) {
+                if let sc = drawStarFavourite(star, in: &dc) {
                     positions[fav.id] = sc
                 }
             case .constellation, .sun, .moon, .planet:
@@ -61,17 +50,14 @@ struct FavouritesLayer: EGridLayer {
         }
     }
 
-    /// Full favourite treatment for a star — breathing halo behind a
-    /// pentagon POI badge (early thresholds so the badge is visible at
-    /// default zoom). Returns the projected screen position for the
-    /// caller to collect into the per-frame snapshot, or `nil` when
-    /// the star's vector failed to project (off-globe / behind viewer).
+    /// Full favourite treatment for a star — pentagon POI badge with
+    /// the heart marker overlaid. Returns the projected screen
+    /// position for the caller to collect into the per-frame
+    /// snapshot, or `nil` when the star's vector failed to project
+    /// (off-globe / behind viewer).
     @discardableResult
     private func drawStarFavourite(_ star: EStar,
-                                   in dc: inout EGraphicContext,
-                                   inClock: Bool,
-                                   chromeCentre: CGPoint,
-                                   chromeR2: CGFloat) -> CGPoint? {
+                                   in dc: inout EGraphicContext) -> CGPoint? {
         let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
                                               to: dc.renderedObservationDate)
         let th = dc.localSiderealOffset.radians
@@ -81,12 +67,6 @@ struct FavouritesLayer: EGridLayer {
 
         guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return nil }
         let sc = dc.toScreen(proj)
-
-        if inClock {
-            let dx = sc.x - chromeCentre.x
-            let dy = sc.y - chromeCentre.y
-            guard dx * dx + dy * dy < chromeR2 else { return sc }
-        }
 
         // Favourite signal — a static heart. No more breathing halo,
         // no per-frame animation cost.
@@ -106,7 +86,7 @@ struct FavouritesLayer: EGridLayer {
 
         artist.drawPOILabel(
             at:       sc,
-            glyph:    .sfSymbol("star"),
+            glyph:    .sfSymbol("star.fill"),
             text:     star.displayName,
             category: .followedStar(star),
             drawDot:  false,    // heart handles the low-zoom case

@@ -1,22 +1,21 @@
 import SwiftUI
 
 // MARK: - EAppState + Viewport bounds
-// Map-like rule: the screen viewport stays inside the content disc.
+// Map-like rule: the screen viewport stays inside the projected sky
+// disc (the alt = 0 great-circle image at the current scale).
 //
-// The clock disc has radius `scale · clipRadius` and is centred at
+// The disc has radius `scale · clipRadius` and is centred at
 // screenCentre + offset (offset.y = horizontal shift, offset.x = vertical —
 // see EGraphicContext.toScreen). Per axis the pan room is:
 //
 //     maxOffset = max(0, discRadius − halfScreen)
 //
-//   • disc ≤ screen (zoomed out) → 0: the watch face stays centred (there
-//     is nothing beyond the disc to pan to anyway).
+//   • disc ≤ screen (zoomed out) → 0: the disc stays centred (nothing
+//     beyond it to pan to anyway).
 //   • disc > screen (zoomed in)  → discRadius − halfScreen, which GROWS
-//     with scale, so you can roam around inside the clock circle — more
-//     room the further you zoom. (The earlier abs() shrank this toward 0
-//     as you zoomed in, locking everything to centre.)
-//
-// Travel mode has no finite disc, so panning there is left unbounded.
+//     with scale, so you can roam inside the visible-sky circle — more
+//     room the further you zoom. (The earlier abs() shrank this toward
+//     0 as you zoomed in, locking everything to centre.)
 extension EAppState {
 
     func contentDiscRadius(atScale s: Double) -> Double {
@@ -25,8 +24,7 @@ extension EAppState {
 
     /// Per-axis `|offset|` limit, or nil when panning should be free.
     func viewportOffsetLimits(forScale s: Double) -> (x: Double, y: Double)? {
-        guard appMode == .clock,
-              canvasSize.width  > 0,
+        guard canvasSize.width  > 0,
               canvasSize.height > 0,
               s.isFinite else { return nil }
         // `defaultScale` is the home detent: at or below it the clock is

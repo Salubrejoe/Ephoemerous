@@ -37,8 +37,7 @@ extension EArtist {
     func chromeBounds(in dc: EGraphicContext) -> (centre: CGPoint, radius: CGFloat) {
         let cx = dc.size.width  / 2 + dc.renderedOffset.y
         let cy = dc.size.height / 2 + dc.renderedOffset.x
-        let r  = (dc.renderedScale * clipRadius
-                  + clipBleed) * dc.state.chromeRadiusScale
+        let r  = dc.renderedScale * clipRadius + clipBleed
         return (CGPoint(x: cx, y: cy), r)
     }
 

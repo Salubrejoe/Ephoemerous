@@ -10,19 +10,15 @@ struct EarthGridLayer: EGridLayer {
 
     
     func draw(in dc: inout EGraphicContext) {
-
-        // In clock mode the grid is confined to the watch disc. Clip a
-        // local copy of the context — every layer shares the same
-        // `inout dc`, so clipping `dc` directly would leak the region
-        // into the horizon / stars / chrome drawn after this layer.
-        var clipped = dc
-        if dc.state.appMode == .clock {
-//            clipped.ctx.clip(to: artist.chromePath(in: dc))
-        }
-        drawMeridians(in:   &clipped)
-        drawParallels(in:   &clipped)
-        drawPoleLabels(in:  &clipped)
-        drawHourLabels(in:  &clipped)
+        // The old clock-mode clip-to-disc lived here but every clip
+        // line had already been commented out — the grid was rendering
+        // free-form regardless. Now that appMode is gone, the local-
+        // copy / clip dance has nothing left to do; pass `dc` straight
+        // through.
+        drawMeridians(in:   &dc)
+        drawParallels(in:   &dc)
+        drawPoleLabels(in:  &dc)
+        drawHourLabels(in:  &dc)
     }
     
     func drawParallels(in dc: inout EGraphicContext) {

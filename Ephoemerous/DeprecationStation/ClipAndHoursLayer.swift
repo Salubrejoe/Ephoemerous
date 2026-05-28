@@ -1,3 +1,8 @@
+// DEPRECATED — references `chromeOpacity` / `chromeRadiusScale`,
+// both removed alongside `appMode`. Wrapped in `#if false` so this
+// file no longer takes part in the build.
+
+#if false
 import SwiftUI
 import LoreKit
 
@@ -67,3 +72,4 @@ struct ClipAndHoursLayer: EGridLayer {
         (Calendar.current.component(.hour, from: Date())) == (hour + tzOffset + 24) % 24
     }
 }
+#endif

@@ -1,3 +1,8 @@
+// DEPRECATED — references `chromeOpacity`, removed alongside
+// `appMode`. Wrapped in `#if false` so this file no longer takes
+// part in the build.
+
+#if false
 import SwiftUI
 import LoreKit
 
@@ -31,3 +36,4 @@ struct WatchBackgroundLayer: EGridLayer {
 //        local.fill(artist.chromePath(in: dc), with: .color(.secondarySystemBackground))
     }
 }
+#endif

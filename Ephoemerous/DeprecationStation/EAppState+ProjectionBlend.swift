@@ -1,3 +1,10 @@
+// DEPRECATED — kept for reference only. `EChromeTransition` drove
+// the chrome's scale + fade during a Clock↔Travel toggle; both
+// toggle and chrome concept are gone. Wrapped in `#if false` so the
+// file is preserved as source-of-truth-for-history without being
+// part of the build.
+
+#if false
 import SwiftUI
 
 // MARK: - EChromeTransition
@@ -56,25 +63,13 @@ struct EChromeTransition {
 }
 
 // MARK: - EAppState + chrome state
-extension EAppState {
-
-    /// Chrome alpha for the current frame. 1 = fully visible, 0 = hidden.
-    /// While a chrome transition is in flight it's driven by the
-    /// transition's curve; otherwise it falls back to the appMode
-    /// (clock = 1, travel = 0).
-    var chromeOpacity: Double {
-        if let t = _chromeTransition {
-            return t.opacity(at: animationTime)
-        }
-        return appMode == .clock ? 1 : 0
-    }
-
-    /// Multiplier on every chrome radius (disc, hours ring, etc.).
-    /// 1 at rest; > 1 while the chrome is mid-expand/collapse.
-    var chromeRadiusScale: Double {
-        if let t = _chromeTransition {
-            return t.radiusScale(at: animationTime)
-        }
-        return 1
-    }
-}
+//
+// The old `chromeOpacity` / `chromeRadiusScale` getters belonged to
+// the watch-chrome fade animation that fired during a Clock↔Travel
+// toggle. Both appMode and the toggle are gone, so the getters had
+// no readers left (chromeOpacity never had a live one; chromeRadius-
+// Scale was used by EArtist+Chrome to size the disc and now folds
+// down to a constant 1). The `EChromeTransition` struct above also
+// only existed to drive those getters; both struct and file land in
+// DeprecationStation in a follow-up commit.
+#endif

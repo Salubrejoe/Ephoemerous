@@ -1,3 +1,7 @@
+// DEPRECATED — references `state.appMode`, removed entirely.
+// Wrapped in `#if false`.
+
+#if false
 import SwiftUI
 import CoreLocation
 import LoreKit
@@ -65,3 +69,4 @@ extension ZenithButton {
         }
     }
 }
+#endif

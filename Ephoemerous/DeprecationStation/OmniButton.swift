@@ -1,3 +1,8 @@
+// DEPRECATED — this button's only action was `state.toggleAppMode`,
+// which no longer exists. Wrapped in `#if false` to keep it out of
+// the build but preserve the source.
+
+#if false
 import SwiftUI
 import LoreKit
 
@@ -34,3 +39,4 @@ struct OmniButton: View {
         colorScheme == .dark ? .white : .black
     }
 }
+#endif

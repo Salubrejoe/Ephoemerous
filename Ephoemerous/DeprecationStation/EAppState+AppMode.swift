@@ -1,3 +1,11 @@
+// DEPRECATED — kept for reference only. `EAppMode` and the
+// Clock↔Travel toggle are gone; travel-mode behaviour wins
+// everywhere. References to `appMode`, `_chromeTransition`,
+// `_savedClockOrigin`, `EChromeTransition` no longer exist on
+// `EAppState`, so this file is wrapped in `#if false` to keep it
+// out of the build.
+
+#if false
 import SwiftUI
 import UIKit
 
@@ -79,3 +87,4 @@ extension EAppState {
         }
     }
 }
+#endif

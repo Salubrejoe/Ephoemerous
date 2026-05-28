@@ -47,9 +47,8 @@ class EAppState {
     // overlay resolves back to the EStar via NamedStarsLayer.star(named:).
     var namedStarHitRects:           [String: CGRect]            = [:]
 
-    // MARK: - App mode
-    var appMode: EAppMode = .clock
-    var haptics: Bool     = true
+    // MARK: - Haptics
+    var haptics: Bool = true
 
     // MARK: - Temporal state  (logic → EAppState+Time.swift)
     var observationDate: Date   = .now  { didSet { invalidateStarCache() } }
@@ -69,10 +68,6 @@ class EAppState {
     var offset:   CGPoint  = .init(x: AstroConstants.defaultOffsetX, y: AstroConstants.defaultOffsetY)
     var _originTransition:     EOriginTransition?     = nil   // defined in EAppState+Location.swift
     var _inertiaTransition:    FlingInertia?          = nil   // LoreKit (exponential-decay momentum)
-    var _chromeTransition:     EChromeTransition?     = nil   // defined in EAppState+ProjectionBlend.swift
-    // Snapshot of the clock-mode origin, captured on Clock→Travel so we can
-    // slerp back to it on Travel→Clock. Travel mode parks the observer at NP.
-    var _savedClockOrigin:     Origin?                = nil
     // Transient — true once the device's first location fix has been adopted
     // as the origin. Not persisted. See EAppState+Location.swift.
     var _didAdoptDeviceLocation: Bool = false
@@ -103,9 +98,8 @@ class EAppState {
         }
     }
 
-    var recentStars:                         [EStar]        = []
-    var _starsCache:                         [EStar]?        = nil
-    var _travelStarsCache:                   [EStar]?        = nil
+    var recentStars: [EStar]  = []
+    var _starsCache: [EStar]? = nil
 
     // MARK: - Detail destination  (logic → EAppState+Detail.swift)
     // Single source of truth for "what detail is the user looking at?".
@@ -144,8 +138,6 @@ class EAppState {
 }
 
 // MARK: - Supporting value types
-
-// EAppMode and its behaviour live in EAppState+AppMode.swift.
 
 struct Origin: Equatable {
     var latitude:  Angle = .degrees(51)
