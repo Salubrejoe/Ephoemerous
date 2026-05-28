@@ -29,10 +29,12 @@ extension CelestialGestureCoordinator {
     /// `rubberOffset`, just with the asymmetric "ceiling" vs "floor" room
     /// the zoom interaction wants: a little headroom above the ceiling, a
     /// generous (45 %) cushion under the floor for the zoom-out reset.
+    /// Floor / ceiling are `minimumScale` / `maximumScale` — the
+    /// gesture-coordinator's hard limits, independent of `defaultScale`
+    /// (which is *launch* scale, not a clamp).
     func rubberScale(_ raw: Double, state: EAppState) -> Double {
         let ceiling = maximumScale
-        let floor   = state.defaultScale.isFinite
-            ? Swift.min(state.defaultScale, ceiling) : 1
+        let floor   = minimumScale
         guard raw.isFinite else { return floor }
         if raw > ceiling {
             let over = raw - ceiling

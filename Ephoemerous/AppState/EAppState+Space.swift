@@ -45,9 +45,15 @@ extension EAppState {
         -EPrecession.gmstSiderealOffset(for: renderedObservationDate)
     }
 
-    /// Default scale derived from canvas height — falls back to AstroConstants while canvasSize is unknown.
+    /// Launch scale — the canvas zoom the app starts at and the
+    /// `resetView()` target. Single source of truth is
+    /// `AstroConstants.defaultScale`; tweak the number there.
+    /// (Used to be derived from canvas height with a magic divisor;
+    /// the canvas-relative formula always won over the constant,
+    /// which made the constant feel like a dead knob — it isn't
+    /// anymore.)
     var defaultScale: Double {
-        canvasSize.height > 0 ? canvasSize.height / 20 : AstroConstants.defaultScale
+        AstroConstants.defaultScale
     }
 
     /// Scale used when tracking a celestial object (zoomed in relative to default).

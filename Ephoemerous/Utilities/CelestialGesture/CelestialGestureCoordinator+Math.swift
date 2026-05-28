@@ -26,13 +26,14 @@ extension CelestialGestureCoordinator {
         )
     }
 
-    /// Order- and NaN-safe scale clamp. Floor = defaultScale but never
-    /// above the hard ceiling; ceiling = maximumScale.
+    /// Order- and NaN-safe scale clamp. Floor and ceiling are the
+    /// gesture-coordinator's `minimumScale` / `maximumScale` — both
+    /// independent of `state.defaultScale` (which is *launch* scale,
+    /// not a hard limit). `state` is kept on the signature for
+    /// symmetry with other math helpers in this extension.
     func clampScale(_ candidate: Double, state: EAppState) -> Double {
-        let df    = state.defaultScale
-        let floor = df.isFinite ? Swift.min(df, maximumScale) : 1
-        guard candidate.isFinite else { return floor }
-        return Swift.min(Swift.max(candidate, floor), maximumScale)
+        guard candidate.isFinite else { return minimumScale }
+        return Swift.min(Swift.max(candidate, minimumScale), maximumScale)
     }
 
     /// Zoom-out reset. While the raw (pre-rubber) scale is pulled below
