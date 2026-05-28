@@ -28,6 +28,11 @@ class EAppState {
     }
     var sunScreenPosition:           CGPoint?                    = nil
     var moonScreenPosition:          CGPoint?                    = nil
+    /// Per-planet screen position, republished every frame by
+    /// `EPlanetsLayer`. Keyed by `planet.name` (the planet's unique
+    /// id). `ObjectsTrackingOverlay` reads this to drop tap targets;
+    /// `state.focus(on: .planet(...))` reads it to pan-to-centre.
+    var planetPositions:             [String: CGPoint]           = [:]
     // Per-favourite screen position, republished every frame by
     // FavouritesLayer. Keyed by `ESkyObject.id` so it generalises
     // beyond stars — sun / moon / planets / constellations all get

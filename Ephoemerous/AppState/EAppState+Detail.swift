@@ -50,11 +50,8 @@ extension EAppState {
             // it's what the user just tapped.
             guard let rect = constellationLabelHitRects[cons] else { return nil }
             return CGPoint(x: rect.midX, y: rect.midY)
-        case .planet:
-            // Planets don't publish a per-frame screen position yet, and
-            // they aren't in the canvas-tap hit-test loop. Sheet still
-            // opens (detailDestination is set); pan is just skipped.
-            return nil
+        case .planet(let planet):
+            return planetPositions[planet.name]
         }
     }
 

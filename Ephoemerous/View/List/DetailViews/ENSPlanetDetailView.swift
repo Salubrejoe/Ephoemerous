@@ -1,109 +1,126 @@
 import SwiftUI
 
+// MARK: - ENSPlanetDetailView
+// Three-tile compact planet detail. Same shape as the star detail —
+// header + Remember button + a single HStack of Distance / Period /
+// Magnitude tiles. Fits the bottom-third sheet detent without
+// scrolling.
+
 struct ENSPlanetDetailView: View {
     @Environment(EAppState.self) var state
     let planet: EPlanet
 
-    private var position: (ra: Double, dec: Double)? {
-        let results = EPlanetPosition.allVectors(
-            for: state.observationDate,
-            siderealOffset: state.precessedSiderealOffset
-        )
-        guard let match = results.first(where: { $0.planet.name == planet.name }) else { return nil }
-        return (match.ra, match.dec)
-    }
+    private var accent: Color { planet.color }
 
-    private var ra:  Angle { position.map { .degrees($0.ra)  } ?? .zero }
-    private var dec: Angle { position.map { .degrees($0.dec) } ?? .zero }
+    private var facts: PlanetFacts? { PlanetFacts.lookup[planet.name] }
 
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
                 title:    planet.name,
                 subtitle: planet.mythology,
-                accent:   planet.color,
-                icon:     { Text(planet.astronomicalGlyph) },
+                accent:   accent,
+                icon:     { POIBadgeView(category: .planet(planet)) },
                 onShare:  {},
                 onDismiss: { state.dismissDetail() }
             )
-            RememberButton(obj: .planet(planet))
+            // No RememberButton — planets, sun, and moon aren't
+            // favouritable. The favourites system is for the things
+            // that *change in the sky*: stars (relationships) and
+            // constellations (stories you return to). Solar-system
+            // bodies are always there, always badged on the canvas.
+            statsRow
                 .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Divider().padding(.bottom, 24)
-                    coordinatesSection
-                    Divider().padding(.bottom, 24)
-                    physicalSection
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
-                .padding(.bottom, 28)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                .padding(.top, 16)
+            Spacer(minLength: 0)
         }
     }
 
-    private var coordinatesSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Equatorial coordinates")
-            if position != nil {
-                ECoordinateDials(ra: ra, dec: dec, accent: planet.color)
-                    .padding(.bottom, 28)
-            } else {
-                Text("Position unavailable")
-                    .font(.callout)
-                    .foregroundStyle(.tertiary)
-                    .padding(.bottom, 28)
-            }
+    // MARK: Stats row
+
+    /// Fixed row height — every tile fills this exactly, guaranteeing
+    /// the three backgrounds line up regardless of which SF Symbol
+    /// happens to render slightly shorter than the others. Same value
+    /// the star detail uses so the two surfaces share a rhythm.
+    private var statsRowHeight: CGFloat { 100 }
+
+    /// Distance (from the Sun, AU) carries the accent so the planet's
+    /// colour shows up exactly once in the detail body. The other
+    /// two tiles stay neutral.
+    private var statsRow: some View {
+        HStack(spacing: 8) {
+            tile(icon:     "ruler",
+                 iconTint: accent,
+                 value:    facts?.distance ?? "—",
+                 label:    "Distance")
+            tile(icon:     "clock",
+                 iconTint: .secondary,
+                 value:    facts?.period ?? "—",
+                 label:    "Period")
+            tile(icon:     "sparkles",
+                 iconTint: .secondary,
+                 value:    magnitudeText,
+                 label:    "Magnitude")
         }
+        .frame(height: statsRowHeight)
     }
 
-    private var physicalSection: some View {
-        Group {
-            EDetailSectionLabel(text: "Physical")
-            PlanetPhysicalRows(planet: planet)
+    private func tile(icon: String, iconTint: Color, value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            // Fixed-height slots so the value + label rows below line
+            // up across all three tiles regardless of the SF Symbol's
+            // intrinsic height (ruler short, clock medium, sparkles
+            // tall-ish).
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(iconTint)
+                .frame(height: 24)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .monospacedDigit()
+                .frame(height: 22)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+                .frame(height: 14)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 14)
+        .background(Color(.tertiarySystemFill),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: Value formatting
+
+    private var magnitudeText: String {
+        String(format: "%.1f", planet.baseMagnitude)
     }
 }
 
-// MARK: - Physical rows
+// MARK: - Planet facts
+// Static reference data — distance from the Sun (semi-major axis in
+// AU), diameter, and orbital period. Lifted to file scope so the
+// detail body can look up by planet name without going through a
+// nested view.
+private struct PlanetFacts {
+    let diameter: String
+    let distance: String
+    let period:   String
 
-private struct PlanetPhysicalRows: View {
-    let planet: EPlanet
-
-    private struct Facts {
-        let diameter: String
-        let distance: String
-        let period:   String
-    }
-
-    private static let facts: [String: Facts] = [
-        Strings.Planets.mercury: Facts(diameter: "4,879 km",    distance: "0.39 AU",  period: "88 days"),
-        Strings.Planets.venus:   Facts(diameter: "12,104 km",   distance: "0.72 AU",  period: "225 days"),
-        Strings.Planets.mars:    Facts(diameter: "6,779 km",    distance: "1.52 AU",  period: "687 days"),
-        Strings.Planets.jupiter: Facts(diameter: "139,820 km",  distance: "5.20 AU",  period: "11.9 yr"),
-        Strings.Planets.saturn:  Facts(diameter: "116,460 km",  distance: "9.58 AU",  period: "29.5 yr"),
-        Strings.Planets.uranus:  Facts(diameter: "50,724 km",   distance: "19.2 AU",  period: "84.0 yr"),
-        Strings.Planets.neptune: Facts(diameter: "49,244 km",   distance: "30.1 AU",  period: "164.8 yr"),
+    static let lookup: [String: PlanetFacts] = [
+        Strings.Planets.mercury: PlanetFacts(diameter: "4,879 km",   distance: "0.39 AU", period: "88 days"),
+        Strings.Planets.venus:   PlanetFacts(diameter: "12,104 km",  distance: "0.72 AU", period: "225 days"),
+        Strings.Planets.mars:    PlanetFacts(diameter: "6,779 km",   distance: "1.52 AU", period: "687 days"),
+        Strings.Planets.jupiter: PlanetFacts(diameter: "139,820 km", distance: "5.20 AU", period: "11.9 yr"),
+        Strings.Planets.saturn:  PlanetFacts(diameter: "116,460 km", distance: "9.58 AU", period: "29.5 yr"),
+        Strings.Planets.uranus:  PlanetFacts(diameter: "50,724 km",  distance: "19.2 AU", period: "84.0 yr"),
+        Strings.Planets.neptune: PlanetFacts(diameter: "49,244 km",  distance: "30.1 AU", period: "164.8 yr"),
     ]
-
-    var body: some View {
-        EDetailPhysicalRow(
-            label: "Mean magnitude",
-            value: String(format: "%.1f", planet.baseMagnitude),
-            isLast: false
-        )
-        if let f = Self.facts[planet.name] {
-            EDetailPhysicalRow(label: "Diameter", value: f.diameter, isLast: false)
-            EDetailPhysicalRow(label: "Distance", value: f.distance, isLast: false)
-            EDetailPhysicalRow(label: "Period",   value: f.period,   isLast: true)
-        } else {
-            EDetailPhysicalRow(label: "Mean magnitude",
-                               value: String(format: "%.1f", planet.baseMagnitude),
-                               isLast: true)
-        }
-    }
 }
 
 // MARK: - Preview

@@ -23,6 +23,15 @@ struct ObjectsTrackingOverlay: View {
                     .onTapGesture { state.focus(on: .moon) }
             }
 
+            // Planets — published per frame by EPlanetsLayer, keyed
+            // by planet.name. Linear lookup is fine: there are only 7.
+            ForEach(Array(state.planetPositions), id: \.key) { name, point in
+                if let planet = EPlanet.all.first(where: { $0.name == name }) {
+                    ClearCircle(at: point)
+                        .onTapGesture { state.focus(on: .planet(planet)) }
+                }
+            }
+
             // Favourited stars become tappable wherever the
             // FavouritesLayer published their position. Keyed by
             // `ESkyObject.id` so it generalises beyond stars later.

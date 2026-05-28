@@ -31,7 +31,7 @@ struct EStarDetailView: View {
                 title:    star.displayName,
                 subtitle: subtitleText,
                 accent:   accent,
-                icon:     { Image(systemName: "star.fill") },
+                icon:     { POIBadgeView(category: .followedStar(star)) },
                 onShare:  {},
                 onDismiss: { state.dismissDetail() }
             )
