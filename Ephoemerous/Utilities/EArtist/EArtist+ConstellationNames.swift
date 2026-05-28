@@ -33,7 +33,7 @@ extension EArtist {
     /// Scale at which the neutral capsule placeholder resolves into
     /// the actual constellation name. Below this and above
     /// `constellationPlaceholderIn`, only the placeholder is shown.
-    var constellationTextIn: Double { 140 }
+    var constellationTextIn: Double { 240 }
 
     // MARK: Placeholder
 

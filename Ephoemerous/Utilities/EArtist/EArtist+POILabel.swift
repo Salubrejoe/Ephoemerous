@@ -179,7 +179,7 @@ extension EArtist {
                 textColor:       .primary,
                 badgeSize:       15,
                 symbolPointSize: 8,
-                badgeCorners:    6,    // heptagon
+                badgeCorners:    8,    // heptagon
                 dotShape:        .circle,
                 dotRadius:       2.5,
                 badgeIn:         80,
