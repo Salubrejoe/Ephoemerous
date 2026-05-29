@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct StarsLayer: EGridLayer {
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         // Skip stars that an upper layer will paint over on the same
         // frame:

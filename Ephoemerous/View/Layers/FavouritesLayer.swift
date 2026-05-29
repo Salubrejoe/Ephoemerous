@@ -9,8 +9,6 @@ import simd
 // here until their UX lands. Position publishing covers every type so
 // taps + focus can resolve any favourite by id.
 struct FavouritesLayer: EGridLayer {
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         // Collect all favourite screen positions into a local
         // snapshot, then publish once at the end with an equality

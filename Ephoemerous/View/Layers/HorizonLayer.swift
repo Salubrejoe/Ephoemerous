@@ -3,9 +3,6 @@ import simd
 import LoreKit
 
 struct HorizonLayer: EGridLayer {
-
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         var bands = dc
         // Twilight bands: small circles at constant altitude just
@@ -19,7 +16,7 @@ struct HorizonLayer: EGridLayer {
             }.compactMap { $0 }
             guard pts.count >= 8 else { continue }
             bands.strokeCurve(artist.bumpedHorizonRim(pts),
-                              color: .tertiary,
+                              color: artist.twilightBandColor,
                               width: 12 / abs(alt.degrees))
             bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
                                    color: artist.horizonFillColor.opacity(0.0001))

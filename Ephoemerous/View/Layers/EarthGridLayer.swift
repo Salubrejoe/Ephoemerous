@@ -6,8 +6,6 @@ import LoreKit
 
 
 struct EarthGridLayer: EGridLayer {
-    let artist = EArtist.shared
-
     
     func draw(in dc: inout EGraphicContext) {
         // The old clock-mode clip-to-disc lived here but every clip

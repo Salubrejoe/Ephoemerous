@@ -6,8 +6,6 @@ import simd
 // its star is drawn — then we inset each end by `starRadius + gap` so
 // the segment never touches the star dot.
 struct ConstellationLinesLayer: EGridLayer {
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         // Precompute the favourite set once per frame — every segment
         // of the same constellation shares the same favourite status,

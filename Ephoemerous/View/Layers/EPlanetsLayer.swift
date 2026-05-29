@@ -11,8 +11,6 @@ import simd
 // `state.focus(on: .planet(...))` can pan-to-centre. Mirrors the
 // per-frame snapshot pattern used by stars / constellations.
 struct EPlanetsLayer: EGridLayer {
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         let pairs = EPlanetPosition.allVectors(for: dc.renderedObservationDate,
                                                siderealOffset: dc.localSiderealOffset)

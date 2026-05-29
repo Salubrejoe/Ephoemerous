@@ -13,9 +13,6 @@ import CoreLocation
 // All styling lives on `EArtist+UserLocation.swift`. This layer
 // is just data routing.
 struct UserLocationLayer: EGridLayer {
-
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         // Zenith — the projection origin — lives at screen centre
         // shifted by the user's pan offset.

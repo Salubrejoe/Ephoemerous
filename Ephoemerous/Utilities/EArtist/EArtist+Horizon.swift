@@ -10,6 +10,11 @@ import LoreKit
 extension EArtist {
 
     var horizonFillColor   : Color  { .tertiary }
+    /// Twilight-band stroke color (civil / nautical / astronomical).
+    /// Same `.tertiary` as the wash so the bands read as part of the
+    /// horizon's visual register; named separately so it can be
+    /// retuned without touching the fill.
+    var twilightBandColor  : Color  { .tertiary }
     var horizonBumpCorners : Int    { 12 }
     var horizonBumpBulge   : CGFloat { 2.2 }
 

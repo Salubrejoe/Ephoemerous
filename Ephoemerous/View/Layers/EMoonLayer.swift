@@ -2,8 +2,6 @@ import SwiftUI
 import simd
 
 struct EMoonLayer: EGridLayer {
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, _, _) = EMoonPosition.vector(for: dc.renderedObservationDate,
                                                    siderealOffset: dc.localSiderealOffset)

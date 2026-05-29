@@ -14,8 +14,6 @@ import simd
 // taps shouldn't ambush a gesture, but a deliberate tap on a label
 // should still land.
 struct ConstellationNamesLayer: EGridLayer {
-    let artist = EArtist.shared
-
     func draw(in dc: inout EGraphicContext) {
         let stateRef    = dc.state
         let observerLat = dc.state.origin.latitude.degrees

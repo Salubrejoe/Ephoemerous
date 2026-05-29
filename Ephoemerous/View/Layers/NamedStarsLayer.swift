@@ -17,8 +17,6 @@ import simd
 // touch *after* constellation labels finish revealing their text, so
 // the canvas reveals information in waves instead of all at once.
 struct NamedStarsLayer: EGridLayer {
-    let artist = EArtist.shared
-
     /// Proper-name subset, computed once at first access. Iterating
     /// the full 10k-star database every frame would be wasteful — this
     /// filter is the entire reason the layer is cheap.

@@ -16,18 +16,14 @@ import LoreKit
 // as a true circle in projection space — fitting the centroid + mean
 // radius from the projected samples is exact.
 struct EclipticLayer: EGridLayer {
-    
-    let artist = EArtist.shared
-
+    // 12-bulge squircle, one bulge per zodiac sign; tied to the
+    // zodiac's 30°-per-sign symmetry, so these are ecliptic-specific
+    // and don't belong on `EArtist`. Stroke colour + width come from
+    // `EArtist.eclColor` / `eclWidth`.
     private let corners   : Int     = 12
     private let bulge     : CGFloat = 2.8
-    private let width     : CGFloat = 2
     private let sunMargin : CGFloat = 10   // screen px — sun disc + a touch
-    
-    private let zodiacFontSize : CGFloat = 12
-    private let zodiacOpacity  : Double  = 1
-    //    private let zodiacOpacity  : Double  = 0.5
-    
+
     func draw(in dc: inout EGraphicContext) {
         let samples = EProjection.sampleEcliptic(viewpoint:      dc.viewpoint,
                                                  siderealOffset: dc.localSiderealOffset)

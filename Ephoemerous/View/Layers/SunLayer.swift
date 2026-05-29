@@ -2,7 +2,6 @@ import SwiftUI
 import simd
 
 struct SunLayer: EGridLayer {
-    let artist = EArtist.shared
     private static var lastLoggedDate: Date = .distantPast
 
     func draw(in dc: inout EGraphicContext) {

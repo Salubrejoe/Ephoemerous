@@ -31,9 +31,6 @@ import LoreKit
 // No appMode gate: this rides the same projected horizon the user
 // always sees.
 struct HorizonLabelsLayer: EGridLayer {
-
-    let artist = EArtist.shared
-
     // MARK: Tuning
 
     /// Inset from the horizon toward the zenith, in pt. Pulls each
