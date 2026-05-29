@@ -25,11 +25,11 @@ struct SquircleGlobePuck: View {
 
     /// White border thickness as a fraction of the puck — the ring
     /// traces the scallop instead of a clean circle.
-    private var ringFraction:  CGFloat { 0.08 }
+    private var ringFraction:  CGFloat { 0.00 }
     /// Globe diameter as a fraction of the puck — slightly under 1 so
     /// the scallop bites the globe rim rather than the bumps poking
     /// past it.
-    private var globeFraction: CGFloat { 0.92 }
+    private var globeFraction: CGFloat { 1 }
 
     private var scallop:   Squircle { Squircle(corners: corners, bulge: bulge) }
     private var globeSize: CGFloat  { size * globeFraction }
@@ -38,7 +38,7 @@ struct SquircleGlobePuck: View {
     var body: some View {
         ZStack {
             scallop.fill(ring)
-            scallop.fill(disc).padding(ringInset)
+            scallop.fill(disc.gradient).padding(ringInset)
             globe
                 .frame(width: globeSize, height: globeSize)
                 .clipShape(scallop)
@@ -66,6 +66,12 @@ struct SquircleGlobePuck: View {
 
 // MARK: - Previews
 
+#Preview("Current Choice") {
+    VStack(spacing: 48) {
+        SquircleGlobePuck(disc: .blue,  symbol: .white)
+        SquircleGlobePuck(disc: .blue,  symbol: .white, size: 44)
+    }
+}
 #Preview("Squircle globe puck — tint pairings") {
     VStack(spacing: 48) {
         HStack(spacing: 44) {
