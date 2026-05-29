@@ -36,7 +36,7 @@ struct HorizonLabelsLayer: EGridLayer {
     /// Inset from the horizon toward the zenith, in pt. Pulls each
     /// character into the sky region so the text reads as floating
     /// inside the horizon, not riding on the bumps themselves.
-    private let inwardInsetPt: CGFloat = 14
+    private let inwardInsetPt: CGFloat = 7
 
     /// Horizon-parameter `t` for each cardinal direction.
     private let eastT: Double = 0.75
@@ -138,7 +138,7 @@ struct HorizonLabelsLayer: EGridLayer {
                 layer.rotate(by: .radians(rotation))
                 layer.draw(
                     Text(String(char))
-                        .font(.system(size: fontPt, weight: .regular))
+                        .font(.system(size: fontPt, weight: .semibold))
                         .foregroundStyle(artist.horizonFillColor)
                         .kerning(0.4),
                     at:     .zero,
