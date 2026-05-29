@@ -64,7 +64,7 @@ final class LocationSearchCompleter: NSObject, MKLocalSearchCompleterDelegate {
         let search  = MKLocalSearch(request: request)
         do {
             let response = try await search.start()
-            return response.mapItems.first?.placemark.coordinate
+            return response.mapItems.first?.location.coordinate
         } catch {
             return nil
         }
