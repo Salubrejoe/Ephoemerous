@@ -1,45 +1,39 @@
 import Foundation
-import CoreLocation
+import MapKit
 
 // MARK: - LocalityResolver
 // Small main-actor singleton that turns a (lat, lon) into a human-
-// readable place name via `CLGeocoder.reverseGeocodeLocation`. Apple's
+// readable place name via `MKReverseGeocodingRequest`. Apple's
 // geocoder is rate-limited (~50 requests/minute/user) so every result
 // is cached keyed on the coordinate rounded to 0.1° (~11 km). A slerp
 // or a quick map-drag through the same neighbourhood resolves to one
 // network request, not one per frame.
 //
-// The cache and the geocoder are pinned to the main actor — every call
-// site is SwiftUI / @Observable state — so no further synchronisation
-// is needed.
+// The cache is pinned to the main actor — every call site is SwiftUI /
+// @Observable state — so no further synchronisation is needed.
 @MainActor
 final class LocalityResolver {
 
     static let shared = LocalityResolver()
 
-    private var cache:    [String: String] = [:]
-    private let geocoder: CLGeocoder       = CLGeocoder()
+    private var cache: [String: String] = [:]
 
     private init() {}
 
-    /// Resolve `(lat, lon)` to a locality name. Returns the most
-    /// specific human-meaningful field available — `locality` (city /
-    /// town) → `subAdministrativeArea` (county) → `administrativeArea`
-    /// (state / region) → `country` — or `nil` if the geocoder failed
-    /// or returned nothing usable. Open ocean coordinates typically
-    /// return `nil`.
+    /// Resolve `(lat, lon)` to a locality name. Returns `cityName`
+    /// when available, falling back to `regionName` (country / region)
+    /// — or `nil` if the geocoder failed or returned nothing usable.
+    /// Open ocean coordinates typically return `nil`.
     func resolve(lat: Double, lon: Double) async -> String? {
         let key = Self.cacheKey(lat: lat, lon: lon)
         if let cached = cache[key] { return cached }
 
         let location = CLLocation(latitude: lat, longitude: lon)
+        guard let request = MKReverseGeocodingRequest(location: location) else { return nil }
         do {
-            let placemarks = try await geocoder.reverseGeocodeLocation(location)
-            guard let p = placemarks.first else { return nil }
-            let name = p.locality
-                    ?? p.subAdministrativeArea
-                    ?? p.administrativeArea
-                    ?? p.country
+            let items = try await request.mapItems
+            guard let reps = items.first?.addressRepresentations else { return nil }
+            let name = reps.cityName ?? reps.regionName
             if let name { cache[key] = name }
             return name
         } catch {
