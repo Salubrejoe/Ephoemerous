@@ -12,10 +12,13 @@ import Foundation
 //
 // Axes:
 //   • myths  — mythological cycle(s) the figure belongs to
-//              (perseus, hercules, zodiac, argo, zeus, orion,
-//               orpheus). A figure can sit in several cycles;
-//              the first is treated as the primary entity for
-//              POI badge tinting.
+//              (perseus, hercules, argo, zeus, orion, orpheus).
+//              A figure can sit in several cycles; the first is
+//              treated as the primary entity for POI badge
+//              tinting. The former `zodiac` value is gone — the
+//              zodiac is a band of sky, not a myth; each zodiac
+//              constellation lives in its own cycle now (e.g.
+//              Aries → argo, Aquarius → zeus, Scorpius → orion).
 //   • types  — what the constellation depicts (hero, animal,
 //              creature, object, instrument, deity).
 //   • origin — who first catalogued it (ptolemy, lacaille,

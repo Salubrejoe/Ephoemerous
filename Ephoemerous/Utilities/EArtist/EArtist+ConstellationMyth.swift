@@ -26,34 +26,31 @@ extension EArtist {
                     Color(red: 0.55, green: 0.10, blue: 0.15))
 
         case .hercules:
-            // Warm strength orange — Hercules, Ara, Corona Borealis,
-            // Crater, Corvus, Draco, Hydra, Leo, Lyra, Ophiuchus,
-            // Sagitta, Serpens.
+            // Warm strength orange — Hercules, Ara, Cancer, Corona
+            // Borealis, Crater, Corvus, Draco, Hydra, Leo, Lyra,
+            // Ophiuchus, Sagitta, Serpens.
             return (Color(red: 0.99, green: 0.65, blue: 0.40),
                     Color(red: 0.74, green: 0.32, blue: 0.10))
 
-        case .zodiac:
-            // Ecliptic blue — the 12+1 zodiacal cycles (Ari, Tau,
-            // Gem, Cnc, Leo, Vir, Lib, Sco, Sgr, Cap, Aqr, Psc,
-            // and Oph by IAU).
-            return (Color(red: 0.42, green: 0.66, blue: 1.00),
-                    Color(red: 0.12, green: 0.36, blue: 0.82))
-
         case .argo:
-            // Nautical teal — Argo Navis family: Carina, Puppis,
-            // Vela, Pyxis, plus the cluster's hangers-on.
+            // Nautical teal — Argo Navis family + Argonaut myths:
+            // Aries (Golden Fleece), Carina, Centaurus, Columba,
+            // Corona Australis, Draco, Gemini (Castor & Pollux),
+            // Pyxis, Puppis, Sagittarius (Chiron), Vela.
             return (Color(red: 0.40, green: 0.82, blue: 0.86),
                     Color(red: 0.10, green: 0.50, blue: 0.58))
 
         case .zeus:
             // Regal gold — Boötes, Cygnus, Equuleus, Ursa Major,
-            // Ursa Minor, Aquila.
+            // Ursa Minor, Aquila, Aquarius (Ganymede), Capricornus
+            // (Pan), Pisces (Aphrodite & Eros).
             return (Color(red: 1.00, green: 0.83, blue: 0.30),
                     Color(red: 0.78, green: 0.55, blue: 0.10))
 
         case .orion:
             // Hunter's cool blue — Orion, Canis Major, Canis Minor,
-            // Lepus, Taurus, Scorpius.
+            // Lepus, Taurus (the bull he hunts), Scorpius (the
+            // scorpion sent to kill him).
             return (Color(red: 0.55, green: 0.65, blue: 1.00),
                     Color(red: 0.18, green: 0.30, blue: 0.75))
 

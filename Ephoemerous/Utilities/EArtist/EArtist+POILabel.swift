@@ -41,22 +41,28 @@ enum POIDotShape {
 
 /// Mythological cycle a constellation belongs to — pulled from
 /// `constellation_categories.json` via
-/// `EArtist.constellationMyth(of:)`. Drives the badge GRADIENT
-/// so a Hercules constellation reads in the same hue as every
-/// other Hercules one, a Zodiac one in the zodiac hue, etc.
+/// `EArtist.constellationMyth(of:)`. Drives the badge GRADIENT so
+/// a Hercules constellation reads in the same hue as every other
+/// Hercules one, an Orion one in the hunter hue, etc.
 ///
 /// Raw values match the strings in the JSON `myths` array — keep
 /// in sync if you add a new myth there.
+///
+/// Note: the former `.zodiac` case is gone. The zodiac is a *band
+/// of sky*, not a myth cycle — each of its 12+1 constellations has
+/// its own narrative home (e.g. Aries → Argo / Golden Fleece;
+/// Aquarius → Zeus / Ganymede; Scorpius → Orion).
 enum POIConstellationMyth: String, CaseIterable {
     case perseus
     case hercules
-    case zodiac
     case argo
     case zeus
     case orion
     case orpheus
     /// Constellations with no myth in the JSON (Lacaille / Bayer /
-    /// Hevelius modern additions, mostly).
+    /// Hevelius modern additions, plus Virgo and Libra whose
+    /// classical identifications are too fragmented for a single
+    /// cycle).
     case none
 }
 
