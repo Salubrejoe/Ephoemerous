@@ -2,24 +2,11 @@ import SwiftUI
 import simd
 import LoreKit
 
-/*
- let cx   = dc.size.width  / 2 + dc.state.renderedOffset.y
- let cy   = dc.size.height / 2 + dc.state.renderedOffset.x
- let r    = dc.state.renderedScale * EArtist.shared.clipRadius
- + EArtist.shared.clipBleed
- let rect = CGRect(x: cx - r, y: cy - r, width: 2 * r, height: 2 * r)
- let path = Squircle(corners: 12, bulge: 3).path(in: rect)
- dc.ctx.stroke(path, with: .color(.tertiaryLabel), lineWidth: artist.eclWidth)
- */
-
 struct HorizonLayer: EGridLayer {
 
     let artist = EArtist.shared
 
     func draw(in dc: inout EGraphicContext) {
-        // (Old chrome-shape clip lived here gated to clock mode; both
-        // the clip and the gate are gone now that appMode is.)
-
         var bands = dc
         // Twilight bands: small circles at constant altitude just
         // above / below the horizon (the values in `Angle.sunsets`

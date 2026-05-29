@@ -14,44 +14,33 @@ struct CelestialCanva: View {
     // MARK: - Layers
     //
     // One projection for everything — observer-centred stereographic
-    // (see EProjection.project). Clock mode = "observer pinned at lat
-    // 90°"; chrome layers (WatchBackgroundLayer + ClipAndHoursLayer)
-    // self-gate on `appMode == .clock` so they appear / disappear with
-    // the mode flip.
+    // (see `EProjection.project`). Draw order is bottom → top: grid +
+    // constellation lines first, then the star catalog, then labels,
+    // then the horizon wash that dims the below-horizon region, then
+    // anything that should always pop (favourites, ecliptic, badges,
+    // user puck) on top.
     private var layers: [any EGridLayer] {
         [
-//            WatchBackgroundLayer(),
             EarthGridLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
             // Proper-named stars: hidden below `namedStarDotIn`, then
             // dot → badge → text-tier reveal as the user zooms further
-            // in (handled by drawPOILabel + `.namedStar` thresholds).
-            // Sits between constellation names and the horizon wash so
-            // it dims when below horizon, same as constellation labels.
+            // in (handled by `drawPOILabel` + `.namedStar` thresholds).
             NamedStarsLayer(),
-            // HorizonLayer now sits on top of grid + lines + stars + zodiac
-            // glyphs, so its translucent `horizonFillColor` wash and the
-            // squircle-bumped twilight rings *dim* the below-horizon region
-            // instead of just tinting the canvas under it. Anything that
-            // should always pop (selected stars, ecliptic, badges, user
-            // puck) is drawn after.
-            CardinalLabelsLayer(),
             FavouritesLayer(),
             EclipticLayer(),
             EPlanetsLayer(),
             SunLayer(),
             EMoonLayer(),
             HorizonLayer(),
-            // Cartographic east/west horizon labels curving along the
-            // chrome rim. Sits after HorizonLayer so the text reads
-            // against the tinted below-horizon wash, before the user
-            // puck so the puck still draws on top of everything.
+            // EASTERN / WESTERN HORIZON cartographic labels curving
+            // along the projected alt = 0 rim. Sits after HorizonLayer
+            // so the text reads against the tinted below-horizon wash,
+            // before the user puck so the puck draws on top.
             HorizonLabelsLayer(),
             UserLocationLayer(),   // "you are here" puck — drawn last so it sits on top
-//            ClipAndHoursLayer(),
-//            WatchRimLayer(),
         ]
     }
 

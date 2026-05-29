@@ -317,14 +317,9 @@ enum AstroConstants {
     // -------------------------------------------------------------------------
     // MARK: UI rendering
     // -------------------------------------------------------------------------
-    static let starGlowBlurRatio: Double = 2.2   // glow blur = r * ratio
-    static let watchCrownDialRatio: Double = 3.4  // dialOffset = scale * ratio
-    static let zenithPulseScale:  Double = 1.25  // pulsing scale effect
     static let moonPeriodDays:    Double = 27.3
     static let moonSunMagnitude:  Double = -12.6
     static let transitionDuration: Double = 0.55
     static let dateTansitionDuration: Double = 0.7
-    static let modeTransitionDuration: Double = 0.8   // clock↔travel defocus swap
-    static let chromeMaxRadiusScale:   Double = 3.0   // watch chrome "explodes" out to N× its rest size
 
 }
