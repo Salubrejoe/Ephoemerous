@@ -1,3 +1,7 @@
+// DEPRECATED — references `SearchBar` (now wrapped in `#if false`)
+// and lots of pre-detailDestination flow. Whole file disabled.
+
+#if false
 import SwiftUI
 import LoreKit
 
@@ -199,3 +203,4 @@ private extension GameBoyControlPad {
             .environment(EAppState())
     }
 }
+#endif

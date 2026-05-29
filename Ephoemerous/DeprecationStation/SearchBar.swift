@@ -1,13 +1,17 @@
+// DEPRECATED — toggled `state.showStarList` which is gone with
+// EListView. The bottom-toolbar search icon now opens the new
+// `SearchSheet` directly. Wrapped in `#if false`.
 
+#if false
 import SwiftUI
 import LoreKit
 
 struct SearchBar: View {
     @Environment(EAppState.self) var state
-    
+
     var body: some View {
         VStack {
-            
+
 //            if !state.showStarList {
                 Button {
                     state.showStarList.toggle()
@@ -28,3 +32,4 @@ struct SearchBar: View {
         }
     }
 }
+#endif

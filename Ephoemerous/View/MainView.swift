@@ -10,6 +10,10 @@ struct MainView: View {
     /// magnitude icon toggles it; the slider replaces the Spacer
     /// between the two corner buttons.
     @State private var showMagnitudeSlider = false
+    /// Search-sheet presentation. Tapping the search icon presents
+    /// `SearchSheet` — Apple-Maps-style sheet with the favourites
+    /// horizontal scroll + search results.
+    @State private var showSearchSheet = false
     /// Live device orientation. Updated from
     /// `UIDevice.orientationDidChangeNotification`. We need the
     /// actual orientation (not just `verticalSizeClass`) to tell
@@ -111,11 +115,7 @@ struct MainView: View {
                         .frame(width: 44, height: 44)
                         .contentShape(.circle)
                         .glassEffect(.clear.interactive(), in: .circle)
-                        .onTapGesture {
-                            //
-                        }
-
-//                    SearchBar()
+                        .onTapGesture { showSearchSheet = true }
                 }
                 .frame(height: 44)
             }
@@ -165,11 +165,15 @@ struct MainView: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: Bindable(state).showStarList) {
-            NavigationStack {
-                EListView()
-                    .sheetFormat()
-            }
+        // Search sheet — Apple-Maps-style. Tapping the search icon
+        // in the bottom toolbar opens this; tapping a favourite card
+        // or search result calls `state.focus(on:)` and dismisses,
+        // letting the existing detailDestination sheet take over.
+        .sheet(isPresented: $showSearchSheet) {
+            SearchSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCompactAdaptation(.sheet)
         }
 
     }

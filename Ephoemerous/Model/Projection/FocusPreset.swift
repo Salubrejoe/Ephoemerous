@@ -173,10 +173,35 @@ extension EAppState {
     }
 }
 
-// MARK: - EAppState: Screen position helper
+// MARK: - EAppState: Screen position helpers
 extension EAppState {
 
-    /// Computes the screen position of a star without relying on the cached favouritePositions.
+    /// Project-unit point → screen pixel. Mirror of
+    /// `EGraphicContext.toScreen` so callers outside the draw loop
+    /// (focus / pan logic) land on the same screen coordinates the
+    /// canvas draws to. Applies `canvasRotation` first so off-screen
+    /// focus from the search sheet works correctly when the device
+    /// is held landscape (sky-fixed rotation in effect).
+    func toScreenPoint(_ p: CGPoint) -> CGPoint {
+        let pRot: CGPoint
+        if canvasRotation == .zero {
+            pRot = p
+        } else {
+            let θ    = canvasRotation.radians
+            let cosθ = cos(θ)
+            let sinθ = sin(θ)
+            pRot = CGPoint(x: p.x * cosθ - p.y * sinθ,
+                           y: p.x * sinθ + p.y * cosθ)
+        }
+        return CGPoint(
+            x: canvasSize.width  / 2 + pRot.x * renderedScale + renderedOffset.y,
+            y: canvasSize.height / 2 - pRot.y * renderedScale + renderedOffset.x
+        )
+    }
+
+    /// Computes the screen position of a star without relying on the
+    /// cached `favouritePositions`. Used when focusing on a star
+    /// that's currently off-screen (e.g. from the search sheet).
     func screenPosition(of star: EStar) -> CGPoint? {
         guard canvasSize != .zero else { return nil }
         let (pRA, pDec) = EPrecession.precess(
@@ -189,9 +214,29 @@ extension EAppState {
         let v = EPrecession.equatorialVector(ra: pRA, dec: pDec)
         let Q = SIMD3(v.x * c - v.y * s, v.x * s + v.y * c, v.z)
         guard let proj = EProjection.project(Q, viewpoint: self.viewpoint) else { return nil }
-        let sx = canvasSize.width  / 2 + proj.x * renderedScale + renderedOffset.y
-        let sy = canvasSize.height / 2 - proj.y * renderedScale + renderedOffset.x
-        return CGPoint(x: sx, y: sy)
+        return toScreenPoint(proj)
+    }
+
+    /// Computes the screen position of a constellation's label
+    /// anchor without relying on `constellationLabelHitRects` — the
+    /// hit-rect cache only carries entries for constellations
+    /// currently rendered at text tier on screen. From the search
+    /// sheet the user can pick any constellation regardless of
+    /// whether its label is visible right now, so we need to
+    /// project from the anchor RA/Dec directly.
+    func screenPosition(of constellation: EConstellation) -> CGPoint? {
+        guard canvasSize != .zero,
+              let anchor = ConstellationLines.shared.labelAnchors[constellation]
+        else { return nil }
+        let (pRA, pDec) = EPrecession.precess(
+            ra:  anchor.ra,
+            dec: anchor.dec,
+            to:  renderedObservationDate
+        )
+        let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
+            .sidereallyRotated(by: localSiderealOffset)
+        guard let proj = EProjection.project(Q, viewpoint: self.viewpoint) else { return nil }
+        return toScreenPoint(proj)
     }
 
     /// Compute the offset needed to place `screenPos` (computed at the current scale)

@@ -136,10 +136,9 @@ class EAppState {
     /// pure internal coordination, no view should redraw on it.
     @ObservationIgnored var _focusEpoch: UInt64 = 0
 
-    // MARK: - Sheet state  (list + inline pickers — modal flow that
-    // hasn't been re-architected yet). The magnitude filter is now
-    // inline in MainView's bottom toolbar; no sheet state needed.
-    var showStarList:            Bool = false
+    // MARK: - Sheet state  (inline pickers — modal flow that hasn't
+    // been re-architected yet). The magnitude filter and search are
+    // both handled by local `@State` in MainView now.
     var isShowingDatePicker:     Bool = false
     var isShowingLocationPicker: Bool = false
 

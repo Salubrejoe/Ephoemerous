@@ -95,10 +95,17 @@ extension EAppState {
         case .star(let star):
             return favouritePositions[ESkyObject.star(star).id] ?? screenPosition(of: star)
         case .constellation(let cons):
-            // The label-hit capsule centroid is the natural anchor —
-            // it's what the user just tapped.
-            guard let rect = constellationLabelHitRects[cons] else { return nil }
-            return CGPoint(x: rect.midX, y: rect.midY)
+            // The label-hit capsule centroid is the natural anchor
+            // when the user tapped a constellation label on canvas —
+            // it's exactly the rect they touched. But the cache only
+            // carries entries for labels currently rendered at text
+            // tier, so opens from the search sheet (or any path
+            // where the constellation isn't visibly labelled right
+            // now) need to project from the anchor RA/Dec directly.
+            if let rect = constellationLabelHitRects[cons] {
+                return CGPoint(x: rect.midX, y: rect.midY)
+            }
+            return screenPosition(of: cons)
         case .planet(let planet):
             return planetPositions[planet.name]
         }

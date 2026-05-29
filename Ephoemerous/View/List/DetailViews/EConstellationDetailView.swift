@@ -10,6 +10,7 @@ import SwiftUI
 
 struct EConstellationDetailView: View {
     @Environment(EAppState.self) var state
+    @Environment(\.dismiss)      var dismiss
     let constellation: EConstellation
 
     /// Brightest dozen figure-stars of the constellation, sorted
@@ -54,13 +55,15 @@ struct EConstellationDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         constellation.fullName,
-                subtitle:      subtitleText,
-                accent:        accent,
-                icon:          { Image(systemName: iconSymbolName) },
-                leadingSymbol: "square.and.arrow.up",
-                onLeading:     {},
-                onDismiss:     { state.dismissDetail() }
+                title:                  constellation.fullName,
+                subtitle:               subtitleText,
+                accent:                 accent,
+                icon:                   { Image(systemName: iconSymbolName) },
+                leadingSymbol:          "chevron.backward",
+                onLeading:              { dismiss() },
+                secondaryLeadingSymbol: "square.and.arrow.up",
+                onSecondaryLeading:     {},
+                onDismiss:              { state.dismissDetail() }
             )
             RememberButton(obj: .constellation(constellation))
                 .padding(.horizontal, 16)
@@ -103,36 +106,5 @@ struct EConstellationDetailView: View {
     }
 }
 
-// MARK: - StarCard
-// Compact card representing one figure-star of the constellation.
-// Same internal slot grid as the star detail's stats tiles
-// (icon 24, value 22, label 14) so a card and a tile read as the
-// same visual species. Wrapped in `NavigationLink(value: star)` by
-// the caller, so tap → push to that star's detail.
-private struct StarCard: View {
-    let star: EStar
-
-    var body: some View {
-        VStack(spacing: 6) {
-            POIBadgeView(category: .followedStar(star), size: 24)
-                .frame(height: 24)
-            Text(star.displayName)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .frame(height: 22)
-            Text(String(format: "%.1f mag", star.magnitude))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(0.5)
-                .frame(height: 14)
-        }
-        .frame(width: 110)
-        .frame(maxHeight: .infinity)
-        .padding(.vertical, 14)
-        .background(Color(.tertiarySystemFill),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-}
+// `StarCard` lives in View/Cards/EFavouriteCards.swift and is
+// shared with the SearchSheet's favourites scroll.
