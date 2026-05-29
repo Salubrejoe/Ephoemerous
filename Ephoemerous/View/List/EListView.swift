@@ -140,15 +140,6 @@ struct EListView: View {
                 }
             }
         }
-        .sheet(isPresented: Bindable(state).showMagnFilter) {
-            FilterView(
-                magnitudeCap: Bindable(state).magnitudeFilter,
-                magnitudeRange: -2.0...8.0,
-                starCount: StarDatabase.shared.workableStars.filter { $0.magnitude <= state.magnitudeFilter && $0.name != "Unknown" }.count
-            )
-            .presentationDetents([.height(320)])
-            .presentationDragIndicator(.visible)
-        }
         .navigationDestination(for: ESkyObject.self) { obj in
             switch obj {
             case .star(let s):

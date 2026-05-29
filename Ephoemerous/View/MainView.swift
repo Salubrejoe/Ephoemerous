@@ -6,7 +6,10 @@ import LoreKit
 struct MainView: View {
     @Environment(EAppState.self) var state
     @Environment(\.verticalSizeClass) private var vSizeClass
-    @State private var showSortSheet = false
+    /// Inline magnitude slider in the bottom toolbar. Tapping the
+    /// magnitude icon toggles it; the slider replaces the Spacer
+    /// between the two corner buttons.
+    @State private var showMagnitudeSlider = false
     /// Live device orientation. Updated from
     /// `UIDevice.orientationDidChangeNotification`. We need the
     /// actual orientation (not just `verticalSizeClass`) to tell
@@ -76,25 +79,42 @@ struct MainView: View {
                     
                 Spacer()
                 
-                HStack {
+                HStack(spacing: 12) {
                     Image(symbol: .magnitudeIcon)
                         .bold()
-                        .frame(width:44, height: 44)
+                        .frame(width: 44, height: 44)
                         .contentShape(.circle)
-                    .glassEffect(.clear.interactive(), in: .circle)
-                    .onTapGesture {
-                        showSortSheet = true
+                        .glassEffect(.clear.interactive(), in: .circle)
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                showMagnitudeSlider.toggle()
+                            }
+                        }
+                    if showMagnitudeSlider {
+                        // Stepped magnitude scrubber. `step: 0.2`
+                        // makes Apple's stock Slider snap to
+                        // discrete increments — no continuous
+                        // dragging through fractional values, no
+                        // bespoke chrome.
+                        Slider(
+                            value: Bindable(state).magnitudeFilter,
+                            in:    -2.0...8.0,
+                            step:  0.2
+                        )
+                        .tint(.primary)
+                        .transition(.opacity.combined(with: .blurReplace))
+                    } else {
+                        Spacer()
                     }
-                    Spacer()
                     Image(symbol: .search)
                         .bold()
-                        .frame(width:44, height: 44)
+                        .frame(width: 44, height: 44)
                         .contentShape(.circle)
                         .glassEffect(.clear.interactive(), in: .circle)
                         .onTapGesture {
                             //
                         }
-                       
+
 //                    SearchBar()
                 }
                 .frame(height: 44)
@@ -145,15 +165,6 @@ struct MainView: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: $showSortSheet) {
-            FilterView(
-                magnitudeCap: Bindable(state).magnitudeFilter,
-                magnitudeRange: -2.0...8.0,
-                starCount: displayedStars.count
-            )
-            .presentationDetents([.height(55)])
-//            .presentationDragIndicator(.visible)
-        }
         .sheet(isPresented: Bindable(state).showStarList) {
             NavigationStack {
                 EListView()
@@ -161,11 +172,6 @@ struct MainView: View {
             }
         }
 
-    }
-    
-    private var displayedStars: [EStar] {
-        StarDatabase.shared.listableStars
-            .filter { $0.name != "Unknown" && $0.magnitude <= state.magnitudeFilter }
     }
 }
 
