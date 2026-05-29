@@ -32,6 +32,15 @@ struct EStarDetailView: View {
             : "\(letter) · \(star.constellation.fullName)"
     }
 
+    /// A star inherits its myth from its parent constellation —
+    /// Betelgeuse is "in" the Orion cycle because Orion is. `.none`
+    /// for stars in modern (Lacaille / Bayer / Hevelius)
+    /// constellations; DetailActionRow's `.none` path then renders
+    /// the bare RememberButton instead of the morphing pair.
+    private var myth: POIConstellationMyth {
+        EArtist.shared.constellationMyth(of: star.constellation)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
@@ -45,9 +54,18 @@ struct EStarDetailView: View {
                 onSecondaryLeading:     showsBackChevron ? {} : nil,
                 onDismiss:              { state.dismissDetail() }
             )
-            RememberButton(obj: .star(star))
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+            // Morphing action row — see `DetailActionRow.swift`.
+            // Same pair as the constellation detail; the star's
+            // myth is inherited from its parent constellation, and
+            // tapping the book / tagline routes through
+            // `state.openMyth(_:)` for the half-detent myth sheet.
+            DetailActionRow(
+                obj:         .star(star),
+                myth:        myth,
+                onLearnMyth: { state.openMyth(myth) }
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom,     12)
             statsRow
                 .padding(.horizontal, 16)
             Spacer(minLength: 0)

@@ -128,12 +128,20 @@ class EAppState {
     // The root sheet in MainView binds to this; canvas taps go through
     // `focus(on:)` which sets it and pans the camera.
     var detailDestination: ESkyObject? = nil
-    /// Monotonic counter bumped on every `focus(on:)` / `dismissDetail()`
-    /// call. The deferred re-presentation in `focus(on:)` captures the
-    /// epoch it scheduled with and aborts if anything else has happened
-    /// since — so rapid taps can't race a pending `detailDestination`
-    /// assignment back on top of a newer one. Observation-ignored:
-    /// pure internal coordination, no view should redraw on it.
+    /// Sibling destination for the *myth* sheet — fired by tapping
+    /// "Learn the Myth" on a constellation / star detail. Lives at
+    /// half-detent (vs detailDestination's third) and is mutually
+    /// exclusive with detailDestination — `openMyth(_:)` clears the
+    /// detail before presenting the myth, so only one root sheet
+    /// is on screen at a time.
+    var mythDestination: POIConstellationMyth? = nil
+    /// Monotonic counter bumped on every `focus(on:)` / `openMyth(_:)`
+    /// / `dismissDetail()` / `dismissMyth()` call. The deferred
+    /// re-presentation in each opener captures the epoch it scheduled
+    /// with and aborts if anything else has happened since — so rapid
+    /// taps can't race a pending destination assignment back on top
+    /// of a newer one. Observation-ignored: pure internal
+    /// coordination, no view should redraw on it.
     @ObservationIgnored var _focusEpoch: UInt64 = 0
 
     // MARK: - Sheet state  (inline pickers — modal flow that hasn't

@@ -165,6 +165,24 @@ struct MainView: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
+        // Myth sheet — sibling root sheet, item-bound to
+        // `state.mythDestination`. Adaptive: `.medium` adapts to
+        // device class / dynamic type so on small phones it lands
+        // around half and on larger devices it lands at the
+        // platform-natural medium, and `.large` lets the user drag
+        // up to read the full story without the beats being
+        // cropped. Drag indicator visible (vs the detail sheet's
+        // hidden) because the user CAN drag between detents here.
+        // Fired by tapping "Learn the Myth" on a constellation /
+        // star detail; `state.openMyth(_:)` dismisses
+        // detailDestination first so only one root sheet is on
+        // screen at a time.
+        .sheet(item: Bindable(state).mythDestination) { myth in
+            EMythDetailView(myth: myth)
+                .presentationDetents([.medium])
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.hidden)
+        }
         // Search sheet — Apple-Maps-style. Tapping the search icon
         // in the bottom toolbar opens this; tapping a favourite card
         // or search result calls `state.focus(on:)` and dismisses,

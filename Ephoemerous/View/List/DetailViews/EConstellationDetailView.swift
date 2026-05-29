@@ -51,6 +51,14 @@ struct EConstellationDetailView: View {
         )
     }
 
+    /// Primary mythological cycle this constellation belongs to.
+    /// Drives the secondary "Learn the Myth" button leading the
+    /// Remember row. `.none` hides the button; the row then
+    /// collapses to Remember-only.
+    private var myth: POIConstellationMyth {
+        EArtist.shared.constellationMyth(of: constellation)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
@@ -62,9 +70,19 @@ struct EConstellationDetailView: View {
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )
-            RememberButton(obj: .constellation(constellation))
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+            // Morphing action row — see `DetailActionRow.swift`.
+            // Default: small "book" circle + wide "Remember" pill.
+            // Remembered: wide tagline pill + small heart circle.
+            // Tapping the book / tagline routes through
+            // `state.openMyth(_:)`, which dismisses this detail
+            // sheet and presents the half-detent myth sheet.
+            DetailActionRow(
+                obj:         .constellation(constellation),
+                myth:        myth,
+                onLearnMyth: { state.openMyth(myth) }
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom,     12)
             roster
             Spacer(minLength: 0)
         }

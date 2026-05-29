@@ -52,7 +52,7 @@ enum POIDotShape {
 /// of sky*, not a myth cycle — each of its 12+1 constellations has
 /// its own narrative home (e.g. Aries → Argo / Golden Fleece;
 /// Aquarius → Zeus / Ganymede; Scorpius → Orion).
-enum POIConstellationMyth: String, CaseIterable {
+enum POIConstellationMyth: String, CaseIterable, Identifiable {
     case perseus
     case hercules
     case argo
@@ -64,6 +64,26 @@ enum POIConstellationMyth: String, CaseIterable {
     /// classical identifications are too fragmented for a single
     /// cycle).
     case none
+
+    /// Identity is the JSON key. `Identifiable` so the enum can
+    /// drive a `.sheet(item:)` binding for `EMythDetailView`.
+    var id: String { rawValue }
+
+    /// One-line tagline per cycle — used as the subtitle in
+    /// `EMythDetailView` and as the expanded label on the
+    /// LearnMyth pill in `DetailActionRow`. Single source of truth
+    /// so the two surfaces can never drift out of sync.
+    var tagline: String {
+        switch self {
+        case .perseus:  return "Andromeda and the sea-monster"
+        case .hercules: return "The twelve impossible labours"
+        case .argo:     return "The voyage for the Golden Fleece"
+        case .zeus:     return "The father-god's transformations"
+        case .orion:    return "The hunter and the scorpion"
+        case .orpheus:  return "The lyre that charmed Hades"
+        case .none:     return "Constellation cycle"
+        }
+    }
 }
 
 /// What the constellation *depicts* — the JSON `types` axis.
