@@ -29,52 +29,22 @@ struct SearchSheet: View {
     @Environment(EAppState.self) private var state
     @Environment(\.dismiss)      private var dismiss
     @State private var searchText: String = ""
-    /// Push-based navigation inside the sheet. Tapping a favourite
-    /// card or a result row appends to the path; the pushed detail
-    /// view's `dismiss()` (back chevron) pops back here — same flow
-    /// as Apple Maps.
-    @State private var path: [ESkyObject] = []
 
     var body: some View {
-        NavigationStack(path: $path) {
-            VStack(spacing: 0) {
-                searchHeader
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .padding(.bottom, 12)
+        VStack(spacing: 0) {
+            searchHeader
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
 
-                if searchText.isEmpty {
-                    favouritesSection
-                    Spacer(minLength: 0)
-                } else {
-                    resultsList
-                }
-            }
-            .background(Color(.systemBackground))
-            // System nav-bar is hidden — every pushed detail view
-            // draws its own DetailHeader (with chevron-back / share
-            // / X) so the chrome reads as one species across the
-            // app, search-pushed or canvas-tapped.
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: ESkyObject.self) { obj in
-                detailView(for: obj)
-                    .toolbar(.hidden, for: .navigationBar)
+            if searchText.isEmpty {
+                favouritesSection
+                Spacer(minLength: 0)
+            } else {
+                resultsList
             }
         }
-    }
-
-    /// Render the matching detail view for the pushed object. Each
-    /// view's own `.onAppear` calls `state.panTo(_:)` so the canvas
-    /// follows without us needing to call it here.
-    @ViewBuilder
-    private func detailView(for obj: ESkyObject) -> some View {
-        switch obj {
-        case .sun:                  ESunDetailView()
-        case .moon:                 EMoonDetailView()
-        case .star(let s):          EStarDetailView(star: s)
-        case .planet(let p):        ENSPlanetDetailView(planet: p)
-        case .constellation(let c): EConstellationDetailView(constellation: c)
-        }
+        .background(Color(.systemBackground))
     }
 
     // MARK: Header
@@ -290,12 +260,14 @@ struct SearchSheet: View {
 
     // MARK: Actions
 
-    /// Push `obj`'s detail view onto the sheet's own nav stack. The
-    /// pushed detail view's `.onAppear` calls `state.panTo(_:)` so
-    /// the canvas behind follows; its back chevron (`dismiss()`)
-    /// pops the stack and returns the user to the search results.
+    /// Focus the canvas on `obj` (sets `detailDestination` and pans
+    /// the camera) and close the search sheet. The root detail
+    /// sheet then takes over with its 1/3 detent — much better fit
+    /// for the detail content than a half/full-sheet wrap with the
+    /// detail floating at the top.
     private func open(_ obj: ESkyObject) {
-        path.append(obj)
+        state.focus(on: obj)
+        dismiss()
     }
 }
 

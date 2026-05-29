@@ -10,7 +10,6 @@ import SwiftUI
 
 struct EConstellationDetailView: View {
     @Environment(EAppState.self) var state
-    @Environment(\.dismiss)      var dismiss
     let constellation: EConstellation
 
     /// Brightest dozen figure-stars of the constellation, sorted
@@ -55,15 +54,13 @@ struct EConstellationDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:                  constellation.fullName,
-                subtitle:               subtitleText,
-                accent:                 accent,
-                icon:                   { Image(systemName: iconSymbolName) },
-                leadingSymbol:          "chevron.backward",
-                onLeading:              { dismiss() },
-                secondaryLeadingSymbol: "square.and.arrow.up",
-                onSecondaryLeading:     {},
-                onDismiss:              { state.dismissDetail() }
+                title:         constellation.fullName,
+                subtitle:      subtitleText,
+                accent:        accent,
+                icon:          { Image(systemName: iconSymbolName) },
+                leadingSymbol: "square.and.arrow.up",
+                onLeading:     {},
+                onDismiss:     { state.dismissDetail() }
             )
             RememberButton(obj: .constellation(constellation))
                 .padding(.horizontal, 16)
@@ -80,7 +77,10 @@ struct EConstellationDetailView: View {
         // the camera.
         .onAppear { state.panTo(.constellation(constellation)) }
         .navigationDestination(for: EStar.self) { s in
-            EStarDetailView(star: s)
+            // Pushed from the constellation roster — there IS a
+            // sensible parent (this constellation) to pop back to,
+            // so the star detail's chevron-back is meaningful here.
+            EStarDetailView(star: s, showsBackChevron: true)
         }
     }
 

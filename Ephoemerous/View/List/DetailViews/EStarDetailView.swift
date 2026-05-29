@@ -10,6 +10,13 @@ struct EStarDetailView: View {
     @Environment(EAppState.self) var state
     @Environment(\.dismiss) var dismiss
     let star: EStar
+    /// `true` only when the view is pushed onto a navigation stack
+    /// that has a sensible parent to pop back to — currently only
+    /// the constellation roster's `navigationDestination`. When
+    /// reached as a root detail sheet (canvas tap or search-sheet
+    /// open), the back chevron has nowhere to go, so the share
+    /// button takes the primary-leading slot instead.
+    var showsBackChevron: Bool = false
 
     private var accent: Color { star.spectralClass.color }
 
@@ -32,10 +39,10 @@ struct EStarDetailView: View {
                 subtitle:               subtitleText,
                 accent:                 accent,
                 icon:                   { POIBadgeView(category: .followedStar(star)) },
-                leadingSymbol:          "chevron.backward",
-                onLeading:              { dismiss() },
-                secondaryLeadingSymbol: "square.and.arrow.up",
-                onSecondaryLeading:     {},
+                leadingSymbol:          showsBackChevron ? "chevron.backward" : "square.and.arrow.up",
+                onLeading:              { showsBackChevron ? dismiss() : () },
+                secondaryLeadingSymbol: showsBackChevron ? "square.and.arrow.up" : nil,
+                onSecondaryLeading:     showsBackChevron ? {} : nil,
                 onDismiss:              { state.dismissDetail() }
             )
             RememberButton(obj: .star(star))
