@@ -47,11 +47,21 @@ extension EAppState {
     /// isn't fighting a tracking transition, and closes the date picker
     /// to avoid two inline panels stacking in the bottom slot.
     func toggleLocationPicker() {
-        if !isShowingLocationPicker {
-            resetView()
-            isShowingDatePicker = false
+        // Batch all flag mutations into a single animation
+        // transaction. When the user rapid-taps between the two
+        // toolbar pills, isShowingLocationPicker and
+        // isShowingDatePicker can both flip in the same frame; with
+        // `.animation(value:)` modifiers each flag triggers its own
+        // animation pass and the two collide into a jerky cross-
+        // fade. `withAnimation` here applies a single coherent curve
+        // to every state change in the closure.
+        withAnimation(.easeInOut(duration: 0.25)) {
+            if !isShowingLocationPicker {
+                resetView()
+                isShowingDatePicker = false
+            }
+            isShowingLocationPicker.toggle()
         }
-        isShowingLocationPicker.toggle()
     }
 }
 

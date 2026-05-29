@@ -65,8 +65,13 @@ struct MainToolbar: View {
             
 //            SearchBar()
         }
-        .animation(.easeInOut(duration: 0.25), value: state.isShowingDatePicker)
-        .animation(.easeInOut(duration: 0.25), value: state.isShowingLocationPicker)
+        // No `.animation(value:)` modifiers here — both toggle
+        // helpers (`toggleDatePicker` / `toggleLocationPicker` in
+        // EAppState+Time / +Location) wrap their flag mutations in
+        // `withAnimation(.easeInOut(duration: 0.25))`. Two modifiers
+        // here used to fight each other when both flags flipped in
+        // the same frame (rapid pill-tapping) and produced a jerky
+        // cross-fade.
         // Bump the refresh tick on initial appear and every time the
         // scene returns to `.active` (phone woken from sleep, app
         // returning from background). Re-evaluating the body
@@ -96,10 +101,7 @@ struct MainToolbar: View {
         Button(action: state.toggleLocationPicker) {
             HStack(spacing: 6) {
                 if state.isShowingLocationPicker {
-                    Image(symbol: .xmark)
-                        .font(.callout)
-                        
-                        .contentTransition(.symbolEffect(.replace))
+                    dismissGlyph
                 }
                 if !state.isShowingLocationPicker {
                     Text(locationLabel)
@@ -123,9 +125,7 @@ struct MainToolbar: View {
         Button(action: state.toggleDatePicker) {
             HStack(spacing: 6) {
                 if state.isShowingDatePicker {
-                    
-                    Image(systemName: "xmark")
-                        .font(.headline)
+                    dismissGlyph
                 }
                 if !state.isShowingDatePicker {
                     Text(dateLabel)
@@ -143,6 +143,17 @@ struct MainToolbar: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+
+    /// Shared dismiss-X for both pills when their picker panel is
+    /// open. Tuned heavier than the pill's `.callout` label text so
+    /// "tap me to close" reads at a glance — the previous `.callout`
+    /// / `.headline` mix made the affordance feel timid and gave the
+    /// two pills inconsistent prominence.
+    private var dismissGlyph: some View {
+        Image(systemName: "xmark")
+            .font(.title2.weight(.bold))
+            .contentTransition(.symbolEffect(.replace))
     }
 
     // MARK: - Pill labels

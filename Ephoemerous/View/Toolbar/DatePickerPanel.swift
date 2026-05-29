@@ -79,10 +79,14 @@ struct DatePickerPanel: View {
             .labelsHidden()
             .frame(height: 160)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical,   8)
+        // Horizontal padding (10) and corner radius (28) match
+        // LocationPickerPanel exactly so the two inline panels read
+        // as one species — the user toggles between them and the
+        // outer shell shouldn't visibly shift width or radius.
+        .padding(.horizontal, 10)
+        .padding(.vertical,    8)
         .glassEffect(.clear.interactive(),
-                     in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                     in: RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
     // MARK: - Action row
