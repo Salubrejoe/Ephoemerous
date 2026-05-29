@@ -77,6 +77,11 @@ struct CelestialCanva: View {
                     for layer in layers { layer.draw(in: &dc) }
                 }
 
+                // "You are here" puck — SwiftUI overlay on top of
+                // the procedural canvas, gated on isAtDeviceLocation.
+                // See `puckOverlay` below for the rationale.
+                puckOverlay
+
                 // Topmost, sharp & interactive: owns every canvas touch.
                 // The flexible frame keeps this coordinate space immune to
                 // any sibling's intrinsic size.
@@ -87,6 +92,47 @@ struct CelestialCanva: View {
         
         .ignoresSafeArea()
         .clipped()
+    }
+
+    // MARK: - Puck overlay
+    //
+    // "You are here" mark — a SwiftUI overlay on top of the
+    // procedural Canvas so it can render the SF Symbol globe
+    // glyph (which Canvas can't draw with the same fidelity as a
+    // real Image view) and pick up the longitude-keyed symbol
+    // naturally via Observation.
+    //
+    // Position: the projection's zenith is `dc.toScreen(.zero)`
+    // procedurally — that's the canvas centre offset by the
+    // user's pan. We mirror the math in SwiftUI space using
+    // `state.canvasSize` (set every frame by `advanceCanvasClock`)
+    // and `state.renderedOffset` (updated by every gesture +
+    // animation). Sky-fixed rotation doesn't affect the puck:
+    // zenith is the fixed point of the rotation, so it's at the
+    // same screen position regardless of `canvasRotation`.
+    //
+    // Visibility: gated on `state.isAtDeviceLocation`. When the
+    // observer origin has been panned away from the device fix,
+    // the puck would claim "here" at a sky position that isn't
+    // the user's, which is exactly the misleading case. Skip it
+    // and let the heading cone (UserLocationLayer) follow the
+    // same gate.
+    //
+    // Extracted as a computed property so the type-checker can
+    // resolve the TimelineView's ZStack body without grinding —
+    // SwiftUI's `Content` inference falls over on long
+    // heterogenous bodies.
+    @ViewBuilder
+    private var puckOverlay: some View {
+        if state.isAtDeviceLocation {
+            UserLocationPuck()
+                .position(
+                    x: state.canvasSize.width  / 2 + state.renderedOffset.x,
+                    y: state.canvasSize.height / 2 + state.renderedOffset.y
+                )
+                .allowsHitTesting(false)
+                .transition(.scale.combined(with: .opacity))
+        }
     }
 }
 

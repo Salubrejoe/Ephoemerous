@@ -6,17 +6,18 @@ import SwiftUI
 // point of view in the planetarium), with an optional heading
 // cone whose width tracks the compass's reported accuracy.
 //
-// `drawUserLocationPuck(at:in:)` paints the disc + ring.
-// `drawHeadingCone(at:heading:accuracy:in:)` paints the fan
-// behind the disc.
+// The puck DISC + RING is now a SwiftUI overlay
+// (`UserLocationPuck` → `SquircleGlobePuck`), positioned at zenith
+// in `CelestialCanva`. This extension keeps the heading cone
+// (procedural canvas draw) and palette tunables, and exposes the
+// longitude-keyed globe-symbol picker for the overlay.
 extension EArtist {
 
     // MARK: - Tunables  ▼ TWEAK HERE ▼
 
-    /// Diameter of the inner blue disc (pt).
-    var userPuckDiscRadius : CGFloat { 6 }
-    /// White ring thickness around the disc.
-    var userPuckRingWidth  : CGFloat { 2 }
+    /// Total puck diameter in pt for the SwiftUI overlay.
+    /// `SquircleGlobePuck` uses this as its `size`.
+    var userPuckSize       : CGFloat { 28 }
 
     var userPuckDiscColor  : Color { palette.userPuckDisc }
     var userPuckRingColor  : Color { palette.userPuckRing }
@@ -34,26 +35,30 @@ extension EArtist {
     var userPuckConeMinHalfAngle: Double { 8 }    // degrees
     var userPuckConeMaxHalfAngle: Double { 60 }   // degrees
 
-    // MARK: - Drawing
+    // MARK: - Symbol picker
 
-    /// Blue filled disc on a white ring — the classic Maps puck.
-    func drawUserLocationPuck(at sc: CGPoint, in dc: inout EGraphicContext) {
-        let inner = userPuckDiscRadius
-        let outer = inner + userPuckRingWidth
+    /// Apple's four hemisphere globe SF Symbols, mapped to the
+    /// observer's longitude so the puck wears the continent it
+    /// actually sits on. Bands chosen to match the symbol's
+    /// rendered emphasis:
+    ///   • -170° .. -30°  →  `globe.americas.fill`
+    ///   • -30°  ..  60°  →  `globe.europe.africa.fill`
+    ///   •  60°  .. 110°  →  `globe.central.south.asia.fill`
+    ///   • 110°  .. 180°  →  `globe.asia.australia.fill`
+    ///   • -180° .. -170° →  `globe.asia.australia.fill`  (dateline wrap)
+    /// Input is wrapped into [-180, 180] before bucketing.
+    func userLocationGlobeSymbol(forLongitude lon: Double) -> String {
+        var l = lon
+        while l >  180 { l -= 360 }
+        while l < -180 { l += 360 }
 
-        // White outer ring (drawn first so the disc sits on top).
-        dc.ctx.fill(
-            Path(ellipseIn: CGRect(x: sc.x - outer, y: sc.y - outer,
-                                   width: 2 * outer, height: 2 * outer)),
-            with: .color(userPuckRingColor)
-        )
-        // Blue disc.
-        dc.ctx.fill(
-            Path(ellipseIn: CGRect(x: sc.x - inner, y: sc.y - inner,
-                                   width: 2 * inner, height: 2 * inner)),
-            with: .color(userPuckDiscColor)
-        )
+        if l >= -30 && l <  60  { return "globe.europe.africa.fill"      }
+        if l >=  60 && l < 110  { return "globe.central.south.asia.fill" }
+        if l >= 110 || l < -170 { return "globe.asia.australia.fill"     }
+        return "globe.americas.fill"  // -170° ≤ l < -30°
     }
+
+    // MARK: - Drawing
 
     /// Heading fan — a wedge centred on the compass `heading`
     /// (degrees clockwise from true north) whose half-angle is

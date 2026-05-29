@@ -13,10 +13,17 @@ import LoreKit
 // puck at hero + home-screen sizes.
 struct SquircleGlobePuck: View {
 
-    var disc:   Color
-    var symbol: Color
-    var ring:   Color   = .white
-    var size:   CGFloat = 120
+    var disc:       Color
+    var symbol:     Color
+    var ring:       Color   = .white
+    var size:       CGFloat = 120
+    /// SF Symbol used as the globe glyph. Defaults to the
+    /// Europe/Africa hemisphere — the production call site
+    /// (`UserLocationPuck`) overrides this with the symbol that
+    /// matches the observer's longitude so a user in Sydney sees
+    /// `globe.asia.australia.fill`, a user in São Paulo sees
+    /// `globe.americas.fill`, etc.
+    var symbolName: String  = "globe.europe.africa.fill"
 
     /// Horizon-rim Lamé parameters — kept in sync with
     /// `EArtist.horizonBumpCorners` / `horizonBumpBulge`.
@@ -25,11 +32,11 @@ struct SquircleGlobePuck: View {
 
     /// White border thickness as a fraction of the puck — the ring
     /// traces the scallop instead of a clean circle.
-    private var ringFraction:  CGFloat { 0.00 }
+    private var ringFraction:  CGFloat { 0.08 }
     /// Globe diameter as a fraction of the puck — slightly under 1 so
     /// the scallop bites the globe rim rather than the bumps poking
     /// past it.
-    private var globeFraction: CGFloat { 1 }
+    private var globeFraction: CGFloat { 0.99 }
 
     private var scallop:   Squircle { Squircle(corners: corners, bulge: bulge) }
     private var globeSize: CGFloat  { size * globeFraction }
@@ -56,10 +63,10 @@ struct SquircleGlobePuck: View {
     }
 
     private func glyph(grownBy grow: CGFloat, color: Color) -> some View {
-        Image(systemName: "globe.europe.africa.fill")
+        Image(systemName: symbolName)
             .resizable()
             .scaledToFit()
-            .foregroundStyle(color)
+            .foregroundStyle(color.opacity(0.8))
             .frame(width: globeSize + grow, height: globeSize + grow)
     }
 }

@@ -88,10 +88,18 @@ struct EPalette {
                               Color(red: 0.20, green: 0.35, blue: 0.78))
 
     // MARK: User location puck
-
-    let userPuckDisc: Color = .blue
+    //
+    // Green, not Apple-Maps blue. The canvas is mostly deep navy /
+    // twilight blues, so a blue puck disappears into the night sky;
+    // green sits firmly in the foreground at every tinted sky
+    // state. Semantically it also reads "terrestrial / you on
+    // Earth, observing" rather than "Maps location dot on a map" —
+    // closer to what the mark actually means on a celestial chart.
+    // White ring is unchanged: it gives every globe glyph a uniform
+    // outline against whatever's behind the puck.
+    let userPuckDisc: Color = .green
     let userPuckRing: Color = .white
-    let userPuckCone: Color = .blue
+    let userPuckCone: Color = .green
 
     // MARK: Spectral classes (stars)
     //
