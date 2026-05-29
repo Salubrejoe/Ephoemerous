@@ -14,8 +14,22 @@ import LoreKit
 struct MainToolbar: View {
 
     @Environment(EAppState.self) private var state
+    @Environment(\.scenePhase)   private var scenePhase
+
+    /// Bumped on appear and on every scene-becomes-active so the
+    /// label computed properties recompute. The Here / Now strings
+    /// depend on `Date.now` and the device-location fix — neither is
+    /// `@Observable`, so without a tick like this the label can sit
+    /// at "Now" forever after the phone has been left on the table
+    /// (the body never has any reason to re-evaluate).
+    @State private var refreshTick: Int = 0
 
     var body: some View {
+        // Reading `refreshTick` here registers the dependency for
+        // every label call downstream; bumping the tick re-renders
+        // the toolbar and rewalks the dateLabel / locationLabel
+        // computed properties.
+        let _ = refreshTick
         VStack(spacing: 12) {
             // Inline expandable panels live above the toolbar. Both
             // animate in/out via the same transition so the toolbar
@@ -53,6 +67,15 @@ struct MainToolbar: View {
         }
         .animation(.easeInOut(duration: 0.25), value: state.isShowingDatePicker)
         .animation(.easeInOut(duration: 0.25), value: state.isShowingLocationPicker)
+        // Bump the refresh tick on initial appear and every time the
+        // scene returns to `.active` (phone woken from sleep, app
+        // returning from background). Re-evaluating the body
+        // recomputes the dateLabel / locationLabel against the
+        // current wall-clock and device-location fix.
+        .onAppear { refreshTick &+= 1 }
+        .onChange(of: scenePhase) { _, new in
+            if new == .active { refreshTick &+= 1 }
+        }
         // Re-resolve the locality name whenever the rounded origin
         // changes. `.task(id:)` cancels and restarts when the id
         // shifts, which gives us a built-in debounce — the 400 ms
