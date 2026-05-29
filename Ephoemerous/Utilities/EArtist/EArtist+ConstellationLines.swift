@@ -6,7 +6,7 @@ import SwiftUI
 // breathing gap so the line never touches the star dot.
 extension EArtist {
 
-    var constellationLineColor : Color  { .tertiary }
+    var constellationLineColor : Color  { palette.constellationLine }
     var constellationLineWidth : Double { 0.7 }
 
     /// Stroke width for a favourited constellation's stick-figure

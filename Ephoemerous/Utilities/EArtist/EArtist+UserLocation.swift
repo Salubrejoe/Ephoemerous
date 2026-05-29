@@ -18,9 +18,9 @@ extension EArtist {
     /// White ring thickness around the disc.
     var userPuckRingWidth  : CGFloat { 2 }
 
-    var userPuckDiscColor  : Color { .blue }
-    var userPuckRingColor  : Color { .white }
-    var userPuckConeColor  : Color { .blue }
+    var userPuckDiscColor  : Color { palette.userPuckDisc }
+    var userPuckRingColor  : Color { palette.userPuckRing }
+    var userPuckConeColor  : Color { palette.userPuckCone }
 
     /// Outer reach of the heading cone, in points. The cone fades
     /// to transparent at this radius via a radial gradient.

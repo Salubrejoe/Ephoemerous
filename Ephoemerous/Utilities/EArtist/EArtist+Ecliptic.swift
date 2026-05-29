@@ -7,6 +7,6 @@ import SwiftUI
 // colour matched to the rim).
 extension EArtist {
 
-    var eclColor : Color  { .secondary }
+    var eclColor : Color  { palette.ecliptic }
     var eclWidth : Double { 0.5 }
 }

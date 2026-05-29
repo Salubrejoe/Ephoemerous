@@ -260,14 +260,14 @@ extension EArtist {
             )
         case .sun:
             return solarStyle(
-                top:     Color(red: 1.00, green: 0.83, blue: 0.30),
-                bottom:  Color(red: 0.95, green: 0.45, blue: 0.10),
+                top:     palette.sun.top,
+                bottom:  palette.sun.bottom,
                 corners: 12     // hexagon
             )
         case .moon:
             return moonStyle(
-                top:     .gray,
-                bottom:  .black,
+                top:     palette.moon.top,
+                bottom:  palette.moon.bottom,
                 corners: 3     // triangle
             )
         case .planet(let p):

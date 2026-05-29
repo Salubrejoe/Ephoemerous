@@ -50,7 +50,7 @@ extension EArtist {
     /// Placeholder fill — a system tertiary fill so it adapts to
     /// light / dark mode and reads as a *skeleton* rather than an
     /// actual button.
-    var constellationPlaceholderFill: Color { Color(.tertiarySystemFill) }
+    var constellationPlaceholderFill: Color { palette.constellationPlaceholderFill }
 
     // MARK: Text
 
@@ -171,9 +171,7 @@ extension EArtist {
 
         let label: Text
         if isFavourite {
-            label = Text(Image(systemName: "heart.fill"))
-                        .foregroundStyle(heartColor)
-                  + Text(" \(fullName)")
+            label = Text("\(Text(Image(systemName: "heart.fill")).foregroundStyle(heartColor)) \(fullName)")
                         .foregroundStyle(.primary)
         } else {
             label = Text(fullName)

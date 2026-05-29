@@ -6,7 +6,7 @@ import SwiftUI
 // the bright content (sun, moon, planets, stars) without competing.
 extension EArtist {
 
-    var gridColor : Color  { .tertiary.opacity(0.2) }
+    var gridColor : Color  { palette.grid }
     var gridWidth : Double { 0.55 }
 
     /// Tiny on-canvas text drawn in the grid's voice — used by the

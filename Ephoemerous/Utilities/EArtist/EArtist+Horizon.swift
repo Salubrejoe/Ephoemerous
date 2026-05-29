@@ -9,12 +9,11 @@ import LoreKit
 // reads as a soft scallop rather than a clean circle.
 extension EArtist {
 
-    var horizonFillColor   : Color  { .tertiary }
-    /// Twilight-band stroke color (civil / nautical / astronomical).
-    /// Same `.tertiary` as the wash so the bands read as part of the
-    /// horizon's visual register; named separately so it can be
-    /// retuned without touching the fill.
-    var twilightBandColor  : Color  { .tertiary }
+    var horizonFillColor   : Color  { palette.horizonFill }
+    /// Twilight-band stroke colour (civil / nautical / astronomical).
+    /// Same `.tertiary` as the wash today; routed through `palette`
+    /// so it can be retuned in one place.
+    var twilightBandColor  : Color  { palette.twilightBand }
     var horizonBumpCorners : Int    { 12 }
     var horizonBumpBulge   : CGFloat { 2.2 }
 

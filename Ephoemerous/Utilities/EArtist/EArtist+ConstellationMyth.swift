@@ -1,11 +1,12 @@
 import SwiftUI
 
-// MARK: - Constellation myth palette  ▼ TWEAK HERE ▼
+// MARK: - Constellation myth palette
 //
 // Every constellation badge picks its top → bottom gradient from
-// this single switch. To retune one cycle, edit its two `Color(
-// red:green:blue:)` lines and recompile — every constellation
-// belonging to that myth follows.
+// `palette.myth(_:)` — see `EPalette.swift` for the per-cycle
+// values. The extension here just wraps the lookup so existing
+// callers (`constellationMythGradient(_:)`,
+// `constellationForeverInvisibleGradient`) keep their shape.
 //
 // Cycles correspond to the `myths` axis in
 // `constellation_categories.json`; the FIRST entry of a
@@ -17,55 +18,7 @@ extension EArtist {
     func constellationMythGradient(_ myth: POIConstellationMyth)
         -> (top: Color, bottom: Color)
     {
-        switch myth {
-
-        case .perseus:
-            // Heroic red — Andromeda, Cassiopeia, Cepheus, Cetus,
-            // Pegasus, Perseus.
-            return (Color(red: 0.95, green: 0.45, blue: 0.45),
-                    Color(red: 0.55, green: 0.10, blue: 0.15))
-
-        case .hercules:
-            // Warm strength orange — Hercules, Ara, Cancer, Corona
-            // Borealis, Crater, Corvus, Draco, Hydra, Leo, Lyra,
-            // Ophiuchus, Sagitta, Serpens.
-            return (Color(red: 0.99, green: 0.65, blue: 0.40),
-                    Color(red: 0.74, green: 0.32, blue: 0.10))
-
-        case .argo:
-            // Nautical teal — Argo Navis family + Argonaut myths:
-            // Aries (Golden Fleece), Carina, Centaurus, Columba,
-            // Corona Australis, Draco, Gemini (Castor & Pollux),
-            // Pyxis, Puppis, Sagittarius (Chiron), Vela.
-            return (Color(red: 0.40, green: 0.82, blue: 0.86),
-                    Color(red: 0.10, green: 0.50, blue: 0.58))
-
-        case .zeus:
-            // Regal gold — Boötes, Cygnus, Equuleus, Ursa Major,
-            // Ursa Minor, Aquila, Aquarius (Ganymede), Capricornus
-            // (Pan), Pisces (Aphrodite & Eros).
-            return (Color(red: 1.00, green: 0.83, blue: 0.30),
-                    Color(red: 0.78, green: 0.55, blue: 0.10))
-
-        case .orion:
-            // Hunter's cool blue — Orion, Canis Major, Canis Minor,
-            // Lepus, Taurus (the bull he hunts), Scorpius (the
-            // scorpion sent to kill him).
-            return (Color(red: 0.55, green: 0.65, blue: 1.00),
-                    Color(red: 0.18, green: 0.30, blue: 0.75))
-
-        case .orpheus:
-            // Lyric purple — Lyra, Cygnus.
-            return (Color(red: 0.78, green: 0.55, blue: 0.90),
-                    Color(red: 0.42, green: 0.22, blue: 0.62))
-
-        case .none:
-            // Modern additions with no mythological tie. Mid-gray,
-            // distinguished from `foreverInvisibleGradient` by being
-            // a touch warmer / brighter.
-            return (Color(red: 0.78, green: 0.78, blue: 0.78),
-                    Color(red: 0.45, green: 0.45, blue: 0.45))
-        }
+        palette.myth(myth)
     }
 
     /// Visual override applied when a constellation's centroid
@@ -73,8 +26,7 @@ extension EArtist {
     /// myth colour — a recessive grey that lets the eye skip
     /// past constellations you can't see anyway.
     var constellationForeverInvisibleGradient: (top: Color, bottom: Color) {
-        (Color(red: 0.55, green: 0.55, blue: 0.55),
-         Color(red: 0.28, green: 0.28, blue: 0.28))
+        palette.mythForeverInvisible
     }
 
     /// Resolve a constellation's primary mythological cycle by
