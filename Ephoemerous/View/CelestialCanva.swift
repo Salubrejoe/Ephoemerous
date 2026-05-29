@@ -84,7 +84,7 @@ struct CelestialCanva: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .fontDesign(.rounded)
+        
         .ignoresSafeArea()
         .clipped()
     }
