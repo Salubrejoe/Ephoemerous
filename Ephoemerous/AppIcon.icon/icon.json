@@ -1,31 +1,135 @@
 {
-  "fill" : {
-    "linear-gradient" : [
-      "srgb:1.00000,0.83235,0.47321,1.00000",
-      "srgb:0.00000,0.32852,0.57488,1.00000"
-    ],
-    "orientation" : {
-      "start" : {
-        "x" : 0.5,
-        "y" : 1
-      },
-      "stop" : {
-        "x" : 0.5,
-        "y" : 0.3
+  "fill-specializations" : [
+    {
+      "value" : {
+        "linear-gradient" : [
+          "extended-gray:1.00000,1.00000",
+          "extended-gray:0.87495,1.00000"
+        ],
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 1
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.3
+          }
+        }
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "automatic-gradient" : "gray:0.00000,1.00000",
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 1
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.3
+          }
+        }
       }
     }
-  },
+  ],
   "groups" : [
     {
       "layers" : [
         {
-          "fill" : {
-            "automatic-gradient" : "srgb:1.00000,1.00000,1.00000,1.00000"
-          },
-          "hidden" : false,
-          "image-name" : "earth-planet-icon-flat-style-globe-geographic-vector-illustration-white-isolated-background-global-communication-business-concept_157943-28971 Background Removed.png",
-          "name" : "earth-planet-icon-flat-style-globe-geographic-vector-illustration-white-isolated-background-global-communication-business-concept_157943-28971 Background Removed",
-          "opacity" : 1,
+          "glass" : false,
+          "hidden" : true,
+          "image-name" : "puck.svg",
+          "name" : "puck",
+          "position" : {
+            "scale" : 0.4,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "image-name" : "poi_sun 2.svg",
+          "name" : "poi_sun 2",
+          "position" : {
+            "scale" : 0.7,
+            "translation-in-points" : [
+              207.88577500000008,
+              -207.24514999999997
+            ]
+          }
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "none"
+            }
+          ],
+          "glass" : false,
+          "image-name" : "puck_halo.svg",
+          "name" : "puck_halo",
+          "position" : {
+            "scale" : 1.2,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "hidden" : true,
+          "image-name" : "poi_betelgeuse.svg",
+          "name" : "poi_betelgeuse",
+          "position" : {
+            "scale" : 0.25,
+            "translation-in-points" : [
+              -171.765625,
+              51.591999999999985
+            ]
+          }
+        },
+        {
+          "hidden" : true,
+          "image-name" : "poi_moon.svg",
+          "name" : "poi_moon",
+          "position" : {
+            "scale" : 0.3,
+            "translation-in-points" : [
+              134.4609375,
+              -33.50392499999998
+            ]
+          }
+        },
+        {
+          "hidden" : true,
+          "image-name" : "poi_sun.svg",
+          "name" : "poi_sun",
+          "position" : {
+            "scale" : 0.4,
+            "translation-in-points" : [
+              -94.24800000000005,
+              -71.203125
+            ]
+          }
+        },
+        {
+          "fill-specializations" : [
+            {
+              "value" : "none"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "none"
+            }
+          ],
+          "glass" : false,
+          "image-name" : "horizon_icon_2_bands.svg",
+          "name" : "horizon_icon_2_bands",
+          "opacity" : 0.3,
           "position" : {
             "scale" : 2,
             "translation-in-points" : [
@@ -35,15 +139,50 @@
           }
         },
         {
-          "fill" : {
-            "automatic-gradient" : "srgb:1.00000,1.00000,1.00000,1.00000"
-          },
+          "fill-specializations" : [
+            {
+              "value" : {
+                "linear-gradient" : [
+                  "srgb:0.86275,0.86275,0.86275,1.00000",
+                  "srgb:1.00000,1.00000,1.00000,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "linear-gradient" : [
+                  "extended-gray:0.00000,1.00000",
+                  "extended-gray:0.00000,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            }
+          ],
           "hidden" : true,
-          "image-name" : "earth-planet-icon-flat-style-globe-geographic-vector-illustration-white-isolated-background-global-communication-business-concept_157943-28971 Background Removed.png",
-          "name" : "earth-planet-icon-flat-style-globe-geographic-vector-illustration-white-isolated-background-global-communication-business-concept_157943-28971 Background Removed",
-          "opacity" : 0.05,
+          "image-name" : "horizon_squircle.svg",
+          "name" : "horizon_squircle",
           "position" : {
-            "scale" : 1.8,
+            "scale" : 1.2,
             "translation-in-points" : [
               0,
               0
@@ -51,13 +190,21 @@
           }
         },
         {
-          "fill" : {
-            "automatic-gradient" : "srgb:1.00000,1.00000,1.00000,1.00000"
-          },
-          "hidden" : true,
-          "image-name" : "earth-planet-icon-flat-style-globe-geographic-vector-illustration-white-isolated-background-global-communication-business-concept_157943-28971 Background Removed.png",
-          "name" : "earth-planet-icon-flat-style-globe-geographic-vector-illustration-white-isolated-background-global-communication-business-concept_157943-28971 Background Removed",
-          "opacity" : 0.05,
+          "fill-specializations" : [
+            {
+              "value" : {
+                "automatic-gradient" : "gray:0.50000,1.00000"
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "extended-gray:0.31800,1.00000"
+              }
+            }
+          ],
+          "image-name" : "horizon_squircle_negative.svg",
+          "name" : "horizon_squircle_negative",
           "position" : {
             "scale" : 2.2,
             "translation-in-points" : [
@@ -65,57 +212,6 @@
               0
             ]
           }
-        },
-        {
-          "blend-mode" : "screen",
-          "fill" : {
-            "automatic-gradient" : "display-p3:0.99677,1.00000,0.96390,1.00000",
-            "orientation" : {
-              "start" : {
-                "x" : 0.5,
-                "y" : 0
-              },
-              "stop" : {
-                "x" : 0.5,
-                "y" : 0.7
-              }
-            }
-          },
-          "glass" : true,
-          "hidden" : true,
-          "image-name" : "ArmillarySphere.svg",
-          "name" : "ArmillarySphere"
-        },
-        {
-          "blend-mode" : "lighten",
-          "fill" : {
-            "linear-gradient" : [
-              "display-p3:1.00000,0.91669,0.23317,1.00000",
-              "display-p3:0.96783,0.58860,0.26980,1.00000"
-            ],
-            "orientation" : {
-              "start" : {
-                "x" : 0.5,
-                "y" : 0
-              },
-              "stop" : {
-                "x" : 0.5,
-                "y" : 0.7
-              }
-            }
-          },
-          "glass" : true,
-          "hidden" : true,
-          "image-name" : "ArmillarySphere.svg",
-          "name" : "ArmillarySphere"
-        },
-        {
-          "blend-mode" : "lighten",
-          "fill" : "automatic",
-          "glass" : true,
-          "hidden" : true,
-          "image-name" : "ArmillarySphere.svg",
-          "name" : "ArmillarySphere"
         }
       ],
       "shadow" : {
