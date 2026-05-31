@@ -9,6 +9,7 @@ import LoreKit
 
 struct EMoonDetailView: View {
     @Environment(EAppState.self) var state
+    @Environment(\.detailCollapsed) private var collapsed
 
     private var moonData: (ra: Double, dec: Double, fraction: Double) {
         let (_, ra, dec) = EMoonPosition.vector(
@@ -76,15 +77,17 @@ struct EMoonDetailView: View {
             // events stale on the capsule. The gradient + knob alone
             // are honest. Re-add `events: dayEvents` here when we
             // compute date-accurate moonrise / moonset ourselves.
-            DayCapsule(
-                gradient:  .dayCapsuleMoon(anchors: anchors),
-                knobGlyph: .sfSymbol("moon.fill"),
-                knobDate:  Bindable(state).observationDate
-            )
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            roster
-                .padding(.top, 16)
+            if !collapsed {
+                DayCapsule(
+                    gradient:  .dayCapsuleMoon(anchors: anchors),
+                    knobGlyph: .sfSymbol("moon.fill"),
+                    knobDate:  Bindable(state).observationDate
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                roster
+                    .padding(.top, 16)
+            }
             Spacer(minLength: 0)
         }
     }

@@ -30,3 +30,19 @@ struct DetailHost: View {
         }
     }
 }
+
+// MARK: - Detail collapsed flag
+// True when the detail sheet is folded to its header-only detent
+// (Apple-Maps place-card collapse). `DetailHeader` reads it to drop the
+// POI icon, and each detail view reads it to drop its body — so the
+// sheet shrinks to just title + subtitle + buttons, showing more canvas.
+// Set on the sheet content in `MainView` from the selected detent.
+private struct DetailCollapsedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+extension EnvironmentValues {
+    var detailCollapsed: Bool {
+        get { self[DetailCollapsedKey.self] }
+        set { self[DetailCollapsedKey.self] = newValue }
+    }
+}

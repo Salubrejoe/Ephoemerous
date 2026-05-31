@@ -25,6 +25,22 @@ struct MainView: View {
     @State private var height : Double = 0.0
     @State private var width : Double = 0.0
 
+    /// Selected detent for the detail place card, so it can fold down to
+    /// a header-only stop (Apple-Maps style) while still *opening* at the
+    /// third-height. `presentationDetents` takes an unordered Set and
+    /// would otherwise present at the smallest member; this binding pins
+    /// the initial detent, and the sheet's `.onAppear` resets it to a
+    /// third on every fresh presentation.
+    @State private var detailDetent: PresentationDetent = .fraction(1.0 / 3.0)
+
+    /// Collapsed detent — just the place card's header (grabber + title
+    /// + subtitle + share/close), matching Apple Maps' smallest stop.
+    /// ~70pt = the header with its POI icon + body removed (see
+    /// `\.detailCollapsed`): top-pad 16 + title 24 + subtitle 18 +
+    /// bottom-pad 8. Bump a touch if the subtitle kisses the grabber at
+    /// larger Dynamic Type.
+    private let detailHeaderDetent: PresentationDetent = .height(70)
+
     /// Portrait on iPhone is `.regular` vertically; landscape is
     /// `.compact`. In portrait the 64 pt clears the dynamic island
     /// + status bar zone. In landscape the island sits on the side
@@ -154,16 +170,32 @@ struct MainView: View {
         // chrome — hide it and the toolbar can sit at topPadding = 0.
         .toolbar(.hidden, for: .navigationBar)
         // Detail sheet — single sheet at the root level, item-bound to
-        // `state.detailDestination`. Bottom third of the screen, canvas
-        // stays interactive behind it, no drag indicator (the X-mark in
-        // DetailHost is the dismissal affordance). Canvas taps go
-        // through `state.focus(on:)`, which sets the destination and
-        // pans the object to the centre of the upper third.
+        // `state.detailDestination`. Opens at the bottom third; the
+        // canvas stays interactive behind it. Two detents, Apple-Maps
+        // style: a header-only fold (more canvas, just the place card)
+        // and the default third for the detail body. The drag indicator
+        // is visible because the user CAN drag between detents (the
+        // X-mark in DetailHost still dismisses).
+        // Canvas taps go through `state.focus(on:)`, which sets the
+        // destination and pans the object to the centre of the upper
+        // third.
         .sheet(item: Bindable(state).detailDestination) { obj in
             DetailHost(obj: obj)
-                .presentationDetents([.fraction(1.0 / 3.0)])
+                // Fold to header-only when at the smallest detent —
+                // DetailHeader drops its icon and each detail view drops
+                // its body, so only title + subtitle + buttons remain.
+                // Animated so the body slides away rather than snapping.
+                .environment(\.detailCollapsed, detailDetent == detailHeaderDetent)
+                .animation(.snappy(duration: 0.28), value: detailDetent)
+                .presentationDetents(
+                    [detailHeaderDetent, .fraction(1.0 / 3.0)],
+                    selection: $detailDetent
+                )
                 .presentationBackgroundInteraction(.enabled)
-                .presentationDragIndicator(.hidden)
+                .presentationDragIndicator(.visible)
+                // Each fresh place card opens at the third-height, not
+                // wherever the previous one was left folded.
+                .onAppear { detailDetent = .fraction(1.0 / 3.0) }
         }
         // Myth sheet — sibling root sheet, item-bound to
         // `state.mythDestination`. Adaptive: `.medium` adapts to

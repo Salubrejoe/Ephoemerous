@@ -9,6 +9,7 @@ import SwiftUI
 struct EStarDetailView: View {
     @Environment(EAppState.self) var state
     @Environment(\.dismiss) var dismiss
+    @Environment(\.detailCollapsed) private var collapsed
     let star: EStar
     /// `true` only when the view is pushed onto a navigation stack
     /// that has a sensible parent to pop back to — currently only
@@ -54,20 +55,22 @@ struct EStarDetailView: View {
                 onSecondaryLeading:     showsBackChevron ? {} : nil,
                 onDismiss:              { state.dismissDetail() }
             )
-            // Morphing action row — see `DetailActionRow.swift`.
-            // Same pair as the constellation detail; the star's
-            // myth is inherited from its parent constellation, and
-            // tapping the book / tagline routes through
-            // `state.openMyth(_:)` for the half-detent myth sheet.
-            DetailActionRow(
-                obj:         .star(star),
-                myth:        myth,
-                onLearnMyth: { state.openMyth(myth) }
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom,     12)
-            statsRow
+            if !collapsed {
+                // Morphing action row — see `DetailActionRow.swift`.
+                // Same pair as the constellation detail; the star's
+                // myth is inherited from its parent constellation, and
+                // tapping the book / tagline routes through
+                // `state.openMyth(_:)` for the half-detent myth sheet.
+                DetailActionRow(
+                    obj:         .star(star),
+                    myth:        myth,
+                    onLearnMyth: { state.openMyth(myth) }
+                )
                 .padding(.horizontal, 16)
+                .padding(.bottom,     12)
+                statsRow
+                    .padding(.horizontal, 16)
+            }
             Spacer(minLength: 0)
         }
         .background(glowBackground())

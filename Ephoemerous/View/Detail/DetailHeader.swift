@@ -24,6 +24,10 @@ import SwiftUI
 // for stars / planets, an SF Symbol for constellations) so the header
 // reads as part of the same visual species as the canvas POI.
 struct DetailHeader<Icon: View>: View {
+    /// When the sheet is folded to its header-only detent, drop the POI
+    /// icon so the visible band is just title + subtitle + buttons.
+    @Environment(\.detailCollapsed) private var collapsed
+
     let title:                  String
     let subtitle:               String
     let accent:                 Color
@@ -72,10 +76,12 @@ struct DetailHeader<Icon: View>: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                icon
-                    .font(.subheadline)
-                    .foregroundStyle(accent)
-                    .padding(.top, 4)
+                if !collapsed {
+                    icon
+                        .font(.subheadline)
+                        .foregroundStyle(accent)
+                        .padding(.top, 4)
+                }
             }
             // Padding scales with whether the secondary leading slot
             // is occupied — keeps the title centred in the available

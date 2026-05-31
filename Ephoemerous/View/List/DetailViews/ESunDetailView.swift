@@ -12,6 +12,7 @@ import LoreKit
 
 struct ESunDetailView: View {
     @Environment(EAppState.self) var state
+    @Environment(\.detailCollapsed) private var collapsed
 
     private var lambda: Angle { ESunPosition.eclipticLongitude(for: state.observationDate) }
     private var coords: (ra: Angle, dec: Angle) { ESunPosition.equatorialCoords(lambda: lambda) }
@@ -56,15 +57,17 @@ struct ESunDetailView: View {
             // gradient alone is the time-of-day cue; the knob is the
             // actual scrubber. Re-add `events: dayEvents` here when
             // we compute date-accurate sun events ourselves.
-            DayCapsule(
-                gradient:  .dayCapsuleSun(anchors: anchors),
-                knobGlyph: .sfSymbol("sun.max.fill"),
-                knobDate:  Bindable(state).observationDate
-            )
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            roster
-                .padding(.top, 16)
+            if !collapsed {
+                DayCapsule(
+                    gradient:  .dayCapsuleSun(anchors: anchors),
+                    knobGlyph: .sfSymbol("sun.max.fill"),
+                    knobDate:  Bindable(state).observationDate
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                roster
+                    .padding(.top, 16)
+            }
             Spacer(minLength: 0)
         }
     }

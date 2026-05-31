@@ -10,6 +10,7 @@ import SwiftUI
 
 struct EConstellationDetailView: View {
     @Environment(EAppState.self) var state
+    @Environment(\.detailCollapsed) private var collapsed
     let constellation: EConstellation
 
     /// Brightest dozen figure-stars of the constellation, sorted
@@ -70,20 +71,22 @@ struct EConstellationDetailView: View {
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )
-            // Morphing action row — see `DetailActionRow.swift`.
-            // Default: small "book" circle + wide "Remember" pill.
-            // Remembered: wide tagline pill + small heart circle.
-            // Tapping the book / tagline routes through
-            // `state.openMyth(_:)`, which dismisses this detail
-            // sheet and presents the half-detent myth sheet.
-            DetailActionRow(
-                obj:         .constellation(constellation),
-                myth:        myth,
-                onLearnMyth: { state.openMyth(myth) }
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom,     12)
-            roster
+            if !collapsed {
+                // Morphing action row — see `DetailActionRow.swift`.
+                // Default: small "book" circle + wide "Remember" pill.
+                // Remembered: wide tagline pill + small heart circle.
+                // Tapping the book / tagline routes through
+                // `state.openMyth(_:)`, which dismisses this detail
+                // sheet and presents the half-detent myth sheet.
+                DetailActionRow(
+                    obj:         .constellation(constellation),
+                    myth:        myth,
+                    onLearnMyth: { state.openMyth(myth) }
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom,     12)
+                roster
+            }
             Spacer(minLength: 0)
         }
         // The constellation is the *underlying* detail when a star

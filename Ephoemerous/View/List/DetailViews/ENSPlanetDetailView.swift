@@ -8,6 +8,7 @@ import SwiftUI
 
 struct ENSPlanetDetailView: View {
     @Environment(EAppState.self) var state
+    @Environment(\.detailCollapsed) private var collapsed
     let planet: EPlanet
 
     private var accent: Color { planet.color }
@@ -53,16 +54,18 @@ struct ENSPlanetDetailView: View {
             // that *change in the sky*: stars (relationships) and
             // constellations (stories you return to). Solar-system
             // bodies are always there, always badged on the canvas.
-            DayCapsule(
-                gradient:  .dayCapsuleMoon(anchors: anchors),
-                knobGlyph: .unicode(planet.astronomicalGlyph),
-                knobDate:  Bindable(state).observationDate
-            )
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            statsRow
+            if !collapsed {
+                DayCapsule(
+                    gradient:  .dayCapsuleMoon(anchors: anchors),
+                    knobGlyph: .unicode(planet.astronomicalGlyph),
+                    knobDate:  Bindable(state).observationDate
+                )
                 .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.top, 12)
+                statsRow
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+            }
             Spacer(minLength: 0)
         }
     }
