@@ -83,6 +83,7 @@ struct DayCapsule: View {
             ZStack {
                 Capsule(style: .continuous)
                     .fill(gradient)
+                    .frame(height: capsuleHeight/2)
 
                 ForEach(events) { event in
                     Circle()
