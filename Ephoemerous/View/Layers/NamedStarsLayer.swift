@@ -102,13 +102,22 @@ struct NamedStarsLayer: EGridLayer {
             // tap target for) something the user can't see.
             guard artist.starPointFallsWithinMarigin(sc, in: dc) else { continue }
 
+            // Only build the per-star id (and read the spring) when
+            // something is actually (de)selecting — keeps the ~300-star
+            // loop free of string work in the common, nothing-selected
+            // case.
+            let (promo, wig): (Double, CGFloat) = dc.hasActivePromotion
+                ? dc.poiPromotion(forObjectID: ESkyObject.star(star).id)
+                : (0, 1)
             artist.drawPOILabel(
-                at:       sc,
-                glyph:    .sfSymbol("star.fill"),
-                text:     star.displayName,
-                category: .namedStar(star),
-                drawDot:  true,
-                in:       &dc
+                at:        sc,
+                glyph:     .sfSymbol("star.fill"),
+                text:      star.displayName,
+                category:  .namedStar(star),
+                drawDot:   true,
+                promotion: promo,
+                wiggle:    wig,
+                in:        &dc
             )
 
             guard tappable else { continue }

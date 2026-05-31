@@ -47,6 +47,9 @@ struct EPalette2 {
     /// pulls the sky toward a believable astronomy-twilight blue
     /// rather than a UI surface.
     let canvasBackground: Color = Color(red: 0.04, green: 0.05, blue: 0.14)
+    /// Aim sky-wash tint — the blue the night sky lifts toward where the
+    /// phone points (`SkyAimWashLayer`). Vivid/saturated to match.
+    let skyAim: Color = Color(red: 0.16, green: 0.38, blue: 0.82)
 
     // MARK: Grid / axes
 

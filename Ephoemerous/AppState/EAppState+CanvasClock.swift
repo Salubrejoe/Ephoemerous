@@ -11,6 +11,26 @@ extension EAppState {
     /// Called once per Canvas frame with the timeline time and canvas size.
     func advanceCanvasClock(to time: Double, canvasSize size: CGSize) {
         animationTime = time
+        // First frame after a (de)selection: pin its promotion-spring
+        // start to THIS frame's live clock, so the spring's elapsed
+        // (`animationTime - _selectionStart`) begins at 0 even though
+        // the canvas clock may have been frozen (parked) when the tap
+        // landed. Without this the spring sits at 0 until the frozen
+        // clock catches up — the seconds-long delay before promotion.
+        if _selectionClockPending { _selectionStart = time; _selectionClockPending = false }
+        if _deselectClockPending  { _deselectStart  = time; _deselectClockPending  = false }
+        // Park the promotion once both springs have settled. Flipping
+        // `_promotionActive` false here (not in a computed property that
+        // reads `animationTime`) keeps `isAnimating` stable per frame —
+        // it changes exactly once, reaching a fixed point, so the body
+        // doesn't re-invalidate every tick. Mirrors how `renderedScale`
+        // nils a finished `_activeTransition`.
+        if _promotionActive {
+            let settle = EArtist.shared.poiSelectSettleDuration
+            let selSettled   = detailDestination == nil || (time - _selectionStart) >= settle
+            let deselSettled = _deselectingID    == nil || (time - _deselectStart) >= settle
+            if selSettled && deselSettled { _promotionActive = false }
+        }
         advanceInertiaTransition(at: time)
         advanceOriginTransition(at:  time)
         if canvasSize != size {

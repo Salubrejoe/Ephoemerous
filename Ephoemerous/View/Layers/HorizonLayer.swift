@@ -15,11 +15,13 @@ struct HorizonLayer: EGridLayer {
                 bands.viewpoint.skyPoint(altitude: alt, at: t)
             }.compactMap { $0 }
             guard pts.count >= 8 else { continue }
-            bands.strokeCurve(artist.bumpedHorizonRim(pts),
-                              color: artist.twilightBandColor,
-                              width: 12 / abs(alt.degrees))
-//            bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
-//                                   color: artist.horizonFillColor.opacity(0.2))
+//            bands.strokeCurve(artist.bumpedHorizonRim(pts),
+//            bands.strokeCurve(pts,
+//                              color: artist.twilightBandColor,
+//                              width: 12 / abs(alt.degrees))
+            bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
+//            bands.fillOutsideCurve(pts,
+                                   color: artist.horizonFillColor.opacity(0.2))
         }
 
         // Horizon great circle as a deformable squircle: each projection
@@ -45,6 +47,7 @@ struct HorizonLayer: EGridLayer {
         // circle) reads as tinted, so the rim becomes a window onto
         // the sky rather than a small wash sitting on top of it.
 //        rim.ctx.addFilter(.shadow(color: .primary, radius: 4))
+//        rim.fillOutsideCurve(pts,
         rim.fillOutsideCurve(artist.bumpedHorizonRim(pts),
                              color: artist.horizonFillColor)
     }

@@ -73,7 +73,14 @@ private func previewGraphicsContext(
         viewpoint:               EProjection.Viewpoint(
                                     originVector: .north,
                                     planeVector:  .south),
-        canvasRotation:          .zero
+        canvasRotation:          .zero,
+        // Promotion is exercised directly via the `promotion:` /
+        // `wiggle:` args in the selection preview, so the snapshot
+        // here stays inert (nothing selected).
+        selectedObjectID:        nil,
+        selectionStart:          0,
+        deselectingID:           nil,
+        deselectStart:           0
     )
 }
 

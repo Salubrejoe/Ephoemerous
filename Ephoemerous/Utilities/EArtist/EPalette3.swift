@@ -48,6 +48,10 @@ struct EPalette3 {
     /// chart. Slightly warmer than pure paper white to read as
     /// "dusk paper" rather than "blank screen".
     let canvasBackground: Color = Color(red: 0.95, green: 0.93, blue: 0.87)
+    /// Aim sky-wash tint — the blue the night sky lifts toward where the
+    /// phone points (`SkyAimWashLayer`). Stored opaque; alpha applied at
+    /// draw time. Powder-blue to suit the parchment "Pastel" palette.
+    let skyAim: Color = Color(red: 0.34, green: 0.48, blue: 0.72)
 
     // MARK: Grid / axes
 

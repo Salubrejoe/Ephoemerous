@@ -18,5 +18,5 @@ struct EArtist {
 
     /// Single source of truth for every colour on the canvas. The
     /// per-feature extensions read from here.
-    let palette = EPalette()
+    let palette = EPalette3()
 }

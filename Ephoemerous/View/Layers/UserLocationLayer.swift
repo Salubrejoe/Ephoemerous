@@ -40,22 +40,9 @@ struct UserLocationLayer: EGridLayer {
     /// fixed heading cone when there's no gyro (Simulator) or no attitude
     /// sample yet.
     private func drawAim(in dc: inout EGraphicContext, zenith sc: CGPoint) {
-        // Compass accuracy still sizes the uncertainty, blob or cone.
-        let accuracy = ELocationService.shared.heading.map { max(0, $0.headingAccuracy) }
-
-        if let aim = EMotionService.shared.aim {
-            let altitude = artist.aimDisplayAltitude(deviceAltitudeRadians: aim.altitude)
-            let fade     = artist.aimFadeOpacity(displayAltitudeRadians: altitude)
-            // Fully dissolved (aimed well below the horizon) → skip the
-            // draw; nothing to show, and the projection point is racing
-            // toward infinity down there anyway.
-            guard fade > 0.01,
-                  let p = dc.screenPoint(azimuth: aim.azimuth, altitude: altitude)
-            else { return }
-            let radius = artist.aimBlobRadius(accuracyDegrees: accuracy ?? 0)
-            artist.drawAimBlob(at: p, radius: radius, opacity: fade, in: &dc)
-            return
-        }
+        // When device motion is live, the aim is shown as the blue sky
+        // wash behind the stars (`SkyAimWashLayer`) — no on-top blob here.
+        if EMotionService.shared.aim != nil { return }
 
         // Fallback: heading cone (needs a calibrated compass).
         if let h = ELocationService.shared.heading, h.headingAccuracy >= 0 {

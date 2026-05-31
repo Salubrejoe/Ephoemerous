@@ -50,16 +50,28 @@ extension EArtist {
     // positioned on the real sky via the projection. Heading leads,
     // pitch eases it inward — the "azimuth-led hybrid."
 
-    /// Blob radius (pt) with a well-calibrated compass.
-    var aimBlobBaseRadius      : CGFloat { 26 }
+    /// Blob radius as a fraction of the on-screen horizon-disc radius
+    /// (the disc has radius 2·scale — see `EProjection`). >1 lets the
+    /// soft tail spill past the horizon so the glow covers MOST of the
+    /// visible sky while its bright core stays pinned precisely on the
+    /// aim point. This is the dial that makes the blob "cover the sky."
+    var aimBlobSkyFraction     : CGFloat { 1.15 }
     /// Extra radius per degree of compass uncertainty — a shaky
-    /// magnetometer reads as a vaguer, larger blob.
+    /// magnetometer reads as a vaguer, larger blob. Secondary now that
+    /// the base tracks the sky disc.
     var aimBlobRadiusPerDegree : CGFloat { 0.8 }
-    /// Clamp so an uncalibrated compass can't swallow the canvas.
-    var aimBlobMaxRadius       : CGFloat { 120 }
-    /// Opacity at the blob centre; the radial gradient fades to 0 at
-    /// the rim — same apex feel as the old cone.
+    /// Opacity at the blob centre. The gradient holds this near-full
+    /// across the core, then eases slowly down a long tail to 0 at the
+    /// rim (see `drawAimBlob`) — a precise centre, a sky-wide soft wash.
     var aimBlobOpacity         : Double  { 0.42 }
+    /// Core hold: opacity stays near full out to this fraction of the
+    /// radius — the crisp "you are aiming here" centre — before the slow
+    /// fade begins. Small keeps the core tight; the rest is gentle tail.
+    var aimBlobCoreFraction    : Double  { 0.10 }
+    /// Sky-wash tint — the blue the night sky lifts toward where the
+    /// phone points (`SkyAimWashLayer`, drawn behind the stars). Distinct
+    /// from the green "you are here" puck on top.
+    var skyAimColor            : Color   { palette.skyAim }
 
     /// Pitch gain: how much device tilt becomes display altitude. < 1
     /// keeps the blob azimuth-led — hugging the horizon ring, pitch
@@ -103,11 +115,14 @@ extension EArtist {
         return t * t * (3 - 2 * t)   // smoothstep, 0 at floor → 1 at ring
     }
 
-    /// Blob radius for a given compass accuracy (degrees; pass 0 when
-    /// the compass hasn't reported one).
-    func aimBlobRadius(accuracyDegrees acc: Double) -> CGFloat {
-        let r = aimBlobBaseRadius + max(0, acc) * aimBlobRadiusPerDegree
-        return min(aimBlobMaxRadius, r)
+    /// Blob radius in screen points: a multiple of the on-screen horizon
+    /// disc (`skyDiscRadius` = 2·scale) so the glow scales with zoom and
+    /// covers most of the visible sky, plus a small bump for compass
+    /// uncertainty. The bright core stays tight (see `drawAimBlob`); this
+    /// is just how far the soft tail reaches.
+    func aimBlobRadius(skyDiscRadius disc: CGFloat,
+                       accuracyDegrees acc: Double) -> CGFloat {
+        disc * aimBlobSkyFraction + CGFloat(max(0, acc)) * aimBlobRadiusPerDegree
     }
 
     // MARK: - Symbol picker
@@ -187,23 +202,43 @@ extension EArtist {
     /// phone points at; this just paints the glow there.
     /// `opacity` is a 0…1 multiplier on the blob's centre alpha — used by
     /// the horizon fade so the blob dissolves as the aim crosses the ring.
-    func drawAimBlob(at p:    CGPoint,
-                     radius:  CGFloat,
-                     opacity: Double = 1,
-                     in dc:   inout EGraphicContext) {
+    /// `color` defaults to the green cone tint (the on-top "you are here"
+    /// blob); `SkyAimWashLayer` passes `skyAimColor` instead. `clipDome`,
+    /// when given, confines the wash to the horizon rim so it reads as the
+    /// *sky itself* lifting rather than a disc floating over the edge.
+    func drawAimBlob(at p:       CGPoint,
+                     radius:     CGFloat,
+                     opacity:    Double  = 1,
+                     color:      Color?  = nil,
+                     clipDome:   Path?   = nil,
+                     in dc:      inout EGraphicContext) {
         let rect = CGRect(x: p.x - radius, y: p.y - radius,
                           width: 2 * radius, height: 2 * radius)
-        dc.ctx.fill(
-            Path(ellipseIn: rect),
-            with: .radialGradient(
-                Gradient(colors: [
-                    userPuckConeColor.opacity(aimBlobOpacity * opacity),
-                    userPuckConeColor.opacity(0)
-                ]),
-                center:      p,
-                startRadius: 0,
-                endRadius:   radius)
-        )
+        // Core-hold + slow-tail gradient: full alpha across a tight
+        // central core (precise "you're aiming here"), then a long, gentle
+        // fade that keeps real colour out to mid-radius so the wash covers
+        // most of the sky before easing to nothing at the rim.
+        let a = aimBlobOpacity * opacity
+        let c = color ?? userPuckConeColor
+        let gradient = GraphicsContext.Shading.radialGradient(
+            Gradient(stops: [
+                .init(color: c.opacity(a),        location: 0),
+                .init(color: c.opacity(a),        location: aimBlobCoreFraction),
+                .init(color: c.opacity(a * 0.45), location: 0.5),
+                .init(color: c.opacity(a * 0.15), location: 0.8),
+                .init(color: c.opacity(0),        location: 1.0),
+            ]),
+            center:      p,
+            startRadius: 0,
+            endRadius:   radius)
+
+        if let clipDome {
+            var sky = dc.ctx
+            sky.clip(to: clipDome)
+            sky.fill(Path(ellipseIn: rect), with: gradient)
+        } else {
+            dc.ctx.fill(Path(ellipseIn: rect), with: gradient)
+        }
     }
 
     /// Canvas twin of `SquircleGlobePuck`: a 12-corner Lamé squircle

@@ -19,12 +19,15 @@ struct EMoonLayer: EGridLayer {
         // current illumination so the badge reads as "the moon, today",
         // not just an abstract moon icon.
         let fraction = EMoonPosition.illuminatedFraction(for: dc.renderedObservationDate)
+        let (promo, wig) = dc.poiPromotion(forObjectID: ESkyObject.moon.id)
         artist.drawPOILabel(
-            at:       sc,
-            glyph:    .sfSymbol(artist.moonPhaseSymbol(fraction: fraction)),
-            text:     Strings.Bodies.moon,
-            category: .moon,
-            in:       &dc
+            at:        sc,
+            glyph:     .sfSymbol(artist.moonPhaseSymbol(fraction: fraction)),
+            text:      Strings.Bodies.moon,
+            category:  .moon,
+            promotion: promo,
+            wiggle:    wig,
+            in:        &dc
         )
     }
 }

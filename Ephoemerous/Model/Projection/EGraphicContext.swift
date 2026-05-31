@@ -35,6 +35,41 @@ struct EGraphicContext {
     /// `verticalSizeClass`. See `EAppState.canvasRotation`.
     let canvasRotation:          Angle
 
+    // MARK: Selection promotion snapshot
+    // Resolved once per frame (like the camera values above) so the
+    // POI draw can promote the selected label without reading the
+    // observable graph per-object in the hot loops. See
+    // `EArtist.drawPOILabel` for what `promotion` / `wiggle` drive.
+    let selectedObjectID: String?
+    let selectionStart:   Double
+    let deselectingID:    String?
+    let deselectStart:    Double
+
+    /// Fast path for the common "nothing selected" case — lets a layer
+    /// skip building per-object ids when no label is (de)selecting.
+    var hasActivePromotion: Bool { selectedObjectID != nil || deselectingID != nil }
+
+    /// Promotion + wiggle for the POI label identified by `id` (an
+    /// `ESkyObject.id`), as a function of the per-frame animation clock:
+    ///   • the selected object springs UP (0→1) with a wiggle
+    ///   • the just-deselected object springs DOWN (1→0), no wiggle
+    ///   • everything else stays flat (0, 1)
+    /// Pass the result straight into `drawPOILabel(promotion:wiggle:)`.
+    func poiPromotion(forObjectID id: String?) -> (promotion: Double, wiggle: CGFloat) {
+        guard let id else { return (0, 1) }
+        let artist = EArtist.shared
+        if id == selectedObjectID {
+            let e = animationTime - selectionStart
+            return (artist.poiSelectProgress(from: 0, to: 1, elapsed: e),
+                    artist.poiSelectWiggle(elapsed: e))
+        }
+        if id == deselectingID {
+            let e = animationTime - deselectStart
+            return (artist.poiSelectProgress(from: 1, to: 0, elapsed: e), 1)
+        }
+        return (0, 1)
+    }
+
     // MARK: Coordinate helpers
 
     /// Project-unit point → screen pixel. The point is rotated by

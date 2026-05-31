@@ -69,7 +69,7 @@ extension EArtist {
         local.scaleBy(x: r, y: r)
         local.fill(
             Self.starPath,
-            with: .color(star.spectralClass.color.opacity(0.9))
+            with: .color(star.spectralClass.lightColor.opacity(0.9))
             /*
              .color(
              dc.state.isFavouriteStar(star) ? star.spectralClass.color.opacity(0.9) : .tertiary

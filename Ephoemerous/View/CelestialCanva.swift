@@ -22,6 +22,10 @@ struct CelestialCanva: View {
     private var layers: [any EGridLayer] {
         [
             EarthGridLayer(),
+            // Aim sky-wash: blue glow where the phone points, clipped to
+            // the horizon dome. Drawn early so it tints the background
+            // behind every star rather than fogging the foreground.
+            SkyAimWashLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
@@ -30,7 +34,7 @@ struct CelestialCanva: View {
             // in (handled by `drawPOILabel` + `.namedStar` thresholds).
             NamedStarsLayer(),
             FavouritesLayer(),
-            EclipticLayer(),
+//            EclipticLayer(),
             EPlanetsLayer(),
             SunLayer(),
             EMoonLayer(),
@@ -72,7 +76,11 @@ struct CelestialCanva: View {
                         localSiderealOffset:     state.localSiderealOffset,
                         animationTime:           state.animationTime,
                         viewpoint:               state.viewpoint,
-                        canvasRotation:          state.canvasRotation
+                        canvasRotation:          state.canvasRotation,
+                        selectedObjectID:        state.detailDestination?.id,
+                        selectionStart:          state._selectionStart,
+                        deselectingID:           state._deselectingID,
+                        deselectStart:           state._deselectStart
                     )
                     for layer in layers { layer.draw(in: &dc) }
                 }
@@ -155,7 +163,8 @@ extension CelestialCanva {
         state._activeTransition  != nil ||
         state._dateTransition    != nil ||
         state._originTransition  != nil ||
-        state._inertiaTransition != nil
+        state._inertiaTransition != nil ||
+        state._promotionActive
     }
     private var schedule: ECanvasSchedule { ECanvasSchedule(isAnimating: isAnimating) }
 }

@@ -22,6 +22,11 @@ struct EPalette {
     /// Outermost canvas background — what sits behind every layer.
     let canvasBackground: Color = .secondarySystemBackground
 
+    /// Aim sky-wash tint — the blue the night sky lifts toward where the
+    /// phone is pointed (`SkyAimWashLayer`). Stored opaque; alpha is
+    /// applied at draw time via `aimBlobOpacity` + the horizon fade.
+    let skyAim: Color = Color(red: 0.16, green: 0.32, blue: 0.62)
+
     // MARK: Grid / axes
 
     /// Faint grid lines (RA / Dec parallels + meridians).

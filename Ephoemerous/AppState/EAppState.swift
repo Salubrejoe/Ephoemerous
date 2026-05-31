@@ -127,7 +127,74 @@ class EAppState {
     //  plus currentlyDisplayedStar / currentlyDisplayedConstellation).
     // The root sheet in MainView binds to this; canvas taps go through
     // `focus(on:)` which sets it and pans the camera.
-    var detailDestination: ESkyObject? = nil
+    var detailDestination: ESkyObject? = nil {
+        didSet {
+            // A selection (or deselection) starts a promotion spring,
+            // animated on the canvas clock: the draw computes
+            // `animationTime - _selectionStart`. The catch is that
+            // `animationTime` is FROZEN while the canvas is parked at
+            // rest — it only catches up to real time by ticking forward
+            // once the timeline resumes. So we can't stamp these with
+            // `Date.now`: the read side would sit seconds behind the
+            // stamp and the spring would stay pinned at 0 until the
+            // clock caught up (the "delay before the promotion shows").
+            //
+            // Instead stamp provisionally with the current (frozen)
+            // `animationTime`, set `_promotionActive` (below) so the
+            // timeline resumes, then RE-stamp on the first drawn frame
+            // via the pending flags below (see `advanceCanvasClock`) so
+            // the spring's elapsed starts at exactly 0 on the canvas
+            // clock — no cross-clock skew.
+            //
+            // ObservationIgnored: `detailDestination` itself is observed
+            // and drives the redraw; these are just timestamps read
+            // inside that redraw.
+            guard detailDestination?.id != oldValue?.id else { return }
+            if let old = oldValue {
+                _deselectingID       = old.id
+                _deselectStart       = animationTime
+                _deselectClockPending = true
+            }
+            if detailDestination != nil {
+                _selectionStart       = animationTime
+                _selectionClockPending = true
+            }
+            // Wake the timeline for the spring. Stable flag — see
+            // `_promotionActive`; `advanceCanvasClock` clears it once
+            // the spring settles.
+            _promotionActive = true
+        }
+    }
+    /// Canvas-clock time the current selection's promote-up spring
+    /// began. Re-stamped on the first frame after selection (see
+    /// `_selectionClockPending`).
+    @ObservationIgnored var _selectionStart: Double = 0
+    /// Id of the object whose label is springing back DOWN after being
+    /// deselected (so it animates out instead of snapping), plus the
+    /// canvas-clock time that spring began.
+    @ObservationIgnored var _deselectingID: String? = nil
+    @ObservationIgnored var _deselectStart: Double = 0
+    /// Set in `detailDestination.didSet`, consumed on the next
+    /// `advanceCanvasClock`: pins the spring start to that frame's live
+    /// `animationTime` so the promotion's elapsed begins at 0 regardless
+    /// of how stale the parked clock was at tap time.
+    @ObservationIgnored var _selectionClockPending = false
+    @ObservationIgnored var _deselectClockPending  = false
+
+    /// True while a promotion spring is in flight — `CelestialCanva`
+    /// ORs this into `isAnimating` so the timeline keeps ticking through
+    /// the promotion, then parks once settled.
+    ///
+    /// CRITICAL: this is a STABLE stored flag, not a computed value that
+    /// reads `animationTime`. `isAnimating` must not depend on
+    /// `animationTime` — that value is written every frame *inside* the
+    /// Canvas render, so if the schedule depended on it the write would
+    /// re-invalidate the body every frame and never reach a fixed point,
+    /// spinning the main thread (frozen sheet + gestures). Instead this
+    /// flag is set true in `detailDestination.didSet` and flipped false
+    /// exactly once by `advanceCanvasClock` when the spring settles —
+    /// the same nil-once pattern `_activeTransition` uses.
+    var _promotionActive: Bool = false
     /// Sibling destination for the *myth* sheet — fired by tapping
     /// "Learn the Myth" on a constellation / star detail. Lives at
     /// half-detent (vs detailDestination's third) and is mutually

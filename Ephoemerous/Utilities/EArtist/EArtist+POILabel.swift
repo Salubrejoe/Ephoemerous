@@ -484,6 +484,11 @@ extension EArtist {
     var poiSelectWiggleFreq: Double { 6 }
     /// Wiggle decay rate (1/s) — how fast the bounce dies to rest.
     var poiSelectWiggleDecay: Double { 2.1 }
+    /// Seconds after a (de)selection past which the promotion spring is
+    /// fully settled — the rise plus enough wiggle decay that the
+    /// residual bounce is invisible. `EAppState` keeps the canvas
+    /// timeline ticking for exactly this long, then parks.
+    var poiSelectSettleDuration: Double { 2.5 }
 
     /// Eased promotion value, lerped `from → to` (0 unselected, 1
     /// selected) over `poiSelectRise` seconds via smoothstep.

@@ -17,7 +17,8 @@ struct EphoemerousApp: App {
         WindowGroup {
             NavigationStack {
                 MainView()
-                    .fontDesign(.rounded)
+                    .fontDesign(.serif)
+//                    .fontDesign(.rounded)
             }
             .ignoresSafeArea()
             .onAppear(perform: state.startCloudSync)

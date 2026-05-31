@@ -86,21 +86,26 @@ final class EMotionService {
     /// azimuth and rises into the sky as you lift the top of the phone.
     /// That posture is what the azimuth-led hybrid mapping expects.
     ///
-    /// CONVENTION (verify on hardware): this assumes
-    /// `attitude.rotationMatrix` maps device → reference, so device +Y
-    /// in reference coords is column 1 = (m12, m22, m32), and the
-    /// reference frame is X = true north, Y = west, Z = up. If the blob
-    /// comes out mirrored or rotated 90° on a real device, the fix is
-    /// one of two one-liners here:
-    ///   • transpose the matrix access (swap each `m.mIJ` ↔ `m.mJI`),
-    ///   • and/or flip the sign on `west`.
+    /// CONVENTION (resolved on hardware 2026-05-31): Apple's
+    /// `attitude.rotationMatrix` maps REFERENCE → device (v_dev = M·v_ref),
+    /// so a device axis expressed in reference coords is the matching ROW
+    /// of M, not the column. Device +Y (top edge) → row 2 =
+    /// (m21, m22, m23). The reference frame is X = true north, Y = west,
+    /// Z = up.
+    ///
+    /// The first cut read the column instead (device→reference), which
+    /// inverted pitch — tilting the phone up drove the blob *below* the
+    /// horizon — and also threw azimuth 180° off. Reading the row fixes
+    /// both: lift the top edge and `up = m23 = +sin(tilt)` rises as it
+    /// should; top-pointing-north reads azimuth 0.
     private static func aim(from attitude: CMAttitude) -> Aim {
         let m = attitude.rotationMatrix
 
-        // Phone top edge (device +Y) expressed in the reference frame.
-        let north = m.m12
+        // Phone top edge (device +Y) expressed in the reference frame —
+        // row 2 of the reference→device matrix.
+        let north = m.m21
         let west  = m.m22
-        let up    = m.m32
+        let up    = m.m23
 
         let altitude = asin(max(-1, min(1, up)))
         let azimuth  = atan2(-west, north)        // clockwise from north

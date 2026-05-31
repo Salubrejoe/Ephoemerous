@@ -62,7 +62,36 @@ extension EAppState {
     /// object.
     func panTo(_ obj: ESkyObject) {
         guard let sc = screenPosition(of: obj) else { return }
-        panFocus(toward: sc)
+        panFocus(toward: sc, minScale: textTierScale(for: obj))
+    }
+
+    /// Scale at which `obj`'s on-canvas label reaches its TEXT tier —
+    /// i.e. the zoom where you can actually read its name. Focusing
+    /// zooms to at least this (with a little headroom past the fade)
+    /// so a tapped object never sits below its own label. Reads the
+    /// same per-category thresholds the canvas draws with, so the two
+    /// can't drift.
+    private func textTierScale(for obj: ESkyObject) -> Double {
+        let artist = EArtist.shared
+        let textIn: Double
+        switch obj {
+        case .sun:           textIn = artist.poiStyle(for: .sun).textIn
+        case .moon:          textIn = artist.poiStyle(for: .moon).textIn
+        case .planet(let p): textIn = artist.poiStyle(for: .planet(p)).textIn
+        case .star(let s):
+            // Match how the star is ACTUALLY drawn: a favourited star
+            // renders via FavouritesLayer as `.followedStar` (early
+            // thresholds); a plain tapped star stays `.namedStar` in
+            // NamedStarsLayer (much later thresholds). Using the wrong
+            // one would zoom short of where its label appears.
+            let isFavourite = favouriteStars.contains { $0.name == s.name }
+            let category: POICategory = isFavourite ? .followedStar(s) : .namedStar(s)
+            textIn = artist.poiStyle(for: category).textIn
+        case .constellation: textIn = artist.constellationTextIn
+        }
+        // The tier fade is centred on `textIn`, so clear it by the ramp
+        // half-width plus a touch — land where the text is fully in.
+        return textIn * 1.2
     }
 
     /// Close the detail sheet. Camera stays where the user left it
@@ -149,27 +178,37 @@ extension EAppState {
 
     // MARK: Pan-only animation
 
-    /// One-shot animated pan so `screenPosition` lands at
-    /// `(canvas.midX, canvas.height / 3)`. Scale unchanged — only the
-    /// offset moves. Uses the same `EPresetTransition` machinery as the
-    /// tracking presets so the canvas renders the lerped offset every
-    /// frame.
-    private func panFocus(toward screenPosition: CGPoint) {
+    /// One-shot animated pan + zoom so `screenPosition` lands at
+    /// `(canvas.midX, canvas.height / 3)`. Zooms in to at least
+    /// `minScale` (never out — if already past it, scale is unchanged),
+    /// clamped to the hard zoom ceiling. Uses the same
+    /// `EPresetTransition` machinery as the tracking presets so the
+    /// canvas renders the lerped scale + offset every frame.
+    private func panFocus(toward screenPosition: CGPoint, minScale: Double = 0) {
         guard canvasSize != .zero else { return }
+        // "At least" the tier scale: keep the current zoom if already
+        // deeper, otherwise pull in to reveal the label. Never exceed
+        // the gesture ceiling.
+        let targetScale = Swift.min(AstroConstants.maximumScale,
+                                    Swift.max(scale, minScale))
         let targetX   = canvasSize.width  / 2
         let targetY   = canvasSize.height / 3
+        // offsetToCenter maps the sky point under `screenPosition` to
+        // (targetX, targetY) AT `targetScale`, so the object stays put
+        // as the zoom ramps.
         let newOffset = offsetToCenter(screenPos: screenPosition,
-                                       atScale:   scale,
+                                       atScale:   targetScale,
                                        targetX:   targetX,
                                        targetY:   targetY)
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
-            toScale:    scale,                       // unchanged — no auto-zoom
+            toScale:    targetScale,
             toOffset:   newOffset,
             startTime:  Date.now.timeIntervalSinceReferenceDate,
             duration:   AstroConstants.transitionDuration
         )
+        scale  = targetScale
         offset = newOffset
     }
 }

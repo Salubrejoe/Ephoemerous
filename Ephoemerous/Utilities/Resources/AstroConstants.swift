@@ -258,6 +258,10 @@ enum AstroConstants {
     static let defaultOffsetX:    Double  = 0.0
 //    static let defaultOffsetX:    Double  = -50.0
     static let defaultOffsetY:    Double  = 0.0
+    /// Hard zoom-in ceiling. Mirrors the gesture coordinator's
+    /// `maximumScale` so focus-to-tier (EAppState+Detail) and the pinch
+    /// clamp agree on the deepest the canvas can zoom.
+    static let maximumScale:      Double  = 500
 
     // -------------------------------------------------------------------------
     // MARK: Spectral class colours (RGB components)
