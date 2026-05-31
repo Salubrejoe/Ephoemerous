@@ -45,6 +45,22 @@ enum EProjection {
             return sa * originVector
                  + ca * (cos(phi) * e1 + sin(phi) * e2)
         }
+
+        /// As `skyPoint(altitude:at:)`, but addressed directly by horizon
+        /// azimuth (clockwise from due north: N = 0, E = π/2) rather than
+        /// the circle parameter `t`. Shares the same `baseVectors` basis —
+        /// `e1` is celestial north, `e2` celestial west — so a direction
+        /// fed through here lands on exactly the same sky the stars
+        /// project onto. The device-aim blob rides this so it sits on the
+        /// real stars the phone points at.
+        func skyPoint(azimuth: Double, altitude: Double) -> SIMD3<Double> {
+            let (e1, e2) = originVector.baseVectors()
+            let sa       = sin(altitude)
+            let ca       = cos(altitude)
+            // Azimuth clockwise from north; east = −west = −e2.
+            return sa * originVector
+                 + ca * (cos(azimuth) * e1 - sin(azimuth) * e2)
+        }
     }
 
     static var obliquity: Angle { AstroConstants.obliquity }

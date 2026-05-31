@@ -69,6 +69,19 @@ struct EGraphicContext {
         p.y > margin && p.y < size.height - margin
     }
 
+    /// Screen position for a horizon-frame aim (azimuth clockwise from
+    /// north, altitude above the horizon, both radians), or `nil` when it
+    /// projects behind the viewer. Threads the full pipeline —
+    /// `viewpoint.skyPoint` → `EProjection.project` → `toScreen` — so the
+    /// result sits on the real sky and tracks pan / zoom / rotation for
+    /// free. The device-aim blob uses this to land on the stars the phone
+    /// points at.
+    func screenPoint(azimuth: Double, altitude: Double) -> CGPoint? {
+        let v = viewpoint.skyPoint(azimuth: azimuth, altitude: altitude)
+        guard let p = EProjection.project(v, viewpoint: viewpoint) else { return nil }
+        return toScreen(p)
+    }
+
     // MARK: Drawing helpers
 
     mutating func strokeCurve(_ pts: [CGPoint?], color: Color, width: CGFloat = 1) {

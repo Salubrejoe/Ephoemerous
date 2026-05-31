@@ -44,6 +44,72 @@ extension EArtist {
     var userPuckConeMinHalfAngle: Double { 8 }    // degrees
     var userPuckConeMaxHalfAngle: Double { 60 }   // degrees
 
+    // MARK: - Aim blob tunables  ▼ TWEAK HERE ▼
+    // The aim blob is the device-motion successor to the heading cone:
+    // a soft green disc marking where the phone is physically pointed,
+    // positioned on the real sky via the projection. Heading leads,
+    // pitch eases it inward — the "azimuth-led hybrid."
+
+    /// Blob radius (pt) with a well-calibrated compass.
+    var aimBlobBaseRadius      : CGFloat { 26 }
+    /// Extra radius per degree of compass uncertainty — a shaky
+    /// magnetometer reads as a vaguer, larger blob.
+    var aimBlobRadiusPerDegree : CGFloat { 0.8 }
+    /// Clamp so an uncalibrated compass can't swallow the canvas.
+    var aimBlobMaxRadius       : CGFloat { 120 }
+    /// Opacity at the blob centre; the radial gradient fades to 0 at
+    /// the rim — same apex feel as the old cone.
+    var aimBlobOpacity         : Double  { 0.42 }
+
+    /// Pitch gain: how much device tilt becomes display altitude. < 1
+    /// keeps the blob azimuth-led — hugging the horizon ring, pitch
+    /// easing it gently inward rather than driving it to the zenith.
+    var aimPitchGain           : Double  { 0.85 }
+    /// Never let the blob reach dead centre: clamps it off the zenith
+    /// singularity, where azimuth is undefined and the blob would spin.
+    var aimMaxAltitudeDeg      : Double  { 86 }
+    /// Lower clamp on display altitude (deg). Aiming below the horizon
+    /// dips the blob a little past the ring — far enough to read as
+    /// "leaving the sky," not so far it rockets toward the projection's
+    /// below-horizon infinity. Pairs with the fade below.
+    var aimMinAltitudeDeg      : Double  { -8 }
+    /// Top of the fade band (deg of display altitude): opacity is full
+    /// at/above this and ramps to 0 by `aimMinAltitudeDeg`, so the blob
+    /// softly dissolves as the phone drops below the horizon instead of
+    /// hard-stopping at the ring or sliding off-canvas.
+    var aimFadeTopDeg          : Double  { 0 }
+
+    // MARK: - Aim mapping
+
+    /// Map raw device pitch to the blob's display altitude under the
+    /// azimuth-led hybrid: gentle gain, clamped off the zenith above and
+    /// dipped just below the horizon ring below (where `aimFadeOpacity`
+    /// dissolves it).
+    func aimDisplayAltitude(deviceAltitudeRadians alt: Double) -> Double {
+        let deg     = alt * 180 / .pi
+        let geared  = deg * aimPitchGain
+        let clamped = min(aimMaxAltitudeDeg, max(aimMinAltitudeDeg, geared))
+        return clamped * .pi / 180
+    }
+
+    /// Opacity multiplier (0…1) for the blob at a given display altitude:
+    /// 1 at/above the horizon, smoothstepping to 0 by `aimMinAltitudeDeg`
+    /// as the aim crosses below the ring. The "you've left the sky" cue.
+    func aimFadeOpacity(displayAltitudeRadians alt: Double) -> Double {
+        let deg = alt * 180 / .pi
+        guard deg < aimFadeTopDeg   else { return 1 }
+        guard deg > aimMinAltitudeDeg else { return 0 }
+        let t = (deg - aimMinAltitudeDeg) / (aimFadeTopDeg - aimMinAltitudeDeg)
+        return t * t * (3 - 2 * t)   // smoothstep, 0 at floor → 1 at ring
+    }
+
+    /// Blob radius for a given compass accuracy (degrees; pass 0 when
+    /// the compass hasn't reported one).
+    func aimBlobRadius(accuracyDegrees acc: Double) -> CGFloat {
+        let r = aimBlobBaseRadius + max(0, acc) * aimBlobRadiusPerDegree
+        return min(aimBlobMaxRadius, r)
+    }
+
     // MARK: - Symbol picker
 
     /// Apple's four hemisphere globe SF Symbols, mapped to the
@@ -111,6 +177,32 @@ extension EArtist {
                 startRadius: 0,
                 endRadius:   r
             )
+        )
+    }
+
+    /// Soft green disc marking where the phone is currently aimed on the
+    /// sky — the device-motion successor to `drawHeadingCone`. The caller
+    /// has already routed the device's (azimuth, altitude) through the
+    /// projection, so `p` is the on-screen point over the real stars the
+    /// phone points at; this just paints the glow there.
+    /// `opacity` is a 0…1 multiplier on the blob's centre alpha — used by
+    /// the horizon fade so the blob dissolves as the aim crosses the ring.
+    func drawAimBlob(at p:    CGPoint,
+                     radius:  CGFloat,
+                     opacity: Double = 1,
+                     in dc:   inout EGraphicContext) {
+        let rect = CGRect(x: p.x - radius, y: p.y - radius,
+                          width: 2 * radius, height: 2 * radius)
+        dc.ctx.fill(
+            Path(ellipseIn: rect),
+            with: .radialGradient(
+                Gradient(colors: [
+                    userPuckConeColor.opacity(aimBlobOpacity * opacity),
+                    userPuckConeColor.opacity(0)
+                ]),
+                center:      p,
+                startRadius: 0,
+                endRadius:   radius)
         )
     }
 
