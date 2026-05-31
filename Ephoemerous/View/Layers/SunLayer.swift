@@ -39,7 +39,7 @@ struct SunLayer: EGridLayer {
         // gone — see EArtist+Sun.swift in DeprecationStation.)
         artist.drawPOILabel(
             at:       sc,
-            glyph:    .sfSymbol("sun.max"),
+            glyph:    .sfSymbol("sun.max.fill"),
             text:     Strings.Bodies.sun,
             category: .sun,
             in:       &dc

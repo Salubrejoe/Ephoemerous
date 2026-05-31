@@ -18,8 +18,8 @@ struct HorizonLayer: EGridLayer {
             bands.strokeCurve(artist.bumpedHorizonRim(pts),
                               color: artist.twilightBandColor,
                               width: 12 / abs(alt.degrees))
-            bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
-                                   color: artist.horizonFillColor.opacity(0.0001))
+//            bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
+//                                   color: artist.horizonFillColor.opacity(0.2))
         }
 
         // Horizon great circle as a deformable squircle: each projection
@@ -44,6 +44,7 @@ struct HorizonLayer: EGridLayer {
         // The below-horizon region (everywhere outside the alt = 0
         // circle) reads as tinted, so the rim becomes a window onto
         // the sky rather than a small wash sitting on top of it.
+//        rim.ctx.addFilter(.shadow(color: .primary, radius: 4))
         rim.fillOutsideCurve(artist.bumpedHorizonRim(pts),
                              color: artist.horizonFillColor)
     }

@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - User-location puck
 // Apple-Maps-style "you are here" rendering for the celestial
@@ -6,18 +7,26 @@ import SwiftUI
 // point of view in the planetarium), with an optional heading
 // cone whose width tracks the compass's reported accuracy.
 //
-// The puck DISC + RING is now a SwiftUI overlay
-// (`UserLocationPuck` → `SquircleGlobePuck`), positioned at zenith
-// in `CelestialCanva`. This extension keeps the heading cone
-// (procedural canvas draw) and palette tunables, and exposes the
-// longitude-keyed globe-symbol picker for the overlay.
+// The puck DISC + RING + globe glyph are drawn procedurally on the
+// canvas (`drawSquircleGlobePuck`) — same pipeline as the heading
+// cone and the POI badges — so the puck tracks the zenith every
+// frame instead of lagging in a SwiftUI overlay. The
+// `SquircleGlobePuck` view still exists as the design sandbox /
+// preview; this is its canvas twin.
 extension EArtist {
 
     // MARK: - Tunables  ▼ TWEAK HERE ▼
 
-    /// Total puck diameter in pt for the SwiftUI overlay.
-    /// `SquircleGlobePuck` uses this as its `size`.
+    /// Total puck diameter in pt.
     var userPuckSize       : CGFloat { 28 }
+    /// White ring thickness as a fraction of the puck — the ring
+    /// traces the scallop instead of a clean circle.
+    var userPuckRingFraction: CGFloat { 0.08 }
+    /// Globe glyph font size as a fraction of the puck.
+    var userPuckGlyphScale : CGFloat { 0.92 }
+    /// Globe glyph opacity — a touch under 1 so the disc tint
+    /// breathes through, matching `SquircleGlobePuck`.
+    var userPuckGlyphOpacity: Double { 0.85 }
 
     var userPuckDiscColor  : Color { palette.userPuckDisc }
     var userPuckRingColor  : Color { palette.userPuckRing }
@@ -103,5 +112,47 @@ extension EArtist {
                 endRadius:   r
             )
         )
+    }
+
+    /// Canvas twin of `SquircleGlobePuck`: a 12-corner Lamé squircle
+    /// disc (the horizon silhouette — corners / bulge shared with
+    /// `bumpedHorizonRim`) wearing the longitude-keyed globe SF
+    /// Symbol, clipped to the same scallop so its rim ripples. Drawn
+    /// at `sc` (the zenith) every frame, so it stays pinned through
+    /// pan / zoom unlike the old SwiftUI overlay.
+    func drawSquircleGlobePuck(at sc:    CGPoint,
+                               symbol:    String,
+                               in dc:     inout EGraphicContext) {
+        let size  = userPuckSize
+        let inset = size * userPuckRingFraction
+        let shape = Squircle(corners: horizonBumpCorners,
+                             bulge:   horizonBumpBulge)
+
+        let outer = CGRect(x: sc.x - size / 2, y: sc.y - size / 2,
+                           width: size, height: size)
+        let disc  = outer.insetBy(dx: inset, dy: inset)
+
+        // White scalloped ring.
+        dc.ctx.fill(shape.path(in: outer), with: .color(userPuckRingColor))
+
+        // Tinted disc with a soft top→bottom sheen.
+        dc.ctx.fill(
+            shape.path(in: disc),
+            with: .linearGradient(
+                Gradient(colors: [userPuckDiscColor,
+                                  userPuckDiscColor.opacity(0.82)]),
+                startPoint: CGPoint(x: disc.midX, y: disc.minY),
+                endPoint:   CGPoint(x: disc.midX, y: disc.maxY))
+        )
+
+        // Globe glyph, clipped to the disc scallop so its rim ripples.
+        var globe = dc.ctx
+        globe.clip(to: shape.path(in: disc))
+        globe.draw(
+            Text(Image(systemName: symbol))
+                .font(.system(size: size * userPuckGlyphScale, weight: .regular))
+                .foregroundStyle(userPuckRingColor.opacity(userPuckGlyphOpacity)),
+            at:     CGPoint(x: disc.midX, y: disc.midY),
+            anchor: .center)
     }
 }

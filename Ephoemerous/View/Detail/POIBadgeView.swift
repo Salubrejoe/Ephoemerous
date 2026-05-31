@@ -66,7 +66,7 @@ struct POIBadgeView: View {
         switch category {
         case .sun:                          return .sfSymbol("sun.max")
         case .moon:                         return .sfSymbol("moon")
-        case .followedStar, .namedStar:     return .sfSymbol("star")
+        case .followedStar, .namedStar:     return .sfSymbol("star.fill")
         case .planet(let p):                return .unicode(p.astronomicalGlyph)
         case .constellation:
             // Constellations no longer carry a canvas badge — this

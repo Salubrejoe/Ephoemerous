@@ -203,9 +203,9 @@ extension EArtist {
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
-                badgeSize:       15,
-                symbolPointSize: 8,
-                badgeCorners:    8,    // heptagon
+                badgeSize:       11,
+                symbolPointSize: 6,
+                badgeCorners:    4,    // heptagon
                 dotShape:        .circle,
                 dotRadius:       2.5,
                 badgeIn:         80,
@@ -316,11 +316,134 @@ extension EArtist {
     /// Horizontal gap between the badge's right edge and the text's
     /// left edge — keeps the pill from feeling crowded.
     var poiTextLeadingGap: CGFloat { 5 }
-    /// Shadow under both the badge and the trailing text — same
-    /// envelope so the pill reads as one shape.
+    /// Shadow under the badge — a tight halo in the canvas colour so
+    /// the pill lifts off the sky as one shape.
     var poiShadow: GraphicsContext.Filter {
         .shadow(color: .systemBackground,
                 radius: 1, x: 0, y: 0)
+    }
+
+    // MARK: Text casing
+    //
+    // Apple Maps gives every label two distinct treatments, and the
+    // distinction is the whole trick: a crisp *casing* (a tight
+    // outline in a contrasting colour, doing the legibility work
+    // against a busy background) AND a soft *drop shadow* (offset +
+    // blurred, doing the depth/lift work). One shadow can't be both —
+    // a radius big enough to read as a halo is too soft to read as an
+    // outline. So we draw them separately: a real shadow filter for
+    // lift, plus a faked stroke for the casing.
+    //
+    // SwiftUI's GraphicsContext can't stroke text, so the casing is
+    // faked the classic way — draw the glyph several times in a ring
+    // of small offsets (the border), then the fill on top.
+
+    /// Soft drop shadow under label *text* — distinct from the
+    /// badge's `poiShadow` halo. Subtle and a touch lowered so the
+    /// text lifts without smearing; the casing does the legibility,
+    /// this does the depth.
+    var poiTextShadow: GraphicsContext.Filter {
+        .shadow(color: .black.opacity(0.95),
+                radius: 1.8, x: 0, y: 0.5)
+    }
+
+    /// Colour of the crisp casing around label text. `.primary` gives
+    /// the punchy light-outline-on-colour look from the Apple Maps
+    /// reference; switch to `.systemBackground` if you'd rather the
+    /// casing recede into the sky than stand proud of it.
+    var poiTextBorderColor: Color { .systemBackground }
+
+    /// Casing half-width, in points. The glyph is redrawn in a ring
+    /// this far out, so ~1pt reads as a clean hairline at footnote
+    /// size; push toward 1.5 for a chunkier sticker edge.
+    var poiTextBorderWidth: CGFloat { 2 }
+
+    /// Eight offsets (NSEW + diagonals) forming the casing ring. Four
+    /// would leave gaps at the corners; past eight costs draws for no
+    /// visible gain at label sizes. Diagonals are scaled by cos 45° so
+    /// every copy sits the same distance out — a circle, not a square.
+    var poiTextBorderOffsets: [CGSize] {
+        let d = poiTextBorderWidth
+        let s = d * 0.70710678
+        return [
+            CGSize(width:  d, height:  0), CGSize(width: -d, height:  0),
+            CGSize(width:  0, height:  d), CGSize(width:  0, height: -d),
+            CGSize(width:  s, height:  s), CGSize(width:  s, height: -s),
+            CGSize(width: -s, height:  s), CGSize(width: -s, height: -s)
+        ]
+    }
+
+    /// Draws label text the Apple-Maps way: a soft drop shadow for
+    /// depth, a crisp casing for legibility, then the visible `filled`
+    /// shading on top.
+    ///
+    /// `cased` is the same string styled in the casing colour, passed
+    /// in rather than derived so callers that build concatenated Text
+    /// (e.g. the constellation ♥ prefix) keep control of styling. Both
+    /// `filled` and `cased` should already carry the font.
+    ///
+    /// `ctx` is taken by value — drawing routes to the shared canvas,
+    /// while transform / opacity / filters stay local to each copy, so
+    /// the shadow filter never leaks onto the casing or fill.
+    func drawCasedLabel(filled: Text,
+                        cased:  Text,
+                        at point: CGPoint,
+                        anchor: UnitPoint,
+                        in ctx: GraphicsContext) {
+        // 1 — soft drop shadow, cast by the casing silhouette. This
+        //     glyph is fully covered by passes 2–3; only its shadow
+        //     escapes around the casing edge.
+        var shadow = ctx
+        shadow.addFilter(poiTextShadow)
+        shadow.draw(cased, at: point, anchor: anchor)
+
+        // 2 — crisp casing: the glyph redrawn in a ring around the
+        //     anchor. Resolve once, redraw eight times.
+        let resolved = ctx.resolve(cased)
+        for off in poiTextBorderOffsets {
+            ctx.draw(resolved,
+                     at: CGPoint(x: point.x + off.width,
+                                 y: point.y + off.height),
+                     anchor: anchor)
+        }
+
+        // 3 — visible fill on top.
+        ctx.draw(filled, at: point, anchor: anchor)
+    }
+
+    // MARK: Tier transitions
+    //
+    // Tiers used to pop in/out at a hard `renderedScale` threshold.
+    // Instead each tier's opacity + scale ramps as a smooth function
+    // of scale, centred on its old threshold, so a label eases in as
+    // you pinch toward it and eases back out as you pinch away — the
+    // transition tracks the gesture rather than snapping.
+
+    /// Width of a tier's fade/scale ramp, as a fraction of its
+    /// threshold. Narrow enough to feel responsive to a pinch, wide
+    /// enough to read as an ease rather than a pop.
+    var labelTierRampFraction: Double { 0.18 }
+
+    /// Scale a tier grows through as it appears — from this floor up
+    /// to 1. Subtle on purpose: the eye should read "settling in",
+    /// not "zooming".
+    var labelTierScaleFloor: CGFloat { 0.82 }
+
+    /// Eased 0→1 appearance for a tier whose hard cut-off was
+    /// `threshold`: 0 below the ramp, 1 above it, smoothstep across a
+    /// band centred on `threshold`. A non-positive threshold means
+    /// "always on" (the sun / moon badge) → fully present.
+    func labelTierProgress(scale: Double, threshold: Double) -> Double {
+        guard threshold > 0 else { return 1 }
+        let band = labelTierRampFraction * threshold
+        let t    = (scale - (threshold - band / 2)) / band
+        let c    = min(max(t, 0), 1)
+        return c * c * (3 - 2 * c)            // smoothstep
+    }
+
+    /// Map an eased tier progress to its scale factor.
+    func labelTierScale(_ progress: Double) -> CGFloat {
+        labelTierScaleFloor + (1 - labelTierScaleFloor) * CGFloat(progress)
     }
 
     /// Draws an Apple-Maps-style POI label at `sc`.
@@ -343,25 +466,19 @@ extension EArtist {
         let style = poiStyle(for: category)
         let scale = dc.renderedScale
 
-        // Tier 0 — maybe-dot. Shape (circle / squircle) and radius
-        // come from the category style so a followed star
-        // collapses to a tiny pentagon rather than a plain dot.
-        if scale < style.badgeIn {
-            if drawDot {
-                let r    = style.dotRadius
-                let rect = CGRect(x: sc.x - r, y: sc.y - r,
-                                  width: 2 * r, height: 2 * r)
-                let path: Path
-                switch style.dotShape {
-                case .circle:
-                    path = Path(ellipseIn: rect)
-                case .squircle(let corners, let bulge):
-                    path = Squircle(corners: corners, bulge: bulge).path(in: rect)
-                }
-                dc.ctx.fill(path, with: .color(style.gradientBottom))
-            }
-            return
+        // Each tier eases in/out as a smooth function of scale rather
+        // than popping at a hard threshold — see `labelTierProgress`.
+        let badgeFade = labelTierProgress(scale: scale, threshold: style.badgeIn)
+        let textFade  = labelTierProgress(scale: scale, threshold: style.textIn)
+
+        // Tier 0 — maybe-dot, crossfading out as the badge fades in
+        // across `badgeIn`. Shape + radius come from the category
+        // style so a followed star collapses to a tiny pentagon.
+        if drawDot && badgeFade < 1 {
+            drawPOIDot(at: sc, style: style, opacity: 1 - badgeFade, in: &dc)
         }
+        // Below the badge ramp entirely → the dot (if any) is all there is.
+        guard badgeFade > 0 else { return }
 
         // Tier 1 — squircle badge.
         let badgeRect = CGRect(
@@ -374,12 +491,23 @@ extension EArtist {
                                  bulge:   poiBadgeBulge)
             .path(in: badgeRect)
 
+        // Tier-1 context: fade + scale the badge (and its glyph)
+        // around `sc` so it grows into place. The badge draws through
+        // a scoped copy carrying the drop-shadow filter so the shadow
+        // doesn't leak onto the glyph; both share this opacity + scale.
+        var tier1 = dc.ctx
+        tier1.opacity *= badgeFade
+        let badgeScale = labelTierScale(badgeFade)
+        tier1.translateBy(x: sc.x, y: sc.y)
+        tier1.scaleBy(x: badgeScale, y: badgeScale)
+        tier1.translateBy(x: -sc.x, y: -sc.y)
+
         // Apple-Maps-style soft drop shadow under the badge. Scoped
         // to a local context so the filter doesn't leak onto the
         // glyph drawn next (the text below gets its own shadowed
         // context so the pill reads as a single shape under one
         // shadow envelope).
-        var shadowed = dc.ctx
+        var shadowed = tier1
         shadowed.addFilter(poiShadow)
         let gradient = Gradient(colors: [style.gradientTop, style.gradientBottom])
         shadowed.fill(
@@ -410,7 +538,7 @@ extension EArtist {
             glyphText = Text(str)
             glyphSize = style.symbolPointSize + 2
         }
-        dc.ctx.draw(
+        tier1.draw(
             glyphText
                 .font(.system(size: glyphSize, weight: .semibold))
                 .foregroundStyle(style.symbolColor),
@@ -418,38 +546,62 @@ extension EArtist {
             anchor: .center
         )
 
-        // Tier 2 — text trailing to the right of the badge.
+        // Tier 2 — text trailing to the right of the badge, fading +
+        // scaling in around its leading anchor so it settles in from
+        // the badge side rather than popping.
         //
-        // The text picks up the same vertical gradient the badge
-        // uses (lighter top, darker bottom) and the same drop
-        // shadow, so badge + text read as a single Apple-Maps-style
-        // pill instead of two stacked elements.
-        guard scale >= style.textIn else { return }
+        // The text picks up the same vertical gradient the badge uses
+        // (lighter top, darker bottom), wrapped in an Apple-Maps-style
+        // casing + drop shadow (see `drawCasedLabel`) so badge + text
+        // read as a single legible pill against the sky.
+        guard textFade > 0 else { return }
         let textGradient = LinearGradient(
             colors:     [style.gradientTop, style.gradientBottom],
             startPoint: .top,
             endPoint:   .bottom
         )
+        let textAnchor = CGPoint(x: badgeRect.maxX + poiTextLeadingGap,
+                                 y: sc.y)
+        let textScale  = labelTierScale(textFade)
         var textCtx = dc.ctx
-        textCtx.addFilter(poiShadow)
-//        textCtx.draw(
-//            Text(text)
-////                .font(.footnote.weight(.bold))
-//                .font(.system(size: 10, weight: .bold))
-//                .foregroundStyle(Color.systemBackground),
-//            at:     CGPoint(x: badgeRect.maxX + poiTextLeadingGap,
-//                            y: sc.y),
-//            anchor: .leading
-//        )
-        textCtx.draw(
-            Text(text)
-                .font(.footnote.weight(.bold))
-//                .font(.system(size: 9.5, weight: .bold))
-                .foregroundStyle(textGradient),
-            at:     CGPoint(x: badgeRect.maxX + poiTextLeadingGap,
-                            y: sc.y),
-            anchor: .leading
+        textCtx.opacity *= textFade
+        textCtx.translateBy(x: textAnchor.x, y: textAnchor.y)
+        textCtx.scaleBy(x: textScale, y: textScale)
+        textCtx.translateBy(x: -textAnchor.x, y: -textAnchor.y)
+
+        let textFont = Font.footnote.weight(.bold)
+        drawCasedLabel(
+            filled: Text(text).font(textFont).foregroundStyle(textGradient),
+            cased:  Text(text).font(textFont).foregroundStyle(poiTextBorderColor),
+            at:     textAnchor,
+            anchor: .leading,
+            in:     textCtx
         )
-        
+    }
+
+    /// Draws the tier-0 dot marker for a POI at `sc`, at `opacity`.
+    /// Shape (circle / squircle) and radius come from the category
+    /// style so a followed star collapses to a tiny pentagon rather
+    /// than a plain dot. Pulled out of `drawPOILabel` so the dot can
+    /// crossfade against the badge across the `badgeIn` threshold.
+    private func drawPOIDot(
+        at sc:    CGPoint,
+        style:    POICategoryStyle,
+        opacity:  Double,
+        in dc:    inout EGraphicContext
+    ) {
+        let r    = style.dotRadius
+        let rect = CGRect(x: sc.x - r, y: sc.y - r,
+                          width: 2 * r, height: 2 * r)
+        let path: Path
+        switch style.dotShape {
+        case .circle:
+            path = Path(ellipseIn: rect)
+        case .squircle(let corners, let bulge):
+            path = Squircle(corners: corners, bulge: bulge).path(in: rect)
+        }
+        var ctx = dc.ctx
+        ctx.opacity *= opacity
+        ctx.fill(path, with: .color(style.gradientBottom))
     }
 }

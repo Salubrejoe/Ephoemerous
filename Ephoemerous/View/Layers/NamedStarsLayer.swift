@@ -104,7 +104,7 @@ struct NamedStarsLayer: EGridLayer {
 
             artist.drawPOILabel(
                 at:       sc,
-                glyph:    .sfSymbol("star"),
+                glyph:    .sfSymbol("star.fill"),
                 text:     star.displayName,
                 category: .namedStar(star),
                 drawDot:  true,

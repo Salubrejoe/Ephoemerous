@@ -18,6 +18,12 @@ import SwiftUI
 //                                              an inline ♥ prefix +1
 //                                              font weight for favourites
 //
+// Each tier eases in/out as a smooth function of scale rather than
+// popping at its threshold — the placeholder fades in around
+// `placeholderIn`, then crossfades into the text around `textIn` — via
+// the shared `labelTierProgress` / `labelTierScale` easing defined in
+// `EArtist+POILabel.swift` (the same treatment the POI badges use).
+//
 // This file owns the *geometry* of "does this constellation rise /
 // set at the observer's latitude" plus the new draw helper and the
 // tunable knobs that shape it.
@@ -139,14 +145,22 @@ extension EArtist {
                                 in dc: inout EGraphicContext) -> CGRect? {
         let scale = dc.renderedScale
 
-        // Tier 0 — nothing.
-        guard scale >= constellationPlaceholderIn else { return nil }
+        // Each tier eases in/out as a smooth function of scale rather
+        // than popping at a hard threshold — see `labelTierProgress`.
+        let placeholderFade = labelTierProgress(scale: scale, threshold: constellationPlaceholderIn)
+        let textFade        = labelTierProgress(scale: scale, threshold: constellationTextIn)
 
-        // Tier 1 — capsule placeholder. Lerps from a tiny "visual
-        // guidance" pill at the bottom of the placeholder range up
-        // to roughly the text bounds at the top, so the morph into
-        // tier 2 doesn't feel like a sudden expansion.
-        guard scale >= constellationTextIn else {
+        // Tier 0 — below the placeholder ramp entirely → nothing.
+        guard placeholderFade > 0 else { return nil }
+
+        // Tier 1 — capsule placeholder. Its *size* still lerps from a
+        // tiny "visual guidance" pill at the bottom of the placeholder
+        // range up to roughly the text bounds at the top, so the morph
+        // into tier 2 doesn't feel like a sudden expansion. On top of
+        // that it now fades in around `placeholderIn` and crossfades
+        // back out as the text fades in around `textIn`.
+        let placeholderOpacity = placeholderFade * (1 - textFade)
+        if placeholderOpacity > 0 {
             let t        = CGFloat((scale - constellationPlaceholderIn)
                                  / (constellationTextIn - constellationPlaceholderIn))
             let clampedT = max(0, min(1, t))
@@ -156,32 +170,49 @@ extension EArtist {
             let h        = minSz.height + (maxSz.height - minSz.height) * clampedT
             let rect     = CGRect(x: sc.x - w / 2, y: sc.y - h / 2, width: w, height: h)
             var shadowed = dc.ctx
+            shadowed.opacity *= placeholderOpacity
             shadowed.addFilter(poiShadow)
             shadowed.fill(Capsule(style: .continuous).path(in: rect),
                           with: .color(constellationPlaceholderFill))
-            return nil    // placeholders aren't tappable
         }
 
         // Tier 2 — plain text (with an inline ♥ prefix for
-        // favourites, +1 font weight). Two-Text concatenation lets
-        // the heart take its own colour while the name stays
-        // primary; one font modifier wraps the whole pill.
-        var shadowed = dc.ctx
+        // favourites, +1 font weight). Fades + scales in around `sc`
+        // as it crossfades with the placeholder. Two-Text
+        // concatenation lets the heart take its own colour while the
+        // name stays primary; one font modifier wraps the whole pill.
+        guard textFade > 0 else { return nil }
+
+        let textScale = labelTierScale(textFade)
+        var shadowed  = dc.ctx
+        shadowed.opacity *= textFade
+        shadowed.translateBy(x: sc.x, y: sc.y)
+        shadowed.scaleBy(x: textScale, y: textScale)
+        shadowed.translateBy(x: -sc.x, y: -sc.y)
         shadowed.addFilter(poiShadow)
 
         let label: Text
         if isFavourite {
             label = Text("\(Text(Image(systemName: "heart.fill")).foregroundStyle(heartColor)) \(fullName)")
-                        .foregroundStyle(.primary)
+                .fontWeight(.light)
+                        .foregroundStyle(.secondary)
         } else {
             label = Text(fullName)
-                        .foregroundStyle(.primary)
+                .fontWeight(.light)
+                        .foregroundStyle(.secondary)
         }
         shadowed.draw(
             label.font(constellationLabelFont(isFavourite: isFavourite)),
             at:     sc,
             anchor: .center
         )
+
+        // Publish a tap target only once the text is at least
+        // half-resolved. `textFade` is 0.5 at exactly `constellationTextIn`
+        // (the ramp is centred on the threshold), so this matches the
+        // old hard activation point — tap targets don't appear under a
+        // barely-visible label mid-crossfade.
+        guard textFade >= 0.5 else { return nil }
 
         // Approximate text bounds for hit-targeting. Measuring
         // SwiftUI Text inside a Canvas closure is awkward and

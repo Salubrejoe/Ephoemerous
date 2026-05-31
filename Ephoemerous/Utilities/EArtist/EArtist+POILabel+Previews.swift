@@ -132,6 +132,51 @@ private let betelgeusePreviewStar: EStar = EStar(
     .background(EArtist.shared.canvasBackground)
 }
 
+/// Interactive sweep: drag the slider to move `renderedScale` across
+/// the tier thresholds and watch each label fade + scale in/out
+/// instead of popping. The fastest way to feel the transition and to
+/// tune `labelTierRampFraction` / `labelTierScaleFloor`.
+private struct POITierSweepPreview: View {
+    @State private var scale: Double = 150
+
+    private let rows: [(title: String, glyph: POIGlyph, text: String, category: POICategory)] = [
+        ("Sun",        .sfSymbol("sun.max.fill"),            "Sun",        .sun),
+        ("Moon",       .sfSymbol("moonphase.first.quarter"), "Moon",       .moon),
+        ("Mars",       .unicode("♂"),                        "Mars",       .planet(.mars)),
+        ("Betelgeuse", .sfSymbol("star.fill"),               "Betelgeuse", .followedStar(betelgeusePreviewStar)),
+        ("Ursa Minor", .sfSymbol("sparkles"),                "Ursa Minor", .constellation(.myth(.zeus)))
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(rows.indices, id: \.self) { i in
+                POILabelPreviewCard(
+                    title:    rows[i].title,
+                    glyph:    rows[i].glyph,
+                    text:     rows[i].text,
+                    category: rows[i].category,
+                    scale:    scale
+                )
+                if i < rows.count - 1 { Divider() }
+            }
+
+            VStack(spacing: 4) {
+                Text("renderedScale  \(Int(scale))")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Slider(value: $scale, in: 0...400)
+            }
+            .padding(.top, 12)
+        }
+        .padding()
+        .background(EArtist.shared.canvasBackground)
+    }
+}
+
+#Preview("POI labels (tier sweep)") {
+    POITierSweepPreview()
+}
+
 #Preview("POI labels (tier 1 — badge only)") {
     VStack(spacing: 0) {
         POILabelPreviewCard(

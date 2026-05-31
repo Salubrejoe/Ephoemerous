@@ -61,7 +61,8 @@ struct EPalette2 {
 
     /// Warm rust below-horizon wash — reads as "earth + dust"
     /// rather than the classic neutral grey.
-    let horizonFill:  Color = Color(red: 0.55, green: 0.28, blue: 0.18).opacity(0.32)
+    let horizonFill:  Color = Color(red: 0.55, green: 0.28, blue: 0.18).opacity(0.12)
+//    let horizonFill:  Color = Color(red: 0.55, green: 0.28, blue: 0.18).opacity(0.32)
     /// Twilight bands in coral so civil / nautical / astronomical
     /// each tint as warm dusk arcs against the indigo sky.
     let twilightBand: Color = Color(red: 0.95, green: 0.55, blue: 0.32).opacity(0.45)
@@ -161,16 +162,17 @@ struct EPalette2 {
     }
 
     func planet(_ planet: EPlanet) -> Gradient {
-        switch planet.name {
-        case Strings.Planets.mercury: return mercury
-        case Strings.Planets.venus:   return venus
-        case Strings.Planets.mars:    return mars
-        case Strings.Planets.jupiter: return jupiter
-        case Strings.Planets.saturn:  return saturn
-        case Strings.Planets.uranus:  return uranus
-        case Strings.Planets.neptune: return neptune
-        default:                      return (.gray, .gray)
-        }
+        mercury
+//        switch planet.name {
+//        case Strings.Planets.mercury: return mercury
+//        case Strings.Planets.venus:   return venus
+//        case Strings.Planets.mars:    return mars
+//        case Strings.Planets.jupiter: return jupiter
+//        case Strings.Planets.saturn:  return saturn
+//        case Strings.Planets.uranus:  return uranus
+//        case Strings.Planets.neptune: return neptune
+//        default:                      return (.gray, .gray)
+//        }
     }
 
     func spectralDark(_ cls: EHRClass) -> Color {
