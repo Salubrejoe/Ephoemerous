@@ -343,8 +343,8 @@ extension EArtist {
     /// text lifts without smearing; the casing does the legibility,
     /// this does the depth.
     var poiTextShadow: GraphicsContext.Filter {
-        .shadow(color: .black.opacity(0.95),
-                radius: 1.8, x: 0, y: 0.5)
+        .shadow(color: .black.opacity(0.5),
+                radius: 4.8, x: 0, y: 2.5)
     }
 
     /// Colour of the crisp casing around label text. `.primary` gives
@@ -446,6 +446,65 @@ extension EArtist {
         labelTierScaleFloor + (1 - labelTierScaleFloor) * CGFloat(progress)
     }
 
+    // MARK: Selection promotion
+    //
+    // Tapping a POI promotes its label the way Apple Maps promotes a
+    // pin: the flat badge balloons up off its precise location, does a
+    // little spring-bounce, grows a downward teardrop tail, and the
+    // name drops to sit centred *under* the dot in primary ink. The
+    // precise dot stays put as the true anchor.
+    //
+    // It's all a function of `promotion` (0 = flat label, 1 = fully
+    // promoted pin) and `wiggle` (a scale multiplier that overshoots
+    // and decays to 1). The caller owns the clock — it derives both
+    // from "seconds since the selection toggled" via the helpers
+    // below — so selecting eases up *with* the bounce and deselecting
+    // eases back down *without* it (Apple doesn't wiggle on the way
+    // out). See `poiSelectProgress` / `poiSelectWiggle`.
+
+    /// Enlarged scale a fully-promoted badge settles at (before the
+    /// transient wiggle on top).
+    var poiSelectScale: CGFloat { 1.45 }
+    /// How far the promoted badge lifts above the dot, as a multiple
+    /// of `badgeSize` — tall enough to leave room for the tail.
+    var poiSelectLiftFactor: CGFloat { 1.45 }
+    /// Gap between the dot and the top of the dropped-below name.
+    var poiSelectNameDrop: CGFloat { 7 }
+    /// Radius of the precise-location dot left under a promoted pin.
+    var poiSelectDotRadius: CGFloat { 2.5 }
+    /// Gap between the tail's tip and the precise dot — keeps the arrow
+    /// reading as *pointing at* the dot rather than being swallowed by
+    /// it. Clears the dot radius with a little breathing room.
+    var poiSelectTailGap: CGFloat { 6 }
+    /// Seconds the promotion takes to ease in / out.
+    var poiSelectRise: Double { 0.52 }
+    /// Wiggle overshoot, as a fraction of scale.
+    var poiSelectWiggleAmp: CGFloat { 0.48 }
+    /// Wiggle angular frequency (rad/s) — sets how many bounces.
+    var poiSelectWiggleFreq: Double { 6 }
+    /// Wiggle decay rate (1/s) — how fast the bounce dies to rest.
+    var poiSelectWiggleDecay: Double { 2.1 }
+
+    /// Eased promotion value, lerped `from → to` (0 unselected, 1
+    /// selected) over `poiSelectRise` seconds via smoothstep.
+    /// `elapsed` is seconds since the selection toggled.
+    func poiSelectProgress(from: Double, to: Double, elapsed: Double) -> Double {
+        let t = min(max(elapsed / poiSelectRise, 0), 1)
+        let e = t * t * (3 - 2 * t)
+        return from + (to - from) * e
+    }
+
+    /// Decaying-sinusoid scale wiggle for a freshly-selected badge —
+    /// overshoots, bounces a couple of times, settles to 1. `elapsed`
+    /// is seconds since selection began; pass the deselect path 0 (or
+    /// nothing) so the spring-down doesn't bounce.
+    func poiSelectWiggle(elapsed: Double) -> CGFloat {
+        guard elapsed > 0 else { return 1 }
+        let decay = exp(-poiSelectWiggleDecay * elapsed)
+        let osc   = sin(poiSelectWiggleFreq * elapsed)
+        return 1 + poiSelectWiggleAmp * CGFloat(decay * osc)
+    }
+
     /// Draws an Apple-Maps-style POI label at `sc`.
     ///
     /// - `glyph`: SF Symbol name or Unicode glyph for the inner badge.
@@ -455,16 +514,25 @@ extension EArtist {
     ///   when `true`. Use for objects with no other rendering at
     ///   the same screen position — only constellations need this
     ///   today (sun / moon / stars / planets already have visuals).
+    /// - `promotion`: 0 = flat label (default — every existing caller
+    ///   renders exactly as before), 1 = fully promoted "selected"
+    ///   pin (lifted off the dot, tail down, name centred below in
+    ///   primary). The caller derives this from time-since-selection.
+    /// - `wiggle`: transient scale multiplier for the spring-bounce on
+    ///   selection (1 = at rest). See `poiSelectWiggle`.
     func drawPOILabel(
         at sc: CGPoint,
         glyph: POIGlyph,
         text: String,
         category: POICategory,
         drawDot: Bool = false,
+        promotion: Double = 0,
+        wiggle: CGFloat = 1,
         in dc: inout EGraphicContext
     ) {
         let style = poiStyle(for: category)
         let scale = dc.renderedScale
+        let promo = min(max(promotion, 0), 1)
 
         // Each tier eases in/out as a smooth function of scale rather
         // than popping at a hard threshold — see `labelTierProgress`.
@@ -481,36 +549,104 @@ extension EArtist {
         guard badgeFade > 0 else { return }
 
         // Tier 1 — squircle badge.
-        let badgeRect = CGRect(
-            x: sc.x - style.badgeSize / 2,
-            y: sc.y - style.badgeSize / 2,
-            width:  style.badgeSize,
-            height: style.badgeSize
-        )
+        //
+        // Selection promotion lifts the badge off its dot, scales it
+        // up (× the transient `wiggle` spring) and grows a downward
+        // tail back to the precise location — every term scaled by
+        // `promo`, so `promo == 0` reproduces the flat label exactly.
+        let lift        = CGFloat(promo) * poiSelectLiftFactor * style.badgeSize
+        let badgeCenter = CGPoint(x: sc.x, y: sc.y - lift)
+
+        // Effective badge scale: tier fade-in × selection enlargement
+        // × the transient wiggle. At promo 0 / wiggle 1 this collapses
+        // to just the tier scale, leaving unselected labels untouched.
+        let tierScale  = labelTierScale(badgeFade)
+        let selScale   = 1 + CGFloat(promo) * (poiSelectScale - 1)
+        let badgeScale = tierScale * selScale * wiggle
+
+        // Scale baked into GEOMETRY, not the drawing context. A scaled
+        // badge rect + matching scaled bulge reproduce the enlarged
+        // badge exactly — but because the casing stroke + drop shadow
+        // are then applied in unscaled screen space, the border width
+        // and shadow blur/offset stay fixed (matching the text) instead
+        // of ballooning with the badge.
+        let scaledHalf  = style.badgeSize / 2 * badgeScale
+        let scaledBulge = poiBadgeBulge * badgeScale
+        let badgeRect = CGRect(x: badgeCenter.x - scaledHalf,
+                               y: badgeCenter.y - scaledHalf,
+                               width:  scaledHalf * 2,
+                               height: scaledHalf * 2)
         let badgePath = Squircle(corners: style.badgeCorners,
-                                 bulge:   poiBadgeBulge)
+                                 bulge:   scaledBulge)
             .path(in: badgeRect)
 
-        // Tier-1 context: fade + scale the badge (and its glyph)
-        // around `sc` so it grows into place. The badge draws through
-        // a scoped copy carrying the drop-shadow filter so the shadow
-        // doesn't leak onto the glyph; both share this opacity + scale.
-        var tier1 = dc.ctx
-        tier1.opacity *= badgeFade
-        let badgeScale = labelTierScale(badgeFade)
-        tier1.translateBy(x: sc.x, y: sc.y)
-        tier1.scaleBy(x: badgeScale, y: badgeScale)
-        tier1.translateBy(x: -sc.x, y: -sc.y)
+        // Downward tail from the badge toward the precise dot — a
+        // triangle whose base width grows with promo (degenerate /
+        // invisible at promo 0). Drawn in screen space, NOT through the
+        // badge's scale transform. Its tip stops `poiSelectTailGap`
+        // short of `sc` so the dot stays a distinct mark the arrow
+        // points at rather than one the tail disappears under. Filled
+        // in `.systemBackground` to match the badge border + casing.
+//        if promo > 0 {
+//            let halfH    = style.badgeSize / 2 * badgeScale
+//            let tailTopY = badgeCenter.y + halfH - 1   // slight overlap into the badge
+//            let tailTipY = sc.y - poiSelectTailGap     // stop short of the dot
+//            let baseHalf = CGFloat(promo) * style.badgeSize * 0.30
+//            var tail = Path()
+//            tail.move   (to: CGPoint(x: sc.x - baseHalf, y: tailTopY))
+//            tail.addLine(to: CGPoint(x: sc.x + baseHalf, y: tailTopY))
+//            tail.addLine(to: CGPoint(x: sc.x,            y: tailTipY))
+//            tail.closeSubpath()
+//            var tailCtx = dc.ctx
+//            tailCtx.opacity *= badgeFade
+//            tailCtx.addFilter(poiTextShadow)
+//            tailCtx.fill(tail, with: .color(.systemBackground))
+//        }
 
-        // Apple-Maps-style soft drop shadow under the badge. Scoped
-        // to a local context so the filter doesn't leak onto the
-        // glyph drawn next (the text below gets its own shadowed
-        // context so the pill reads as a single shape under one
-        // shadow envelope).
-        var shadowed = tier1
-        shadowed.addFilter(poiShadow)
+        // Badge casing — exactly the layering `drawCasedLabel` uses for
+        // text, so badge and text wear identical shadows: the casing is
+        // an OUTSET squircle (the border colour, `poiTextBorderWidth`
+        // wider all round, same as the text ring). Draw it three times:
+        //
+        //   1 — shadow: the casing silhouette, shadowed
+        //   2 — casing: the same silhouette, unshadowed, ON TOP — this
+        //       covers the shadow's interior so only a thin soft rim
+        //       escapes beyond the badge (the text's white casing hides
+        //       its shadow the same way; without this the badge wore the
+        //       full halo and read heavier than the text)
+        //   3 — fill: the gradient badge face, inset by the border
+        //
+        // All in UNSCALED screen space — the scale is already baked into
+        // the geometry — so the shadow + border stay text-sized instead
+        // of ballooning with the badge.
+        let casingRect = badgeRect.insetBy(dx: -poiTextBorderWidth/2,
+                                           dy: -poiTextBorderWidth/2)
+        let casingPath = Squircle(corners: style.badgeCorners,
+                                  bulge:   scaledBulge)
+            .path(in: casingRect)
+
+        // The shadow is cast by the casing OUTLINE (a thin stroke), not
+        // the solid squircle — a filled shape throws a big dense blob,
+        // while the text's shadow is wispy because letterforms are thin
+        // line-art. Stroking the outline at the border width makes the
+        // badge cast the same thin, soft halo the text does. The solid
+        // casing fill in pass 2 then covers the inner half, leaving only
+        // the soft outer rim — exactly like the text casing.
+        var shadow = dc.ctx
+        shadow.opacity *= badgeFade
+        shadow.addFilter(poiTextShadow)
+        shadow.stroke(casingPath,
+                      with: .color(poiTextBorderColor),
+                      lineWidth: poiTextBorderWidth)
+
+        var caseCtx = dc.ctx
+        caseCtx.opacity *= badgeFade
+//        caseCtx.fill(casingPath, with: .color(poiTextBorderColor))
+
         let gradient = Gradient(colors: [style.gradientTop, style.gradientBottom])
-        shadowed.fill(
+        var fillCtx = dc.ctx
+        fillCtx.opacity *= badgeFade
+        fillCtx.fill(
             badgePath,
             with: .linearGradient(
                 gradient,
@@ -518,14 +654,19 @@ extension EArtist {
                 endPoint:   CGPoint(x: badgeRect.midX, y: badgeRect.maxY)
             )
         )
-        shadowed.stroke(badgePath,
-                        with: .color(style.border),
-                        lineWidth: 0.5)
 
-        // Glyph inside the badge. Wrapping `Image(systemName:)` in
-        // `Text` lets us route both branches through the same
+        // Glyph inside the badge — drawn through a scaled context so it
+        // grows with the badge (it carries no shadow/border, so scaling
+        // the context here is harmless). Wrapping `Image(systemName:)`
+        // in `Text` routes both branches through the same
         // `ctx.draw(Text, at:, anchor:)` overload (Image alone doesn't
         // accept `.font` / `.foregroundStyle`).
+        var glyphCtx = dc.ctx
+        glyphCtx.opacity *= badgeFade
+        glyphCtx.translateBy(x: badgeCenter.x, y: badgeCenter.y)
+        glyphCtx.scaleBy(x: badgeScale, y: badgeScale)
+        glyphCtx.translateBy(x: -badgeCenter.x, y: -badgeCenter.y)
+
         let glyphText: Text
         let glyphSize: CGFloat
         switch glyph {
@@ -538,45 +679,90 @@ extension EArtist {
             glyphText = Text(str)
             glyphSize = style.symbolPointSize + 2
         }
-        tier1.draw(
+        glyphCtx.draw(
             glyphText
                 .font(.system(size: glyphSize, weight: .semibold))
                 .foregroundStyle(style.symbolColor),
-            at:     CGPoint(x: badgeRect.midX, y: badgeRect.midY),
+            at:     badgeCenter,
             anchor: .center
         )
 
-        // Tier 2 — text trailing to the right of the badge, fading +
-        // scaling in around its leading anchor so it settles in from
-        // the badge side rather than popping.
-        //
-        // The text picks up the same vertical gradient the badge uses
-        // (lighter top, darker bottom), wrapped in an Apple-Maps-style
-        // casing + drop shadow (see `drawCasedLabel`) so badge + text
-        // read as a single legible pill against the sky.
-        guard textFade > 0 else { return }
+        // Precise-location dot left under a promoted pin — the tail
+        // points at it, and it marks the exact spot the badge lifted
+        // off. Fades in with promo; absent on a flat label.
+        if promo > 0 {
+            let r = poiSelectDotRadius
+            let dotRect = CGRect(x: sc.x - r, y: sc.y - r, width: 2 * r, height: 2 * r)
+            var dotCtx = dc.ctx
+            dotCtx.opacity *= promo * badgeFade
+            dotCtx.addFilter(poiTextShadow)
+            dotCtx.fill(Path(ellipseIn: dotRect), with: .color(style.gradientBottom))
+        }
+
+        // Tier 2 — the name. Trailing-right of the badge when flat; as
+        // the label promotes it slides to sit centred *below* the
+        // precise dot and recolours from the badge gradient to primary
+        // ink (the Apple-Maps selected-label treatment). Selection
+        // forces the name visible even if the zoom tier hasn't revealed
+        // text yet, so a tapped badge always shows its name.
+        let textOpacity = max(textFade, promo)
+        guard textOpacity > 0 else { return }
+
+        let textFont = Font.footnote.weight(.bold)
         let textGradient = LinearGradient(
             colors:     [style.gradientTop, style.gradientBottom],
             startPoint: .top,
             endPoint:   .bottom
         )
-        let textAnchor = CGPoint(x: badgeRect.maxX + poiTextLeadingGap,
-                                 y: sc.y)
-        let textScale  = labelTierScale(textFade)
-        var textCtx = dc.ctx
-        textCtx.opacity *= textFade
-        textCtx.translateBy(x: textAnchor.x, y: textAnchor.y)
-        textCtx.scaleBy(x: textScale, y: textScale)
-        textCtx.translateBy(x: -textAnchor.x, y: -textAnchor.y)
 
-        let textFont = Font.footnote.weight(.bold)
-        drawCasedLabel(
-            filled: Text(text).font(textFont).foregroundStyle(textGradient),
-            cased:  Text(text).font(textFont).foregroundStyle(poiTextBorderColor),
-            at:     textAnchor,
-            anchor: .leading,
-            in:     textCtx
+        // Flat (trailing, vertically-centred) vs promoted (centred
+        // below the dot) anchor + point — lerped by promo. The flat
+        // endpoint is computed from `sc` (not the lifted badge) so it
+        // matches the unselected layout exactly at promo 0.
+        let flatPoint = CGPoint(x: sc.x + style.badgeSize / 2 + poiTextLeadingGap,
+                                y: sc.y)
+        let selPoint  = CGPoint(x: sc.x, y: sc.y + poiSelectNameDrop)
+        let textPoint = CGPoint(
+            x: flatPoint.x + (selPoint.x - flatPoint.x) * CGFloat(promo),
+            y: flatPoint.y + (selPoint.y - flatPoint.y) * CGFloat(promo)
         )
+        // Leading (0, 0.5) → top-centre (0.5, 0) as it promotes.
+        let textAnchor = UnitPoint(x: CGFloat(promo) * 0.5,
+                                   y: 0.5 - CGFloat(promo) * 0.5)
+
+        let textScale = labelTierScale(textFade)
+        var textCtx = dc.ctx
+        textCtx.opacity *= textOpacity
+        textCtx.translateBy(x: textPoint.x, y: textPoint.y)
+        textCtx.scaleBy(x: textScale, y: textScale)
+        textCtx.translateBy(x: -textPoint.x, y: -textPoint.y)
+
+        // Crossfade the fill: gradient when flat, primary when
+        // promoted. Drawing both through the casing at complementary
+        // opacities keeps it a clean morph — only the selected label is
+        // ever mid-crossfade, so the doubled draw is negligible.
+        if promo < 1 {
+            var flatCtx = textCtx
+            flatCtx.opacity *= (1 - promo)
+            drawCasedLabel(
+                filled: Text(text).font(textFont).foregroundStyle(textGradient),
+                cased:  Text(text).font(textFont).foregroundStyle(poiTextBorderColor),
+                at:     textPoint,
+                anchor: textAnchor,
+                in:     flatCtx
+            )
+        }
+        if promo > 0 {
+            var selCtx = textCtx
+            selCtx.opacity *= promo
+            drawCasedLabel(
+                filled: Text(text).font(textFont).foregroundStyle(Color.primary),
+                cased:  Text(text).font(textFont).foregroundStyle(poiTextBorderColor),
+                at:     textPoint,
+                anchor: textAnchor,
+                in:     selCtx
+            )
+        }
     }
 
     /// Draws the tier-0 dot marker for a POI at `sc`, at `opacity`.

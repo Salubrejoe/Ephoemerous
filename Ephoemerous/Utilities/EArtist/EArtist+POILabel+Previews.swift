@@ -214,3 +214,78 @@ private struct POITierSweepPreview: View {
     .padding()
     .background(EArtist.shared.canvasBackground)
 }
+
+/// Interactive selection promotion: tap the button to select /
+/// deselect and watch each label balloon up off its dot, spring-wiggle,
+/// grow a downward tail, and drop its name below in primary — then
+/// settle back down on deselect (no bounce out). Drives `promotion` +
+/// `wiggle` from seconds-since-toggle, exactly how `EAppState` will
+/// once this goes live. The fastest way to tune `poiSelect*` knobs.
+private struct POISelectionPreview: View {
+    @State private var selected   = false
+    @State private var toggleDate = Date()
+
+    private let rows: [(title: String, glyph: POIGlyph, text: String, category: POICategory)] = [
+        ("Sun",        .sfSymbol("sun.max.fill"),            "Sun",        .sun),
+        ("Moon",       .sfSymbol("moonphase.first.quarter"), "Moon",       .moon),
+        ("Mars",       .unicode("♂"),                        "Mars",       .planet(.mars)),
+        ("Betelgeuse", .sfSymbol("star.fill"),               "Betelgeuse", .followedStar(betelgeusePreviewStar))
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TimelineView(.animation) { timeline in
+                let elapsed = timeline.date.timeIntervalSince(toggleDate)
+                let promo   = EArtist.shared.poiSelectProgress(
+                    from:    selected ? 0 : 1,
+                    to:      selected ? 1 : 0,
+                    elapsed: elapsed
+                )
+                let wig: CGFloat = selected
+                    ? EArtist.shared.poiSelectWiggle(elapsed: elapsed)
+                    : 1
+
+                VStack(spacing: 0) {
+                    ForEach(rows.indices, id: \.self) { i in
+                        HStack(spacing: 16) {
+                            Text(rows[i].title)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 90, alignment: .leading)
+
+                            Canvas { ctx, size in
+                                var dc = previewGraphicsContext(ctx: ctx, size: size, scale: 200)
+                                EArtist.shared.drawPOILabel(
+                                    at:        CGPoint(x: size.width / 2, y: size.height / 2 - 6),
+                                    glyph:     rows[i].glyph,
+                                    text:      rows[i].text,
+                                    category:  rows[i].category,
+                                    drawDot:   true,
+                                    promotion: promo,
+                                    wiggle:    wig,
+                                    in:        &dc
+                                )
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 120)
+                        }
+                        if i < rows.count - 1 { Divider() }
+                    }
+                }
+            }
+
+            Button(selected ? "Deselect" : "Select") {
+                selected.toggle()
+                toggleDate = Date()
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top, 12)
+        }
+        .padding()
+        .background(EArtist.shared.canvasBackground)
+    }
+}
+
+#Preview("POI selection (promotion)") {
+    POISelectionPreview()
+}
