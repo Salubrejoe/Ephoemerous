@@ -37,14 +37,12 @@ struct SunLayer: EGridLayer {
         // Apple-Maps-style POI badge replaces the sun disc.
         // (The slow breathing crown that used to ring the badge is
         // gone — see EArtist+Sun.swift in DeprecationStation.)
-        let (promo, wig) = dc.poiPromotion(forObjectID: ESkyObject.sun.id)
         artist.drawPOILabel(
             at:        sc,
             glyph:     .sfSymbol("sun.max.fill"),
             text:      Strings.Bodies.sun,
             category:  .sun,
-            promotion: promo,
-            wiggle:    wig,
+            promotion: dc.poiPromotion(forObjectID: ESkyObject.sun.id),
             in:        &dc
         )
     }

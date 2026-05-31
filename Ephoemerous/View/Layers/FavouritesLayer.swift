@@ -82,15 +82,13 @@ struct FavouritesLayer: EGridLayer {
             return sc
         }
 
-        let (promo, wig) = dc.poiPromotion(forObjectID: ESkyObject.star(star).id)
         artist.drawPOILabel(
             at:        sc,
             glyph:     .sfSymbol("star.fill"),
             text:      star.displayName,
             category:  .followedStar(star),
             drawDot:   false,    // heart handles the low-zoom case
-            promotion: promo,
-            wiggle:    wig,
+            promotion: dc.poiPromotion(forObjectID: ESkyObject.star(star).id),
             in:        &dc
         )
         let heartCorner = CGPoint(x: sc.x - style.badgeSize / 2,

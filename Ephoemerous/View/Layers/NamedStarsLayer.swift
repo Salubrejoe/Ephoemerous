@@ -102,13 +102,12 @@ struct NamedStarsLayer: EGridLayer {
             // tap target for) something the user can't see.
             guard artist.starPointFallsWithinMarigin(sc, in: dc) else { continue }
 
-            // Only build the per-star id (and read the spring) when
-            // something is actually (de)selecting — keeps the ~300-star
-            // loop free of string work in the common, nothing-selected
-            // case.
-            let (promo, wig): (Double, CGFloat) = dc.hasActivePromotion
+            // Only read the spring when something is actually
+            // (de)selecting — keeps the ~300-star loop free of string
+            // work in the common, nothing-selected case.
+            let promo: Double = dc.hasActivePromotion
                 ? dc.poiPromotion(forObjectID: ESkyObject.star(star).id)
-                : (0, 1)
+                : 0
             artist.drawPOILabel(
                 at:        sc,
                 glyph:     .sfSymbol("star.fill"),
@@ -116,7 +115,6 @@ struct NamedStarsLayer: EGridLayer {
                 category:  .namedStar(star),
                 drawDot:   true,
                 promotion: promo,
-                wiggle:    wig,
                 in:        &dc
             )
 

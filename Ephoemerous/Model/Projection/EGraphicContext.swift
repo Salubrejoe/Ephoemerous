@@ -49,25 +49,24 @@ struct EGraphicContext {
     /// skip building per-object ids when no label is (de)selecting.
     var hasActivePromotion: Bool { selectedObjectID != nil || deselectingID != nil }
 
-    /// Promotion + wiggle for the POI label identified by `id` (an
+    /// Promotion (0…1) for the POI label identified by `id` (an
     /// `ESkyObject.id`), as a function of the per-frame animation clock:
-    ///   • the selected object springs UP (0→1) with a wiggle
-    ///   • the just-deselected object springs DOWN (1→0), no wiggle
-    ///   • everything else stays flat (0, 1)
-    /// Pass the result straight into `drawPOILabel(promotion:wiggle:)`.
-    func poiPromotion(forObjectID id: String?) -> (promotion: Double, wiggle: CGFloat) {
-        guard let id else { return (0, 1) }
+    ///   • the selected object eases UP (0→1)
+    ///   • the just-deselected object eases DOWN (1→0)
+    ///   • everything else stays flat (0)
+    /// Pass the result straight into `drawPOILabel(promotion:)`.
+    func poiPromotion(forObjectID id: String?) -> Double {
+        guard let id else { return 0 }
         let artist = EArtist.shared
         if id == selectedObjectID {
-            let e = animationTime - selectionStart
-            return (artist.poiSelectProgress(from: 0, to: 1, elapsed: e),
-                    artist.poiSelectWiggle(elapsed: e))
+            return artist.poiSelectProgress(from: 0, to: 1,
+                                            elapsed: animationTime - selectionStart)
         }
         if id == deselectingID {
-            let e = animationTime - deselectStart
-            return (artist.poiSelectProgress(from: 1, to: 0, elapsed: e), 1)
+            return artist.poiSelectProgress(from: 1, to: 0,
+                                            elapsed: animationTime - deselectStart)
         }
-        return (0, 1)
+        return 0
     }
 
     // MARK: Coordinate helpers

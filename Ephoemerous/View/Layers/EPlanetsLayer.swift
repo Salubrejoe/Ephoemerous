@@ -25,15 +25,13 @@ struct EPlanetsLayer: EGridLayer {
             // `drawDot: true` keeps a tinted dot on-canvas below the
             // badge-in threshold, so a planet doesn't disappear when
             // the user zooms out.
-            let (promo, wig) = dc.poiPromotion(forObjectID: ESkyObject.planet(planet).id)
             artist.drawPOILabel(
                 at:        sc,
                 glyph:     .unicode(artist.planetGlyph(planet)),
                 text:      planet.name,
                 category:  .planet(planet),
                 drawDot:   true,
-                promotion: promo,
-                wiggle:    wig,
+                promotion: dc.poiPromotion(forObjectID: ESkyObject.planet(planet).id),
                 in:        &dc
             )
         }

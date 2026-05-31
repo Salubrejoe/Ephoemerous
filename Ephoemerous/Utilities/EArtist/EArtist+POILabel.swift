@@ -448,47 +448,31 @@ extension EArtist {
 
     // MARK: Selection promotion
     //
-    // Tapping a POI promotes its label the way Apple Maps promotes a
-    // pin: the flat badge balloons up off its precise location, does a
-    // little spring-bounce, grows a downward teardrop tail, and the
-    // name drops to sit centred *under* the dot in primary ink. The
-    // precise dot stays put as the true anchor.
-    //
-    // It's all a function of `promotion` (0 = flat label, 1 = fully
-    // promoted pin) and `wiggle` (a scale multiplier that overshoots
-    // and decays to 1). The caller owns the clock — it derives both
-    // from "seconds since the selection toggled" via the helpers
-    // below — so selecting eases up *with* the bounce and deselecting
-    // eases back down *without* it (Apple doesn't wiggle on the way
-    // out). See `poiSelectProgress` / `poiSelectWiggle`.
+    // Tapping a POI promotes its label: the badge lifts off its precise
+    // location, scales up, and the name slides to sit centred *under*
+    // the dot in primary ink. Dead simple — a single `promotion` value
+    // (0 = flat label, 1 = fully promoted) eased 0→1 over a quick
+    // scale-up. No wiggle, no overlay, no cache: the brief ease is the
+    // only thing that wakes the canvas, and it parks again right after.
+    // The caller derives `promotion` from "seconds since selection"
+    // via `poiSelectProgress`.
 
-    /// Enlarged scale a fully-promoted badge settles at (before the
-    /// transient wiggle on top).
+    /// Enlarged scale a fully-promoted badge settles at.
     var poiSelectScale: CGFloat { 1.45 }
     /// How far the promoted badge lifts above the dot, as a multiple
-    /// of `badgeSize` — tall enough to leave room for the tail.
+    /// of `badgeSize`.
     var poiSelectLiftFactor: CGFloat { 1.45 }
     /// Gap between the dot and the top of the dropped-below name.
     var poiSelectNameDrop: CGFloat { 7 }
     /// Radius of the precise-location dot left under a promoted pin.
     var poiSelectDotRadius: CGFloat { 2.5 }
-    /// Gap between the tail's tip and the precise dot — keeps the arrow
-    /// reading as *pointing at* the dot rather than being swallowed by
-    /// it. Clears the dot radius with a little breathing room.
-    var poiSelectTailGap: CGFloat { 6 }
-    /// Seconds the promotion takes to ease in / out.
-    var poiSelectRise: Double { 0.52 }
-    /// Wiggle overshoot, as a fraction of scale.
-    var poiSelectWiggleAmp: CGFloat { 0.48 }
-    /// Wiggle angular frequency (rad/s) — sets how many bounces.
-    var poiSelectWiggleFreq: Double { 6 }
-    /// Wiggle decay rate (1/s) — how fast the bounce dies to rest.
-    var poiSelectWiggleDecay: Double { 2.1 }
-    /// Seconds after a (de)selection past which the promotion spring is
-    /// fully settled — the rise plus enough wiggle decay that the
-    /// residual bounce is invisible. `EAppState` keeps the canvas
-    /// timeline ticking for exactly this long, then parks.
-    var poiSelectSettleDuration: Double { 2.5 }
+    /// Seconds the promotion takes to ease in / out — a quick scale-up.
+    var poiSelectRise: Double { 0.3 }
+    /// Seconds after a (de)selection past which the promotion is settled.
+    /// It's a plain ease now (no wiggle tail), so this is just the rise:
+    /// `EAppState` keeps the canvas ticking for exactly the ease, then
+    /// parks — no long redraw window, no stutter.
+    var poiSelectSettleDuration: Double { poiSelectRise }
 
     /// Eased promotion value, lerped `from → to` (0 unselected, 1
     /// selected) over `poiSelectRise` seconds via smoothstep.
@@ -497,17 +481,6 @@ extension EArtist {
         let t = min(max(elapsed / poiSelectRise, 0), 1)
         let e = t * t * (3 - 2 * t)
         return from + (to - from) * e
-    }
-
-    /// Decaying-sinusoid scale wiggle for a freshly-selected badge —
-    /// overshoots, bounces a couple of times, settles to 1. `elapsed`
-    /// is seconds since selection began; pass the deselect path 0 (or
-    /// nothing) so the spring-down doesn't bounce.
-    func poiSelectWiggle(elapsed: Double) -> CGFloat {
-        guard elapsed > 0 else { return 1 }
-        let decay = exp(-poiSelectWiggleDecay * elapsed)
-        let osc   = sin(poiSelectWiggleFreq * elapsed)
-        return 1 + poiSelectWiggleAmp * CGFloat(decay * osc)
     }
 
     /// Draws an Apple-Maps-style POI label at `sc`.
@@ -521,10 +494,8 @@ extension EArtist {
     ///   today (sun / moon / stars / planets already have visuals).
     /// - `promotion`: 0 = flat label (default — every existing caller
     ///   renders exactly as before), 1 = fully promoted "selected"
-    ///   pin (lifted off the dot, tail down, name centred below in
+    ///   pin (lifted off the dot, scaled up, name centred below in
     ///   primary). The caller derives this from time-since-selection.
-    /// - `wiggle`: transient scale multiplier for the spring-bounce on
-    ///   selection (1 = at rest). See `poiSelectWiggle`.
     func drawPOILabel(
         at sc: CGPoint,
         glyph: POIGlyph,
@@ -532,7 +503,6 @@ extension EArtist {
         category: POICategory,
         drawDot: Bool = false,
         promotion: Double = 0,
-        wiggle: CGFloat = 1,
         in dc: inout EGraphicContext
     ) {
         let style = poiStyle(for: category)
@@ -562,12 +532,12 @@ extension EArtist {
         let lift        = CGFloat(promo) * poiSelectLiftFactor * style.badgeSize
         let badgeCenter = CGPoint(x: sc.x, y: sc.y - lift)
 
-        // Effective badge scale: tier fade-in × selection enlargement
-        // × the transient wiggle. At promo 0 / wiggle 1 this collapses
-        // to just the tier scale, leaving unselected labels untouched.
+        // Effective badge scale: tier fade-in × selection enlargement.
+        // At promo 0 this collapses to just the tier scale, leaving
+        // unselected labels untouched.
         let tierScale  = labelTierScale(badgeFade)
         let selScale   = 1 + CGFloat(promo) * (poiSelectScale - 1)
-        let badgeScale = tierScale * selScale * wiggle
+        let badgeScale = tierScale * selScale
 
         // Scale baked into GEOMETRY, not the drawing context. A scaled
         // badge rect + matching scaled bulge reproduce the enlarged

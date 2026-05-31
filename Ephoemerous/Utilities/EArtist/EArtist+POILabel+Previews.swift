@@ -223,11 +223,10 @@ private struct POITierSweepPreview: View {
 }
 
 /// Interactive selection promotion: tap the button to select /
-/// deselect and watch each label balloon up off its dot, spring-wiggle,
-/// grow a downward tail, and drop its name below in primary — then
-/// settle back down on deselect (no bounce out). Drives `promotion` +
-/// `wiggle` from seconds-since-toggle, exactly how `EAppState` will
-/// once this goes live. The fastest way to tune `poiSelect*` knobs.
+/// deselect and watch each label scale up off its dot and drop its name
+/// below in primary — then ease back down on deselect. Drives
+/// `promotion` from seconds-since-toggle, exactly how `EAppState` does
+/// once live. The fastest way to tune the `poiSelect*` knobs.
 private struct POISelectionPreview: View {
     @State private var selected   = false
     @State private var toggleDate = Date()
@@ -248,9 +247,6 @@ private struct POISelectionPreview: View {
                     to:      selected ? 1 : 0,
                     elapsed: elapsed
                 )
-                let wig: CGFloat = selected
-                    ? EArtist.shared.poiSelectWiggle(elapsed: elapsed)
-                    : 1
 
                 VStack(spacing: 0) {
                     ForEach(rows.indices, id: \.self) { i in
@@ -269,7 +265,6 @@ private struct POISelectionPreview: View {
                                     category:  rows[i].category,
                                     drawDot:   true,
                                     promotion: promo,
-                                    wiggle:    wig,
                                     in:        &dc
                                 )
                             }
