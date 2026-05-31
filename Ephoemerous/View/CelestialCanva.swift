@@ -25,7 +25,7 @@ struct CelestialCanva: View {
             // Aim sky-wash: blue glow where the phone points, clipped to
             // the horizon dome. Drawn early so it tints the background
             // behind every star rather than fogging the foreground.
-            SkyAimWashLayer(),
+//            SkyAimWashLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
@@ -51,9 +51,10 @@ struct CelestialCanva: View {
     // MARK: - Body
 
     var body: some View {
-        // One timeline: 60 fps during gestures/transitions, 10 fps at rest.
-        // `schedule` is recomputed whenever isAnimating flips, so TimelineView
-        // reschedules on the next render — no destructive .id() teardown.
+        // One timeline: 120 fps during gestures/transitions, parked at
+        // rest. `schedule` is recomputed whenever isAnimating flips, so
+        // TimelineView reschedules on the next render — no destructive
+        // .id() teardown.
         TimelineView(schedule) { timeline in
             ZStack {
                 Canvas { ctx, size in
