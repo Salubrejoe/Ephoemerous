@@ -23,18 +23,19 @@ extension EAppState {
     /// Visible magnitude limit as a function of zoom. Zooming in reveals
     /// fainter stars (telescope-style); zooming out keeps only the
     /// brighter ones so the wide view breathes. Anchored to the gesture
-    /// scale range (floor 25 → default 215 → ceiling 500):
+    /// scale range — floor → default → ceiling pulled from
+    /// AstroConstants so the curve can't drift from the real zoom limits:
     ///
-    ///   • scale ≤ 25  → mag ≤ 4.5  (bright stars only; clean wide sky)
-    ///   • scale 215   → mag ≤ 6.2  (≈ naked-eye, the resting look)
-    ///   • scale ≥ 500 → mag ≤ 8.0  (catalog-deep, the BSC's practical floor)
+    ///   • zoom-out floor   → mag ≤ 4.5  (bright stars only; clean sky)
+    ///   • default (215)    → mag ≤ 6.2  (≈ naked-eye, the resting look)
+    ///   • zoom-in ceiling  → mag ≤ 8.0  (catalog-deep, the BSC's floor)
     ///
     /// Two linear segments through those anchors, clamped at the ends.
     /// Smooth enough that stars fade in as you pinch rather than popping.
     func magnitudeCap(forScale scale: Double) -> Double {
-        let floorScale   = 25.0,  floorMag   = 4.5
-        let defaultScale = 215.0, defaultMag = 6.2
-        let ceilScale    = 500.0, ceilMag    = 8.0
+        let floorScale   = 25.0,                       floorMag   = 4.5
+        let defaultScale = AstroConstants.defaultScale, defaultMag = 6.2
+        let ceilScale    = AstroConstants.maximumScale, ceilMag    = 8.0
 
         if scale <= floorScale { return floorMag }
         if scale >= ceilScale  { return ceilMag }

@@ -116,6 +116,65 @@ struct EGraphicContext {
         return toScreen(p)
     }
 
+    // MARK: Star cull
+    //
+    // Observer-centred stereographic ⇒ a star's distance from the
+    // projected zenith depends ONLY on its angle from the zenith:
+    //   projection-radius ρ = 2·cos(alt) / (1 + sin(alt))
+    //   dot(zenith, starVector) = sin(alt)
+    // So "could this star be on screen?" is one dot product against a
+    // per-frame `minDot` cutoff — no per-star projection. The cutoff is
+    // derived from the farthest visible corner, so the kept disc always
+    // CONTAINS the visible rect: an on-screen star can never be culled.
+
+    /// Per-frame visibility gate for the star field. Built once in
+    /// `StarsLayer`; `keeps(_:)` is then called per star with the star's
+    /// constant (un-precessed, un-rotated) `equatorialVector`.
+    struct StarCull {
+        /// Sidereal-inverse-rotated zenith. Dotting the star's UN-rotated
+        /// vector against this equals dotting the rotated star against the
+        /// real zenith — saves a rotation per star (do it once here).
+        let zenithUnrotated: SIMD3<Double>
+        /// Minimum `dot` (= sin altitude) a star needs to survive. Lower
+        /// = wider cone = more stars; rises toward 1 as you zoom in.
+        let minDot: Double
+
+        @inline(__always)
+        func keeps(_ starVector: SIMD3<Double>) -> Bool {
+            simd_dot(starVector, zenithUnrotated) >= minDot
+        }
+    }
+
+    /// Build the per-frame star cull from the current camera. Returns a
+    /// gate that rejects stars whose angle from the zenith puts them
+    /// outside the visible area (plus a margin). `nil`-safe: when the
+    /// whole sky is visible (zoomed out) the cutoff just goes ≤ −1 and
+    /// keeps everything.
+    func makeStarCull(marginPixels: CGFloat = 40) -> StarCull {
+        // Zenith projects to the origin → its screen point is the centre
+        // + pan offset. Farthest visible corner from there sets the cone.
+        let zc = toScreen(.zero)
+        let corners = [CGPoint(x: 0, y: 0),
+                       CGPoint(x: size.width, y: 0),
+                       CGPoint(x: 0, y: size.height),
+                       CGPoint(x: size.width, y: size.height)]
+        let maxDist = corners.map { hypot($0.x - zc.x, $0.y - zc.y) }.max() ?? 0
+        let dMax = maxDist + marginPixels
+
+        // Pixels → projection radius (toScreen scales projection coords
+        // by renderedScale). Then invert the stereographic radius for the
+        // minimum sine-altitude that still lands within dMax.
+        let rho = renderedScale > 0 ? Double(dMax) / renderedScale : .infinity
+        let sinAltMin = (4 - rho * rho) / (4 + rho * rho)   // → −1 as rho → ∞
+
+        // Dot the un-rotated star against the inverse-rotated zenith so
+        // the per-star path needs no rotation.
+        let zenithUnrotated = viewpoint.originVector
+            .sidereallyRotated(by: -localSiderealOffset)
+
+        return StarCull(zenithUnrotated: zenithUnrotated, minDot: sinAltMin)
+    }
+
     // MARK: Drawing helpers
 
     mutating func strokeCurve(_ pts: [CGPoint?], color: Color, width: CGFloat = 1) {

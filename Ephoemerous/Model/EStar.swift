@@ -12,6 +12,15 @@ struct EStar: Identifiable, Hashable {
     let spectralClass  : EHRClass
     let pmRA           : Double
     let pmDE           : Double
+
+    /// Unit vector in the (un-precessed, un-rotated) equatorial frame,
+    /// computed once from RA/Dec at load. Constant for the star's life —
+    /// RA/Dec never change — so the per-frame star cull can dot against
+    /// this with zero trig (see `StarsLayer` / `EGraphicContext.starCull`).
+    /// Precession nudges a star by arcminutes, far under the cull's
+    /// screen margin, so the un-precessed vector is exact enough for the
+    /// visibility test; survivors still get the full precise projection.
+    let equatorialVector: SIMD3<Double>
     
     private static let greekLetterMap: [String: String] = [
         "Alp": "α",
@@ -45,13 +54,16 @@ struct EStar: Identifiable, Hashable {
     ]
     
     init(from starData: StarData) {
+        let ra  = EStar.calculateRA(from: starData)
+        let dec = EStar.calculateDec(from: starData)
         self.name           = EStar.calculateName(from: starData)
-        self.rightAscension = EStar.calculateRA(from: starData)
-        self.declination    = EStar.calculateDec(from: starData)
+        self.rightAscension = ra
+        self.declination    = dec
         self.magnitude      = EStar.calculateMagnitude(from: starData)
         self.spectralClass  = EStar.calculateSpectralClass(from: starData)
         self.pmRA           = EStar.calculateProperMotionRA(from: starData)
         self.pmDE           = EStar.calculateProperMotionDec(from: starData)
+        self.equatorialVector = EPrecession.equatorialVector(ra: ra, dec: dec)
     }
     
     var constellation: EConstellation {

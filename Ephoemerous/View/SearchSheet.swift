@@ -60,7 +60,6 @@ struct SearchSheet: View {
                 resultsList
             }
         }
-        .background(Color(.systemBackground))
         // Persistent Apple-Maps-style bottom sheet: never fully
         // dismissed (it's the home of search) — swiping down parks it at
         // the bar-only detent instead. Selecting an object is what hides
@@ -194,8 +193,10 @@ struct SearchSheet: View {
                     }
                 }
             }
-            .background(Color(.secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(.ultraThinMaterial)
+            )
             .padding(.horizontal, 16)
         }
     }

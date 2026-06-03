@@ -214,7 +214,7 @@ enum AstroConstants {
     static let dotBaseRadius:     Double = 2.7    // r at magnitude 0
     static let dotMagRatio:       Double = 0.55   // multiplier per +1 magnitude
     static let dotMaxRadius:      Double = 4.0    // cap → Sirius display radius = 2 px (after EArtist halves)
-    static let dotMinRadius:      Double = 0.3   // floor — keeps mag 8+ as sub-pixel specks rather than zero
+    static let dotMinRadius:      Double = 0.4   // floor — keeps mag 8+ as sub-pixel specks rather than zero
     /// Planet dot: max(planetDotMinR, (planetDotScale − baseMag) × planetDotFactor) / 2
     static let planetDotScale:    Double = 5.0
     static let planetDotFactor:   Double = 0.55
@@ -238,7 +238,7 @@ enum AstroConstants {
     static let detailDotMax:      Double = 28.0
     static let detailDotFactor:   Double =  4.5
     /// Magnitude filter
-    static let defaultMagCap:     Double =  6.5
+    static let defaultMagCap:     Double =  4.5
     static let magRangeMin:       Double = -2.0
     static let magRangeMax:       Double =  8.0
 
@@ -254,7 +254,7 @@ enum AstroConstants {
     /// Hard zoom-in ceiling. Mirrors the gesture coordinator's
     /// `maximumScale` so focus-to-tier (EAppState+Detail) and the pinch
     /// clamp agree on the deepest the canvas can zoom.
-    static let maximumScale:      Double  = 500
+    static let maximumScale:      Double  = 1200
 
     // -------------------------------------------------------------------------
     // MARK: Spectral class colours (RGB components)

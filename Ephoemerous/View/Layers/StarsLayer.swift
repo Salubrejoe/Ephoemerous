@@ -17,6 +17,13 @@ struct StarsLayer: EGridLayer {
         let favouriteNames = Set(dc.state.favouriteStars.map(\.name))
         let hideNamed      = dc.renderedScale >= artist.namedStarDotIn
 
+        // Per-frame visibility gate: one dot product against the star's
+        // cached constant vector rejects everything outside the visible
+        // cone BEFORE the expensive precess → project → toScreen chain.
+        // At deep zoom the cone is tiny, so ~all stars are rejected for
+        // the cost of a dot — that's what makes zoomed-in cheap.
+        let cull = dc.makeStarCull()
+
         // Zoom-driven visible set: a magnitude-sorted prefix capped by
         // the current zoom (fainter stars appear as you pinch in). See
         // `EAppState.visibleStars` / `magnitudeCap`.
@@ -24,14 +31,18 @@ struct StarsLayer: EGridLayer {
             if favouriteNames.contains(star.name) { continue }
             if hideNamed && NamedStarsLayer.candidateNames.contains(star.name) { continue }
 
+            // Cheap angular cull on the cached vector — skips the trig
+            // chain below for off-screen stars.
+            guard cull.keeps(star.equatorialVector) else { continue }
+
             let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
                                                   to: dc.renderedObservationDate)
             let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
                 .sidereallyRotated(by: dc.localSiderealOffset)
             guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
             let sc = dc.toScreen(proj)
-            // Single screen-margin cull — the old chrome-disc cull is
-            // gone along with the clock-mode disc concept.
+            // Final exact screen-margin cull (the angular cull is
+            // conservative; this trims the corners precisely).
             guard artist.starPointFallsWithinMarigin(sc, in: dc) else { continue }
             artist.drawStar(star, at: sc, in: &dc)
         }
