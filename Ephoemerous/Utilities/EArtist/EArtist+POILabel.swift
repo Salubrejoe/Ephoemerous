@@ -17,8 +17,8 @@ import LoreKit
 //   tier 2 (scale ≥ textIn)  — badge + text label below
 //
 // The badge is centred on the projected screen position so any
-// other rendering the layer drew at the same spot (sun glow,
-// breathing halo, …) reads as "behind" the badge.
+// other rendering the layer drew at the same spot reads as
+// "behind" the badge.
 
 enum POIGlyph {
     /// SF Symbol drawn via `Image(systemName:)`. Use for "named"
@@ -262,7 +262,7 @@ extension EArtist {
             // the zoom range, so the dot/badge/text only kick in when
             // the user is clearly past constellation-name territory.
             // Selecting one promotes it to `.followedStar` (which has
-            // the breathing halo + early thresholds).
+            // the early thresholds + favourite heart).
             let g = star.spectralClass.badgeGradient
             return POICategoryStyle(
                 gradientTop:     g.top,

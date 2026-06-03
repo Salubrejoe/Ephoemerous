@@ -210,18 +210,11 @@ enum AstroConstants {
     /// in magnitude multiplies the radius by `dotMagRatio` (≪ 1 → faint
     /// stars fall off fast). Visual radius applied in EArtist is half of
     /// the value returned by `starRadius`.
-    ///   r = clamp(dotMinRadius, dotMaxRadius, dotBaseRadius · dotMagRatio^mag) × twinkle
+    ///   r = clamp(dotMinRadius, dotMaxRadius, dotBaseRadius · dotMagRatio^mag)
     static let dotBaseRadius:     Double = 2.7    // r at magnitude 0
     static let dotMagRatio:       Double = 0.55   // multiplier per +1 magnitude
     static let dotMaxRadius:      Double = 4.0    // cap → Sirius display radius = 2 px (after EArtist halves)
     static let dotMinRadius:      Double = 0.3   // floor — keeps mag 8+ as sub-pixel specks rather than zero
-    /// Twinkle animation — radius-only now. The shape (bulge)
-    /// twinkle was deprecated when star rendering moved to a single
-    /// cached path per star.
-    static let twinkleAmplitude:  Double = 0.05
-    static let twinkleFrequency:  Double = 0.5
-    static let twinklePhaseRA:    Double = 17.3
-    static let twinklePhaseDec:   Double =  7.9
     /// Planet dot: max(planetDotMinR, (planetDotScale − baseMag) × planetDotFactor) / 2
     static let planetDotScale:    Double = 5.0
     static let planetDotFactor:   Double = 0.55

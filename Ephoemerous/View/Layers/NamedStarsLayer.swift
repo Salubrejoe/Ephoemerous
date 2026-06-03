@@ -82,7 +82,7 @@ struct NamedStarsLayer: EGridLayer {
         }
 
         // FavouritesLayer draws favourited stars with their own badge
-        // + breathing halo + earlier thresholds — skip them here so
+        // + earlier thresholds — skip them here so
         // there's no double-render.
         let favouriteNames = Set(dc.state.favouriteStars.map(\.name))
         let tappable      = scale >= artist.namedStarTapMinScale

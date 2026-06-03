@@ -5,9 +5,7 @@ import LoreKit
 // Every star is a small filled 5-point squircle with a fixed bulge,
 // rendered from one cached unit-rect path. A deterministic per-star
 // spin (RA / Dec derived) keeps neighbouring stars from sharing
-// rotations. Radius twinkles via `starRadius` for the selected
-// stars; the shape-bulge bucketing that used to twinkle the path
-// itself is deprecated — one shape, all stars.
+// rotations — one shape, all stars.
 extension EArtist {
 
     var starZoomExp : Double { 0.01 }   // sub-linear: r ∝ scale^starZoomExp
@@ -33,18 +31,10 @@ extension EArtist {
         screenPoint.y < dc.size.height + margin
     }
 
-    /// Magnitude-clamped on-screen radius for a star, modulated by the
-    /// per-star twinkle when `twinkling` is true. Pass `false` from
-    /// callers that drive their own slow animation (e.g. the selected-
-    /// star halo's breath) so twinkle and breath don't compound into
-    /// Magnitude-driven on-screen radius for a star, in points (no
+    /// Magnitude-clamped on-screen radius for a star, in points (no
     /// zoom factor applied — the caller folds in `renderedScale` for
-    /// the actual draw). Twinkle is gone (used to apply a sin-wave
-    /// modulation to favourited stars; favourites are now signalled
-    /// with the static heart marker in FavouritesLayer instead).
-    /// `twinkling` is kept on the signature for callers that still
-    /// pass `false` — semantically a no-op now.
-    func starRadius(_ star: EStar, in dc: EGraphicContext, twinkling: Bool = true) -> Double {
+    /// the actual draw).
+    func starRadius(_ star: EStar, in dc: EGraphicContext) -> Double {
         // Brightness drops by ~2.512× per magnitude step; we follow
         // the same shape but with a tunable ratio so the contrast on
         // screen is much steeper than a linear mapping would give.
@@ -70,11 +60,6 @@ extension EArtist {
         local.fill(
             Self.starPath,
             with: .color(star.spectralClass.lightColor.opacity(0.9))
-            /*
-             .color(
-             dc.state.isFavouriteStar(star) ? star.spectralClass.color.opacity(0.9) : .tertiary
-             )
-             */
         )
     }
 

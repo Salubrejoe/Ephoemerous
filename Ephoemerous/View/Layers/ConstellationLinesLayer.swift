@@ -27,8 +27,8 @@ struct ConstellationLinesLayer: EGridLayer {
             for seg in segs {
                 guard let pa = projected(seg.a, in: dc),
                       let pb = projected(seg.b, in: dc) else { continue }
-                let ra = artist.starRadius(seg.a, in: dc, twinkling: false)
-                let rb = artist.starRadius(seg.b, in: dc, twinkling: false)
+                let ra = artist.starRadius(seg.a, in: dc)
+                let rb = artist.starRadius(seg.b, in: dc)
                 let gap = artist.constellationLineGapPad
                 if let color = favouriteColor {
                     artist.drawConstellationSegmentFavourite(

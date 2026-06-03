@@ -34,9 +34,7 @@ struct SunLayer: EGridLayer {
             if state.sunScreenPosition != pos { state.sunScreenPosition = pos }
         }
 
-        // Apple-Maps-style POI badge replaces the sun disc.
-        // (The slow breathing crown that used to ring the badge is
-        // gone — see EArtist+Sun.swift in DeprecationStation.)
+        // Apple-Maps-style POI badge marks the sun.
         artist.drawPOILabel(
             at:        sc,
             glyph:     .sfSymbol("sun.max.fill"),
@@ -57,12 +55,3 @@ struct SunLayer: EGridLayer {
         ELogger.sun("  GMST:   \(String(format: "%.4f", siderealOffset.degrees)) deg")
     }
 }
-
-
-// * OLD TRANSFORM
-/*
- // TODO: Fix - both branches of this ternary are identical; the userLocation mode likely needs a different transform
- //        let eq = mode == .northSouth
- //            ? SIMD3<Double>.eclipticPoint(lambda: lambda)
- //            : SIMD3<Double>.eclipticPoint(lambda: lambda)
- */

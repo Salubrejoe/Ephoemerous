@@ -66,8 +66,7 @@ struct FavouritesLayer: EGridLayer {
         guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return nil }
         let sc = dc.toScreen(proj)
 
-        // Favourite signal — a static heart. No more breathing halo,
-        // no per-frame animation cost.
+        // Favourite signal — a static heart.
         //
         //   Tier 0 (scale < badgeIn): the heart IS the marker.
         //                             Drawn at the projected position,

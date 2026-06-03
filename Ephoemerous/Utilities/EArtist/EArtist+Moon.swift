@@ -7,12 +7,6 @@ import SwiftUI
 // we approximate: 0 → new, 1 → full, with first / last quarter and
 // crescent / gibbous in between. Good enough at 24 × 24 pt; the
 // detail sheet shows the precise phase when wired back up.
-//
-// The richer layered illustration (glow + dark body + lit crescent
-// + rim + breathing ring) used to live in `drawMoon(at:fraction:
-// showRing:in:)`. Since the moon is now an Apple-Maps-style POI
-// badge like the other solar-system bodies, that helper is gone —
-// the layered version lives in the git history if it comes back.
 extension EArtist {
 
     /// Map an illuminated fraction (0…1) to an SF Symbol name in the
