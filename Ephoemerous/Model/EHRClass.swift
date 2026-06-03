@@ -30,13 +30,12 @@ enum EHRClass: String, CaseIterable {
     }
 
     // MARK: - POI badge gradient
-    /// Top + bottom colours used by the followed-star POI badge so
-    /// the badge tints to its spectral class — pale `color` at the
-    /// top, deep `lightColor` at the bottom. The two variants were
-    /// designed for opposite mode contrasts; pairing them gives a
-    /// natural light-to-deep ramp that reads instantly as "this is
-    /// a hot blue O" vs "this is a red M dwarf".
+    /// Top + bottom colours for the followed-star POI badge: the
+    /// adaptive class colour up top, the same hue mixed toward black at
+    /// the bottom, so the badge reads as a lit sphere of the class's
+    /// colour in either appearance. Derived in `EPalette` from the one
+    /// adaptive asset colour (no more dark/light-as-gradient split).
     var badgeGradient: (top: Color, bottom: Color) {
-        (color, lightColor)
+        EArtist.shared.palette.spectralGradient(self)
     }
 }

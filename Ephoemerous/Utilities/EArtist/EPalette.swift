@@ -3,137 +3,145 @@ import LoreKit
 
 // MARK: - EPalette
 // Single source of truth for every colour the canvas paints with.
-// `EArtist` holds one instance (`palette`); the per-feature
-// extensions (EArtist+Horizon, EArtist+Planets, …) provide
-// convenience accessors that proxy into this struct, so layer
-// callsites stay short while the actual values live in one place.
 //
-// EHRClass.color / lightColor also forward here so spectral
-// palettes have the same single source of truth.
+// As of the asset-catalog migration, the COLOUR VALUES live in
+// `Assets.xcassets/Palette/…` — one colour set per leaf colour, each
+// with a Light + Dark variant you can see and tune side-by-side in
+// Xcode's inspector. This struct holds no RGB any more; it just names
+// the asset colours and keeps the LOGIC the catalog can't express:
+//   • enum → colour dispatch (myth / planet / spectral class)
+//   • gradient assembly (top + bottom asset pair)
+//   • opacity / derived-colour maths
 //
-// Use `EPalettePreview` (in `View/Previews/`) to see every entry
-// at once — handy for retuning.
+// `EArtist` holds one instance (`palette`); the per-feature extensions
+// (EArtist+Horizon, EArtist+Planets, …) proxy into it so layer callsites
+// stay short. `EHRClass.color` / `.lightColor` also forward here.
+//
+// Use `EPalettePreview` to see every entry at once (light + dark).
 struct EPalette {
 
     typealias Gradient = (top: Color, bottom: Color)
 
+    // Asset colours are organised into folders in the catalog, but
+    // colour-set NAMES are globally unique, so each is addressed by name
+    // alone — no folder path. Alpha (for grid / horizon / twilight) is
+    // baked into the asset, so callers that previously did `.opacity(…)`
+    // get the right alpha for free.
+
     // MARK: Surfaces
 
     /// Outermost canvas background — what sits behind every layer.
-    let canvasBackground: Color = .secondarySystemBackground
+    let canvasBackground: Color = Color("canvasBackground")
 
     /// Aim sky-wash tint — the blue the night sky lifts toward where the
     /// phone is pointed (`SkyAimWashLayer`). Stored opaque; alpha is
-    /// applied at draw time via `aimBlobOpacity` + the horizon fade.
-    let skyAim: Color = Color(red: 0.16, green: 0.32, blue: 0.62)
+    /// applied at draw time via the blob opacity + horizon fade.
+    let skyAim: Color = Color("skyAim")
 
     // MARK: Grid / axes
 
     /// Faint grid lines (RA / Dec parallels + meridians).
-    let grid: Color = .tertiary.opacity(0.2)
+    let grid: Color = Color("grid")
 
     /// Ecliptic squircle stroke.
-    let ecliptic: Color = .secondary
+    let ecliptic: Color = Color("ecliptic")
 
     // MARK: Horizon
 
     /// Below-horizon wash (the `.fillOutsideCurve` colour).
-    let horizonFill: Color = .tertiary
+    let horizonFill: Color = Color("horizonFill")
 
     /// Twilight-band strokes (civil / nautical / astronomical).
-    let twilightBand: Color = .tertiary
+    let twilightBand: Color = Color("twilightBand")
 
     // MARK: Constellations
 
     /// Default constellation stick-figure stroke.
-    let constellationLine: Color = .tertiary
+    let constellationLine: Color = Color("constellationLine")
 
-    /// Placeholder pill that sits in for a constellation label at
-    /// the in-between zoom tier.
-    let constellationPlaceholderFill: Color = Color(.tertiarySystemFill)
+    /// Placeholder pill that sits in for a constellation label at the
+    /// in-between zoom tier.
+    let constellationPlaceholderFill: Color = Color("placeholderFill")
 
     // MARK: Myth gradients (POI badges)
 
-    let perseus              : Gradient = (Color(red: 0.95, green: 0.45, blue: 0.45),
-                                            Color(red: 0.55, green: 0.10, blue: 0.15))
-    let hercules             : Gradient = (Color(red: 0.99, green: 0.65, blue: 0.40),
-                                            Color(red: 0.74, green: 0.32, blue: 0.10))
-    let argo                 : Gradient = (Color(red: 0.40, green: 0.82, blue: 0.86),
-                                            Color(red: 0.10, green: 0.50, blue: 0.58))
-    let zeus                 : Gradient = (Color(red: 1.00, green: 0.83, blue: 0.30),
-                                            Color(red: 0.78, green: 0.55, blue: 0.10))
-    let orion                : Gradient = (Color(red: 0.55, green: 0.65, blue: 1.00),
-                                            Color(red: 0.18, green: 0.30, blue: 0.75))
-    let orpheus              : Gradient = (Color(red: 0.78, green: 0.55, blue: 0.90),
-                                            Color(red: 0.42, green: 0.22, blue: 0.62))
-    let mythNone             : Gradient = (Color(red: 0.78, green: 0.78, blue: 0.78),
-                                            Color(red: 0.45, green: 0.45, blue: 0.45))
-    let mythForeverInvisible : Gradient = (Color(red: 0.55, green: 0.55, blue: 0.55),
-                                            Color(red: 0.28, green: 0.28, blue: 0.28))
+    let perseus              : Gradient = (Color("mythPerseusTop"),  Color("mythPerseusBottom"))
+    let hercules             : Gradient = (Color("mythHerculesTop"), Color("mythHerculesBottom"))
+    let argo                 : Gradient = (Color("mythArgoTop"),     Color("mythArgoBottom"))
+    let zeus                 : Gradient = (Color("mythZeusTop"),     Color("mythZeusBottom"))
+    let orion                : Gradient = (Color("mythOrionTop"),    Color("mythOrionBottom"))
+    let orpheus              : Gradient = (Color("mythOrpheusTop"),  Color("mythOrpheusBottom"))
+    let mythNone             : Gradient = (Color("mythNoneTop"),     Color("mythNoneBottom"))
+    let mythForeverInvisible : Gradient = (Color("mythForeverInvisibleTop"),
+                                            Color("mythForeverInvisibleBottom"))
 
     // MARK: Solar-system gradients
 
-    let sun     : Gradient = (Color(red: 1.00, green: 0.83, blue: 0.30),
-                              Color(red: 0.95, green: 0.45, blue: 0.10))
-    let moon    : Gradient = (.gray, .black)
-
-    let mercury : Gradient = (Color(red: 0.78, green: 0.78, blue: 0.78),
-                              Color(red: 0.45, green: 0.45, blue: 0.45))
-    let venus   : Gradient = (Color(red: 1.00, green: 0.95, blue: 0.78),
-                              Color(red: 0.92, green: 0.78, blue: 0.45))
-    let mars    : Gradient = (Color(red: 1.00, green: 0.50, blue: 0.30),
-                              Color(red: 0.78, green: 0.20, blue: 0.10))
-    let jupiter : Gradient = (Color(red: 1.00, green: 0.88, blue: 0.70),
-                              Color(red: 0.82, green: 0.60, blue: 0.40))
-    let saturn  : Gradient = (Color(red: 0.98, green: 0.90, blue: 0.65),
-                              Color(red: 0.82, green: 0.68, blue: 0.35))
-    let uranus  : Gradient = (Color(red: 0.70, green: 0.95, blue: 0.98),
-                              Color(red: 0.35, green: 0.70, blue: 0.80))
-    let neptune : Gradient = (Color(red: 0.55, green: 0.70, blue: 1.00),
-                              Color(red: 0.20, green: 0.35, blue: 0.78))
+    let sun     : Gradient = (Color("bodySunTop"),     Color("bodySunBottom"))
+    let moon    : Gradient = (Color("bodyMoonTop"),    Color("bodyMoonBottom"))
+    let mercury : Gradient = (Color("bodyMercuryTop"), Color("bodyMercuryBottom"))
+    let venus   : Gradient = (Color("bodyVenusTop"),   Color("bodyVenusBottom"))
+    let mars    : Gradient = (Color("bodyMarsTop"),    Color("bodyMarsBottom"))
+    let jupiter : Gradient = (Color("bodyJupiterTop"), Color("bodyJupiterBottom"))
+    let saturn  : Gradient = (Color("bodySaturnTop"),  Color("bodySaturnBottom"))
+    let uranus  : Gradient = (Color("bodyUranusTop"),  Color("bodyUranusBottom"))
+    let neptune : Gradient = (Color("bodyNeptuneTop"), Color("bodyNeptuneBottom"))
 
     // MARK: User location puck
-    //
-    // Green, not Apple-Maps blue. The canvas is mostly deep navy /
-    // twilight blues, so a blue puck disappears into the night sky;
-    // green sits firmly in the foreground at every tinted sky
-    // state. Semantically it also reads "terrestrial / you on
-    // Earth, observing" rather than "Maps location dot on a map" —
-    // closer to what the mark actually means on a celestial chart.
-    // White ring is unchanged: it gives every globe glyph a uniform
-    // outline against whatever's behind the puck.
-    let userPuckDisc: Color = .green
-    let userPuckRing: Color = .white
-    let userPuckCone: Color = .green
+
+    let userPuckDisc: Color = Color("puckDisc")
+    let userPuckRing: Color = Color("puckRing")
+    let userPuckCone: Color = Color("puckCone")
 
     // MARK: Spectral classes (stars)
     //
-    // Dark-mode = bright pastels readable against the dark sky;
-    // light-mode = deep saturated variants for contrast on white.
-    // The two pair into a per-class gradient via `spectralGradient`.
+    // Each class is ONE adaptive asset colour (Light + Dark in the
+    // catalog), so a star's tint follows the system appearance instead
+    // of the old hand-split color / lightColor pair. The followed-star
+    // POI badge still wants a top→bottom GRADIENT, so we derive the
+    // darker bottom stop from the adaptive colour at draw time — see
+    // `spectralGradient`.
 
-    let spectralODark: Color = Color(red: 0.6, green: 0.7, blue: 1.0)
-    let spectralBDark: Color = Color(red: 0.7, green: 0.8, blue: 1.0)
-    let spectralADark: Color = Color(red: AstroConstants.specA_blue,
-                                     green: AstroConstants.specA_green,
-                                     blue: 1.0)
-    let spectralFDark: Color = Color(red: 1.0, green: 1.0,
-                                     blue: AstroConstants.specF_blue)
-    let spectralGDark: Color = Color(red: 1.0, green: 1.0, blue: 0.8)
-    let spectralKDark: Color = Color(red: 1.0,
-                                     green: AstroConstants.specK_green,
-                                     blue: 0.6)
-    let spectralMDark: Color = Color(red: 1.0, green: 0.7, blue: 0.5)
-    let spectralUnknownDark: Color = .gray
+    /// Spectral class → its adaptive asset colour.
+    func spectral(_ cls: EHRClass) -> Color {
+        switch cls {
+        case .O:       return Color("spectralO")
+        case .B:       return Color("spectralB")
+        case .A:       return Color("spectralA")
+        case .F:       return Color("spectralF")
+        case .G:       return Color("spectralG")
+        case .K:       return Color("spectralK")
+        case .M:       return Color("spectralM")
+        case .unknown: return Color("spectralUnknown")
+        }
+    }
 
-    let spectralOLight: Color = Color(red: 0.10, green: 0.25, blue: 0.80)
-    let spectralBLight: Color = Color(red: 0.22, green: 0.42, blue: 0.85)
-    let spectralALight: Color = Color(red: 0.30, green: 0.50, blue: 0.75)
-    let spectralFLight: Color = Color(red: 0.68, green: 0.58, blue: 0.05)
-    let spectralGLight: Color = Color(red: 0.72, green: 0.55, blue: 0.00)
-    let spectralKLight: Color = Color(red: 0.80, green: 0.36, blue: 0.05)
-    let spectralMLight: Color = Color(red: 0.76, green: 0.15, blue: 0.10)
-    let spectralUnknownLight: Color = Color(white: 0.38)
+    /// How much darker the followed-star badge's bottom stop sits below
+    /// its top — a mix toward black. Replaces the old "dark colour on
+    /// top, light colour on bottom" trick with a single hue that ramps
+    /// pale→deep, so the badge reads as one species in either appearance.
+    var spectralGradientDarken: Double { 0.32 }
+
+    /// Spectral class → followed-star badge gradient. Top is the
+    /// adaptive class colour; bottom is the same colour mixed toward
+    /// black so it reads as a lit sphere rather than two stacked tints.
+    func spectralGradient(_ cls: EHRClass) -> Gradient {
+        let top = spectral(cls)
+        return (top, top.mix(with: .black, by: spectralGradientDarken))
+    }
+
+    // MARK: Spectral back-compat accessors
+    //
+    // `EHRClass.color` / `.lightColor` forward here. Both now resolve to
+    // the SAME adaptive asset colour (the catalog handles light vs dark),
+    // so the old "two hardcoded variants" split is gone — the mode swap
+    // is the system's job now.
+
+    /// Was the dark-mode variant; now the adaptive class colour.
+    func spectralDark(_ cls: EHRClass) -> Color { spectral(cls) }
+
+    /// Was the light-mode variant; now the same adaptive class colour.
+    func spectralLight(_ cls: EHRClass) -> Color { spectral(cls) }
 
     // MARK: - Enum-driven accessors
 
@@ -151,7 +159,7 @@ struct EPalette {
     }
 
     /// Planet → badge gradient. Matches on `EPlanet.name` against
-    /// `Strings.Planets.*`, with `(.gray, .gray)` for an unrecognised
+    /// `Strings.Planets.*`, with a grey fallback for an unrecognised
     /// name (defensive — shouldn't happen for the canonical seven).
     func planet(_ planet: EPlanet) -> Gradient {
         switch planet.name {
@@ -162,37 +170,7 @@ struct EPalette {
         case Strings.Planets.saturn:  return saturn
         case Strings.Planets.uranus:  return uranus
         case Strings.Planets.neptune: return neptune
-        default:                      return (.gray, .gray)
-        }
-    }
-
-    /// Spectral class → dark-mode colour (the value `EHRClass.color`
-    /// returns).
-    func spectralDark(_ cls: EHRClass) -> Color {
-        switch cls {
-        case .O:       return spectralODark
-        case .B:       return spectralBDark
-        case .A:       return spectralADark
-        case .F:       return spectralFDark
-        case .G:       return spectralGDark
-        case .K:       return spectralKDark
-        case .M:       return spectralMDark
-        case .unknown: return spectralUnknownDark
-        }
-    }
-
-    /// Spectral class → light-mode colour (the value
-    /// `EHRClass.lightColor` returns).
-    func spectralLight(_ cls: EHRClass) -> Color {
-        switch cls {
-        case .O:       return spectralOLight
-        case .B:       return spectralBLight
-        case .A:       return spectralALight
-        case .F:       return spectralFLight
-        case .G:       return spectralGLight
-        case .K:       return spectralKLight
-        case .M:       return spectralMLight
-        case .unknown: return spectralUnknownLight
+        default:                      return mythNone
         }
     }
 }
