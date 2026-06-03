@@ -63,11 +63,27 @@ extension EAppState {
         return result
     }
 
-    /// Stars to draw at the current zoom: the magnitude-sorted set
-    /// truncated at the zoom-driven cap. Because `sortedStars` is sorted
-    /// ascending, this is a contiguous brightest-first prefix — found
-    /// with a single scan to the first star past the cap, no allocation
-    /// of a filtered copy.
+    /// Scale to compute the magnitude cap at. During a camera transition
+    /// this is the DESTINATION scale, not the live interpolating one —
+    /// so the visible star *count* is fixed at its final value for the
+    /// whole pan instead of growing frame-by-frame as the zoom ramps.
+    ///
+    /// That per-frame growth was the star-pan stutter: a star-tap zooms
+    /// to a deep scale (namedStar textIn 360 ≈ scale 432), and the rising
+    /// magnitude cap kept ADDING stars to the draw every frame of the
+    /// pan. Freezing the cap at the target means the final-density field
+    /// is present from frame 1 and simply slides into place. (Sun/planets
+    /// pan to a shallow scale where the cap barely moves — hence they
+    /// were already smooth.) Position still animates via `renderedScale`;
+    /// only the membership cap is frozen.
+    var magnitudeScale: Double {
+        _activeTransition?.toScale ?? renderedScale
+    }
+
+    /// Stars to draw: the magnitude-sorted set truncated at the cap for
+    /// `magnitudeScale`. Because `sortedStars` is sorted ascending, this
+    /// is a contiguous brightest-first prefix — a single scan to the
+    /// first star past the cap, no allocation of a filtered copy.
     func visibleStars(forScale scale: Double) -> ArraySlice<EStar> {
         let cap = magnitudeCap(forScale: scale)
         let all = sortedStars

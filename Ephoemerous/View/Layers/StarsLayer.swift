@@ -25,9 +25,11 @@ struct StarsLayer: EGridLayer {
         let cull = dc.makeStarCull()
 
         // Zoom-driven visible set: a magnitude-sorted prefix capped by
-        // the current zoom (fainter stars appear as you pinch in). See
-        // `EAppState.visibleStars` / `magnitudeCap`.
-        for star in dc.state.visibleStars(forScale: dc.renderedScale) {
+        // zoom (fainter stars appear as you pinch in). Capped at
+        // `magnitudeScale` — the pan DESTINATION while a transition runs —
+        // so the star count is fixed for the whole pan instead of growing
+        // frame-by-frame (the star-pan stutter). See `EAppState`.
+        for star in dc.state.visibleStars(forScale: dc.state.magnitudeScale) {
             if favouriteNames.contains(star.name) { continue }
             if hideNamed && NamedStarsLayer.candidateNames.contains(star.name) { continue }
 

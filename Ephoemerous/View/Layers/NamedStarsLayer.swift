@@ -103,9 +103,10 @@ struct NamedStarsLayer: EGridLayer {
         let selStarUUID   = Self.starUUID(from: dc.selectedObjectID)
         let deselStarUUID = Self.starUUID(from: dc.deselectingID)
 
-        // Same zoom-driven magnitude cap StarsLayer uses, so a named
-        // star's badge appears in step with its underlying star dot.
-        let magCap = dc.state.magnitudeCap(forScale: scale)
+        // Same zoom-driven magnitude cap StarsLayer uses (frozen at the
+        // pan destination during a transition) so named-star badges
+        // appear in step with the star dots and don't densify mid-pan.
+        let magCap = dc.state.magnitudeCap(forScale: dc.state.magnitudeScale)
         for star in Self.candidates where !favouriteNames.contains(star.name) {
             guard star.magnitude <= magCap else { continue }
 

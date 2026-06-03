@@ -67,36 +67,7 @@ extension EAppState {
     /// object.
     func panTo(_ obj: ESkyObject) {
         guard let sc = screenPosition(of: obj) else { return }
-        panFocus(toward: sc, minScale: textTierScale(for: obj))
-    }
-
-    /// Scale at which `obj`'s on-canvas label reaches its TEXT tier —
-    /// i.e. the zoom where you can actually read its name. Focusing
-    /// zooms to at least this (with a little headroom past the fade)
-    /// so a tapped object never sits below its own label. Reads the
-    /// same per-category thresholds the canvas draws with, so the two
-    /// can't drift.
-    private func textTierScale(for obj: ESkyObject) -> Double {
-        let artist = EArtist.shared
-        let textIn: Double
-        switch obj {
-        case .sun:           textIn = artist.poiStyle(for: .sun).textIn
-        case .moon:          textIn = artist.poiStyle(for: .moon).textIn
-        case .planet(let p): textIn = artist.poiStyle(for: .planet(p)).textIn
-        case .star(let s):
-            // Match how the star is ACTUALLY drawn: a favourited star
-            // renders via FavouritesLayer as `.followedStar` (early
-            // thresholds); a plain tapped star stays `.namedStar` in
-            // NamedStarsLayer (much later thresholds). Using the wrong
-            // one would zoom short of where its label appears.
-            let isFavourite = favouriteStars.contains { $0.name == s.name }
-            let category: POICategory = isFavourite ? .followedStar(s) : .namedStar(s)
-            textIn = artist.poiStyle(for: category).textIn
-        case .constellation: textIn = artist.constellationTextIn
-        }
-        // The tier fade is centred on `textIn`, so clear it by the ramp
-        // half-width plus a touch — land where the text is fully in.
-        return textIn * 1.2
+        panFocus(toward: sc)
     }
 
     /// Close the detail sheet. Camera stays where the user left it
@@ -183,26 +154,48 @@ extension EAppState {
 
     // MARK: Centre-on-object
 
-    /// One animated pan + zoom that lands `screenPosition` at the
-    /// upper-third focus spot, zooming in to at least `minScale` (never
-    /// out — keeps the current zoom if already deeper), clamped to the
-    /// gesture ceiling. The actual transition + dedupe live in the one
-    /// `animateTo` primitive, so every selection that reaches here a
-    /// second time (focus-pan then the detail view's onAppear re-pan)
-    /// coalesces into a single smooth move instead of two eases.
-    private func panFocus(toward screenPosition: CGPoint, minScale: Double = 0) {
+    /// Apple-Maps "comfort zone" focus. Selecting an object does NOT
+    /// zoom — the promotion already forces the label visible at any
+    /// scale, so the old zoom-to-text-tier was redundant and (for
+    /// deep-tier stars) the source of the heavy 215→432 lurch. We only
+    /// nudge the camera, and only when needed:
+    ///
+    ///   • object already within `comfortRadius` of the focus point →
+    ///     no pan at all (just select + promote). Most taps.
+    ///   • outside → pan just enough to bring it to the ZONE EDGE (the
+    ///     nearest point on the comfort circle), not all the way in —
+    ///     minimal motion.
+    ///
+    /// Scale is left untouched; only the offset moves, through the one
+    /// `animateTo` primitive (dedupe + transition live there).
+    private func panFocus(toward screenPosition: CGPoint) {
         guard canvasSize != .zero else { return }
-        let targetScale = Swift.min(AstroConstants.maximumScale,
-                                    Swift.max(scale, minScale))
-        let targetX = canvasSize.width  / 2
-        let targetY = canvasSize.height / 3
-        // offsetToCenter maps the sky point under `screenPosition` to
-        // (targetX, targetY) AT `targetScale`, so the object stays put
-        // as the zoom ramps.
+
+        // Comfort-zone centre: the upper-third focus spot (keeps a
+        // selected object clear of the bottom detail sheet).
+        let focusPoint = CGPoint(x: canvasSize.width / 2,
+                                 y: canvasSize.height / 3)
+        let dx = screenPosition.x - focusPoint.x
+        let dy = screenPosition.y - focusPoint.y
+        let dist = (dx * dx + dy * dy).squareRoot()
+
+        // Inside the comfort circle → leave the camera where it is.
+        guard dist > comfortRadius else { return }
+
+        // Outside → bring the object only to the circle's edge: the
+        // target screen point is `comfortRadius` out from the focus
+        // along the object→focus direction.
+        let k = comfortRadius / dist
+        let edgePoint = CGPoint(x: screenPosition.x - dx * k,
+                                y: screenPosition.y - dy * k)
         let newOffset = offsetToCenter(screenPos: screenPosition,
-                                       atScale:   targetScale,
-                                       targetX:   targetX,
-                                       targetY:   targetY)
-        animateTo(scale: targetScale, offset: newOffset)
+                                       atScale:   scale,
+                                       targetX:   edgePoint.x,
+                                       targetY:   edgePoint.y)
+        animateTo(scale: scale, offset: newOffset)
     }
+
+    /// Radius (pt) of the no-pan comfort zone around the focus point.
+    /// Tap an object already inside and the camera stays put. v1: 100.
+    private var comfortRadius: CGFloat { 100 }
 }
