@@ -23,8 +23,8 @@ struct DatePickerPanel: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            actionRow
-
+            sheetHeader
+            
             HStack(spacing: 0) {
                 Picker("Day", selection: dayBinding) {
                     ForEach(1...daysInCurrentMonth, id: \.self) { d in
@@ -35,7 +35,7 @@ struct DatePickerPanel: View {
                 .pickerStyle(.wheel)
                 .frame(maxWidth: .infinity)
                 .clipped()
-
+                
                 Picker("Month", selection: monthBinding) {
                     ForEach(1...12, id: \.self) { m in
                         Text(Self.monthName(m)).tag(m)
@@ -45,7 +45,7 @@ struct DatePickerPanel: View {
                 .pickerStyle(.wheel)
                 .frame(maxWidth: .infinity)
                 .clipped()
-
+                
                 Picker("Year", selection: yearBinding) {
                     ForEach(yearRange, id: \.self) { y in
                         Text(String(y)).tag(y)
@@ -55,7 +55,7 @@ struct DatePickerPanel: View {
                 .pickerStyle(.wheel)
                 .frame(maxWidth: .infinity)
                 .clipped()
-
+                
                 Picker("Hour", selection: hourBinding) {
                     ForEach(0...23, id: \.self) { h in
                         Text(String(format: "%02d", h)).tag(h)
@@ -65,7 +65,7 @@ struct DatePickerPanel: View {
                 .pickerStyle(.wheel)
                 .frame(maxWidth: .infinity)
                 .clipped()
-
+                
                 Picker("Minute", selection: minuteBinding) {
                     ForEach(0...59, id: \.self) { m in
                         Text(String(format: "%02d", m)).tag(m)
@@ -78,45 +78,48 @@ struct DatePickerPanel: View {
             }
             .labelsHidden()
             .frame(height: 160)
+            
+        Spacer()
         }
-        // Horizontal padding (10) and corner radius (28) match
-        // LocationPickerPanel exactly so the two inline panels read
-        // as one species — the user toggles between them and the
-        // outer shell shouldn't visibly shift width or radius.
-        .padding(.horizontal, 10)
-        .padding(.vertical,    8)
-        .glassEffect(.clear.interactive(),
-                     in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(.horizontal, 16)
+//        .padding(.top, 16)
+        .frame(height: 215)
     }
 
-    // MARK: - Action row
+    // MARK: - Sheet header
 
-    /// Mirrors LocationPickerPanel's "Here" — a one-tap shortcut to
-    /// the current real-world value. Commits via
-    /// `commitPickedObservationDate(_:)` so the sky animates / jumps
-    /// using the same rules wheel edits do, then dismisses the panel.
-    private var actionRow: some View {
-        HStack {
-            Spacer()
+    /// Title + a "Now" shortcut + the close X. Shared shape with
+    /// `LocationPickerPanel.sheetHeader` so the two scene editors read
+    /// as one family. "Now" commits via `commitPickedObservationDate(_:)`
+    /// (same animate / jump rules as wheel edits); X just dismisses.
+    private var sheetHeader: some View {
+        HStack(spacing: 12) {
             Button {
                 state.commitPickedObservationDate(.now)
-                state.isShowingDatePicker = false
             } label: {
-//                Label("Now", systemImage: "clock.fill")
                 Text("Now")
-                    .font(.callout.weight(.medium))
+                    .font(.callout.weight(.semibold))
                     .padding(.horizontal, 14)
-                    .padding(.vertical,    9)
-                    .contentShape(Capsule())
+                    .padding(.vertical,    7)
+                    .background(Capsule().fill(.regularMaterial))
             }
             .buttonStyle(.plain)
-            .glassEffect(.clear.interactive(), in: .capsule)
-            // Greyed-and-blocked when the observation is already at
-            // real-world now — same rule the detail-sheet Now pills
-            // use, so all the Now surfaces feel consistent.
             .disabled(abs(state.observationDate.timeIntervalSinceNow) < 60)
-
-
+            
+            Text("Date & Time")
+                .font(.headline)
+            // Greyed-and-blocked when the observation is already at
+            // real-world now — same rule the other Now surfaces use.
+                .frame(maxWidth: .infinity)
+            Button { state.isShowingDatePicker = false } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
         }
     }
 

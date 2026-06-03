@@ -33,6 +33,8 @@ struct LocationPickerPanel: View {
 
     var body: some View {
         VStack(spacing: 8) {
+            sheetHeader
+
             searchField
 
             if !completer.suggestions.isEmpty {
@@ -41,12 +43,11 @@ struct LocationPickerPanel: View {
                 mapView
             }
             actionRow
-            
+
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .glassEffect(.clear,
-                     in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
         .onAppear {
             // Seed the camera at the current observer location so the
             // picker opens "where you are now."
@@ -54,6 +55,42 @@ struct LocationPickerPanel: View {
                 center: currentObserverCoordinate,
                 span:   MKCoordinateSpan(latitudeDelta: 10, longitudeDelta: 10)))
             centerCoordinate = currentObserverCoordinate
+        }
+    }
+
+    // MARK: - Sheet header
+
+    /// Title + close X — shared shape with `DatePickerPanel.sheetHeader`
+    /// so the two scene editors read as one family. Commit actions
+    /// (Here / Travel) stay in the bottom action row; this header only
+    /// titles and dismisses.
+    private var sheetHeader: some View {
+        HStack(spacing: 12) {
+            Button {
+                state.goToDeviceLocation()
+                state.isShowingLocationPicker = false
+            } label: {
+                Text("Here")
+                    .font(.callout.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical,    7)
+                    .background(Capsule().fill(.regularMaterial))
+            }
+            .disabled(state.isAtDeviceLocation)
+            
+            Text("Location")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+            
+            Button { state.isShowingLocationPicker = false } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
         }
     }
 

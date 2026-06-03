@@ -225,16 +225,41 @@ struct MainView: View {
         .sheet(isPresented: searchPresented) {
             SearchSheet()
         }
+        // Location editor — raised by the toolbar's location pill. A
+        // proper bottom sheet (swaps search out, same as detail/myth),
+        // with its own X to close. `isShowingLocationPicker` is the
+        // trigger AND the dismiss flag, so the pill stays lit while it's
+        // up. Mutually exclusive with the date editor via the toggle
+        // helpers in EAppState+Location.
+        .sheet(isPresented: Bindable(state).isShowingLocationPicker) {
+            LocationPickerPanel()
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+        // Date editor — raised by the toolbar's date pill. Wheel picker;
+        // a medium sheet is plenty for five wheels + the close row.
+        .sheet(isPresented: Bindable(state).isShowingDatePicker) {
+            DatePickerPanel()
+                .presentationDetents([.height(250)])
+                .presentationDragIndicator(.visible)
+        }
 
     }
 
-    /// Search is shown exactly when no other root sheet is. Read-only
-    /// derivation with a no-op setter: only an internal swipe could try
-    /// to set it false, and `interactiveDismissDisabled(true)` on the
-    /// sheet blocks that — selection is the only thing that hides search.
+    /// Search is shown exactly when no other root sheet is — no selected
+    /// object, no myth, and neither scene editor (location / date) open.
+    /// Read-only derivation with a no-op setter: only an internal swipe
+    /// could try to set it false, and `interactiveDismissDisabled(true)`
+    /// on the sheet blocks that — a selection or an editor is the only
+    /// thing that hides search.
     private var searchPresented: Binding<Bool> {
         Binding(
-            get: { state.detailDestination == nil && state.mythDestination == nil },
+            get: {
+                state.detailDestination == nil
+                    && state.mythDestination == nil
+                    && !state.isShowingLocationPicker
+                    && !state.isShowingDatePicker
+            },
             set: { _ in }
         )
     }

@@ -312,7 +312,7 @@ extension EArtist {
 
     /// Squircle bulge shared by every badge — corner count is
     /// per-category, see `POICategoryStyle.badgeCorners`.
-    var poiBadgeBulge: CGFloat { 2.8 }
+    var poiBadgeBulge: CGFloat { 3.9 }
     /// Horizontal gap between the badge's right edge and the text's
     /// left edge — keeps the pill from feeling crowded.
     var poiTextLeadingGap: CGFloat { 5 }

@@ -30,41 +30,20 @@ struct MainToolbar: View {
         // the toolbar and rewalks the dateLabel / locationLabel
         // computed properties.
         let _ = refreshTick
-        VStack(spacing: 12) {
-            // Inline expandable panels live above the toolbar. Both
-            // animate in/out via the same transition so the toolbar
-            // feels like a single coherent surface.
-
-            GlassEffectContainer {
-                HStack(spacing: 0) {
-                    
-                    locationButton
-                    Divider()
-                        .padding(.vertical, 8)
-                    dateButton
-                }
-                .frame(height: 32)
-                .glassEffect(.clear.interactive(),
-                             in: .capsule)
-                if state.isShowingLocationPicker {
-                    LocationPickerPanel()
-                        .transition(.move(edge: .top)
-                            .combined(with: .opacity)
-                            .combined(with: .blurReplace)
-                            .combined(with: .scale))
-                }
-                
-                if state.isShowingDatePicker {
-                    DatePickerPanel()
-                        .transition(.move(edge: .top)
-                            .combined(with: .opacity)
-                            .combined(with: .blurReplace)
-                            .combined(with: .scale))
-                }
-            }
-            
-//            SearchBar()
+        // Status pills. Each shows its current value (Here/London,
+        // Now/21:40) and acts as a button that RAISES a bottom sheet
+        // editor (map / date picker) — see MainView's .sheet bindings.
+        // The pill stays lit while its sheet is open, the spatial tether
+        // that links a top tap to the editor that rises at the bottom.
+        // No more xmark-swap or inline panels.
+        HStack(spacing: 0) {
+            locationButton
+            Divider()
+                .padding(.vertical, 8)
+            dateButton
         }
+        .frame(height: 32)
+        .glassEffect(.regular.interactive(), in: .capsule)
         // No `.animation(value:)` modifiers here — both toggle
         // helpers (`toggleDatePicker` / `toggleLocationPicker` in
         // EAppState+Time / +Location) wrap their flag mutations in
@@ -99,61 +78,42 @@ struct MainToolbar: View {
 
     private var locationButton: some View {
         Button(action: state.toggleLocationPicker) {
-            HStack(spacing: 6) {
-                if state.isShowingLocationPicker {
-                    dismissGlyph
-                }
-                if !state.isShowingLocationPicker {
-                    Text(locationLabel)
-                        .font(.callout.weight(.bold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .transition(.move(edge: .leading)
-                            .combined(with: .opacity)
-                            .combined(with: .blurReplace))
-                }
-            }
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 14)
-            .padding(.vertical,    8)
-            .contentShape(Capsule())
+            Text(locationLabel)
+                .font(.callout.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical,    8)
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+//        // Lit while its editor sheet is open — the tether that links
+//        // this top pill to the sheet rising at the bottom.
+//        .background {
+//            if state.isShowingLocationPicker {
+//                Capsule().fill(.primary.opacity(0.15))
+//            }
+//        }
     }
 
     private var dateButton: some View {
         Button(action: state.toggleDatePicker) {
-            HStack(spacing: 6) {
-                if state.isShowingDatePicker {
-                    dismissGlyph
-                }
-                if !state.isShowingDatePicker {
-                    Text(dateLabel)
-                        .font(.callout.weight(.bold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .transition(.move(edge: .leading)
-                            .combined(with: .opacity)
-                            .combined(with: .blurReplace))
-                }
-            }
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 14)
-            .padding(.vertical,    8)
-            .contentShape(Capsule())
+            Text(dateLabel)
+                .font(.callout.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical,    8)
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-    }
-
-    /// Shared dismiss-X for both pills when their picker panel is
-    /// open. Tuned heavier than the pill's `.callout` label text so
-    /// "tap me to close" reads at a glance — the previous `.callout`
-    /// / `.headline` mix made the affordance feel timid and gave the
-    /// two pills inconsistent prominence.
-    private var dismissGlyph: some View {
-        Image(systemName: "xmark")
-            .font(.title2.weight(.bold))
-            .contentTransition(.symbolEffect(.replace))
+//        .background {
+//            if state.isShowingDatePicker {
+//                Capsule().fill(.primary.opacity(0.15))
+//            }
+//        }
     }
 
     // MARK: - Pill labels
