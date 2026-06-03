@@ -43,10 +43,24 @@ final class CelestialGestureCoordinator {
     private(set) var isPanningViewport = false
     private(set) var isPinchingToZoom  = false
     private(set) var isZoomDragging    = false
+    private(set) var isRotatingCanvas  = false
 
     var viewportOffsetAtPanStart: CGPoint = .zero
     var scaleAtPinchStart:        Double  = 0
     var skyAnchorUnderFingers:    CGPoint = .zero
+
+    /// Canvas rotation captured at the start of a two-finger rotate, so
+    /// the gesture's cumulative `rotation` adds onto where the sky already
+    /// sat rather than snapping to an absolute. See +Rotation.
+    var canvasRotationAtStart: Angle = .zero
+    /// True while the live rotation is held inside the North detent (the
+    /// snap-to-aligned dead-zone). Tracked so the detent haptic fires once
+    /// on entry, not every frame the fingers wiggle inside it.
+    @ObservationIgnored var northDetentEngaged = false
+    /// Light tick when the rotation snaps into the North detent. Rigid =
+    /// the same crisp feel as the DayCapsule now-detent.
+    @ObservationIgnored
+    let rotationHaptic = UIImpactFeedbackGenerator(style: .rigid)
 
     var zoomDragStartScale:   Double  = 0
     var zoomDragLastScale:    Double  = 0
@@ -56,7 +70,7 @@ final class CelestialGestureCoordinator {
     /// True while the user is actively manipulating the canvas. The
     /// timeline reads this to stay at 60 fps for the duration.
     var isInteracting: Bool {
-        isPanningViewport || isPinchingToZoom || isZoomDragging
+        isPanningViewport || isPinchingToZoom || isZoomDragging || isRotatingCanvas
     }
 
     // MARK: Tuning
@@ -72,6 +86,7 @@ final class CelestialGestureCoordinator {
     let rubberC:                Double = 0.55   // iOS scroll rubber-band constant
     let scaleOvershootFraction: Double = 0.18   // damped zoom-past-ceiling room
     let doubleTapZoomFactor:    Double = 2.0
+    let rotationSnapThreshold:  Angle  = .degrees(7)  // within this of North → snap aligned
 
     // MARK: - Phase setters (kept here so the `private(set)` flags are
     // writeable from extensions in this folder)
@@ -79,6 +94,7 @@ final class CelestialGestureCoordinator {
     func setPanning(_ v: Bool)  { isPanningViewport = v }
     func setPinching(_ v: Bool) { isPinchingToZoom  = v }
     func setZoomDragging(_ v: Bool) { isZoomDragging = v }
+    func setRotating(_ v: Bool) { isRotatingCanvas = v }
 
     // MARK: - Shared helpers
 

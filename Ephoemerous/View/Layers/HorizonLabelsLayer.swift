@@ -99,9 +99,9 @@ struct HorizonLabelsLayer: EGridLayer {
 
             // Bumped horizon points at each parameter — same
             // squircle treatment HorizonLayer applies to its rim.
-            guard let pHere = bumpedHorizonPoint(at: tHere, zenith: zenith, in: dc),
-                  let pPrev = bumpedHorizonPoint(at: tPrev, zenith: zenith, in: dc),
-                  let pNext = bumpedHorizonPoint(at: tNext, zenith: zenith, in: dc)
+            guard let pHere = bumpedHorizonPoint(at: tHere, in: dc),
+                  let pPrev = bumpedHorizonPoint(at: tPrev, in: dc),
+                  let pNext = bumpedHorizonPoint(at: tNext, in: dc)
             else { continue }
 
             // Tangent direction along the bumpy curve at this t —
@@ -148,26 +148,34 @@ struct HorizonLabelsLayer: EGridLayer {
         }
     }
 
-    /// Project the horizon point at parameter `t`, then apply the
-    /// same `Squircle.lameRadius` bump `EArtist.bumpedHorizonRim`
-    /// uses for the stroked rim. Centroid is approximated as the
-    /// zenith — exact for pure stereographic, close enough for the
-    /// rare cases where the projection plane and origin drift apart.
+    /// Project the horizon point at parameter `t`, apply the same
+    /// `Squircle.lameRadius` bump `EArtist.bumpedHorizonRim` uses, then
+    /// map to screen.
+    ///
+    /// Crucially the bump is applied in **projection space, before
+    /// `toScreen`** — exactly the order the rim uses. `toScreen` then
+    /// rotates the already-bumped point by `canvasRotation`, so the
+    /// scallop phase stays locked to the *sky* frame and matches the
+    /// rim's bumps at any rotation. (The previous version bumped in
+    /// screen space, *after* `toScreen`, which pinned the phase to the
+    /// screen — fine at 0° but drifting out of sync the moment the
+    /// canvas was rotated, since the rim's bumps spun with the sky and
+    /// the labels' didn't.)
+    ///
+    /// Centroid of the alt = 0 circle ≈ the projection origin, so the
+    /// radial angle is taken straight from `.zero` — the projection-
+    /// space equivalent of the mean centroid the rim computes.
     private func bumpedHorizonPoint(at t: Double,
-                                    zenith: CGPoint,
                                     in dc: EGraphicContext) -> CGPoint? {
         let sky = dc.viewpoint.skyPoint(altitude: .horizon, at: t)
         guard let proj = EProjection.project(sky, viewpoint: dc.viewpoint)
         else { return nil }
-        let smooth = dc.toScreen(proj)
-        let dx = smooth.x - zenith.x
-        let dy = smooth.y - zenith.y
-        let θ  = atan2(dy, dx)
-        let k  = Squircle.lameRadius(
+        let θ = atan2(proj.y, proj.x)
+        let k = Squircle.lameRadius(
             angle:   θ,
             corners: CGFloat(artist.horizonBumpCorners),
             bulge:   artist.horizonBumpBulge
         )
-        return CGPoint(x: zenith.x + dx * k, y: zenith.y + dy * k)
+        return dc.toScreen(CGPoint(x: proj.x * k, y: proj.y * k))
     }
 }

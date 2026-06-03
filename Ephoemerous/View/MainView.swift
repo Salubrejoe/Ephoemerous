@@ -52,17 +52,25 @@ struct MainView: View {
                 MainToolbar()
 
                 Spacer()
-
-                // TEMPORARY rotation control (#7, slider-first). Wires
-                // the canvas-rotation plumbing before the two-finger
-                // gesture lands; the compass reset button + gesture will
-                // replace this. Dial spins the whole celestial canvas;
-                // tap the value to snap back to 0°.
-                rotationSlider
             }
             .padding(.horizontal, 24)
             .padding(.top,        topPadding)
             .padding(.bottom,     80)
+
+            // Compass — top-trailing, clear of the centred pills and the
+            // bottom search sheet. The needle spins with
+            // `state.canvasRotation` and taps to realign; it auto-hides
+            // when the sky is upright. Driven by the two-finger rotation
+            // gesture (see CelestialGesture); replaces the dev slider.
+            VStack {
+                HStack {
+                    Spacer()
+                    CompassButton()
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top,        topPadding)
         }
         .ignoresSafeArea()
         // App is portrait-only — no device-orientation rotation. The
@@ -153,39 +161,6 @@ struct MainView: View {
                 .presentationDragIndicator(.hidden)
         }
 
-    }
-
-    // MARK: - Rotation slider (temporary, #7)
-
-    /// Dev control that dials `state.canvasRotation` (the whole celestial
-    /// canvas spins). −180°…180°; the leading degree readout is tappable
-    /// to snap back to 0°. Replaced by the compass button + two-finger
-    /// rotation gesture once those land.
-    private var rotationSlider: some View {
-        HStack(spacing: 12) {
-            Button {
-                withAnimation(.snappy) { state.canvasRotation = .zero }
-            } label: {
-                Text("\(Int(state.canvasRotation.degrees))°")
-                    .font(.callout.weight(.semibold).monospacedDigit())
-                    .frame(width: 52)
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-
-            Slider(
-                value: Binding(
-                    get: { state.canvasRotation.degrees },
-                    set: { state.canvasRotation = .degrees($0) }
-                ),
-                in: -180...180
-            )
-            .tint(.primary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .glassEffect(.clear.interactive(),
-                     in: Capsule(style: .continuous))
     }
 
     /// Search is shown exactly when no other root sheet is — no selected

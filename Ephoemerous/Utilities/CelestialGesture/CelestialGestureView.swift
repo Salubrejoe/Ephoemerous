@@ -38,6 +38,9 @@ struct CelestialGestureView: UIViewRepresentable {
         let pinch = UIPinchGestureRecognizer(target: c, action: #selector(Coordinator.handlePinch))
         pinch.delegate = c
 
+        let rotation = UIRotationGestureRecognizer(target: c, action: #selector(Coordinator.handleRotation))
+        rotation.delegate = c
+
         let hold = UILongPressGestureRecognizer(target: c, action: #selector(Coordinator.handleHold))
         hold.numberOfTapsRequired = 1                          // a tap, then the press
         hold.minimumPressDuration = 0                          // begin on the 2nd touch-down
@@ -48,6 +51,7 @@ struct CelestialGestureView: UIViewRepresentable {
 
         view.addGestureRecognizer(pan)
         view.addGestureRecognizer(pinch)
+        view.addGestureRecognizer(rotation)
         view.addGestureRecognizer(hold)
         c.trackedView = view
         return view
@@ -115,6 +119,24 @@ struct CelestialGestureView: UIViewRepresentable {
                                       centroid: centroid, state: state)
             case .ended, .cancelled, .failed:
                 gestures.pinchEnded(state: state)
+            default:
+                break
+            }
+        }
+
+        // MARK: Two-finger rotation (spins the canvas; North detent)
+
+        @objc func handleRotation(_ g: UIRotationGestureRecognizer) {
+            switch g.state {
+            case .began:
+                gestures.rotationBegan(state: state)
+            case .changed:
+                // Same sub-two-touch guard as pinch: when one finger lifts
+                // the recogniser can emit a stray .changed before ending.
+                guard g.numberOfTouches >= 2 else { return }
+                gestures.rotationChanged(rotation: Double(g.rotation), state: state)
+            case .ended, .cancelled, .failed:
+                gestures.rotationEnded(state: state)
             default:
                 break
             }
