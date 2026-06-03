@@ -11,13 +11,21 @@ extension EAppState {
     /// Called once per Canvas frame with the timeline time and canvas size.
     func advanceCanvasClock(to time: Double, canvasSize size: CGSize) {
         animationTime = time
-        // First frame after a (de)selection: pin its promotion-spring
-        // start to THIS frame's live clock, so the spring's elapsed
-        // (`animationTime - _selectionStart`) begins at 0 even though
-        // the canvas clock may have been frozen (parked) when the tap
-        // landed. Without this the spring sits at 0 until the frozen
-        // clock catches up — the seconds-long delay before promotion.
-        if _selectionClockPending { _selectionStart = time; _selectionClockPending = false }
+        // Pan-then-promote: hold the SELECTION spring's start clock until
+        // the focus pan has landed, so the label balloons up only AFTER
+        // it has arrived rather than while it's still flying across
+        // screen. `_activeTransition` is the pan; once it's finished (or
+        // there's no pan to wait for) we stamp `_selectionStart = time`
+        // so the spring's elapsed begins at 0 right here — no frozen-clock
+        // skew (the timeline is already live, running the pan).
+        if _selectionClockPending {
+            let panDone = _activeTransition.map { $0.isFinished(at: time) } ?? true
+            if panDone {
+                _selectionStart       = time
+                _selectionClockPending = false
+            }
+        }
+        // Deselect has no pan to wait on — start its spring-down at once.
         if _deselectClockPending  { _deselectStart  = time; _deselectClockPending  = false }
         // Park the promotion once both springs have settled. Flipping
         // `_promotionActive` false here (not in a computed property that
@@ -27,8 +35,13 @@ extension EAppState {
         // nils a finished `_activeTransition`.
         if _promotionActive {
             let settle = EArtist.shared.poiSelectSettleDuration
-            let selSettled   = detailDestination == nil || (time - _selectionStart) >= settle
-            let deselSettled = _deselectingID    == nil || (time - _deselectStart) >= settle
+            // A selection whose spring is still PENDING (waiting for the
+            // pan to finish) hasn't started — it can't be settled yet, or
+            // it would park before ever playing. Once stamped, the
+            // elapsed check applies as normal.
+            let selSettled = detailDestination == nil
+                || (!_selectionClockPending && (time - _selectionStart) >= settle)
+            let deselSettled = _deselectingID == nil || (time - _deselectStart) >= settle
             // Clear the deselect id once its spring-down has settled.
             // Without this it stays non-nil forever, so `hasActivePromotion`
             // (selectedObjectID || deselectingID) reads true permanently

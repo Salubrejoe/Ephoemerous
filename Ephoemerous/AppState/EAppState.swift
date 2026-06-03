@@ -173,7 +173,16 @@ class EAppState {
                 _deselectClockPending = true
             }
             if detailDestination != nil {
-                _selectionStart       = animationTime
+                // Sentinel "not started yet": until the pan lands and
+                // `advanceCanvasClock` stamps the real start time, the
+                // spring's elapsed (`animationTime - _selectionStart`)
+                // stays hugely negative → `poiSelectProgress` clamps to
+                // 0, so the label holds flat DURING the pan. Stamping the
+                // tap time here instead would let the spring play against
+                // that stale stamp through the pan (promote #1), then
+                // replay on the pan-end re-stamp (promote #2) — the
+                // double promotion.
+                _selectionStart       = .greatestFiniteMagnitude
                 _selectionClockPending = true
             }
             // Wake the timeline for the spring. Stable flag — see

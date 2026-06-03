@@ -67,11 +67,6 @@ extension EAppState {
         return Swift.max(1, (shorter - 2 * pad) / 4)
     }
 
-    /// Scale used when tracking a celestial object (zoomed in relative to default).
-    var trackingScale: Double {
-        canvasSize.height > 0 ? canvasSize.height / 6 : AstroConstants.defaultScale
-    }
-
     /// Default offset derived from canvas height — falls back to AstroConstants while canvasSize is unknown.
     var defaultOffset: CGPoint {
         guard canvasSize.height > 0 else {

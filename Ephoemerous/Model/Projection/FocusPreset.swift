@@ -94,82 +94,42 @@ extension EAppState {
         return t.interpolatedOffset(at: animationTime)
     }
 
-    /// Animate the view back to the default scale and offset.
-    func resetView() {
-        let toScale  = defaultScale
-        let toOffset = defaultOffset
-        _activeTransition = EPresetTransition(
-            fromScale:  renderedScale,
-            fromOffset: renderedOffset,
-            toScale:    toScale,
-            toOffset:   toOffset,
-            startTime:  Date.now.timeIntervalSinceReferenceDate,
-            duration:   AstroConstants.transitionDuration
-        )
-        scale  = toScale
-        offset = toOffset
-    }
-
-    /// Apply a focus preset, optionally providing the target star for `.star` tracking.
-    func apply(_ preset: FocusPreset, star: EStar? = nil) {
-        switch preset {
-        case .sun:  applySunTracking()
-        case .moon: applyMoonTracking()
-        case .star: if let star { applyStarTracking(star) }
+    /// THE single camera-animation primitive. Every programmatic camera
+    /// move — reset, and centring on an object (`EAppState+Detail`) — goes
+    /// through here, so the dedupe and the transition-start logic live in
+    /// exactly one place.
+    ///
+    /// Dedupe: if a transition is already heading to ~this destination,
+    /// don't restart its clock — just keep the committed end-state
+    /// authoritative. Two call sites aiming at the same place a frame
+    /// apart (e.g. a selection's focus-pan + the detail view's onAppear
+    /// re-pan) then collapse to one smooth animation instead of two
+    /// overlapping eases. A genuinely different target starts a fresh
+    /// transition as normal.
+    func animateTo(scale newScale: Double, offset newOffset: CGPoint) {
+        if let t = _activeTransition,
+           abs(t.toScale - newScale)     < 0.5,
+           abs(t.toOffset.x - newOffset.x) < 0.5,
+           abs(t.toOffset.y - newOffset.y) < 0.5 {
+            scale  = newScale
+            offset = newOffset
+            return
         }
-    }
-}
-
-// MARK: - EAppState: Object tracking
-extension EAppState {
-
-    /// Centre the viewport on a screen point and zoom to tracking scale,
-    /// animated through an EPresetTransition. Shared by sun / moon / star —
-    /// previously this body was copy-pasted three times.
-    private func beginTracking(toward screenPosition: CGPoint) {
-        let targetX   = canvasSize.width  / 2
-        let targetY   = canvasSize.height / 2 - 160
-        let newOffset = offsetToCenter(screenPos: screenPosition,
-                                       atScale:   trackingScale,
-                                       targetX:   targetX,
-                                       targetY:   targetY)
         _activeTransition = EPresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
-            toScale:    trackingScale,
+            toScale:    newScale,
             toOffset:   newOffset,
             startTime:  Date.now.timeIntervalSinceReferenceDate,
             duration:   AstroConstants.transitionDuration
         )
-        scale  = trackingScale
+        scale  = newScale
         offset = newOffset
     }
 
-    func applySunTracking() {
-        guard let sun = sunScreenPosition else {
-            ELogger.sun("trackSun: sunScreenPosition not yet available")
-            return
-        }
-        beginTracking(toward: sun)
-        ELogger.sun("trackSun: offset → \(offset)")
-    }
-
-    func applyMoonTracking() {
-        guard let moon = moonScreenPosition else {
-            ELogger.moon("trackMoon: moonScreenPosition not yet available")
-            return
-        }
-        beginTracking(toward: moon)
-        ELogger.moon("trackMoon: offset → \(offset)")
-    }
-
-    func applyStarTracking(_ star: EStar) {
-        guard let position = favouritePositions[ESkyObject.star(star).id] ?? screenPosition(of: star) else {
-            ELogger.favourites("trackStar: could not compute position for \(star.name)")
-            return
-        }
-        beginTracking(toward: position)
-        ELogger.favourites("trackStar: \(star.name) → \(offset)")
+    /// Animate the view back to the default scale and offset.
+    func resetView() {
+        animateTo(scale: defaultScale, offset: defaultOffset)
     }
 }
 

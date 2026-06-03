@@ -181,23 +181,21 @@ extension EAppState {
         }
     }
 
-    // MARK: Pan-only animation
+    // MARK: Centre-on-object
 
-    /// One-shot animated pan + zoom so `screenPosition` lands at
-    /// `(canvas.midX, canvas.height / 3)`. Zooms in to at least
-    /// `minScale` (never out — if already past it, scale is unchanged),
-    /// clamped to the hard zoom ceiling. Uses the same
-    /// `EPresetTransition` machinery as the tracking presets so the
-    /// canvas renders the lerped scale + offset every frame.
+    /// One animated pan + zoom that lands `screenPosition` at the
+    /// upper-third focus spot, zooming in to at least `minScale` (never
+    /// out — keeps the current zoom if already deeper), clamped to the
+    /// gesture ceiling. The actual transition + dedupe live in the one
+    /// `animateTo` primitive, so every selection that reaches here a
+    /// second time (focus-pan then the detail view's onAppear re-pan)
+    /// coalesces into a single smooth move instead of two eases.
     private func panFocus(toward screenPosition: CGPoint, minScale: Double = 0) {
         guard canvasSize != .zero else { return }
-        // "At least" the tier scale: keep the current zoom if already
-        // deeper, otherwise pull in to reveal the label. Never exceed
-        // the gesture ceiling.
         let targetScale = Swift.min(AstroConstants.maximumScale,
                                     Swift.max(scale, minScale))
-        let targetX   = canvasSize.width  / 2
-        let targetY   = canvasSize.height / 3
+        let targetX = canvasSize.width  / 2
+        let targetY = canvasSize.height / 3
         // offsetToCenter maps the sky point under `screenPosition` to
         // (targetX, targetY) AT `targetScale`, so the object stays put
         // as the zoom ramps.
@@ -205,15 +203,6 @@ extension EAppState {
                                        atScale:   targetScale,
                                        targetX:   targetX,
                                        targetY:   targetY)
-        _activeTransition = EPresetTransition(
-            fromScale:  renderedScale,
-            fromOffset: renderedOffset,
-            toScale:    targetScale,
-            toOffset:   newOffset,
-            startTime:  Date.now.timeIntervalSinceReferenceDate,
-            duration:   AstroConstants.transitionDuration
-        )
-        scale  = targetScale
-        offset = newOffset
+        animateTo(scale: targetScale, offset: newOffset)
     }
 }
