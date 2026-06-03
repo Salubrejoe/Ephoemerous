@@ -27,6 +27,13 @@ extension EAppState {
         }
         // Deselect has no pan to wait on — start its spring-down at once.
         if _deselectClockPending  { _deselectStart  = time; _deselectClockPending  = false }
+
+        // Release the per-object pan lock once the focus pan is no longer
+        // in flight (transition finished, or none was needed). The pan
+        // runs ~0.55s while the detail view's re-pan fires ~1 frame after
+        // focus, so the lock is always still held when that redundant
+        // second call arrives — then freed here for the next selection.
+        if _panningToID != nil, _activeTransition == nil { _panningToID = nil }
         // Park the promotion once both springs have settled. Flipping
         // `_promotionActive` false here (not in a computed property that
         // reads `animationTime`) keeps `isAnimating` stable per frame —

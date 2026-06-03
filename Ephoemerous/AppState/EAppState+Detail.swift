@@ -66,7 +66,15 @@ extension EAppState {
     /// from a pushed detail re-pans to the underlying view's
     /// object.
     func panTo(_ obj: ESkyObject) {
+        // Per-object dedupe: a fresh selection calls panTo twice — once
+        // from focus(on:), once from the detail view's .onAppear a frame
+        // later. With the comfort zone the target is position-dependent,
+        // so those two calls compute different edge-pans and the
+        // target-based dedupe in `animateTo` can't merge them; keying on
+        // the OBJECT does. Skip if we're already panning to it.
+        if _panningToID == obj.id { return }
         guard let sc = screenPosition(of: obj) else { return }
+        _panningToID = obj.id
         panFocus(toward: sc)
     }
 

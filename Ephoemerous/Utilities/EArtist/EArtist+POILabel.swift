@@ -458,7 +458,7 @@ extension EArtist {
     // via `poiSelectProgress`.
 
     /// Enlarged scale a fully-promoted badge settles at.
-    var poiSelectScale: CGFloat { 1.88 }
+    var poiSelectScale: CGFloat { 1.88}
     /// How far the promoted badge lifts above the dot, as a multiple
     /// of `badgeSize`.
     var poiSelectLiftFactor: CGFloat { 1.45 }

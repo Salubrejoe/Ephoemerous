@@ -221,6 +221,20 @@ class EAppState {
     /// exactly once by `advanceCanvasClock` when the spring settles —
     /// the same nil-once pattern `_activeTransition` uses.
     var _promotionActive: Bool = false
+
+    /// Id of the object the camera most recently STARTED a focus-pan to,
+    /// held while that pan is in flight. `panTo` skips re-panning to the
+    /// same object so a fresh selection's two pan calls — focus(on:) and
+    /// the detail view's .onAppear — don't fire two transitions. The
+    /// `animateTo` target dedupe can't catch these now: the comfort zone
+    /// makes the target position-dependent, and the two calls land a
+    /// frame apart at different camera positions, so they compute
+    /// DIFFERENT edge-pans → the second one used to restart the
+    /// transition mid-flight (the "two-step" star/constellation move).
+    /// Keyed on object, not target, so it's immune to that. Cleared when
+    /// the pan settles (in advanceCanvasClock). A genuinely different
+    /// object (constellation→star push, pop-back) still pans.
+    @ObservationIgnored var _panningToID: String? = nil
     /// Sibling destination for the *myth* sheet — fired by tapping
     /// "Learn the Myth" on a constellation / star detail. Lives at
     /// half-detent (vs detailDestination's third) and is mutually
