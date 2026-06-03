@@ -44,8 +44,18 @@ struct SearchSheet: View {
                 .padding(.bottom, 12)
 
             if searchText.isEmpty && detent != Self.barDetent {
-                favouritesSection
-                Spacer(minLength: 0)
+                // Idle browse state: favourites scroll + recents list,
+                // Apple-Maps style. Scrolls as one when the sheet is
+                // dragged up to medium / large.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        favouritesSection
+                        if !state.recentObjects.isEmpty {
+                            recentsSection
+                        }
+                    }
+                    .padding(.top, 4)
+                }
             } else {
                 resultsList
             }
@@ -155,6 +165,62 @@ struct SearchSheet: View {
         case .constellation(let c): ConstellationCard(constellation: c)
         default:                    EmptyView()
         }
+    }
+
+    // MARK: Recents
+
+    /// Recently-viewed objects (any type), most-recent first — the
+    /// search sheet's Apple-Maps "Recents" section. An inset card list
+    /// of the same rows the search results use, so a recent and a
+    /// result read identically. Capped + deduped upstream in
+    /// `EAppState.recordViewed`.
+    private var recentsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Recents")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.6)
+                .padding(.horizontal, 16)
+
+            VStack(spacing: 0) {
+                ForEach(Array(state.recentObjects.enumerated()), id: \.element.id) { idx, obj in
+                    Button { open(obj) } label: {
+                        recentRowBody(for: obj)
+                    }
+                    .buttonStyle(.plain)
+                    if idx < state.recentObjects.count - 1 {
+                        Divider().padding(.leading, 60)
+                    }
+                }
+            }
+            .background(Color(.secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 16)
+        }
+    }
+
+    /// One recents row — icon + name + type, mirroring `resultRow` but
+    /// laid out for the inset card (its own padding, no List chrome).
+    private func recentRowBody(for obj: ESkyObject) -> some View {
+        HStack(spacing: 12) {
+            resultIcon(for: obj)
+                .frame(width: 32, height: 32)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(obj.displayName)
+                    .font(.callout)
+                    .foregroundStyle(.primary)
+                Text(typeLabel(obj))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical,   10)
+        .contentShape(.rect)
     }
 
     // MARK: Results

@@ -89,7 +89,9 @@ struct EStarDetailView: View {
             // (the navigationDestination wrapper used to do this for
             // the constellation-push case only).
             state.panTo(.star(star))
-            state.recordViewed(star)
+            // Universal Recents entry — covers the push-from-constellation
+            // path that doesn't go through `focus(on:)`.
+            state.recordViewed(.star(star))
         }
     }
 

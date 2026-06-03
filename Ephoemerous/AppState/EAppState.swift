@@ -117,7 +117,18 @@ class EAppState {
         }
     }
 
+    /// Legacy stars-only recents — kept for the existing cloud key and
+    /// any star-specific callers. Superseded for the search sheet by
+    /// `recentObjects` (universal), which is what Recents renders.
     var recentStars: [EStar]  = []
+
+    /// Universal "recently viewed" list — any sky object the user has
+    /// opened (star / sun / moon / planet / constellation), most-recent
+    /// first, capped at 10. Recorded in `focus(on:)` (the one funnel
+    /// every selection passes through) and surfaced as the search
+    /// sheet's Recents section. Persisted by object id via ECloudSync.
+    var recentObjects: [ESkyObject] = []
+
     var _starsCache: [EStar]? = nil
 
     // MARK: - Detail destination  (logic → EAppState+Detail.swift)

@@ -27,6 +27,7 @@ final class ECloudSync {
         static let favouriteSun            = "favouriteSun"
         static let favouriteMoon           = "favouriteMoon"
         static let recentStars             = "recentStarNames"
+        static let recentObjects           = "recentObjectIDs"   // universal recents (ESkyObject.id)
         static let magnitudeFilter         = "magnitudeFilter"
     }
 
@@ -34,6 +35,7 @@ final class ECloudSync {
     func start(appState: EAppState) {
         appState.favourites = resolveFavourites()
         appState.setRecentStars(resolveStars(key: Key.recentStars))
+        appState.setRecentObjects(resolveRecentObjects())
         loadMagnitudeFilter(into: appState)
 
         NotificationCenter.default.addObserver(
@@ -45,6 +47,7 @@ final class ECloudSync {
                 guard let self, let appState else { return }
                 appState.favourites = self.resolveFavourites()
                 appState.setRecentStars(self.resolveStars(key: Key.recentStars))
+                appState.setRecentObjects(self.resolveRecentObjects())
                 self.loadMagnitudeFilter(into: appState)
                 ELogger.favourites("iCloud pushed updates")
             }
@@ -87,6 +90,17 @@ final class ECloudSync {
         store.synchronize()
     }
 
+    /// Persist the universal recents list by `ESkyObject.id`
+    /// ("sun" / "planet_mars" / "constellation_orion" / "star_<uuid>").
+    /// Note: a star's id is a per-launch UUID, so star recents don't
+    /// survive relaunch through this key — `resolveRecentObjects` falls
+    /// back to the name-keyed `recentStars` list for those. Mixed-type
+    /// order is preserved here; star ordering is best-effort on restore.
+    func saveRecentObjects(_ objects: [ESkyObject]) {
+        store.set(objects.map(\.id), forKey: Key.recentObjects)
+        store.synchronize()
+    }
+
     func saveMagnitudeFilter(_ value: Double) {
         store.set(value, forKey: Key.magnitudeFilter)
         store.synchronize()
@@ -107,6 +121,47 @@ final class ECloudSync {
         if store.bool(forKey: Key.favouriteSun)  { result.append(.sun)  }
         if store.bool(forKey: Key.favouriteMoon) { result.append(.moon) }
         return result
+    }
+
+    /// Rebuild the universal recents list from stored `ESkyObject.id`s.
+    /// sun / moon / planet / constellation resolve directly from their
+    /// id. Stars can't (their id is a per-launch UUID), so star slots
+    /// are back-filled from the name-keyed `recentStars` list in stored
+    /// order — best-effort, but it keeps stars in Recents across launches.
+    private func resolveRecentObjects() -> [ESkyObject] {
+        guard let ids = store.array(forKey: Key.recentObjects) as? [String] else {
+            // No universal list yet (first run after the upgrade) — seed
+            // from the legacy stars-only recents so it isn't empty.
+            return resolveStars(key: Key.recentStars).map(ESkyObject.star)
+        }
+        let recentStarsByOrder = resolveStars(key: Key.recentStars)
+        var starCursor = 0
+        var seen = Set<String>()
+        var out: [ESkyObject] = []
+        for id in ids {
+            let obj: ESkyObject?
+            if id == "sun" {
+                obj = .sun
+            } else if id == ESkyObject.moon.id {
+                obj = .moon
+            } else if id.hasPrefix("planet_") {
+                let name = String(id.dropFirst("planet_".count))
+                obj = EPlanet.all.first { $0.id == name }.map(ESkyObject.planet)
+            } else if id.hasPrefix("constellation_") {
+                let raw = String(id.dropFirst("constellation_".count))
+                obj = EConstellation(rawValue: raw).map(ESkyObject.constellation)
+            } else if id.hasPrefix("star_") {
+                // UUID won't match a fresh star; pull the next name-keyed
+                // recent star in order as the stand-in.
+                obj = starCursor < recentStarsByOrder.count
+                    ? .star(recentStarsByOrder[starCursor]) : nil
+                if obj != nil { starCursor += 1 }
+            } else {
+                obj = nil
+            }
+            if let obj, seen.insert(obj.id).inserted { out.append(obj) }
+        }
+        return out
     }
 
     private func resolveStars(key: String) -> [EStar] {

@@ -39,6 +39,11 @@ extension EAppState {
         _focusEpoch &+= 1
         let epoch = _focusEpoch
 
+        // Every selection passes through here, so this is the one place
+        // to log Recents — covers canvas taps, search results, and
+        // favourites alike, for every object type.
+        recordViewed(obj)
+
         if let current = detailDestination, current.id != obj.id {
             detailDestination = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
