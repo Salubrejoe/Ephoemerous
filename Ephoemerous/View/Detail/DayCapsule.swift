@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import LoreKit
 
 // MARK: - DayCapsule
@@ -34,6 +35,17 @@ struct DayCapsule: View {
     /// Bound externally — `nil`-equivalent when no knob is wanted
     /// (init uses `.constant(.now)` so the binding always exists).
     @Binding private var knobDate: Date
+
+    /// Previous drag sample's seconds-of-day, for crossing detection.
+    /// `nil` between drags (set on the first sample of each drag). We
+    /// fire the "now" detent when this sample and the previous one
+    /// STRADDLE real-now — so a fast flick that jumps clean over the
+    /// instant still ticks, where a fixed ±window would miss it.
+    @State private var lastScrubbedSeconds: Double? = nil
+
+    /// Crisp, subtle detent tap. Light/rigid so crossing "now" reads as
+    /// a fine notch in the scale, not a thud.
+    private let nowHaptic = UIImpactFeedbackGenerator(style: .rigid)
 
     // MARK: Init
 
@@ -117,6 +129,13 @@ struct DayCapsule: View {
                         guard knobGlyph != nil else { return }
                         updateKnob(toX: value.location.x, width: geo.size.width)
                     }
+                    .onEnded { _ in
+                        // Clear the crossing tracker and warm the haptic
+                        // engine so the next drag starts fresh with low
+                        // latency.
+                        lastScrubbedSeconds = nil
+                        nowHaptic.prepare()
+                    }
             )
         }
         .frame(height: capsuleHeight)
@@ -172,6 +191,35 @@ struct DayCapsule: View {
         let startOfDay = cal.startOfDay(for: knobDate)
         let seconds = min(fraction * 86_400.0, 86_399.0)
         knobDate = startOfDay.addingTimeInterval(seconds)
+
+        tickIfCrossingNow(scrubbedSeconds: seconds, startOfDay: startOfDay)
+    }
+
+    /// Fire the detent haptic when the scrubbed time CROSSES real-now —
+    /// a physical "notch" on the scale at the present moment. Only when
+    /// the knob is on TODAY (a different day has no "now" on its track).
+    ///
+    /// Crossing, not proximity: we tap when the previous sample and this
+    /// one sit on opposite sides of now (their offsets-from-now have
+    /// different signs). That fires once per pass at any drag speed —
+    /// even a fast flick that jumps the knob clean over the instant
+    /// between two samples, which a fixed ±window would miss entirely.
+    /// First sample of a drag just seeds the tracker (no previous to
+    /// compare). Landing exactly on now (offset 0) also taps.
+    private func tickIfCrossingNow(scrubbedSeconds: Double, startOfDay: Date) {
+        defer { lastScrubbedSeconds = scrubbedSeconds }
+
+        let cal = Calendar.current
+        guard cal.isDateInToday(startOfDay) else { return }
+
+        let offset = scrubbedSeconds - secondsOfDay(.now)
+        guard let previous = lastScrubbedSeconds else { return }
+        let prevOffset = previous - secondsOfDay(.now)
+
+        // Straddle (signs differ) or a direct hit on now.
+        if offset == 0 || (prevOffset < 0) != (offset < 0) {
+            nowHaptic.impactOccurred()
+        }
     }
 
     // MARK: Event math

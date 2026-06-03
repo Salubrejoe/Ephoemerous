@@ -19,13 +19,6 @@ struct ESunDetailView: View {
 
     private let accent = Color.yellow
 
-    /// `true` when `observationDate` is within 60s of real-world now.
-    /// Drives the Now button's disabled state — tapping Now while
-    /// you're already there is a no-op, so we visually disable it.
-    private var observationIsCurrentTime: Bool {
-        abs(state.observationDate.timeIntervalSinceNow) < 60
-    }
-
     /// Civil-twilight anchors for the current observation date +
     /// observer latitude — re-evaluated whenever either changes, so
     /// the capsule's gradient stretches the bright zone for summer
@@ -46,8 +39,6 @@ struct ESunDetailView: View {
                 icon:          { POIBadgeView(category: .sun) },
                 leadingSymbol: "square.and.arrow.up",
                 onLeading:     {},
-                onNow:         { state.observationDate = .now },
-                nowIsActive:   observationIsCurrentTime,
                 onDismiss:     { state.dismissDetail() }
             )
             // No event dots — `WeatherKit` only returns a ~10-day

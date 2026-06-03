@@ -15,13 +15,6 @@ struct ENSPlanetDetailView: View {
 
     private var facts: PlanetFacts? { PlanetFacts.lookup[planet.name] }
 
-    /// `true` when `observationDate` is within 60s of real-world now.
-    /// Drives the Now button's disabled state — same rule sun + moon
-    /// use, so the three solar-system detail surfaces feel the same.
-    private var observationIsCurrentTime: Bool {
-        abs(state.observationDate.timeIntervalSinceNow) < 60
-    }
-
     /// Civil-twilight anchors for the current observation date +
     /// observer latitude. Planets are night-sky objects (mostly
     /// visible when the sun is below the horizon), so the moon
@@ -45,8 +38,6 @@ struct ENSPlanetDetailView: View {
                 icon:          { POIBadgeView(category: .planet(planet)) },
                 leadingSymbol: "square.and.arrow.up",
                 onLeading:     {},
-                onNow:         { state.observationDate = .now },
-                nowIsActive:   observationIsCurrentTime,
                 onDismiss:     { state.dismissDetail() }
             )
             // No RememberButton — planets, sun, and moon aren't
