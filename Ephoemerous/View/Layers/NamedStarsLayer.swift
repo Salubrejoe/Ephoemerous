@@ -58,6 +58,15 @@ struct NamedStarsLayer: EGridLayer {
         candidatesByName[name]
     }
 
+    /// Extract the `EStar.id` UUID from an `ESkyObject` id of the form
+    /// `"star_<uuid>"`, or `nil` for non-star / nil ids. Lets the draw
+    /// loop match the promoted star by raw UUID (no per-star string
+    /// allocation). Parsed once per frame, not per star.
+    static func starUUID(from objectID: String?) -> UUID? {
+        guard let objectID, objectID.hasPrefix("star_") else { return nil }
+        return UUID(uuidString: String(objectID.dropFirst("star_".count)))
+    }
+
     func draw(in dc: inout EGraphicContext) {
         let stateRef = dc.state
         let scale    = dc.renderedScale
@@ -85,6 +94,15 @@ struct NamedStarsLayer: EGridLayer {
         var rects: [String: CGRect] = [:]
         if tappable { rects.reserveCapacity(Self.candidates.count) }
 
+        // Promoted star UUIDs, parsed ONCE per frame from the selection
+        // ids ("star_<uuid>"). The per-star loop then compares `star.id`
+        // (a UUID — zero allocation) instead of building an ESkyObject
+        // id string for all ~300 stars every frame, which was pure ARC
+        // churn during a selected pan. The string id + `poiPromotion`
+        // call now happen only for the ≤2 actually-promoted stars.
+        let selStarUUID   = Self.starUUID(from: dc.selectedObjectID)
+        let deselStarUUID = Self.starUUID(from: dc.deselectingID)
+
         for star in Self.candidates where !favouriteNames.contains(star.name) {
             // Honour the magnitude filter — if the user has dialled
             // back to mag ≤ 3, a mag-4 named star shouldn't suddenly
@@ -102,10 +120,10 @@ struct NamedStarsLayer: EGridLayer {
             // tap target for) something the user can't see.
             guard artist.starPointFallsWithinMarigin(sc, in: dc) else { continue }
 
-            // Only read the spring when something is actually
-            // (de)selecting — keeps the ~300-star loop free of string
-            // work in the common, nothing-selected case.
-            let promo: Double = dc.hasActivePromotion
+            // Cheap UUID compare for the 298 non-promoted stars; only
+            // the selected / deselecting star builds the id string +
+            // reads its spring.
+            let promo: Double = (star.id == selStarUUID || star.id == deselStarUUID)
                 ? dc.poiPromotion(forObjectID: ESkyObject.star(star).id)
                 : 0
             artist.drawPOILabel(

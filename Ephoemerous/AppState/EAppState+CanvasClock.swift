@@ -29,6 +29,13 @@ extension EAppState {
             let settle = EArtist.shared.poiSelectSettleDuration
             let selSettled   = detailDestination == nil || (time - _selectionStart) >= settle
             let deselSettled = _deselectingID    == nil || (time - _deselectStart) >= settle
+            // Clear the deselect id once its spring-down has settled.
+            // Without this it stays non-nil forever, so `hasActivePromotion`
+            // (selectedObjectID || deselectingID) reads true permanently
+            // after the first deselect — making every pan thereafter pay
+            // the full promotion cost across all ~300 named stars. The
+            // big pan stutter.
+            if deselSettled, _deselectingID != nil { _deselectingID = nil }
             if selSettled && deselSettled { _promotionActive = false }
         }
         advanceInertiaTransition(at: time)
