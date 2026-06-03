@@ -29,10 +29,11 @@ struct EGraphicContext {
     let localSiderealOffset:     Angle
     let animationTime:           Double
     let viewpoint:               EProjection.Viewpoint
-    /// Sky-fixed canvas rotation. Applied to each projected point in
-    /// `toScreen` so "celestial up" lands by the device's DI edge
-    /// regardless of orientation. Set by `MainView` based on
-    /// `verticalSizeClass`. See `EAppState.canvasRotation`.
+    /// User-controlled canvas rotation. Applied to each projected point
+    /// in `toScreen` so the whole sky spins around the canvas centre.
+    /// Owned by the user (rotation slider / two-finger gesture), not
+    /// device orientation — the app is portrait-only. See
+    /// `EAppState.canvasRotation`.
     let canvasRotation:          Angle
 
     // MARK: Selection promotion snapshot

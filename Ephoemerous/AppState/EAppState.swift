@@ -52,21 +52,17 @@ class EAppState {
 
     // MARK: - Canvas rotation
     //
-    // Sky-fixed canvas: in landscape the celestial projection rotates
-    // so "celestial up" (where the sun/north sit) lands by the
-    // device's dynamic-island edge — same world-relative position as
-    // portrait. The rotation is applied INSIDE `EGraphicContext.toScreen`,
-    // so each projected point's *position* spins around the canvas
-    // centre, but the badge shapes + glyphs + text labels drawn at
-    // those positions stay axis-aligned to the device's current "up".
-    // The gesture coordinator's `skyPoint` / `screenPin` apply the
-    // inverse rotation so pan + pinch still match the user's drag
-    // direction.
+    // User-controlled spin of the whole celestial canvas. Applied INSIDE
+    // `EGraphicContext.toScreen`, so each projected point's *position*
+    // rotates around the canvas centre while the badge shapes / glyphs /
+    // text labels drawn there stay axis-aligned to screen "up". The
+    // gesture coordinator's `skyPoint` / `screenPin` apply the inverse
+    // rotation so pan + pinch still match the user's drag direction.
     //
-    // Driven by `MainView` from `verticalSizeClass`:
-    //   regular (portrait)  → 0°
-    //   compact (landscape) → -90°  (correct for landscape-left;
-    //                                mirrored for landscape-right)
+    // The app is portrait-only, so this is NOT driven by device
+    // orientation — it's owned entirely by the user (the rotation slider
+    // today; the two-finger rotation gesture next), reset to 0° via the
+    // compass control.
     var canvasRotation: Angle = .zero
 
     // MARK: - Temporal state  (logic → EAppState+Time.swift)
