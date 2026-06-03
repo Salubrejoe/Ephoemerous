@@ -99,41 +99,40 @@ struct MainView: View {
                     
                 Spacer()
                 
-                HStack(spacing: 12) {
-                    Image(symbol: .magnitudeIcon)
-                        .bold()
-                        .frame(width: 44, height: 44)
-                        .contentShape(.circle)
-                        .glassEffect(.clear.interactive(), in: .circle)
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                showMagnitudeSlider.toggle()
-                            }
-                        }
-                    if showMagnitudeSlider {
-                        // Stepped magnitude scrubber. `step: 0.2`
-                        // makes Apple's stock Slider snap to
-                        // discrete increments — no continuous
-                        // dragging through fractional values, no
-                        // bespoke chrome.
-                        Slider(
-                            value: Bindable(state).magnitudeFilter,
-                            in:    -2.0...8.0,
-                            step:  0.2
-                        )
-                        .tint(.primary)
-                        .transition(.opacity.combined(with: .blurReplace))
-                    } else {
-                        Spacer()
-                    }
-                    Image(symbol: .search)
-                        .bold()
-                        .frame(width: 44, height: 44)
-                        .contentShape(.circle)
-                        .glassEffect(.clear.interactive(), in: .circle)
-                        .onTapGesture { showSearchSheet = true }
-                }
-                .frame(height: 44)
+                /*
+                 HStack(spacing: 12) {
+                 Image(symbol: .magnitudeIcon)
+                 .bold()
+                 .frame(width: 44, height: 44)
+                 .contentShape(.circle)
+                 .glassEffect(.clear.interactive(), in: .circle)
+                 .onTapGesture {
+                 withAnimation(.easeInOut(duration: 0.25)) {
+                 showMagnitudeSlider.toggle()
+                 }
+                 }
+                 if showMagnitudeSlider {
+                 // Stepped magnitude scrubber. `step: 0.2`
+                 // makes Apple's stock Slider snap to
+                 // discrete increments — no continuous
+                 // dragging through fractional values, no
+                 // bespoke chrome.
+                 Slider(
+                 value: Bindable(state).magnitudeFilter,
+                 in:    -2.0...8.0,
+                 step:  0.2
+                 )
+                 .tint(.primary)
+                 .transition(.opacity.combined(with: .blurReplace))
+                 } else {
+                 Spacer()
+                 }
+                 // Search is no longer a button here — it lives in the
+                 // persistent SearchSheet pinned to the bottom. (Magnitude
+                 // stays for now; its redesign is task #3.)
+                 }
+                 .frame(height: 44)
+                 */
             }
             .padding(.horizontal, 24)
             .padding(.top,        topPadding)
@@ -215,17 +214,29 @@ struct MainView: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
-        // Search sheet — Apple-Maps-style. Tapping the search icon
-        // in the bottom toolbar opens this; tapping a favourite card
-        // or search result calls `state.focus(on:)` and dismisses,
-        // letting the existing detailDestination sheet take over.
-        .sheet(isPresented: $showSearchSheet) {
+        // Persistent search sheet — Apple-Maps-style. It's ALWAYS up
+        // (parked at its bar-only detent) whenever nothing else owns the
+        // bottom: no object selected and no myth sheet. Selecting an
+        // object sets `detailDestination`, which flips this binding false
+        // → search dismisses and the detail sheet (above) takes over;
+        // dismissing the detail flips it back true → search returns.
+        // One source of truth (`detailDestination` / `mythDestination`),
+        // so the two sheets are mutually exclusive with no manual toggle.
+        .sheet(isPresented: searchPresented) {
             SearchSheet()
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationCompactAdaptation(.sheet)
         }
 
+    }
+
+    /// Search is shown exactly when no other root sheet is. Read-only
+    /// derivation with a no-op setter: only an internal swipe could try
+    /// to set it false, and `interactiveDismissDisabled(true)` on the
+    /// sheet blocks that — selection is the only thing that hides search.
+    private var searchPresented: Binding<Bool> {
+        Binding(
+            get: { state.detailDestination == nil && state.mythDestination == nil },
+            set: { _ in }
+        )
     }
 }
 
@@ -239,9 +250,16 @@ extension View {
 }
 
 
-#Preview {
+#Preview("Light") {
     NavigationStack {
         MainView().environment(EAppState())
+    }
+}
+
+#Preview("Dark") {
+    NavigationStack {
+        MainView().environment(EAppState())
+            .preferredColorScheme(.dark)
     }
 }
 

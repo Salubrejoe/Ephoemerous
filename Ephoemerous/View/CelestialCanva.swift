@@ -21,6 +21,7 @@ struct CelestialCanva: View {
     // user puck) on top.
     private var layers: [any EGridLayer] {
         [
+            UserLocationLayer(),   // "you are here" puck
             EarthGridLayer(),
             // Aim sky-wash: blue glow where the phone points, clipped to
             // the horizon dome. Drawn early so it tints the background
@@ -44,7 +45,6 @@ struct CelestialCanva: View {
             // so the text reads against the tinted below-horizon wash,
             // before the user puck so the puck draws on top.
             HorizonLabelsLayer(),
-            UserLocationLayer(),   // "you are here" puck — drawn last so it sits on top
         ]
     }
 

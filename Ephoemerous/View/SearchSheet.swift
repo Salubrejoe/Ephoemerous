@@ -27,8 +27,14 @@ import LoreKit
 struct SearchSheet: View {
 
     @Environment(EAppState.self) private var state
-    @Environment(\.dismiss)      private var dismiss
     @State private var searchText: String = ""
+    @FocusState private var searchFocused: Bool
+    @State private var detent: PresentationDetent = Self.barDetent
+
+    /// Resting "search bar only" detent — the persistent always-present
+    /// state, just tall enough for the field + grabber. Drag up (or focus
+    /// the field) to reveal favourites, then results.
+    private static let barDetent: PresentationDetent = .height(69)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,7 +43,7 @@ struct SearchSheet: View {
                 .padding(.top, 14)
                 .padding(.bottom, 12)
 
-            if searchText.isEmpty {
+            if searchText.isEmpty && detent != Self.barDetent {
                 favouritesSection
                 Spacer(minLength: 0)
             } else {
@@ -45,44 +51,55 @@ struct SearchSheet: View {
             }
         }
         .background(Color(.systemBackground))
+        // Persistent Apple-Maps-style bottom sheet: never fully
+        // dismissed (it's the home of search) — swiping down parks it at
+        // the bar-only detent instead. Selecting an object is what hides
+        // it: `detailDestination` flips non-nil and MainView's derived
+        // binding dismisses this in favour of the detail sheet.
+        .presentationDetents([Self.barDetent, .medium, .large], selection: $detent)
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+        .interactiveDismissDisabled(true)
+        // Focusing the field (keyboard up) expands the sheet so results
+        // aren't buried under the keyboard at the bar detent.
+        .onChange(of: searchFocused) { _, focused in
+            if focused, detent == Self.barDetent { detent = .large }
+        }
+        // Typing from a parked sheet should also lift it.
+        .onChange(of: searchText) { _, text in
+            if !text.isEmpty, detent == Self.barDetent { detent = .medium }
+        }
     }
 
     // MARK: Header
 
+    // Persistent sheet → no dismiss X. The capsule fills the width; the
+    // trailing clear-button appears only while there's text to clear.
     private var searchHeader: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                TextField("Search the sky…", text: $searchText)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .submitLabel(.search)
-                if !searchText.isEmpty {
-                    Button {
-                        searchText = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.tertiary)
-                    }
-                    .buttonStyle(.plain)
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search the sky…", text: $searchText)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .focused($searchFocused)
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                    searchFocused = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
                 }
+                .buttonStyle(.plain)
             }
-            .font(.callout)
-            .padding(.horizontal, 14)
-            .padding(.vertical,   10)
-            .background(Color(.secondarySystemFill),
-                        in: Capsule())
-
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.callout.weight(.semibold))
-                    .frame(width: 36, height: 36)
-                    .background(Color(.secondarySystemFill), in: Circle())
-                    .foregroundStyle(.primary)
-            }
-            .buttonStyle(.plain)
         }
+        .font(.callout)
+        .padding(.horizontal, 14)
+        .padding(.vertical,   10)
+        .background(Color(.secondarySystemFill),
+                    in: Capsule())
     }
 
     // MARK: Favourites scroll
@@ -260,14 +277,15 @@ struct SearchSheet: View {
 
     // MARK: Actions
 
-    /// Focus the canvas on `obj` (sets `detailDestination` and pans
-    /// the camera) and close the search sheet. The root detail
-    /// sheet then takes over with its 1/3 detent — much better fit
-    /// for the detail content than a half/full-sheet wrap with the
-    /// detail floating at the top.
+    /// Focus the canvas on `obj` (sets `detailDestination` and pans the
+    /// camera). Setting `detailDestination` is what swaps this persistent
+    /// search sheet out for the detail sheet — MainView's derived binding
+    /// hides search the moment a selection exists. We just drop keyboard
+    /// focus and reset the field so search returns clean on dismiss.
     private func open(_ obj: ESkyObject) {
+        searchFocused = false
+        searchText = ""
         state.focus(on: obj)
-        dismiss()
     }
 }
 
