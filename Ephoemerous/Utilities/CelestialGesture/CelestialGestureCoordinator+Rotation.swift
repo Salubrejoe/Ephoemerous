@@ -21,6 +21,9 @@ extension CelestialGestureCoordinator {
         stopInertia(state: state)
         guard !isRotatingCanvas else { return }
         setRotating(true)
+        // Snap any in-flight compass spin-back to its committed end so the
+        // twist starts from where the sky actually is, not mid-animation.
+        state._rotationTransition = nil
         canvasRotationAtStart = state.canvasRotation
         // If we begin already aligned, we're starting inside the detent —
         // don't re-tick the haptic until the user leaves and returns.

@@ -21,7 +21,7 @@ struct CelestialCanva: View {
     // user puck) on top.
     private var layers: [any EGridLayer] {
         [
-//            UserLocationLayer(),   // "you are here" puck
+            UserLocationLayer(),   // "you are here" puck
             EarthGridLayer(),
             // Aim sky-wash: blue glow where the phone points, clipped to
             // the horizon dome. Drawn early so it tints the background
@@ -77,7 +77,7 @@ struct CelestialCanva: View {
                         localSiderealOffset:     state.localSiderealOffset,
                         animationTime:           state.animationTime,
                         viewpoint:               state.viewpoint,
-                        canvasRotation:          state.canvasRotation,
+                        canvasRotation:          state.renderedRotation,
                         selectedObjectID:        state.detailDestination?.id,
                         selectionStart:          state._selectionStart,
                         deselectingID:           state._deselectingID,
@@ -165,6 +165,7 @@ extension CelestialCanva {
         state._dateTransition    != nil ||
         state._originTransition  != nil ||
         state._inertiaTransition != nil ||
+        state._rotationTransition != nil ||
         state._promotionActive
     }
     private var schedule: ECanvasSchedule { ECanvasSchedule(isAnimating: isAnimating) }

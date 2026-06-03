@@ -105,6 +105,7 @@ struct MainView: View {
                     [detailHeaderDetent, .fraction(1.0 / 3.0)],
                     selection: $detailDetent
                 )
+                .interactiveDismissDisabled()
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.visible)
                 // Each fresh place card opens at the third-height, not

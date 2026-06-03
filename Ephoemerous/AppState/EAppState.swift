@@ -64,6 +64,12 @@ class EAppState {
     // today; the two-finger rotation gesture next), reset to 0° via the
     // compass control.
     var canvasRotation: Angle = .zero
+    /// In-flight bouncy spin-back (the compass reset). Interpolated lazily
+    /// in `renderedRotation` and nil'd when finished — same pattern as
+    /// `_activeTransition`. Lets the *canvas* animate the rotation (it
+    /// samples `renderedRotation` per frame); `withAnimation` alone only
+    /// animates SwiftUI modifiers, so the sky would otherwise snap.
+    var _rotationTransition: ERotationTransition? = nil
 
     // MARK: - Temporal state  (logic → EAppState+Time.swift)
     var observationDate: Date   = .now  { didSet { invalidateStarCache() } }

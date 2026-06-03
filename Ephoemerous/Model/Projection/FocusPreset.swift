@@ -65,6 +65,58 @@ struct EPresetTransition {
     }
 }
 
+// MARK: - Rotation animation state
+// Single-angle sibling of EPresetTransition, for the compass spin-back.
+// Reuses the same bounce easing so the needle (and sky) overshoot North
+// slightly then settle.
+struct ERotationTransition {
+    let from:      Angle
+    let to:        Angle
+    let startTime: Double
+    let duration:  Double
+
+    func interpolated(at time: Double) -> Angle {
+        let t = EPresetTransition.bounceEase((time - startTime) / duration)
+        return .degrees(from.degrees + (to.degrees - from.degrees) * t)
+    }
+
+    func isFinished(at time: Double) -> Bool {
+        time >= startTime + duration
+    }
+}
+
+// MARK: - EAppState: rendered scale / offset
+extension EAppState {
+
+    /// Canvas-facing rotation. Returns the bouncy interpolation while a
+    /// reset spin is in flight, otherwise the live `canvasRotation`. Nils
+    /// the finished transition in place — same lazy pattern as
+    /// `renderedScale`. The Canvas snapshot AND the compass dial both read
+    /// this, so they animate together.
+    var renderedRotation: Angle {
+        guard let t = _rotationTransition else { return canvasRotation }
+        if t.isFinished(at: animationTime) {
+            _rotationTransition = nil
+            return canvasRotation
+        }
+        return t.interpolated(at: animationTime)
+    }
+
+    /// Animate the canvas spin to `target` with a settling overshoot.
+    /// Commits `canvasRotation` to the target immediately (so all the
+    /// gesture math reads the final value) while the transition drives the
+    /// visible interpolation.
+    func animateRotation(to target: Angle) {
+        _rotationTransition = ERotationTransition(
+            from:      renderedRotation,
+            to:        target,
+            startTime: animationTime,
+            duration:  AstroConstants.transitionDuration
+        )
+        canvasRotation = target
+    }
+}
+
 // MARK: - EAppState: rendered scale / offset
 extension EAppState {
 
