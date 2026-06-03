@@ -103,11 +103,11 @@ struct NamedStarsLayer: EGridLayer {
         let selStarUUID   = Self.starUUID(from: dc.selectedObjectID)
         let deselStarUUID = Self.starUUID(from: dc.deselectingID)
 
+        // Same zoom-driven magnitude cap StarsLayer uses, so a named
+        // star's badge appears in step with its underlying star dot.
+        let magCap = dc.state.magnitudeCap(forScale: scale)
         for star in Self.candidates where !favouriteNames.contains(star.name) {
-            // Honour the magnitude filter — if the user has dialled
-            // back to mag ≤ 3, a mag-4 named star shouldn't suddenly
-            // pop in just because we know its name.
-            guard star.magnitude <= dc.state.magnitudeFilter else { continue }
+            guard star.magnitude <= magCap else { continue }
 
             let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
                                                   to: dc.renderedObservationDate)

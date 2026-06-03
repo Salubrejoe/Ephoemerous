@@ -50,7 +50,7 @@ extension EArtist {
         // Sub-pixel stars are invisible on Retina anyway — skipping
         // them spares a `translate + rotate + scale + fill` that would
         // paint nothing readable.
-        guard r >= 0.3 else { return }
+        guard r >= 0.1 else { return }
         let spin = starSpin(of: star)
 
         var local = dc.ctx
@@ -59,7 +59,8 @@ extension EArtist {
         local.scaleBy(x: r, y: r)
         local.fill(
             Self.starPath,
-            with: .color(star.spectralClass.lightColor.opacity(0.9))
+            with: .color(.primary)
+//            with: .color(star.spectralClass.lightColor.opacity(0.9))
         )
     }
 

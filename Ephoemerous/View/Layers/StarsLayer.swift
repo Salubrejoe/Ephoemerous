@@ -17,7 +17,10 @@ struct StarsLayer: EGridLayer {
         let favouriteNames = Set(dc.state.favouriteStars.map(\.name))
         let hideNamed      = dc.renderedScale >= artist.namedStarDotIn
 
-        for star in dc.state.stars {
+        // Zoom-driven visible set: a magnitude-sorted prefix capped by
+        // the current zoom (fainter stars appear as you pinch in). See
+        // `EAppState.visibleStars` / `magnitudeCap`.
+        for star in dc.state.visibleStars(forScale: dc.renderedScale) {
             if favouriteNames.contains(star.name) { continue }
             if hideNamed && NamedStarsLayer.candidateNames.contains(star.name) { continue }
 

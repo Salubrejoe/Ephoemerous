@@ -21,7 +21,7 @@ struct CelestialCanva: View {
     // user puck) on top.
     private var layers: [any EGridLayer] {
         [
-            UserLocationLayer(),   // "you are here" puck
+//            UserLocationLayer(),   // "you are here" puck
             EarthGridLayer(),
             // Aim sky-wash: blue glow where the phone points, clipped to
             // the horizon dome. Drawn early so it tints the background
@@ -139,7 +139,7 @@ struct ECanvasSchedule: TimelineSchedule {
         mutating func next() -> Date? {
             let current = next_date
             if isAnimating {
-                next_date = current.addingTimeInterval(1.0 / 120.0)
+                next_date = current.addingTimeInterval(1.0 / 60.0)
                 return current
             }
             // Idle: emit one tick at start so the canvas paints once,

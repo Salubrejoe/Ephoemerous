@@ -96,9 +96,15 @@ class EAppState {
     // the save here (rather than a `.onChange` in a view) means the
     // sync survives toolbar / sheet refactors and there's only one
     // source of truth for "magnitude filter changed".
+    /// Legacy manual magnitude cap. As of the zoom-driven star reveal,
+    /// the visible magnitude is a function of zoom (see
+    /// `EAppState.magnitudeCap(forScale:)`), so this no longer gates the
+    /// star set. Kept only for iCloud back-compat (the key still
+    /// round-trips) and any future "max depth" preference. No longer
+    /// invalidates the star cache — the cache is magnitude-independent
+    /// now (sorted once; capped per frame).
     var magnitudeFilter: Double = AstroConstants.defaultMagCap {
         didSet {
-            invalidateStarCache()
             ECloudSync.shared.saveMagnitudeFilter(magnitudeFilter)
         }
     }
