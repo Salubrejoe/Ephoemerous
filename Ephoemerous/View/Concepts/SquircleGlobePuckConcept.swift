@@ -15,7 +15,7 @@ struct SquircleGlobePuck: View {
 
     var disc:       Color
     var symbol:     Color
-    var ring:       Color   = .white
+    var ring:       Color   = .systemBackground
     var size:       CGFloat = 120
     /// SF Symbol used as the globe glyph. Defaults to the
     /// Europe/Africa hemisphere — the production call site
@@ -45,7 +45,7 @@ struct SquircleGlobePuck: View {
     var body: some View {
         ZStack {
             scallop.fill(ring)
-            scallop.fill(disc.gradient).padding(ringInset)
+            scallop.fill(disc).padding(ringInset)
             globe
                 .frame(width: globeSize, height: globeSize)
                 .clipShape(scallop)

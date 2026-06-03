@@ -2,10 +2,7 @@
   "fill-specializations" : [
     {
       "value" : {
-        "linear-gradient" : [
-          "extended-gray:1.00000,1.00000",
-          "extended-gray:0.87495,1.00000"
-        ],
+        "automatic-gradient" : "srgb:0.95000,0.93000,0.87000,1.00000",
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -21,7 +18,7 @@
     {
       "appearance" : "dark",
       "value" : {
-        "automatic-gradient" : "gray:0.00000,1.00000",
+        "automatic-gradient" : "srgb:0.08600,0.09400,0.11400,1.00000",
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -39,12 +36,14 @@
     {
       "layers" : [
         {
+          "blend-mode" : "normal",
+          "fill" : "none",
           "glass" : false,
-          "hidden" : true,
+          "hidden" : false,
           "image-name" : "puck.svg",
           "name" : "puck",
           "position" : {
-            "scale" : 0.4,
+            "scale" : 0.6,
             "translation-in-points" : [
               0,
               0
@@ -52,6 +51,8 @@
           }
         },
         {
+          "glass" : false,
+          "hidden" : false,
           "image-name" : "poi_sun 2.svg",
           "name" : "poi_sun 2",
           "position" : {
@@ -70,6 +71,7 @@
             }
           ],
           "glass" : false,
+          "hidden" : true,
           "image-name" : "puck_halo.svg",
           "name" : "puck_halo",
           "position" : {
@@ -119,7 +121,9 @@
         {
           "fill-specializations" : [
             {
-              "value" : "none"
+              "value" : {
+                "automatic-gradient" : "srgb:0.95000,0.93000,0.87000,1.00000"
+              }
             },
             {
               "appearance" : "dark",
@@ -127,6 +131,7 @@
             }
           ],
           "glass" : false,
+          "hidden" : true,
           "image-name" : "horizon_icon_2_bands.svg",
           "name" : "horizon_icon_2_bands",
           "opacity" : 0.3,
@@ -193,16 +198,30 @@
           "fill-specializations" : [
             {
               "value" : {
-                "automatic-gradient" : "gray:0.50000,1.00000"
+                "linear-gradient" : [
+                  "display-p3:0.78881,0.68525,0.60515,0.55000",
+                  "srgb:0.88000,0.76000,0.68000,0.55000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 1
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.2898656671697443
+                  }
+                }
               }
             },
             {
               "appearance" : "dark",
               "value" : {
-                "automatic-gradient" : "extended-gray:0.31800,1.00000"
+                "automatic-gradient" : "display-p3:0.61274,0.54062,0.48905,0.55000"
               }
             }
           ],
+          "hidden" : false,
           "image-name" : "horizon_squircle_negative.svg",
           "name" : "horizon_squircle_negative",
           "position" : {

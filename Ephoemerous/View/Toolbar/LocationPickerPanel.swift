@@ -24,30 +24,48 @@ struct LocationPickerPanel: View {
     @State private var completer = LocationSearchCompleter()
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var centerCoordinate: CLLocationCoordinate2D = .init(latitude: 0, longitude: 0)
-    @State private var searchFieldFocused: Bool = false
+    /// Drives the map → suggestion-list swap. Bound to the search field
+    /// via `.focused`, so tapping the field reveals the suggestions over
+    /// the map and dismissing the keyboard returns to the map.
+    @FocusState private var searchFocused: Bool
 
-    /// Panel height. Matches the "fills the bottom third" intent —
-    /// just enough room for the map to be useful without burying the
-    /// canvas. Tunable.
-    private let mapHeight: CGFloat = 280
+    /// Show the suggestion list (over the map) while the user is in
+    /// search mode: field focused, or there are live suggestions to act
+    /// on even after the keyboard dropped.
+    private var isSearching: Bool {
+        searchFocused || !completer.suggestions.isEmpty
+    }
 
     var body: some View {
-        VStack(spacing: 8) {
-            sheetHeader
+        ZStack {
+            // The map IS the background — fills the whole sheet.
+            mapView
 
-            searchField
-
-            if !completer.suggestions.isEmpty {
+            // Suggestion list covers the map (on a material) while
+            // searching; the map stays mounted underneath so returning
+            // from search doesn't re-seed the camera.
+            if isSearching {
                 suggestionList
-            } else {
-                mapView
+                    .background(.regularMaterial)
             }
-            actionRow
 
-            Spacer(minLength: 0)
+            // Floating chrome: header pinned top, Travel + search pinned
+            // bottom. Sits above both map and suggestions.
+            VStack(spacing: 10) {
+                sheetHeader
+                Spacer()
+                // Commit the panned-to centre as the new origin. Shown
+                // only once the map has actually moved off the current
+                // origin, and hidden while searching (the list owns the
+                // screen then).
+                if !centerMatchesOrigin && !isSearching {
+                    travelButton
+                }
+                searchField
+            }
+            .padding(16)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             // Seed the camera at the current observer location so the
             // picker opens "where you are now."
@@ -56,6 +74,23 @@ struct LocationPickerPanel: View {
                 span:   MKCoordinateSpan(latitudeDelta: 10, longitudeDelta: 10)))
             centerCoordinate = currentObserverCoordinate
         }
+    }
+
+    // MARK: - Travel
+
+    /// Commit the map's centre as the new observer origin. Full-width
+    /// glass-prominent capsule sitting just above the search field.
+    private var travelButton: some View {
+        Button {
+            commitCenter()
+        } label: {
+            Text("Travel")
+                .font(.callout.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.glassProminent)
     }
 
     // MARK: - Sheet header
@@ -77,10 +112,16 @@ struct LocationPickerPanel: View {
                     .background(Capsule().fill(.regularMaterial))
             }
             .disabled(state.isAtDeviceLocation)
+            .frame(width: 100, alignment: .leading)
+            Spacer()
             
-            Text("Location")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
+            Text(coordinateLabel)
+                .font(.subheadline.monospacedDigit())
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+                .shadow(radius: 2)
+                .lineLimit(1)
+            Spacer()
             
             Button { state.isShowingLocationPicker = false } label: {
                 Image(systemName: "xmark.circle.fill")
@@ -91,6 +132,7 @@ struct LocationPickerPanel: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .frame(width: 100, alignment: .trailing)
         }
     }
 
@@ -106,6 +148,7 @@ struct LocationPickerPanel: View {
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
+                .focused($searchFocused)
             if !completer.query.isEmpty {
                 Button {
                     completer.query = ""
@@ -119,6 +162,9 @@ struct LocationPickerPanel: View {
         .font(.callout)
         .padding(.horizontal, 12)
         .padding(.vertical,    9)
+        .background(
+            Capsule().fill(.regularMaterial)
+        )
     }
 
     private var suggestionList: some View {
@@ -147,96 +193,59 @@ struct LocationPickerPanel: View {
                     Divider().opacity(0.4)
                 }
             }
+            // Top inset clears the floating header; bottom clears the
+            // floating search field so the list never hides under them.
+            .padding(.top, 56)
+            .padding(.bottom, 72)
+            .padding(.horizontal, 10)
         }
-        .frame(height: mapHeight)
     }
 
     // MARK: - Map
 
+    /// Fills the whole sheet as the background. Crosshair marks the
+    /// candidate location; the floating Travel button (in `body`)
+    /// commits whatever's under it.
     private var mapView: some View {
-        ZStack {
-            Map(position: $cameraPosition)
-                .onMapCameraChange(frequency: .continuous) { ctx in
-                    centerCoordinate = ctx.camera.centerCoordinate
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 22,
-                                            style: .continuous))
-
-            // Fixed centred crosshair — whatever's under it is the
-            // candidate location.
-            crosshair
-                .allowsHitTesting(false)
-        }
-        .frame(height: mapHeight)
+        Map(position: $cameraPosition)
+            .onMapCameraChange(frequency: .continuous) { ctx in
+                centerCoordinate = ctx.camera.centerCoordinate
+            }
+            .ignoresSafeArea()
+            .overlay {
+                // Fixed centred crosshair — whatever's under it is the
+                // candidate location.
+                crosshair
+                    .allowsHitTesting(false)
+            }
     }
 
     private var crosshair: some View {
-        ZStack {
-            Circle()
-                .stroke(.primary.opacity(0.85), lineWidth: 1.5)
-                .frame(width: 22, height: 22)
-            Circle()
-                .fill(.primary.opacity(0.85))
-                .frame(width: 4, height: 4)
-            Rectangle()
-                .fill(.primary.opacity(0.85))
-                .frame(width: 1, height: 32)
-            Rectangle()
-                .fill(.primary.opacity(0.85))
-                .frame(width: 32, height: 1)
+        // The 12-point horizon scallop — the app's signature silhouette
+        // (shared with the user puck + horizon rim) instead of a generic
+        // ring, so the aim reticle reads as Ephoemerous's own. Corner /
+        // bulge come from EArtist so it can never drift from the real rim.
+        let artist = EArtist.shared
+        return ZStack {
+            Squircle(corners: artist.horizonBumpCorners,
+                     bulge:   artist.horizonBumpBulge)
+                .stroke(Color.systemBackground, lineWidth: 2.5)
+                .frame(width: 26, height: 26)
+                .shadow(color: .primary, radius: 6)
+//            Circle()
+//                .fill(.primary.opacity(0.85))
+//                .frame(width: 4, height: 4)
+//            Rectangle()
+//                .fill(.primary.opacity(0.85))
+//                .frame(width: 1, height: 32)
+//            Rectangle()
+//                .fill(.primary.opacity(0.85))
+//                .frame(width: 32, height: 1)
         }
         .compositingGroup()
         .shadow(color: .black.opacity(0.35), radius: 2)
     }
 
-    // MARK: - Action row
-
-    private var actionRow: some View {
-        HStack(spacing: 8) {
-            // "Here": snap to device location. Disabled when the
-            // observer is already within ~111 km of the device fix
-            // (the tolerance `state.isAtDeviceLocation` already uses
-            // elsewhere) — tapping there would be a no-op.
-            Button {
-                state.goToDeviceLocation()
-                state.isShowingLocationPicker = false
-            } label: {
-                Text("Here")
-//                Label("Here", systemImage: "location.fill")
-                    .font(.callout.weight(.medium))
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.glass)
-            .disabled(state.isAtDeviceLocation)
-
-            Spacer()
-
-            // Coordinate readout — what "Set" will commit to.
-            Text(coordinateLabel)
-                .font(.subheadline.monospacedDigit())
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
-                .shadow(radius: 2)
-                .lineLimit(1)
-
-            Spacer()
-
-            // "Travel": commit the map's centre as the new origin.
-            // Disabled when the map is already centred on the
-            // current origin (panning hasn't moved it). Tolerance
-            // ~0.001° (≈ 110 m) lets onMapCameraChange noise pass
-            // without spuriously enabling the button.
-            Button {
-                commitCenter()
-            } label: {
-                Text("Travel")
-                    .font(.callout.weight(.semibold))
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.glassProminent)
-            .disabled(centerMatchesOrigin)
-        }
-    }
 
     /// `true` when the map's centre coordinate is essentially the
     /// current observer origin — no panning has happened, so the
@@ -264,6 +273,9 @@ struct LocationPickerPanel: View {
 
     private func jump(to suggestion: MKLocalSearchCompletion) async {
         guard let coord = await completer.resolve(suggestion) else { return }
+        // Drop the keyboard + clear suggestions so the map (now panned
+        // to the pick) is revealed for confirmation via Travel.
+        searchFocused = false
         completer.query = ""
         cameraPosition = .region(MKCoordinateRegion(
             center: coord,

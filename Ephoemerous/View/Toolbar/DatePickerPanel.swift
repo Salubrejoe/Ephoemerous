@@ -82,7 +82,6 @@ struct DatePickerPanel: View {
         Spacer()
         }
         .padding(.horizontal, 16)
-//        .padding(.top, 16)
         .frame(height: 215)
     }
 
@@ -105,12 +104,16 @@ struct DatePickerPanel: View {
             }
             .buttonStyle(.plain)
             .disabled(abs(state.observationDate.timeIntervalSinceNow) < 60)
+            .frame(width: 100, alignment: .leading)
+            Spacer()
             
             Text("Date & Time")
                 .font(.headline)
             // Greyed-and-blocked when the observation is already at
             // real-world now — same rule the other Now surfaces use.
-                .frame(maxWidth: .infinity)
+                
+            Spacer()
+            
             Button { state.isShowingDatePicker = false } label: {
                 Image(systemName: "xmark.circle.fill")
                     .resizable()
@@ -120,6 +123,7 @@ struct DatePickerPanel: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .frame(width: 100, alignment: .trailing)
         }
     }
 

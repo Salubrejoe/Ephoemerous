@@ -233,15 +233,17 @@ struct MainView: View {
         // helpers in EAppState+Location.
         .sheet(isPresented: Bindable(state).isShowingLocationPicker) {
             LocationPickerPanel()
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+                .presentationDetents([.height(300)])
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.hidden)
         }
         // Date editor — raised by the toolbar's date pill. Wheel picker;
         // a medium sheet is plenty for five wheels + the close row.
         .sheet(isPresented: Bindable(state).isShowingDatePicker) {
             DatePickerPanel()
                 .presentationDetents([.height(250)])
-                .presentationDragIndicator(.visible)
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.hidden)
         }
 
     }
