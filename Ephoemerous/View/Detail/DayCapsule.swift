@@ -150,11 +150,11 @@ struct DayCapsule: View {
         case .sfSymbol(let name):
             Image(systemName: name)
                 .font(.body.weight(.semibold))
-                .foregroundStyle(.primary)
+//                .foregroundStyle(.primary)
         case .unicode(let str):
             Text(str)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
+//                .foregroundStyle(.primary)
         }
     }
 
