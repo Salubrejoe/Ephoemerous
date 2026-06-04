@@ -1,7 +1,225 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-
+    "%lld stars shown" : {
+      "extractionState" : "manual"
+    },
+    "Abbreviation" : {
+      "extractionState" : "manual"
+    },
+    "Acquiring location..." : {
+      "extractionState" : "manual"
+    },
+    "Add" : {
+      "extractionState" : "manual"
+    },
+    "Afternoon" : {
+      "extractionState" : "manual"
+    },
+    "All Stars" : {
+      "extractionState" : "manual"
+    },
+    "At your location" : {
+      "extractionState" : "manual"
+    },
+    "Bayer" : {
+      "extractionState" : "manual"
+    },
+    "Brighter than" : {
+      "extractionState" : "manual"
+    },
+    "Cancel" : {
+      "extractionState" : "manual"
+    },
+    "Centre on your location" : {
+      "extractionState" : "manual"
+    },
+    "Civil Dawn" : {
+      "extractionState" : "manual"
+    },
+    "Civil Dusk" : {
+      "extractionState" : "manual"
+    },
+    "Confirm" : {
+      "extractionState" : "manual"
+    },
+    "Constellation" : {
+      "extractionState" : "manual"
+    },
+    "Constellations" : {
+      "extractionState" : "manual"
+    },
+    "Coordinates" : {
+      "extractionState" : "manual"
+    },
+    "Day" : {
+      "extractionState" : "manual"
+    },
+    "Dec (mas/yr)" : {
+      "extractionState" : "manual"
+    },
+    "Declination" : {
+      "extractionState" : "manual"
+    },
+    "Default" : {
+      "extractionState" : "manual"
+    },
+    "Delete" : {
+      "extractionState" : "manual"
+    },
+    "Diameter" : {
+      "extractionState" : "manual"
+    },
+    "Distance" : {
+      "extractionState" : "manual"
+    },
+    "Done" : {
+      "extractionState" : "manual"
+    },
+    "Ecliptic longitude" : {
+      "extractionState" : "manual"
+    },
+    "Edit" : {
+      "extractionState" : "manual"
+    },
+    "Ephemerous" : {
+      "extractionState" : "manual"
+    },
+    "Error" : {
+      "extractionState" : "manual"
+    },
+    "Fetching..." : {
+      "extractionState" : "manual"
+    },
+    "Full name" : {
+      "extractionState" : "manual"
+    },
+    "Identity" : {
+      "extractionState" : "manual"
+    },
+    "Illumination" : {
+      "extractionState" : "manual"
+    },
+    "Location access denied" : {
+      "extractionState" : "manual"
+    },
+    "Magnitude" : {
+      "extractionState" : "manual"
+    },
+    "Magnitude filter" : {
+      "extractionState" : "manual"
+    },
+    "Moon" : {
+      "extractionState" : "manual"
+    },
+    "Moon Events" : {
+      "extractionState" : "manual"
+    },
+    "Moonrise" : {
+      "extractionState" : "manual"
+    },
+    "Moonset" : {
+      "extractionState" : "manual"
+    },
+    "Morning" : {
+      "extractionState" : "manual"
+    },
+    "Name" : {
+      "extractionState" : "manual"
+    },
+    "Name, constellation, class..." : {
+      "extractionState" : "manual"
+    },
+    "Night" : {
+      "extractionState" : "manual"
+    },
+    "Period" : {
+      "extractionState" : "manual"
+    },
+    "Phase" : {
+      "extractionState" : "manual"
+    },
+    "Physical" : {
+      "extractionState" : "manual"
+    },
+    "Proper Motion" : {
+      "extractionState" : "manual"
+    },
+    "RA  (mas/yr)" : {
+      "extractionState" : "manual"
+    },
+    "Radius" : {
+      "extractionState" : "manual"
+    },
+    "Recently Viewed" : {
+      "extractionState" : "manual"
+    },
+    "Retry" : {
+      "extractionState" : "manual"
+    },
+    "Right Ascension" : {
+      "extractionState" : "manual"
+    },
+    "Save" : {
+      "extractionState" : "manual"
+    },
+    "Search, remember..." : {
+      "extractionState" : "manual"
+    },
+    "Solar Noon" : {
+      "extractionState" : "manual"
+    },
+    "Solar System" : {
+      "extractionState" : "manual"
+    },
+    "Sort & Filter" : {
+      "extractionState" : "manual"
+    },
+    "Sort by" : {
+      "extractionState" : "manual"
+    },
+    "Spectral Class" : {
+      "extractionState" : "manual"
+    },
+    "Stars" : {
+      "extractionState" : "manual"
+    },
+    "Sun" : {
+      "extractionState" : "manual"
+    },
+    "Sun Events" : {
+      "extractionState" : "manual"
+    },
+    "Sunrise" : {
+      "extractionState" : "manual"
+    },
+    "Sunset" : {
+      "extractionState" : "manual"
+    },
+    "Tap to enable location" : {
+      "extractionState" : "manual"
+    },
+    "Temperature" : {
+      "extractionState" : "manual"
+    },
+    "Track Moon" : {
+      "extractionState" : "manual"
+    },
+    "Track Star" : {
+      "extractionState" : "manual"
+    },
+    "Track Sun" : {
+      "extractionState" : "manual"
+    },
+    "Type" : {
+      "extractionState" : "manual"
+    },
+    "Unavailable" : {
+      "extractionState" : "manual"
+    },
+    "Zodiac" : {
+      "extractionState" : "manual"
+    }
   },
   "version" : "1.0"
 }
