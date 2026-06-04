@@ -54,7 +54,7 @@ struct EMoonDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         "Moon",
+                title:         Strings.Bodies.moon,
                 subtitle:      String(format: "%.0f%% illuminated", moonData.fraction * 100),
                 accent:        accent,
                 icon:          { POIBadgeView(category: .moon) },
@@ -108,26 +108,26 @@ struct EMoonDetailView: View {
     @ViewBuilder
     private var eventCards: some View {
         card(icon: phaseSymbol(for: phaseName), accentTinted: true,
-             value: phaseName, label: "Phase")
+             value: phaseName, label: Strings.BodyDetail.moonPhase)
         card(icon: "circle.lefthalf.filled",    accentTinted: true,
              value: String(format: "%.0f%%", moonData.fraction * 100),
-             label: "Illumination")
+             label: Strings.BodyDetail.illumination)
     }
 
     private var physicalCards: some View {
         Group {
-            card(icon: "ruler",         accentTinted: false, value: "~384k km", label: "Distance")
-            card(icon: "circle.dashed", accentTinted: false, value: "3,474 km", label: "Diameter")
-            card(icon: "clock",         accentTinted: false, value: "27.3 d",   label: "Period")
+            card(icon: "ruler",         accentTinted: false, value: "~384k km", label: Strings.BodyDetail.distance)
+            card(icon: "circle.dashed", accentTinted: false, value: "3,474 km", label: Strings.BodyDetail.diameter)
+            card(icon: "clock",         accentTinted: false, value: "27.3 d",   label: Strings.BodyDetail.period)
         }
     }
 
     private var coordCards: some View {
         Group {
             card(icon: "arrow.left.arrow.right", accentTinted: false,
-                 value: raString,  label: "RA")
+                 value: raString,  label: String(localized: "RA"))
             card(icon: "arrow.up.arrow.down", accentTinted: false,
-                 value: decString, label: "Dec")
+                 value: decString, label: String(localized: "Dec"))
         }
     }
 

@@ -113,15 +113,15 @@ struct EStarDetailView: View {
             tile(icon:     "thermometer.medium",
                  iconTint: accent,
                  value:    star.spectralClass.rawValue,
-                 label:    "Class")
+                 label:    String(localized: "Class"))
             tile(icon:     "ruler",
                  iconTint: .secondary,
                  value:    distanceText,
-                 label:    "Distance")
+                 label:    Strings.BodyDetail.distance)
             tile(icon:     "sparkles",
                  iconTint: .secondary,
                  value:    magnitudeText,
-                 label:    "Magnitude")
+                 label:    Strings.BodyDetail.magnitude)
         }
         .frame(height: statsRowHeight)
     }

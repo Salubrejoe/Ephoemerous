@@ -33,8 +33,8 @@ struct ESunDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         "Sun",
-                subtitle:      "G-type star",
+                title:         Strings.Bodies.sun,
+                subtitle:      String(localized: "G-type star"),
                 accent:        accent,
                 icon:          { POIBadgeView(category: .sun) },
                 leadingSymbol: .shareCircleFill,
@@ -88,17 +88,17 @@ struct ESunDetailView: View {
 
     private var physicalCards: some View {
         Group {
-            card(icon: "sparkles", accentTinted: false, value: "-26.7",   label: "Magnitude")
-            card(icon: "ruler",    accentTinted: false, value: "1.0 AU",  label: "Distance")
+            card(icon: "sparkles", accentTinted: false, value: "-26.7",   label: Strings.BodyDetail.magnitude)
+            card(icon: "ruler",    accentTinted: false, value: "1.0 AU",  label: Strings.BodyDetail.distance)
         }
     }
 
     private var coordCards: some View {
         Group {
             card(icon: "arrow.left.arrow.right", accentTinted: false,
-                 value: raString,  label: "RA")
+                 value: raString,  label: String(localized: "RA"))
             card(icon: "arrow.up.arrow.down", accentTinted: false,
-                 value: decString, label: "Dec")
+                 value: decString, label: String(localized: "Dec"))
         }
     }
 

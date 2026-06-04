@@ -183,7 +183,7 @@ struct DetailActionRow: View {
         Button {
             state.toggleFavourite(obj)
         } label: {
-            Text("Remember")
+            Text(String(localized: "Remember"))
                 .font(.callout.weight(.semibold))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

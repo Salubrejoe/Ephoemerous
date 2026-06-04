@@ -78,15 +78,15 @@ struct ENSPlanetDetailView: View {
             tile(icon:     "ruler",
                  iconTint: accent,
                  value:    facts?.distance ?? "—",
-                 label:    "Distance")
+                 label:    Strings.BodyDetail.distance)
             tile(icon:     "clock",
                  iconTint: .secondary,
                  value:    facts?.period ?? "—",
-                 label:    "Period")
+                 label:    Strings.BodyDetail.period)
             tile(icon:     "sparkles",
                  iconTint: .secondary,
                  value:    magnitudeText,
-                 label:    "Magnitude")
+                 label:    Strings.BodyDetail.magnitude)
         }
         .frame(height: statsRowHeight)
     }

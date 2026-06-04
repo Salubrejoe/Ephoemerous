@@ -34,7 +34,7 @@ struct RememberButton: View {
         } label: {
             HStack(spacing: 8) {
                 Image(symbol: remembered ? .heartFill : .heart)
-                Text(remembered ? "Remembered" : "Remember")
+                Text(remembered ? String(localized: "Remembered") : String(localized: "Remember"))
                     .fontWeight(.semibold)
             }
             .font(.callout.weight(.semibold))

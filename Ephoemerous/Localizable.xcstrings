@@ -449,6 +449,17 @@
         }
       }
     },
+    "Class" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classe"
+          }
+        }
+      }
+    },
     "Columba" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -599,6 +610,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giorno"
+          }
+        }
+      }
+    },
+    "Dec" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dec"
           }
         }
       }
@@ -819,6 +841,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nome"
+          }
+        }
+      }
+    },
+    "G-type star" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stella di tipo G"
           }
         }
       }
@@ -1395,6 +1428,17 @@
         }
       }
     },
+    "RA" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RA"
+          }
+        }
+      }
+    },
     "RA  (mas/yr)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1424,6 +1468,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recenti"
+          }
+        }
+      }
+    },
+    "Remember" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricorda"
+          }
+        }
+      }
+    },
+    "Remembered" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricordata"
           }
         }
       }
