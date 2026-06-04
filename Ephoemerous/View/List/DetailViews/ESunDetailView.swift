@@ -50,7 +50,7 @@ struct ESunDetailView: View {
             // we compute date-accurate sun events ourselves.
             if !collapsed {
                 DayCapsule(
-                    gradient:  .dayCapsuleSun(anchors: anchors),
+                    tint:      accent,
                     knobGlyph: .symbol(.sunMaxFill),
                     knobDate:  Bindable(state).observationDate
                 )

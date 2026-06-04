@@ -70,7 +70,7 @@ struct EMoonDetailView: View {
             // compute date-accurate moonrise / moonset ourselves.
             if !collapsed {
                 DayCapsule(
-                    gradient:  .dayCapsuleMoon(anchors: anchors),
+                    tint:      accent,
                     knobGlyph: .symbol(.moonFill),
                     knobDate:  Bindable(state).observationDate
                 )

@@ -3,20 +3,22 @@ import UIKit
 import LoreKit
 
 // MARK: - DayCapsule
-// 24-hour "day-glance" capsule that sits in the same layout slot
-// (and shares the exact shape + height) as `RememberButton`.
-// Visually it's a wide rounded pill filled with a continuous
-// midnight → noon → midnight gradient, with optional event dots
-// positioned along its width by time-of-day fraction (0h on the
-// left edge, 24h on the right).
+// 24-hour "day-glance" scrubber that sits in the same layout slot
+// (and shares the height) as `RememberButton`. Instead of a continuous
+// day/night gradient, it now shows a comb of 24 identical little vertical
+// capsules — one per hour of the day — all in the object's body colour.
+// They read as a tick scale, so dragging the knob gives an at-a-glance
+// sense of *which hour* is being set (knob over the Nth bar ≈ N:00).
+//
+// Optional event dots sit along the scale by time-of-day fraction
+// (0h at the left, 24h at the right).
 //
 // Two initialisers:
-//   • Plain — just the gradient + dots.
-//   • Interactive — adds a glass knob bound to an external
-//     `Date`. Dragging the capsule scrubs the bound date through
-//     the current calendar day (preserves Y-M-D, only changes
-//     hours / minutes / seconds). Tap anywhere on the capsule
-//     jumps the knob there; drag scrubs continuously.
+//   • Plain — just the hour bars + dots.
+//   • Interactive — adds a glass knob bound to an external `Date`.
+//     Dragging scrubs the bound date through the current calendar day
+//     (preserves Y-M-D, only changes h/m/s). Tap jumps the knob there;
+//     drag scrubs continuously, with a rigid "now" detent tick.
 struct DayCapsule: View {
 
     /// One event marker on the capsule — a time, a description for
@@ -29,7 +31,8 @@ struct DayCapsule: View {
     }
 
     let events:    [Event]
-    let gradient:  LinearGradient
+    /// The object's body colour — every hour bar is drawn in it.
+    let tint:      Color
     let knobGlyph: POIGlyph?
 
     /// Bound externally — `nil`-equivalent when no knob is wanted
@@ -37,65 +40,65 @@ struct DayCapsule: View {
     @Binding private var knobDate: Date
 
     /// Previous drag sample's seconds-of-day, for crossing detection.
-    /// `nil` between drags (set on the first sample of each drag). We
-    /// fire the "now" detent when this sample and the previous one
-    /// STRADDLE real-now — so a fast flick that jumps clean over the
-    /// instant still ticks, where a fixed ±window would miss it.
     @State private var lastScrubbedSeconds: Double? = nil
 
-    /// Crisp, subtle detent tap. Light/rigid so crossing "now" reads as
-    /// a fine notch in the scale, not a thud.
+    /// Crisp, subtle detent tap when the scrub crosses "now".
     private let nowHaptic = UIImpactFeedbackGenerator(style: .rigid)
 
     // MARK: Init
 
     /// Read-only capsule (no draggable knob).
-    init(events: [Event],
-         gradient: LinearGradient = .dayCapsuleSun()) {
+    init(events: [Event], tint: Color) {
         self.events    = events
-        self.gradient  = gradient
+        self.tint      = tint
         self.knobGlyph = nil
         self._knobDate = .constant(.now)
     }
 
     /// Interactive capsule — a glass knob (SF Symbol or Unicode
-    /// astronomical glyph, via `POIGlyph`) rides on top of the
-    /// gradient, bound to `knobDate`. Dragging the capsule scrubs
-    /// the date through the current calendar day. `events` defaults
-    /// to empty: only ~10-day WeatherKit-style daily forecasts can
-    /// populate accurate sunrise / sunset / moonrise / moonset
-    /// times, so callers pass dots only when the data is
-    /// date-accurate.
+    /// astronomical glyph, via `POIGlyph`) rides over the hour bars,
+    /// bound to `knobDate`. `events` defaults to empty.
     init(events:    [Event] = [],
-         gradient:  LinearGradient,
+         tint:      Color,
          knobGlyph: POIGlyph,
          knobDate:  Binding<Date>) {
         self.events    = events
-        self.gradient  = gradient
+        self.tint      = tint
         self.knobGlyph = knobGlyph
         self._knobDate = knobDate
     }
 
     // MARK: Layout knobs
 
-    /// Locked to the same height as RememberButton's intrinsic
-    /// height (semibold body text + 14pt vertical padding) so the
-    /// two components are interchangeable in the layout slot under
-    /// the header.
+    /// Same height as RememberButton so the two are interchangeable in
+    /// the layout slot under the header.
     private var capsuleHeight: CGFloat { 50 }
+    /// Apple-HIG 44pt glass knob.
+    private var knobDiameter:  CGFloat { 44 }
 
-    /// Glass knob is Apple-HIG-compliant 44pt — comfortably fits
-    /// in the 50pt capsule with a small breathing margin.
-    private var knobDiameter: CGFloat { 44 }
+    /// One bar per hour.
+    private var hourCount: Int     { 24 }
+    private var barWidth:  CGFloat { 3 }
+    private var barHeight: CGFloat { 22 }
 
     // MARK: Body
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                Capsule(style: .continuous)
-                    .fill(gradient)
-                    .frame(height: capsuleHeight/2)
+                // Hour comb: 24 identical bars in the body colour, placed
+                // on the SAME scale the knob uses, so bar h sits exactly
+                // where the knob lands at h:00.
+                ForEach(0..<hourCount, id: \.self) { h in
+                    Capsule(style: .continuous)
+                        .fill(tint)
+                        .frame(width: barWidth, height: barHeight)
+                        .position(
+                            x: x(forFraction: Double(h) / Double(hourCount),
+                                 width: geo.size.width),
+                            y: geo.size.height / 2
+                        )
+                }
 
                 ForEach(events) { event in
                     Circle()
@@ -104,7 +107,8 @@ struct DayCapsule: View {
                         .overlay(Circle().stroke(Color.white.opacity(0.85), lineWidth: 1))
                         .shadow(color: .black.opacity(0.25), radius: 1, x: 0, y: 0)
                         .position(
-                            x: x(for: event.time, width: geo.size.width),
+                            x: x(forFraction: secondsOfDay(event.time) / 86_400.0,
+                                 width: geo.size.width),
                             y: geo.size.height / 2
                         )
                         .accessibilityLabel("\(event.label) at \(event.time.timeString)")
@@ -130,9 +134,6 @@ struct DayCapsule: View {
                         updateKnob(toX: value.location.x, width: geo.size.width)
                     }
                     .onEnded { _ in
-                        // Clear the crossing tracker and warm the haptic
-                        // engine so the next drag starts fresh with low
-                        // latency.
                         lastScrubbedSeconds = nil
                         nowHaptic.prepare()
                     }
@@ -141,10 +142,8 @@ struct DayCapsule: View {
         .frame(height: capsuleHeight)
     }
 
-    /// Render either an SF Symbol or a Unicode astronomical glyph
-    /// at the knob's size. Mirrors the canvas `drawPOILabel` switch
-    /// so a planet detail's knob shows the same ♀ / ♂ / ♃ that
-    /// the canvas badge does.
+    /// Render either an SF Symbol or a Unicode astronomical glyph at the
+    /// knob's size — mirrors the canvas `drawPOILabel` switch.
     @ViewBuilder
     private func knobView(for glyph: POIGlyph) -> some View {
         switch glyph {
@@ -159,28 +158,28 @@ struct DayCapsule: View {
         }
     }
 
-    // MARK: Knob math
+    // MARK: Scale math
 
-    /// Knob centre X, clamped so the full knob stays within the
-    /// capsule's width.
-    private func knobX(width: CGFloat) -> CGFloat {
+    /// Map a 0…1 time-of-day fraction to an x inside the knob's usable
+    /// travel (inset by the knob radius so the knob never clips the
+    /// edges). Shared by the hour bars, the event dots, and the knob, so
+    /// everything sits on one consistent scale.
+    private func x(forFraction f: Double, width: CGFloat) -> CGFloat {
         let r = knobDiameter / 2
         let usable = max(width - 2 * r, 0)
         guard usable > 0 else { return width / 2 }
-        let fraction = secondsOfDay(knobDate) / 86_400.0
-        return r + CGFloat(fraction) * usable
+        return r + CGFloat(f) * usable
     }
 
-    /// Scrub the bound date to whatever wall-clock time the
-    /// finger's x-coordinate maps to inside the knob's usable
-    /// range. Calendar Y-M-D stays put — only the hours / minutes
-    /// / seconds change.
-    ///
-    /// Seconds are capped one second under a full day so dragging
-    /// to the very end of the capsule lands at 23:59:59 instead of
-    /// rolling over to 00:00 of the *next* day — that rollover
-    /// would re-read as `secondsOfDay == 0` and snap the knob back
-    /// to the left edge.
+    /// Knob centre X for the bound date.
+    private func knobX(width: CGFloat) -> CGFloat {
+        x(forFraction: secondsOfDay(knobDate) / 86_400.0, width: width)
+    }
+
+    /// Scrub the bound date to whatever wall-clock time the finger's
+    /// x maps to. Calendar Y-M-D stays put — only h/m/s change. Seconds
+    /// capped one under a full day so the far edge lands at 23:59:59
+    /// rather than rolling over to 00:00 of the next day.
     private func updateKnob(toX rawX: CGFloat, width: CGFloat) {
         let r = knobDiameter / 2
         let usable = max(width - 2 * r, 0)
@@ -196,16 +195,8 @@ struct DayCapsule: View {
     }
 
     /// Fire the detent haptic when the scrubbed time CROSSES real-now —
-    /// a physical "notch" on the scale at the present moment. Only when
-    /// the knob is on TODAY (a different day has no "now" on its track).
-    ///
-    /// Crossing, not proximity: we tap when the previous sample and this
-    /// one sit on opposite sides of now (their offsets-from-now have
-    /// different signs). That fires once per pass at any drag speed —
-    /// even a fast flick that jumps the knob clean over the instant
-    /// between two samples, which a fixed ±window would miss entirely.
-    /// First sample of a drag just seeds the tracker (no previous to
-    /// compare). Landing exactly on now (offset 0) also taps.
+    /// a physical "notch" at the present moment, today only. Crossing
+    /// (sign change of offset-from-now), so a fast flick still ticks.
     private func tickIfCrossingNow(scrubbedSeconds: Double, startOfDay: Date) {
         defer { lastScrubbedSeconds = scrubbedSeconds }
 
@@ -216,20 +207,9 @@ struct DayCapsule: View {
         guard let previous = lastScrubbedSeconds else { return }
         let prevOffset = previous - secondsOfDay(.now)
 
-        // Straddle (signs differ) or a direct hit on now.
         if offset == 0 || (prevOffset < 0) != (offset < 0) {
             nowHaptic.impactOccurred()
         }
-    }
-
-    // MARK: Event math
-
-    /// Map a `Date` to an x-coordinate along the capsule. Uses the
-    /// current calendar's wall-clock hour + minute, so the position
-    /// reads as the local time-of-day regardless of timezone.
-    private func x(for time: Date, width: CGFloat) -> CGFloat {
-        let fraction = secondsOfDay(time) / 86_400.0
-        return CGFloat(fraction) * width
     }
 
     /// Seconds-since-local-midnight for a date.
@@ -239,61 +219,5 @@ struct DayCapsule: View {
         return Double((comps.hour ?? 0) * 3600
                     + (comps.minute ?? 0) * 60
                     + (comps.second ?? 0))
-    }
-}
-
-// MARK: - Gradient palettes
-// One source of truth for the two timeline palettes used today.
-// Both are pastel by design — the capsule sits next to a saturated
-// RememberButton in some layouts, and is the only colour body in
-// others, so values stay low-chroma so they don't shout.
-//
-// The factories take a `SunDayAnchors` so the gradient stops can
-// breathe with the observation: long bright zone in summer, narrow
-// in winter, polar day/night handled via the `.default` fallback.
-extension LinearGradient {
-
-    /// Sun's 24h: dusty indigo at midnight → pale peach at civil
-    /// dawn → cream at solar noon → dusty apricot at civil dusk →
-    /// dusty indigo back at midnight. The three middle stops slide
-    /// to wherever the observer's date + latitude puts the actual
-    /// twilight transitions.
-    static func dayCapsuleSun(anchors: SunDayAnchors = .default) -> LinearGradient {
-        let dawn = anchors.civilDawnFraction ?? 0.25
-        let noon = anchors.solarNoonFraction
-        let dusk = anchors.civilDuskFraction ?? 0.75
-        return LinearGradient(
-            gradient: Gradient(stops: [
-                .init(color: Color(red: 0.22, green: 0.22, blue: 0.36), location: 0.00),
-                .init(color: Color(red: 0.94, green: 0.80, blue: 0.74), location: dawn),
-                .init(color: Color(red: 0.99, green: 0.94, blue: 0.78), location: noon),
-                .init(color: Color(red: 0.94, green: 0.74, blue: 0.58), location: dusk),
-                .init(color: Color(red: 0.22, green: 0.22, blue: 0.36), location: 1.00),
-            ]),
-            startPoint: .leading,
-            endPoint:   .trailing
-        )
-    }
-
-    /// Moon's 24h: deep indigo at midnight (peak moon visibility) →
-    /// pale lavender at twilight → pale silver-grey at solar noon
-    /// (moon washed out by the sun) → pale lavender → deep indigo.
-    /// Same anchor structure as the sun gradient — moonlight rises
-    /// as sunlight falls, so the two timelines breathe together.
-    static func dayCapsuleMoon(anchors: SunDayAnchors = .default) -> LinearGradient {
-        let dawn = anchors.civilDawnFraction ?? 0.25
-        let noon = anchors.solarNoonFraction
-        let dusk = anchors.civilDuskFraction ?? 0.75
-        return LinearGradient(
-            gradient: Gradient(stops: [
-                .init(color: Color(red: 0.20, green: 0.22, blue: 0.40), location: 0.00),
-                .init(color: Color(red: 0.62, green: 0.66, blue: 0.80), location: dawn),
-                .init(color: Color(red: 0.86, green: 0.88, blue: 0.93), location: noon),
-                .init(color: Color(red: 0.62, green: 0.66, blue: 0.80), location: dusk),
-                .init(color: Color(red: 0.20, green: 0.22, blue: 0.40), location: 1.00),
-            ]),
-            startPoint: .leading,
-            endPoint:   .trailing
-        )
     }
 }

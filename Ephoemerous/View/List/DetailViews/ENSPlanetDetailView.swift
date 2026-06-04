@@ -48,7 +48,7 @@ struct ENSPlanetDetailView: View {
             // bodies are always there, always badged on the canvas.
             if !collapsed {
                 DayCapsule(
-                    gradient:  .dayCapsuleMoon(anchors: anchors),
+                    tint:      accent,
                     knobGlyph: .unicode(planet.astronomicalGlyph),
                     knobDate:  Bindable(state).observationDate
                 )
