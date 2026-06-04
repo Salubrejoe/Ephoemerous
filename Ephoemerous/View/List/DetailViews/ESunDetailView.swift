@@ -33,11 +33,11 @@ struct ESunDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         "Sol",
+                title:         "Sun",
                 subtitle:      "G-type star",
                 accent:        accent,
                 icon:          { POIBadgeView(category: .sun) },
-                leadingSymbol: "square.and.arrow.up",
+                leadingSymbol: "square.and.arrow.up.circle.fill",
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

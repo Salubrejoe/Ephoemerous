@@ -49,9 +49,9 @@ struct EStarDetailView: View {
                 subtitle:               subtitleText,
                 accent:                 accent,
                 icon:                   { POIBadgeView(category: .followedStar(star)) },
-                leadingSymbol:          showsBackChevron ? "chevron.backward" : "square.and.arrow.up",
+                leadingSymbol:          showsBackChevron ? "chevron.backward" : "square.and.arrow.up.circle.fill",
                 onLeading:              { showsBackChevron ? dismiss() : () },
-                secondaryLeadingSymbol: showsBackChevron ? "square.and.arrow.up" : nil,
+                secondaryLeadingSymbol: showsBackChevron ? "square.and.arrow.up.circle.fill" : nil,
                 onSecondaryLeading:     showsBackChevron ? {} : nil,
                 onDismiss:              { state.dismissDetail() }
             )

@@ -16,9 +16,12 @@ struct EphoemerousApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
+                // App default is the standard (sans) design. Serif is
+                // reserved as an editorial treatment for SKY-OBJECT NAMES
+                // only — applied per-site in the detail header, the
+                // list/search/favourite rows, and the canvas POI label.
                 MainView()
-                    .fontDesign(.serif)
-//                    .fontDesign(.rounded)
+                    .fontDesign(.rounded)
             }
             .ignoresSafeArea()
             .onAppear(perform: state.startCloudSync)

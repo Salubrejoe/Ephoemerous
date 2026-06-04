@@ -210,6 +210,7 @@ struct SearchSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(obj.displayName)
                     .font(.callout)
+                    .fontDesign(.serif)            // sky-object name → serif
                     .foregroundStyle(.primary)
                 Text(typeLabel(obj))
                     .font(.caption2)
@@ -271,6 +272,7 @@ struct SearchSheet: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(obj.displayName)
                         .font(.callout)
+                        .fontDesign(.serif)            // sky-object name → serif
                         .foregroundStyle(.primary)
                     Text(typeLabel(obj))
                         .font(.caption2)

@@ -69,6 +69,7 @@ struct DetailHeader<Icon: View>: View {
             VStack(spacing: 4) {
                 Text(title)
                     .font(.title3.weight(.semibold))
+                    .fontDesign(.serif)            // sky-object name → serif
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .foregroundStyle(.primary)
@@ -96,10 +97,8 @@ struct DetailHeader<Icon: View>: View {
                     CircleIconButton(systemName: sym, action: act)
                 }
                 Spacer()
-                if let onNow {
-                    NowPillButton(action: onNow, isDisabled: nowIsActive)
-                }
-                CircleIconButton(systemName: "xmark", action: onDismiss)
+                
+                CircleIconButton(systemName: "xmark.circle.fill", action: onDismiss)
             }
             .padding(.horizontal, 10)
         }
@@ -121,13 +120,13 @@ private struct CircleIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 36, height: 36)
-                .contentShape(Circle())
+                .resizable()
+                .scaledToFit()
+                .frame(width: 32, height: 32)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
-        .glassEffect(.clear.interactive(), in: .circle)
     }
 }
 

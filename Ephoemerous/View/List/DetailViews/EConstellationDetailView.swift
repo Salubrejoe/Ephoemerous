@@ -67,7 +67,7 @@ struct EConstellationDetailView: View {
                 subtitle:      subtitleText,
                 accent:        accent,
                 icon:          { Image(systemName: iconSymbolName) },
-                leadingSymbol: "square.and.arrow.up",
+                leadingSymbol: "square.and.arrow.up.circle.fill",
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

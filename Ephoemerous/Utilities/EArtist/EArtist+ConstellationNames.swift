@@ -194,6 +194,7 @@ extension EArtist {
         let label: Text
         if isFavourite {
             label = Text("\(Text(Image(systemName: "heart.fill")).foregroundStyle(heartColor)) \(fullName)")
+                .fontDesign(.serif)
                 .fontWeight(.light)
                         .foregroundStyle(.secondary)
         } else {

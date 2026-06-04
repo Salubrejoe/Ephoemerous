@@ -32,7 +32,6 @@ struct EDetailPhysicalRow: View {
                 Text(value)
                     .font(.callout)
                     .monospacedDigit()
-                    .fontDesign(.serif)
                     .foregroundStyle(.primary)
             }
             .padding(.vertical, 12)
@@ -75,7 +74,6 @@ struct EDialView: View {
             Text(value)
                 .font(.caption)
                 .monospacedDigit()
-                .fontDesign(.serif)
                 .fontWeight(.medium)
                 .foregroundStyle(.primary)
         }

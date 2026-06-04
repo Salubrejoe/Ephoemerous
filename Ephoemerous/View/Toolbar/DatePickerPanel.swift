@@ -26,55 +26,65 @@ struct DatePickerPanel: View {
             sheetHeader
             
             HStack(spacing: 0) {
-                Picker("Day", selection: dayBinding) {
-                    ForEach(1...daysInCurrentMonth, id: \.self) { d in
-                        Text("\(d)").tag(d)
-                            .font(.footnote)
+                HStack(spacing: 0) {
+                    Picker("Day", selection: dayBinding) {
+                        ForEach(1...daysInCurrentMonth, id: \.self) { d in
+                            Text("\(d)").tag(d)
+//                                .font(.footnote)
+                        }
                     }
+                    .pickerStyle(.wheel)
+                    .frame(width: 55)
+                    .clipped()
+                    
+                    Picker("Month", selection: monthBinding) {
+                        ForEach(1...12, id: \.self) { m in
+                            Text(Self.monthName(m)).tag(m)
+//                                .font(.footnote)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(width: 76)
+                    .clipped()
+                    
+                    Picker("Year", selection: yearBinding) {
+                        ForEach(yearRange, id: \.self) { y in
+                            Text(String(y)).tag(y)
+//                                .font(.footnote)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .clipped()
+                    
                 }
-                .pickerStyle(.wheel)
-                .frame(maxWidth: .infinity)
-                .clipped()
                 
-                Picker("Month", selection: monthBinding) {
-                    ForEach(1...12, id: \.self) { m in
-                        Text(Self.monthName(m)).tag(m)
-                            .font(.footnote)
-                    }
-                }
-                .pickerStyle(.wheel)
-                .frame(maxWidth: .infinity)
-                .clipped()
+                Text(",")
                 
-                Picker("Year", selection: yearBinding) {
-                    ForEach(yearRange, id: \.self) { y in
-                        Text(String(y)).tag(y)
-                            .font(.footnote)
+                HStack(spacing: 0) {
+                    
+                    
+                    Picker("Hour", selection: hourBinding) {
+                        ForEach(0...23, id: \.self) { h in
+                            Text(String(format: "%02d", h)).tag(h)
+//                                .font(.footnote)
+                        }
                     }
-                }
-                .pickerStyle(.wheel)
-                .frame(maxWidth: .infinity)
-                .clipped()
-                
-                Picker("Hour", selection: hourBinding) {
-                    ForEach(0...23, id: \.self) { h in
-                        Text(String(format: "%02d", h)).tag(h)
-                            .font(.footnote)
+                    .pickerStyle(.wheel)
+                    .frame(width: 55)
+                    .clipped()
+                    
+                    Text(":")
+                    
+                    Picker("Minute", selection: minuteBinding) {
+                        ForEach(0...59, id: \.self) { m in
+                            Text(String(format: "%02d", m)).tag(m)
+//                                .font(.footnote)
+                        }
                     }
+                    .pickerStyle(.wheel)
+                    .frame(width: 55)
+                    .clipped()
                 }
-                .pickerStyle(.wheel)
-                .frame(maxWidth: .infinity)
-                .clipped()
-                
-                Picker("Minute", selection: minuteBinding) {
-                    ForEach(0...59, id: \.self) { m in
-                        Text(String(format: "%02d", m)).tag(m)
-                            .font(.footnote)
-                    }
-                }
-                .pickerStyle(.wheel)
-                .frame(maxWidth: .infinity)
-                .clipped()
             }
             .labelsHidden()
             .frame(height: 160)

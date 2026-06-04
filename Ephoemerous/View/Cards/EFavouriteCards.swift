@@ -25,6 +25,7 @@ struct StarCard: View {
                 .frame(height: 24)
             Text(star.displayName)
                 .font(.title3.weight(.semibold))
+                .fontDesign(.serif)            // sky-object name → serif
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -91,6 +92,7 @@ struct ConstellationCard: View {
                 .frame(height: 24)
             Text(constellation.fullName)
                 .font(.title3.weight(.semibold))
+                .fontDesign(.serif)            // sky-object name → serif
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)

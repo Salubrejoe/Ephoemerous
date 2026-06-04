@@ -39,7 +39,7 @@
           "blend-mode" : "normal",
           "fill" : "none",
           "glass" : false,
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "puck.svg",
           "name" : "puck",
           "position" : {
@@ -52,7 +52,7 @@
         },
         {
           "glass" : false,
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "poi_sun 2.svg",
           "name" : "poi_sun 2",
           "position" : {
@@ -144,12 +144,21 @@
           }
         },
         {
+          "blend-mode-specializations" : [
+            {
+              "value" : "plus-darker"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "plus-darker"
+            }
+          ],
           "fill-specializations" : [
             {
               "value" : {
                 "linear-gradient" : [
                   "srgb:0.86275,0.86275,0.86275,1.00000",
-                  "srgb:1.00000,1.00000,1.00000,1.00000"
+                  "srgb:0.88000,0.76000,0.68000,0.55000"
                 ],
                 "orientation" : {
                   "start" : {
@@ -166,10 +175,7 @@
             {
               "appearance" : "dark",
               "value" : {
-                "linear-gradient" : [
-                  "extended-gray:0.00000,1.00000",
-                  "extended-gray:0.00000,1.00000"
-                ],
+                "automatic-gradient" : "display-p3:0.44944,0.43569,0.57691,1.00000",
                 "orientation" : {
                   "start" : {
                     "x" : 0.5,
@@ -183,11 +189,125 @@
               }
             }
           ],
-          "hidden" : true,
+          "hidden" : false,
           "image-name" : "horizon_squircle.svg",
           "name" : "horizon_squircle",
           "position" : {
             "scale" : 1.2,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "blend-mode-specializations" : [
+            {
+              "value" : "plus-darker"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "plus-darker"
+            }
+          ],
+          "fill-specializations" : [
+            {
+              "value" : {
+                "linear-gradient" : [
+                  "srgb:0.86275,0.86275,0.86275,1.00000",
+                  "srgb:0.88000,0.76000,0.68000,0.55000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "display-p3:0.44944,0.43569,0.57691,1.00000",
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            }
+          ],
+          "hidden" : false,
+          "image-name" : "horizon_squircle.svg",
+          "name" : "horizon_squircle",
+          "position" : {
+            "scale" : 1.5,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "blend-mode-specializations" : [
+            {
+              "value" : "plus-darker"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "plus-darker"
+            }
+          ],
+          "fill-specializations" : [
+            {
+              "value" : {
+                "linear-gradient" : [
+                  "srgb:0.86275,0.86275,0.86275,1.00000",
+                  "srgb:0.88000,0.76000,0.68000,0.55000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "display-p3:0.44944,0.43569,0.57691,1.00000",
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            }
+          ],
+          "hidden" : false,
+          "image-name" : "horizon_squircle.svg",
+          "name" : "horizon_squircle",
+          "position" : {
+            "scale" : 1.8,
             "translation-in-points" : [
               0,
               0
@@ -221,7 +341,7 @@
               }
             }
           ],
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "horizon_squircle_negative.svg",
           "name" : "horizon_squircle_negative",
           "position" : {

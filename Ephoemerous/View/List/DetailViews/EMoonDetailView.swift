@@ -54,11 +54,11 @@ struct EMoonDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         "Selene",
+                title:         "Moon",
                 subtitle:      String(format: "%.0f%% illuminated", moonData.fraction * 100),
                 accent:        accent,
                 icon:          { POIBadgeView(category: .moon) },
-                leadingSymbol: "square.and.arrow.up",
+                leadingSymbol: "square.and.arrow.up.circle.fill",
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

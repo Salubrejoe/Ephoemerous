@@ -228,7 +228,10 @@ extension EArtist {
         let textOpacity = max(textFade, promo)
         guard textOpacity > 0 else { return }
 
-        let textFont = Font.footnote.weight(.bold)
+        // Sky-object name → serif. Set explicitly (not inherited from a
+        // global fontDesign) so the canvas label stays serif while the
+        // rest of the app renders standard.
+        let textFont = Font.system(.footnote, design: .serif).weight(.bold)
         let textGradient = LinearGradient(
             colors:     [style.gradientTop, style.gradientBottom],
             startPoint: .top,
