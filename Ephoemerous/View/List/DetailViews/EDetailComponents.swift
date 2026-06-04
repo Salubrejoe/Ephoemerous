@@ -51,8 +51,8 @@ struct ECoordinateDials: View {
 
     var body: some View {
         HStack(spacing: 24) {
-            EDialView(label: "Right ascension", value: ra.hmsString,  kind: .ra(ra),   accent: accent)
-            EDialView(label: "Declination",     value: dec.dmsString, kind: .dec(dec), accent: accent)
+            EDialView(label: Strings.BodyDetail.rightAscension, value: ra.hmsString,  kind: .ra(ra),   accent: accent)
+            EDialView(label: Strings.BodyDetail.declination,    value: dec.dmsString, kind: .dec(dec), accent: accent)
         }
     }
 }
