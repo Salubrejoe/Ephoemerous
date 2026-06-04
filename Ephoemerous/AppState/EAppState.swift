@@ -258,12 +258,13 @@ class EAppState {
     // both handled by local `@State` in MainView now.
     var isShowingDatePicker:     Bool = false
     var isShowingLocationPicker: Bool = false
-    /// True only during the brief window between dismissing a detail /
-    /// myth sheet and presenting a scene editor (location / date) in its
-    /// place. The persistent search sheet keys off this so it doesn't
-    /// flash into the teardown gap — see `presentSceneEditor` and
-    /// MainView's `searchPresented`.
-    var _sceneEditorOpening: Bool = false
+    /// True only during the brief window where one bottom-slot sheet is
+    /// being torn down and another presented in its place (detail ⇄ scene
+    /// editor, detail → detail, detail → myth). The persistent search
+    /// sheet keys off this so it doesn't flash into the teardown gap — see
+    /// `presentSceneEditor` / `focus(on:)` / `openMyth(_:)` and MainView's
+    /// `searchPresented`.
+    var _sheetSwapping: Bool = false
 
     // MARK: - Preset backing store  (logic → EViewPreset.swift)
     var _activeTransition: EPresetTransition? = nil

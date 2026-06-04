@@ -44,10 +44,24 @@ extension EAppState {
         // favourites alike, for every object type.
         recordViewed(obj)
 
-        if let current = detailDestination, current.id != obj.id {
-            detailDestination = nil
+        // Something else owns the bottom slot — a scene-editor picker
+        // (location / date) or a *different* detail card. SwiftUI presents
+        // one sheet per anchor, so selecting an object has to tear that
+        // down first, then present after `sheetSwapDelay`. This is the
+        // symmetric counterpart to `presentSceneEditor`: pickers override
+        // detail, and selecting an object overrides a picker.
+        // `_sheetSwapping` suppresses the persistent search sheet across
+        // the gap so it doesn't flash in.
+        let pickerOpen  = isShowingLocationPicker || isShowingDatePicker
+        let otherDetail = detailDestination != nil && detailDestination?.id != obj.id
+        if pickerOpen || otherDetail {
+            _sheetSwapping          = true
+            detailDestination       = nil
+            isShowingLocationPicker = false
+            isShowingDatePicker     = false
             DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
                 guard let self, self._focusEpoch == epoch else { return }
+                self._sheetSwapping    = false
                 self.detailDestination = obj
                 self.panTo(obj)
             }
@@ -105,9 +119,11 @@ extension EAppState {
         let epoch = _focusEpoch
 
         if detailDestination != nil {
+            _sheetSwapping    = true
             detailDestination = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
                 guard let self, self._focusEpoch == epoch else { return }
+                self._sheetSwapping  = false
                 self.mythDestination = myth
             }
             return
@@ -142,7 +158,7 @@ extension EAppState {
     /// the same frame as the dismiss makes the incoming sheet inherit
     /// stale state). When nothing owns the slot, `open` runs immediately.
     ///
-    /// `_sceneEditorOpening` is held across the teardown so the persistent
+    /// `_sheetSwapping` is held across the teardown so the persistent
     /// search sheet (which would otherwise see "no detail, no picker yet"
     /// and present) doesn't flash in during the gap. `_focusEpoch` is
     /// bumped so an in-flight deferred `focus()` can't resurrect a
@@ -152,12 +168,12 @@ extension EAppState {
         let hadRootSheet = detailDestination != nil || mythDestination != nil
         guard hadRootSheet else { open(); return }
 
-        _sceneEditorOpening = true
-        detailDestination   = nil
-        mythDestination     = nil
+        _sheetSwapping    = true
+        detailDestination = nil
+        mythDestination   = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
             guard let self else { return }
-            self._sceneEditorOpening = false
+            self._sheetSwapping = false
             open()
         }
     }
