@@ -72,13 +72,16 @@ extension EArtist {
         // 1 — soft drop shadow, cast by the casing silhouette. This
         //     glyph is fully covered by passes 2–3; only its shadow
         //     escapes around the casing edge.
+        
+        let serFilled = filled.fontDesign(.serif)
+        let serCased = cased.fontDesign(.serif)
         var shadow = ctx
         shadow.addFilter(poiTextShadow)
-        shadow.draw(cased, at: point, anchor: anchor)
+        shadow.draw(serCased, at: point, anchor: anchor)
 
         // 2 — crisp casing: the glyph redrawn in a ring around the
         //     anchor. Resolve once, redraw eight times.
-        let resolved = ctx.resolve(cased)
+        let resolved = ctx.resolve(serCased)
         for off in poiTextBorderOffsets {
             ctx.draw(resolved,
                      at: CGPoint(x: point.x + off.width,
@@ -87,6 +90,6 @@ extension EArtist {
         }
 
         // 3 — visible fill on top.
-        ctx.draw(filled, at: point, anchor: anchor)
+        ctx.draw(serFilled, at: point, anchor: anchor)
     }
 }

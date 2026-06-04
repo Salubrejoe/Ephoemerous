@@ -77,7 +77,7 @@ enum EProjection {
         guard t > 0 else { return nil }
         let intersection = O + t * (Q - O)
         let delta = intersection - P
-        var (e1, e2) = P.baseVectors()
+        var (e1, e2) = P.baseVectors() 
 //        // Pin e2 so it always points toward the same celestial hemisphere as O,
 //        // preventing a sign flip when P crosses low latitudes during a drag.
 //        if simd_dot(e2, O) < 0 { e2 = -e2 }

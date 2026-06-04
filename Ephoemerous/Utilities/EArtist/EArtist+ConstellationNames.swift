@@ -200,6 +200,7 @@ extension EArtist {
                         .foregroundStyle(.secondary)
         } else {
             label = Text(fullName)
+                .fontDesign(.serif)
                 .fontWeight(.light)
                         .foregroundStyle(.secondary)
         }

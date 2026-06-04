@@ -37,7 +37,7 @@ struct EclipticLayer: EGridLayer {
         // Sun (which sits on it by definition) is held between them.
         // `δ` lives in screen px and gets converted to projection units
         // so the band's apparent width stays constant under zoom.
-        let δ = sunMargin / dc.renderedScale
+//        let δ = sunMargin / dc.renderedScale
         
         var local = dc
         for offset in [0.0] {
