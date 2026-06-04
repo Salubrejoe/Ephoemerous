@@ -30,16 +30,28 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Localizable.xcstrings,
 			);
 			target = 7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		7C5E7B902FD184D400F88416 /* Exceptions for "Ephoemerous" folder in "Compile Sources" phase from "Ephoemerous" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 7C51B0D92F8F8C2600B39A8A /* Sources */;
+			membershipExceptions = (
+				Localizable.xcstrings,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7C51B0DF2F8F8C2600B39A8A /* Ephoemerous */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				7CCEB00F2FA34EBF00012354 /* Exceptions for "Ephoemerous" folder in "Ephoemerous" target */,
+				7C5E7B902FD184D400F88416 /* Exceptions for "Ephoemerous" folder in "Compile Sources" phase from "Ephoemerous" target */,
 			);
 			path = Ephoemerous;
 			sourceTree = "<group>";
@@ -162,6 +174,7 @@
 			knownRegions = (
 				en,
 				Base,
+				it,
 			);
 			mainGroup = 7C51B0D42F8F8C2600B39A8A;
 			minimizedProjectReferenceProxies = 1;
