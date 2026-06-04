@@ -127,7 +127,7 @@ struct MainToolbar: View {
     /// the pill says so directly instead of repeating the resolved
     /// city name.
     private var locationLabel: String {
-        if state.isAtDeviceLocation { return "Here" }
+        if state.isAtDeviceLocation { return String(localized: "Here") }
         if let name = state.localityName, !name.isEmpty {
             return name
         }
@@ -157,7 +157,7 @@ struct MainToolbar: View {
     /// Now button is greyed out.
     private var dateLabel: String {
         let date = state.observationDate
-        if abs(date.timeIntervalSinceNow) < 60 { return "Now" }
+        if abs(date.timeIntervalSinceNow) < 60 { return String(localized: "Now") }
 
         let cal = Calendar.current
         let format: String

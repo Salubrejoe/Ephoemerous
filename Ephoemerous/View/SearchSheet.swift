@@ -308,11 +308,11 @@ struct SearchSheet: View {
 
     private func typeLabel(_ obj: ESkyObject) -> String {
         switch obj {
-        case .star(let s):          return "Star · \(s.constellation.localizedName)"
-        case .sun:                  return "Solar system · Star"
-        case .moon:                 return "Solar system · Moon"
-        case .planet:               return "Solar system · Planet"
-        case .constellation:        return "Constellation"
+        case .star(let s):          return String(localized: "Star · \(s.constellation.localizedName)")
+        case .sun:                  return String(localized: "Solar system · Star")
+        case .moon:                 return String(localized: "Solar system · Moon")
+        case .planet:               return String(localized: "Solar system · Planet")
+        case .constellation:        return String(localized: "Constellation")
         }
     }
 

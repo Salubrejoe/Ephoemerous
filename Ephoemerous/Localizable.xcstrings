@@ -128,7 +128,8 @@
             "value" : "Antlia"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "Apus" : {
       "extractionState" : "manual",
@@ -139,7 +140,8 @@
             "value" : "Apus"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "Aquarius" : {
       "extractionState" : "manual",
@@ -238,7 +240,8 @@
             "value" : "Boote"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "Brighter than" : {
       "extractionState" : "manual",
@@ -260,14 +263,15 @@
             "value" : "Caelum"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "Camelopardus" : {
       "extractionState" : "manual",
       "localizations" : {
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Giraffa"
           }
         }
@@ -603,6 +607,17 @@
         }
       }
     },
+    "Date & Time" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data e ora"
+          }
+        }
+      }
+    },
     "Day" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -718,7 +733,7 @@
       "localizations" : {
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Dorado"
           }
         }
@@ -741,7 +756,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ORIZZONTE EST"
+            "value" : "ORIZZONTE ORIENTALE"
           }
         }
       }
@@ -784,7 +799,7 @@
       "localizations" : {
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Cavallino"
           }
         }
@@ -808,6 +823,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Errore"
+          }
+        }
+      }
+    },
+    "Favourites" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferiti"
           }
         }
       }
@@ -889,6 +915,17 @@
         }
       }
     },
+    "Here" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qui"
+          }
+        }
+      }
+    },
     "Horologium" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -896,6 +933,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Orologio"
+          }
+        }
+      }
+    },
+    "Hour" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ora"
           }
         }
       }
@@ -920,7 +968,8 @@
             "value" : "Idro"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "Identity" : {
       "extractionState" : "manual",
@@ -953,7 +1002,8 @@
             "value" : "Indiano"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "Lacerta" : {
       "extractionState" : "manual",
@@ -1081,7 +1131,7 @@
       "localizations" : {
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Mensa"
           }
         }
@@ -1098,6 +1148,17 @@
         }
       }
     },
+    "Minute" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minuto"
+          }
+        }
+      }
+    },
     "Monoceros" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1105,6 +1166,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unicorno"
+          }
+        }
+      }
+    },
+    "Month" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mese"
           }
         }
       }
@@ -1208,12 +1280,34 @@
         }
       }
     },
+    "No favourites yet. Tap the heart on a star or constellation to add it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessun preferito. Tocca il cuore su una stella o una costellazione per aggiungerlo."
+          }
+        }
+      }
+    },
+    "No matches for \"%@\"." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun risultato per \"%@\"."
+          }
+        }
+      }
+    },
     "None" : {
       "extractionState" : "manual",
       "localizations" : {
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Nessuna"
           }
         }
@@ -1226,6 +1320,18 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Squadra"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "Now" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ora"
           }
         }
       }
@@ -1422,7 +1528,7 @@
       "localizations" : {
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Bussola"
           }
         }
@@ -1462,6 +1568,17 @@
       }
     },
     "Recently Viewed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recenti"
+          }
+        }
+      }
+    },
+    "Recents" : {
       "extractionState" : "manual",
       "localizations" : {
         "it" : {
@@ -1593,6 +1710,28 @@
         }
       }
     },
+    "Search a place" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca un luogo"
+          }
+        }
+      }
+    },
+    "Search the sky…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca nel cielo…"
+          }
+        }
+      }
+    },
     "Search, remember..." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1648,6 +1787,50 @@
         }
       }
     },
+    "Solar system" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema solare"
+          }
+        }
+      }
+    },
+    "Solar system · Moon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema solare · Luna"
+          }
+        }
+      }
+    },
+    "Solar system · Planet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema solare · Pianeta"
+          }
+        }
+      }
+    },
+    "Solar system · Star" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema solare · Stella"
+          }
+        }
+      }
+    },
     "Sort & Filter" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1677,6 +1860,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Classe Spettrale"
+          }
+        }
+      }
+    },
+    "Star · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stella · %@"
           }
         }
       }
@@ -1868,6 +2062,17 @@
         }
       }
     },
+    "Travel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viaggia"
+          }
+        }
+      }
+    },
     "Triangulum" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1976,7 +2181,8 @@
             "value" : "Pesce Volante"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "Vulpecula" : {
       "extractionState" : "manual",
@@ -1996,6 +2202,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ORIZZONTE OVEST"
+          }
+        }
+      }
+    },
+    "Year" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anno"
           }
         }
       }
