@@ -137,15 +137,15 @@ extension EArtist {
     ///   • 110°  .. 180°  →  `globe.asia.australia.fill`
     ///   • -180° .. -170° →  `globe.asia.australia.fill`  (dateline wrap)
     /// Input is wrapped into [-180, 180] before bucketing.
-    func userLocationGlobeSymbol(forLongitude lon: Double) -> String {
+    func userLocationGlobeSymbol(forLongitude lon: Double) -> ESymbol {
         var l = lon
         while l >  180 { l -= 360 }
         while l < -180 { l += 360 }
 
-        if l >= -30 && l <  60  { return "globe.europe.africa.fill"      }
-        if l >=  60 && l < 110  { return "globe.central.south.asia.fill" }
-        if l >= 110 || l < -170 { return "globe.asia.australia.fill"     }
-        return "globe.americas.fill"  // -170° ≤ l < -30°
+        if l >= -30 && l <  60  { return .globeEuropeAfrica  }
+        if l >=  60 && l < 110  { return .globeSouthAsia     }
+        if l >= 110 || l < -170 { return .globeAsiaAustralia }
+        return .globeAmericas  // -170° ≤ l < -30°
     }
 
     // MARK: - Drawing
@@ -248,7 +248,7 @@ extension EArtist {
     /// at `sc` (the zenith) every frame, so it stays pinned through
     /// pan / zoom unlike the old SwiftUI overlay.
     func drawSquircleGlobePuck(at sc:    CGPoint,
-                               symbol:    String,
+                               symbol:    ESymbol,
                                in dc:     inout EGraphicContext) {
         let size  = userPuckSize
         let inset = size * userPuckRingFraction
@@ -276,7 +276,7 @@ extension EArtist {
         var globe = dc.ctx
         globe.clip(to: shape.path(in: disc))
         globe.draw(
-            Text(Image(systemName: symbol))
+            Text(Image(symbol: symbol))
                 .font(.system(size: size * userPuckGlyphScale, weight: .regular))
                 .foregroundStyle(userPuckRingColor.opacity(userPuckGlyphOpacity)),
             at:     CGPoint(x: disc.midX, y: disc.midY),

@@ -13,13 +13,13 @@ extension EArtist {
     /// `moonphase.…` family. Symmetric — without a waxing / waning
     /// flag we use the same "first quarter" symbol for both half
     /// phases.
-    func moonPhaseSymbol(fraction: Double) -> String {
+    func moonPhaseSymbol(fraction: Double) -> ESymbol {
         switch fraction {
-        case ..<0.03:     return "moonphase.new.moon"
-        case 0.03..<0.22: return "moonphase.waxing.crescent"
-        case 0.22..<0.47: return "moonphase.first.quarter"
-        case 0.47..<0.78: return "moonphase.waxing.gibbous"
-        default:          return "moonphase.full.moon"
+        case ..<0.03:     return .moonNew
+        case 0.03..<0.22: return .moonWaxingCrescent
+        case 0.22..<0.47: return .moonFirstQuarter
+        case 0.47..<0.78: return .moonWaxingGibbous
+        default:          return .moonFull
         }
     }
 }

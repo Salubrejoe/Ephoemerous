@@ -47,7 +47,7 @@ struct EConstellationDetailView: View {
     /// Entity symbol from the existing POI palette — same SF Symbol
     /// the constellation's POI badge used on the canvas when it
     /// still had a badge.
-    private var iconSymbolName: String {
+    private var iconSymbol: ESymbol {
         EArtist.shared.constellationEntitySymbol(
             EArtist.shared.constellationEntity(of: constellation)
         )
@@ -67,7 +67,7 @@ struct EConstellationDetailView: View {
                 title:         constellation.fullName,
                 subtitle:      subtitleText,
                 accent:        accent,
-                icon:          { Image(systemName: iconSymbolName) },
+                icon:          { Image(symbol: iconSymbol) },
                 leadingSymbol: .shareCircleFill,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }

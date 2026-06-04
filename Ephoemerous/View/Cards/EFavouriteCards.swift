@@ -57,7 +57,7 @@ struct ConstellationCard: View {
 
     private var artist: EArtist { EArtist.shared }
 
-    private var iconSymbolName: String {
+    private var iconSymbol: ESymbol {
         artist.constellationEntitySymbol(
             artist.constellationEntity(of: constellation)
         )
@@ -86,7 +86,7 @@ struct ConstellationCard: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: iconSymbolName)
+            Image(symbol: iconSymbol)
                 .font(.title3)
                 .foregroundStyle(accent)
                 .frame(height: 24)

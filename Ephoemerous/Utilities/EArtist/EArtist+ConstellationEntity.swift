@@ -13,15 +13,15 @@ import SwiftUI
 // and recompile.
 extension EArtist {
 
-    func constellationEntitySymbol(_ entity: POIConstellationEntity) -> String {
+    func constellationEntitySymbol(_ entity: POIConstellationEntity) -> ESymbol {
         switch entity {
-        case .hero:       return "figure.stand"
-        case .animal:     return "pawprint.fill"
-        case .creature:   return "tortoise.fill"
-        case .object:     return "diamond.fill"
-        case .instrument: return "ruler.fill"
-        case .deity:      return "crown.fill"
-        case .none:       return "sparkles"
+        case .hero:       return .entityHero
+        case .animal:     return .entityAnimal
+        case .creature:   return .entityCreature
+        case .object:     return .entityObject
+        case .instrument: return .entityInstrument
+        case .deity:      return .entityDeity
+        case .none:       return .entityFallback
         }
     }
 

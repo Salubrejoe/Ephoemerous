@@ -71,7 +71,7 @@ struct EMoonDetailView: View {
             if !collapsed {
                 DayCapsule(
                     gradient:  .dayCapsuleMoon(anchors: anchors),
-                    knobGlyph: .sfSymbol("moon.fill"),
+                    knobGlyph: .symbol(.moonFill),
                     knobDate:  Bindable(state).observationDate
                 )
                 .padding(.horizontal, 16)

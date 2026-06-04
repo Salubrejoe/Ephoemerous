@@ -29,9 +29,12 @@ struct UserLocationPuck: View {
     /// only when `origin.longitude` actually changes — Observation
     /// won't fire on identical reassignments.
     private var symbolName: String {
+        // `.rawValue` at the boundary: SquircleGlobePuck is a generic
+        // concept view that takes a raw SF Symbol name. The source of
+        // truth is still the ESymbol case returned by the helper.
         EArtist.shared.userLocationGlobeSymbol(
             forLongitude: state.origin.longitude.degrees
-        )
+        ).rawValue
     }
 
     var body: some View {

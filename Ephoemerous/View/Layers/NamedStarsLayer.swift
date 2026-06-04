@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // MARK: - NamedStarsLayer
 // Proper-named stars surfaced as Apple-Maps-style POIs at high zoom.
@@ -129,7 +130,7 @@ struct NamedStarsLayer: EGridLayer {
                 : 0
             artist.drawPOILabel(
                 at:        sc,
-                glyph:     .sfSymbol("star.fill"),
+                glyph:     .symbol(.starFill),
                 text:      star.displayName,
                 category:  .namedStar(star),
                 drawDot:   true,

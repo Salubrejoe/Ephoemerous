@@ -299,7 +299,7 @@ struct SearchSheet: View {
         case .planet(let p):
             POIBadgeView(category: .planet(p), size: 22)
         case .constellation(let c):
-            Image(systemName: EArtist.shared.constellationEntitySymbol(
+            Image(symbol: EArtist.shared.constellationEntitySymbol(
                 EArtist.shared.constellationEntity(of: c)
             ))
             .foregroundStyle(.secondary)

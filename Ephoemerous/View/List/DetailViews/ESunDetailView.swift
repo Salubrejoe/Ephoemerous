@@ -51,7 +51,7 @@ struct ESunDetailView: View {
             if !collapsed {
                 DayCapsule(
                     gradient:  .dayCapsuleSun(anchors: anchors),
-                    knobGlyph: .sfSymbol("sun.max.fill"),
+                    knobGlyph: .symbol(.sunMaxFill),
                     knobDate:  Bindable(state).observationDate
                 )
                 .padding(.horizontal, 16)

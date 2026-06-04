@@ -64,15 +64,15 @@ struct POIBadgeView: View {
     /// glyph argument.
     private func glyph(for category: POICategory) -> POIGlyph {
         switch category {
-        case .sun:                          return .sfSymbol("sun.max")
-        case .moon:                         return .sfSymbol("moon")
-        case .followedStar, .namedStar:     return .sfSymbol("star.fill")
+        case .sun:                          return .symbol(.sunMax)
+        case .moon:                         return .symbol(.moon)
+        case .followedStar, .namedStar:     return .symbol(.starFill)
         case .planet(let p):                return .unicode(p.astronomicalGlyph)
         case .constellation:
             // Constellations no longer carry a canvas badge — this
             // path is here for completeness if a future detail view
             // wants to surface the old entity-glyph treatment.
-            return .sfSymbol("sparkles")
+            return .symbol(.sparkles)
         }
     }
 }

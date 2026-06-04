@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // MARK: - FavouritesLayer
 // Renders the user's favourites on the canvas — the universal halo +
@@ -83,7 +84,7 @@ struct FavouritesLayer: EGridLayer {
 
         artist.drawPOILabel(
             at:        sc,
-            glyph:     .sfSymbol("star.fill"),
+            glyph:     .symbol(.starFill),
             text:      star.displayName,
             category:  .followedStar(star),
             drawDot:   false,    // heart handles the low-zoom case

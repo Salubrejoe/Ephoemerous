@@ -21,7 +21,7 @@ struct EMoonLayer: EGridLayer {
         let fraction = EMoonPosition.illuminatedFraction(for: dc.renderedObservationDate)
         artist.drawPOILabel(
             at:        sc,
-            glyph:     .sfSymbol(artist.moonPhaseSymbol(fraction: fraction)),
+            glyph:     .symbol(artist.moonPhaseSymbol(fraction: fraction)),
             text:      Strings.Bodies.moon,
             category:  .moon,
             promotion: dc.poiPromotion(forObjectID: ESkyObject.moon.id),

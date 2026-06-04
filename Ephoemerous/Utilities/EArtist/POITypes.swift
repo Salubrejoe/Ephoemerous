@@ -16,6 +16,15 @@ enum POIGlyph {
     /// astronomical planet glyphs (☿ ♀ ♂ ♃ ♄ ♅ ♆) which SF
     /// Symbols doesn't ship.
     case unicode(String)
+
+    /// Typed builders so glyph call sites reference a `LoreSymbol` /
+    /// `ESymbol` case instead of a raw string — one source of truth per
+    /// symbol. The canvas path stays string-based (`.sfSymbol`), so this
+    /// is pure call-site sugar. Distinct enums, no name collisions, so
+    /// `.symbol(.starFill)` (Lore) and `.symbol(.sunMaxFill)` (E) both
+    /// resolve via leading-dot.
+    static func symbol(_ s: LoreSymbol) -> POIGlyph { .sfSymbol(s.rawValue) }
+    static func symbol(_ s: ESymbol)    -> POIGlyph { .sfSymbol(s.rawValue) }
 }
 
 /// Shape for the tier-0 "dot" marker — what the POI collapses to
