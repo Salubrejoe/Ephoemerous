@@ -1,17 +1,15 @@
 import Foundation
 
+// MARK: - Strings
+// Centralised user-facing copy, ready to be localised in one pass (the
+// String Catalog migration is the next phase). This table holds ONLY
+// translatable text + format specifiers — never:
+//   • SF Symbol names  → LoreSymbol / ESymbol
+//   • config identifiers (bundle / group / iCloud container) → project
+//     settings + entitlements, which are the real source of truth
+//   • hardcoded astronomical data → the detail views compute it live
 struct Strings {
-    
-    // MARK: - App
-    struct App {
-        static let name                 = "Ephemerous"
-        static let bundleID             = "com.licurgen.Ephemerous"
-        static let groupContainer       = "group.com.licurgen.Ephemerous"
-        static let cloudKitContainer    = "iCloud.com.licurgen.Ephemerous"
-    }
-    
-    
-    
+
     // MARK: - Sort & Filter
     struct Sort {
         static let constellation = "Constellation"
@@ -53,21 +51,6 @@ struct Strings {
         static let retry   = "Retry"
     }
     
-    // MARK: - Logging
-    struct Logging {
-        static let debug   = "[DEBUG]"
-        static let info    = "[INFO]"
-        static let warning = "[WARNING]"
-        static let error   = "[ERROR]"
-        static let fault   = "[FAULT]"
-    }
-    
-    // Symbols moved to LoreKit as `LoreSymbol` — leading-dot ergonomics
-    // come from the concrete `Image(symbol: LoreSymbol)` init shipped
-    // alongside. `Strings` is now strictly user-facing copy + format
-    // specifiers; API identifiers like SF Symbol names live in the
-    // package.
-
     struct Format {
         static let magnFormat         = "%.1f mag"
     }
@@ -77,63 +60,6 @@ struct Strings {
         static let empty                = ""
         static let unknown              = "--"
     }
-
-/*
-    // MARK: - Random
-    struct Random {
-        static func animalFace() -> String {
-            let animals = [
-                "🐶", "🐱", "🐻", "🐼", "🐨",
-                "🐯", "🦊", "🦁", "🐮",
-                "🐷", "🐹", "🐰", "🦦",
-                "🦄", "🦋", "🐭",
-            ]
-            return animals.randomElement()!
-        }
-    }
-    
-    
-    // MARK: - Tabs
-    struct Tabs {
-        static let timer                = "Timer"
-        static let recipes              = "Recipes"
-        static let coffees              = "Coffees"
-    }
-    
-    // MARK: - Timer
-    struct Timer {
-        static let liveActivityStarted      = "☕️ Live Activity started"
-        static let heroIdle      = "Free Pour!"
-        static let heroReady     = ""
-        static func heroFirstDrop(_ drop: String) -> String { "First drop after \(drop)" }
-        static let start                = "START"
-        static let stop                 = "STOP"
-        static let done                 = "DONE"
-        static let save                 = "SAVE"
-        static let reset                = "RESET"
-        static let firstDrop            = "First Drop"
-        static let firstDropLabel       = "First drop:"
-        static let targetTime           = "Target Time"
-        static let shotTime             = "Shot Time"
-        static let weightIn             = "Dose In"
-        static let weightOut            = "Yield Out"
-        static let noRecipe             = "No Recipe"
-        static let newRecipe            = "New Recipe"
-        static let freePour             = "Free Pour"
-        static let helloEmoji           = "👋 Hello!"
-        static let shotSummary          = "Shot Summary"
-        static let saveShot             = "Save Shot"
-        static let weightPlaceholder    = "0.0"
-        static let weightFormat         = "%.1f g"
-        static let liveActivityTitle    = "Espresso in Progress"
-        static let liveActivitySubtitle = "Pouring..."
-        static let pouring              = "Pouring..."
-        static let liveActivityStopped  = "Done ☺️"
-        static let doneEmoji            = "Done ☺️"
-    }
-*/
-    
-    
 
     // MARK: - Sky Bodies
     struct Bodies {
@@ -162,25 +88,15 @@ struct Strings {
         static let radius           = "Radius"
         static let diameter         = "Diameter"
         static let period           = "Period"
-        // Sun specific
+        // Sun events
         static let sunEvents        = "Sun Events"
-        static let sunType          = "G-type main-sequence"
-        static let sunDistance      = "1.000 AU"
-        static let sunMagnitude     = "-26.74"
-        static let sunTemperature   = "5,778 K"
-        static let sunRadius        = "696,000 km"
-        // Sun event rows
         static let civilDawn        = "Civil Dawn"
         static let sunrise          = "Sunrise"
         static let solarNoon        = "Solar Noon"
         static let sunset           = "Sunset"
         static let civilDusk        = "Civil Dusk"
-        // Moon specific
+        // Moon events
         static let moonEvents       = "Moon Events"
-        static let moonType         = "Natural satellite"
-        static let moonDiameter     = "3,474 km"
-        static let moonDistance     = "~384,400 km"
-        static let moonPeriod       = "27.3 days"
         static let moonPhase        = "Phase"
         static let moonrise         = "Moonrise"
         static let moonset          = "Moonset"
@@ -254,13 +170,6 @@ struct Strings {
         static let abbreviation   = "Abbreviation"
         static let fullName       = "Full name"
         static let zodiac         = "Zodiac"
-    }
-    // MARK: - Projection modes
-    struct Projection {
-        static let coupled        = "Coupled"
-        static let origin         = "Origin"
-        // SF Symbol names removed — symbols live in `LoreSymbol` / `ESymbol`,
-        // never in the (localizable) Strings table.
     }
     // MARK: - Preset names
     struct Preset {
