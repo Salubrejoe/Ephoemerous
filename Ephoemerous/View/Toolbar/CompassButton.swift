@@ -59,7 +59,7 @@ struct CompassButton: View {
             cardinals
             needle
         }
-        .rotationEffect(state.renderedRotation)
+        .rotationEffect(-state.renderedRotation)
     }
 
     /// Two-tone bowtie: red north tip, muted south tail, with a small hub
@@ -67,17 +67,12 @@ struct CompassButton: View {
     private var needle: some View {
         VStack(spacing: 0) {
             CompassArrow()
-                .fill(.red)
+                .fill(.orange)
                 .frame(width: 8, height: 11)
             CompassArrow()
                 .fill(.secondary)
                 .rotationEffect(.degrees(180))
                 .frame(width: 8, height: 11)
-        }
-        .overlay {
-            Circle()
-                .fill(.primary)
-                .frame(width: 3, height: 3)
         }
     }
 
@@ -89,7 +84,7 @@ struct CompassButton: View {
     /// "N" rides over the red needle tip, the rest follow 90° apart.
     private var cardinals: some View {
         ZStack {
-            cardinal("N", color: .red,       dx: 0,            dy: -labelRadius)
+            cardinal("N", color: .orange,       dx: 0,            dy: -labelRadius)
             cardinal("E", color: .secondary, dx:  labelRadius, dy: 0)
             cardinal("S", color: .secondary, dx: 0,            dy:  labelRadius)
             cardinal("W", color: .secondary, dx: -labelRadius, dy: 0)
@@ -101,7 +96,7 @@ struct CompassButton: View {
         Text(letter)
             .font(.system(size: 8, weight: .heavy, design: .rounded))
             .foregroundStyle(color)
-            .rotationEffect(-state.renderedRotation)   // keep upright
+            .rotationEffect(state.renderedRotation)   // keep upright
             .offset(x: dx, y: dy)
     }
 }

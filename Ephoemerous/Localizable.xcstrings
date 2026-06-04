@@ -1697,7 +1697,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerca nel cielo…"
+            "value" : "Ephoemerous"
           }
         }
       }
@@ -1746,17 +1746,6 @@
         }
       }
     },
-    "Solar System" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sistema Solare"
-          }
-        }
-      }
-    },
     "Solar system" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1764,6 +1753,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sistema solare"
+          }
+        }
+      }
+    },
+    "Solar System" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema Solare"
           }
         }
       }
@@ -2171,7 +2171,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ORIZZONTE OVEST"
+            "value" : "ORIZZONTE OCCIDENTALE"
           }
         }
       }
