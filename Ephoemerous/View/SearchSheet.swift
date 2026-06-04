@@ -86,7 +86,7 @@ struct SearchSheet: View {
     // trailing clear-button appears only while there's text to clear.
     private var searchHeader: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
+            Image(symbol: .search)
                 .foregroundStyle(.secondary)
             TextField("Search the sky…", text: $searchText)
                 .textInputAutocapitalization(.never)
@@ -98,7 +98,7 @@ struct SearchSheet: View {
                     searchText = ""
                     searchFocused = false
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(symbol: .xmarkCircleFill)
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)

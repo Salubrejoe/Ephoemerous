@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - DetailHeader
 // Apple-Maps place-card-style header used by every detail view in the
@@ -145,7 +146,7 @@ private struct NowPillButton: View {
 
     var body: some View {
         Button(action: action) {
-            Label("Now", systemImage: "clock.fill")
+            Label("Now", symbol: .clockFill)
                 .font(.callout.weight(.medium))
                 .foregroundStyle(isDisabled ? .secondary : .primary)
                 .padding(.horizontal, 14)

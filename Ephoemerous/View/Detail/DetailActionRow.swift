@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - DetailActionRow
 // Paired action row for the constellation / star detail header.
@@ -136,7 +137,7 @@ struct DetailActionRow: View {
 
     private var learnMythIcon: some View {
         Button(action: onLearnMyth) {
-            Image(systemName: "book")
+            Image(symbol: .book)
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(accent)
                 .frame(width: pillHeight, height: pillHeight)
@@ -152,7 +153,7 @@ struct DetailActionRow: View {
     private var learnMythExpanded: some View {
         Button(action: onLearnMyth) {
             HStack(spacing: 8) {
-                Image(systemName: "book.fill")
+                Image(symbol: .bookFill)
                     .font(.callout.weight(.semibold))
                 // The cycle's tagline doubles as the LearnMyth
                 // label — pulled from `POIConstellationMyth.tagline`
@@ -200,7 +201,7 @@ struct DetailActionRow: View {
             // `heartFilled` is the visible state — driven by the
             // post-swap delay above, NOT directly by `remembered`.
             // That's how we get the "empty → fill → wiggle" beat.
-            Image(systemName: heartFilled ? "heart.fill" : "heart")
+            Image(symbol: heartFilled ? .heartFill : .heart)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.pink)
                 .contentTransition(.symbolEffect(.replace.downUp))

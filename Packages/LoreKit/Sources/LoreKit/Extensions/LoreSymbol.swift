@@ -20,10 +20,13 @@ import SwiftUI
 // and uniform `case x = "x"` formatting reads as one block at a glance.
 public enum LoreSymbol: String, Sendable, CaseIterable {
 
+    case book           = "book"
+    case bookFill       = "book.fill"
     case calendar       = "calendar"
     case checkmark      = "checkmark"
     case chevronUpDown  = "chevron.up.chevron.down"
     case circle         = "circle"
+    case clockFill      = "clock.fill"
     case declination    = "lines.measurement.vertical"
     case cup            = "cup.and.heat.waves"
     case cupEmpty       = "cup.and.saucer"
@@ -32,6 +35,8 @@ public enum LoreSymbol: String, Sendable, CaseIterable {
     case eyes           = "eyes"
     case flame          = "flame"
     case gearCicleFill  = "gearshape.circle.fill"
+    case heart          = "heart"
+    case heartFill      = "heart.fill"
     case hrClass        = "thermometer.sun"
     case location       = "location"
     case locationFill   = "location.fill"
@@ -56,8 +61,9 @@ public enum LoreSymbol: String, Sendable, CaseIterable {
     case trash          = "trash"
     case thumbsup       = "hand.thumbsup"
     case warning        = "exclamationmark.triangle.fill"
-    case xmark          = "xmark"
-    case xmarkCircle    = "xmark.circle"
+    case xmark           = "xmark"
+    case xmarkCircle     = "xmark.circle"
+    case xmarkCircleFill = "xmark.circle.fill"
 }
 
 // MARK: - Image(symbol: LoreSymbol)
@@ -66,5 +72,14 @@ public enum LoreSymbol: String, Sendable, CaseIterable {
 public extension Image {
     init(symbol: LoreSymbol) {
         self.init(systemName: symbol.rawValue)
+    }
+}
+
+// MARK: - Label(_:symbol: LoreSymbol)
+// Same leading-dot ergonomics for the title+icon idiom, so
+// `Label("Now", symbol: .clockFill)` reads as one unit.
+public extension Label where Title == Text, Icon == Image {
+    init(_ title: LocalizedStringKey, symbol: LoreSymbol) {
+        self.init(title, systemImage: symbol.rawValue)
     }
 }

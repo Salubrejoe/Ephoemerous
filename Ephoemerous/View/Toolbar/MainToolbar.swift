@@ -118,17 +118,6 @@ struct MainToolbar: View {
 
     // MARK: - Pill labels
 
-    /// Three-state SF Symbol for the location pill:
-    ///   • `xmark`         — picker is open (tap closes it)
-    ///   • `location.fill` — observer is at the device's current location
-    ///   • `location`      — observer has been moved elsewhere
-    /// Driven through `.contentTransition(.symbolEffect(.replace))`
-    /// so swaps animate.
-    private var locationButtonSymbol: String {
-        if state.isShowingLocationPicker { return "xmark" }
-        return state.isAtDeviceLocation ? "location.fill" : "location"
-    }
-
     /// Locality label, three tiers from terse to verbose:
     ///   • observer is at the device's current fix → "Here"
     ///   • locality name resolved by the geocoder   → that name

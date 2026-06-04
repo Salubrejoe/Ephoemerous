@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - DatePickerPanel
 // Inline panel that springs up above MainToolbar when the user taps
@@ -125,7 +126,7 @@ struct DatePickerPanel: View {
             Spacer()
             
             Button { state.isShowingDatePicker = false } label: {
-                Image(systemName: "xmark.circle.fill")
+                Image(symbol: .xmarkCircleFill)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 32, height: 32)

@@ -124,7 +124,7 @@ struct LocationPickerPanel: View {
             Spacer()
             
             Button { state.isShowingLocationPicker = false } label: {
-                Image(systemName: "xmark.circle.fill")
+                Image(symbol: .xmarkCircleFill)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 32, height: 32)
@@ -140,7 +140,7 @@ struct LocationPickerPanel: View {
 
     private var searchField: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
+            Image(symbol: .search)
                 .foregroundStyle(.secondary)
             TextField("Search a place",
                       text: Binding(get: { completer.query },
@@ -153,7 +153,7 @@ struct LocationPickerPanel: View {
                 Button {
                     completer.query = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(symbol: .xmarkCircleFill)
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)

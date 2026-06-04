@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - Favourites
 // Static "this is a favourite" marker drawn by `FavouritesLayer`.
@@ -29,7 +30,7 @@ extension EArtist {
         var shadowed = dc.ctx
         shadowed.addFilter(poiShadow)
         shadowed.draw(
-            Text(Image(systemName: "heart.fill"))
+            Text(Image(symbol: .heartFill))
                 .font(.system(size: size, weight: .semibold))
                 .foregroundStyle(color),
             at:     point,

@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - RememberButton
 // The Remember (favourite) action for an object with NO paired
@@ -32,7 +33,7 @@ struct RememberButton: View {
             state.toggleFavourite(obj)
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: remembered ? "heart.fill" : "heart")
+                Image(symbol: remembered ? .heartFill : .heart)
                 Text(remembered ? "Remembered" : "Remember")
                     .fontWeight(.semibold)
             }

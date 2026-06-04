@@ -259,8 +259,8 @@ struct Strings {
     struct Projection {
         static let coupled        = "Coupled"
         static let origin         = "Origin"
-        static let globeSymbol    = "globe"
-        static let walkSymbol     = "figure.walk.motion"
+        // SF Symbol names removed — symbols live in `LoreSymbol` / `ESymbol`,
+        // never in the (localizable) Strings table.
     }
     // MARK: - Preset names
     struct Preset {

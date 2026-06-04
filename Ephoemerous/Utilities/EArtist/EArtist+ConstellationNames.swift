@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - Constellation names
 // Visibility classification + label rendering for the
@@ -193,7 +194,7 @@ extension EArtist {
 
         let label: Text
         if isFavourite {
-            label = Text("\(Text(Image(systemName: "heart.fill")).foregroundStyle(heartColor)) \(fullName)")
+            label = Text("\(Text(Image(symbol: .heartFill)).foregroundStyle(heartColor)) \(fullName)")
                 .fontDesign(.serif)
                 .fontWeight(.light)
                         .foregroundStyle(.secondary)
