@@ -25,7 +25,7 @@ enum ESkyObject: Identifiable, Hashable {
         case .sun:                  return "Sun"
         case .moon:                 return "Moon"
         case .planet(let p):        return p.name
-        case .constellation(let c): return c.fullName
+        case .constellation(let c): return c.localizedName
         }
     }
 
@@ -40,7 +40,7 @@ enum ESkyObject: Identifiable, Hashable {
         case .planet(let p):
             return "\(p.name) planet".lowercased()
         case .constellation(let c):
-            return "\(c.fullName) \(c.rawValue) constellation".lowercased()
+            return "\(c.localizedName) \(c.fullName) \(c.rawValue) constellation".lowercased()
         }
     }
 }

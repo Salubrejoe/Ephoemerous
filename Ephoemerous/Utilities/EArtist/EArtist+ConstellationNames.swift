@@ -123,7 +123,7 @@ extension EArtist {
 
     /// Title-cased constellation name as it appears on the label.
     func constellationLabelText(for cons: EConstellation) -> String {
-        cons.fullName
+        cons.localizedName
     }
 
     // MARK: Draw

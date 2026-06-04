@@ -90,7 +90,7 @@ struct ConstellationCard: View {
                 .font(.title3)
                 .foregroundStyle(accent)
                 .frame(height: 24)
-            Text(constellation.fullName)
+            Text(constellation.localizedName)
                 .font(.title3.weight(.semibold))
                 .fontDesign(.serif)            // sky-object name → serif
                 .foregroundStyle(.primary)

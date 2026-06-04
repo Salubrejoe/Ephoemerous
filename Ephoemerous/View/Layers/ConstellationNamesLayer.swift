@@ -50,7 +50,7 @@ struct ConstellationNamesLayer: EGridLayer {
 
             guard let textRect = artist.drawConstellationLabel(
                 at:          sc,
-                fullName:    cons.fullName.uppercased(),
+                fullName:    cons.localizedName.uppercased(),
                 isFavourite: isFavourite,
                 heartColor:  heartColor,
                 in:          &dc

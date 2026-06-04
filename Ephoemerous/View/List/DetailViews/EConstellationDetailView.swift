@@ -64,7 +64,7 @@ struct EConstellationDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         constellation.fullName,
+                title:         constellation.localizedName,
                 subtitle:      subtitleText,
                 accent:        accent,
                 icon:          { Image(symbol: iconSymbol) },

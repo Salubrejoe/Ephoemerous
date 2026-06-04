@@ -37,9 +37,7 @@ struct EMythDetailView: View {
 
     /// Capitalised raw value — "Perseus", "Hercules", … The enum has
     /// no display-name property so we capitalise the JSON key.
-    private var titleText: String {
-        myth == .none ? "Other constellations" : myth.rawValue.capitalized
-    }
+    private var titleText: String { myth.localizedTitle }
 
     /// One-line tagline per cycle. Tells the reader what the story
     /// is *about* in seven words or fewer — same role

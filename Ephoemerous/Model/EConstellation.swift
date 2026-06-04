@@ -128,6 +128,13 @@ enum EConstellation: String, CaseIterable {
     }
   }
   
+  /// Localised display name. `fullName` stays the canonical English name
+  /// (and the String Catalog key); this looks that key up so the UI reads
+  /// e.g. "Orione" in Italian. Identity is still `rawValue`, untouched.
+  var localizedName: String {
+    String(localized: String.LocalizationValue(fullName))
+  }
+
   var fullName: String {
     switch self {
     case .none : "None"

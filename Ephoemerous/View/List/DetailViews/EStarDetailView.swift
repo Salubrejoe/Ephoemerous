@@ -27,11 +27,11 @@ struct EStarDetailView: View {
     /// designation) we skip the letter to avoid the title and subtitle
     /// both leading with the same character.
     private var subtitleText: String {
-        guard star.properName != nil else { return star.constellation.fullName }
+        guard star.properName != nil else { return star.constellation.localizedName }
         let letter = star.name.split(separator: " ").first.map(String.init) ?? ""
         return letter.isEmpty
-            ? star.constellation.fullName
-            : "\(letter) · \(star.constellation.fullName)"
+            ? star.constellation.localizedName
+            : "\(letter) · \(star.constellation.localizedName)"
     }
 
     /// A star inherits its myth from its parent constellation —

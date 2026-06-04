@@ -97,6 +97,105 @@
         }
       }
     },
+    "Andromeda" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Andromeda"
+          }
+        }
+      }
+    },
+    "Andromeda and the sea-monster" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Andromeda e il mostro marino"
+          }
+        }
+      }
+    },
+    "Antlia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Antlia"
+          }
+        }
+      }
+    },
+    "Apus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apus"
+          }
+        }
+      }
+    },
+    "Aquarius" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acquario"
+          }
+        }
+      }
+    },
+    "Aquila" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aquila"
+          }
+        }
+      }
+    },
+    "Ara" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ara"
+          }
+        }
+      }
+    },
+    "Argo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Argo"
+          }
+        }
+      }
+    },
+    "Aries" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ariete"
+          }
+        }
+      }
+    },
     "At your location" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -104,6 +203,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dove sei"
+          }
+        }
+      }
+    },
+    "Auriga" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auriga"
           }
         }
       }
@@ -119,6 +229,17 @@
         }
       }
     },
+    "Boötes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Boote"
+          }
+        }
+      }
+    },
     "Brighter than" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -126,6 +247,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Più luminose di"
+          }
+        }
+      }
+    },
+    "Caelum" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Caelum"
+          }
+        }
+      }
+    },
+    "Camelopardus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giraffa"
           }
         }
       }
@@ -141,6 +284,94 @@
         }
       }
     },
+    "Cancer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancro"
+          }
+        }
+      }
+    },
+    "Canes Venatici" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cani da Caccia"
+          }
+        }
+      }
+    },
+    "Canis Major" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cane Maggiore"
+          }
+        }
+      }
+    },
+    "Canis Minor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cane Minore"
+          }
+        }
+      }
+    },
+    "Capricornus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capricorno"
+          }
+        }
+      }
+    },
+    "Carina" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carena"
+          }
+        }
+      }
+    },
+    "Cassiopeia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cassiopea"
+          }
+        }
+      }
+    },
+    "Centaurus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Centauro"
+          }
+        }
+      }
+    },
     "Centre on your location" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -148,6 +379,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posiziona dove sei"
+          }
+        }
+      }
+    },
+    "Cepheus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cefeo"
+          }
+        }
+      }
+    },
+    "Cetus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balena"
+          }
+        }
+      }
+    },
+    "Chamaeleon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camaleonte"
+          }
+        }
+      }
+    },
+    "Circinus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compasso"
           }
         }
       }
@@ -174,6 +449,28 @@
         }
       }
     },
+    "Columba" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colomba"
+          }
+        }
+      }
+    },
+    "Coma Berenice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chioma di Berenice"
+          }
+        }
+      }
+    },
     "Confirm" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -196,6 +493,17 @@
         }
       }
     },
+    "Constellation cycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclo di costellazioni"
+          }
+        }
+      }
+    },
     "Constellations" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -214,6 +522,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Coordinate"
+          }
+        }
+      }
+    },
+    "Corona Australis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corona Australe"
+          }
+        }
+      }
+    },
+    "Corona Borealis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corona Boreale"
+          }
+        }
+      }
+    },
+    "Corvus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corvo"
+          }
+        }
+      }
+    },
+    "Crater" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cratere"
+          }
+        }
+      }
+    },
+    "Crux" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Croce del Sud"
+          }
+        }
+      }
+    },
+    "Cygnus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cigno"
           }
         }
       }
@@ -273,6 +647,17 @@
         }
       }
     },
+    "Delphinus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delfino"
+          }
+        }
+      }
+    },
     "Diameter" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -302,6 +687,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fatto"
+          }
+        }
+      }
+    },
+    "Dorado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dorado"
+          }
+        }
+      }
+    },
+    "Draco" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dragone"
+          }
+        }
+      }
+    },
+    "EASTERN HORIZON" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ORIZZONTE EST"
           }
         }
       }
@@ -339,6 +757,28 @@
         }
       }
     },
+    "Equuleus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cavallino"
+          }
+        }
+      }
+    },
+    "Eridanus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eridano"
+          }
+        }
+      }
+    },
     "Error" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -361,6 +801,17 @@
         }
       }
     },
+    "Fornax" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornace"
+          }
+        }
+      }
+    },
     "Full name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -368,6 +819,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nome"
+          }
+        }
+      }
+    },
+    "Gemini" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemelli"
+          }
+        }
+      }
+    },
+    "Grus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gru"
+          }
+        }
+      }
+    },
+    "Hercules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ercole"
+          }
+        }
+      }
+    },
+    "Horologium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orologio"
+          }
+        }
+      }
+    },
+    "Hydra" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Idra"
+          }
+        }
+      }
+    },
+    "Hydrus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Idro"
           }
         }
       }
@@ -394,6 +911,72 @@
         }
       }
     },
+    "Indus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Indiano"
+          }
+        }
+      }
+    },
+    "Lacerta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lucertola"
+          }
+        }
+      }
+    },
+    "Leo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leone"
+          }
+        }
+      }
+    },
+    "Leo Minor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leone Minore"
+          }
+        }
+      }
+    },
+    "Lepus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lepre"
+          }
+        }
+      }
+    },
+    "Libra" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilancia"
+          }
+        }
+      }
+    },
     "Location access denied" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -401,6 +984,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accesso alla posizione negato"
+          }
+        }
+      }
+    },
+    "Lupus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lupo"
+          }
+        }
+      }
+    },
+    "Lynx" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lince"
+          }
+        }
+      }
+    },
+    "Lyra" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lira"
           }
         }
       }
@@ -423,6 +1039,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filtro della Magnitudine"
+          }
+        }
+      }
+    },
+    "Mensa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mensa"
+          }
+        }
+      }
+    },
+    "Microscopium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microscopio"
+          }
+        }
+      }
+    },
+    "Monoceros" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unicorno"
           }
         }
       }
@@ -482,6 +1131,17 @@
         }
       }
     },
+    "Musca" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mosca"
+          }
+        }
+      }
+    },
     "Name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -515,6 +1175,105 @@
         }
       }
     },
+    "None" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessuna"
+          }
+        }
+      }
+    },
+    "Norma" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Squadra"
+          }
+        }
+      }
+    },
+    "Octans" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ottante"
+          }
+        }
+      }
+    },
+    "Ophiuchus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ofiuco"
+          }
+        }
+      }
+    },
+    "Orion" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orione"
+          }
+        }
+      }
+    },
+    "Orpheus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orfeo"
+          }
+        }
+      }
+    },
+    "Other constellations" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altre costellazioni"
+          }
+        }
+      }
+    },
+    "Pavo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pavone"
+          }
+        }
+      }
+    },
+    "Pegasus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pegaso"
+          }
+        }
+      }
+    },
     "Period" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -522,6 +1281,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Periodo"
+          }
+        }
+      }
+    },
+    "Perseus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perseo"
           }
         }
       }
@@ -537,6 +1307,17 @@
         }
       }
     },
+    "Phoenix" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenice"
+          }
+        }
+      }
+    },
     "Physical" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -548,6 +1329,39 @@
         }
       }
     },
+    "Pictor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pittore"
+          }
+        }
+      }
+    },
+    "Pisces" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pesci"
+          }
+        }
+      }
+    },
+    "Piscis Austrinus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pesce Australe"
+          }
+        }
+      }
+    },
     "Proper Motion" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -555,6 +1369,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Moto proprio"
+          }
+        }
+      }
+    },
+    "Puppis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poppa"
+          }
+        }
+      }
+    },
+    "Pyxis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bussola"
           }
         }
       }
@@ -592,6 +1428,17 @@
         }
       }
     },
+    "Reticulum" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reticolo"
+          }
+        }
+      }
+    },
     "Retry" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -614,6 +1461,28 @@
         }
       }
     },
+    "Sagitta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Freccia"
+          }
+        }
+      }
+    },
+    "Sagittarius" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sagittario"
+          }
+        }
+      }
+    },
     "Save" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -625,6 +1494,39 @@
         }
       }
     },
+    "Scorpius" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scorpione"
+          }
+        }
+      }
+    },
+    "Sculptor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scultore"
+          }
+        }
+      }
+    },
+    "Scutum" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scudo"
+          }
+        }
+      }
+    },
     "Search, remember..." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -632,6 +1534,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerca, ricorda…"
+          }
+        }
+      }
+    },
+    "Serpens" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serpente"
+          }
+        }
+      }
+    },
+    "Sextans" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sestante"
           }
         }
       }
@@ -757,6 +1681,28 @@
         }
       }
     },
+    "Taurus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toro"
+          }
+        }
+      }
+    },
+    "Telescopium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telescopio"
+          }
+        }
+      }
+    },
     "Temperature" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -764,6 +1710,61 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Temperatura"
+          }
+        }
+      }
+    },
+    "The father-god's transformations" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le trasformazioni del padre degli dèi"
+          }
+        }
+      }
+    },
+    "The hunter and the scorpion" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il cacciatore e lo scorpione"
+          }
+        }
+      }
+    },
+    "The lyre that charmed Hades" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lira che incantò Ade"
+          }
+        }
+      }
+    },
+    "The twelve impossible labours" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le dodici fatiche impossibili"
+          }
+        }
+      }
+    },
+    "The voyage for the Golden Fleece" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il viaggio per il Vello d'Oro"
           }
         }
       }
@@ -801,6 +1802,39 @@
         }
       }
     },
+    "Triangulum" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Triangolo"
+          }
+        }
+      }
+    },
+    "Triangulum Australe" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Triangolo Australe"
+          }
+        }
+      }
+    },
+    "Tucana" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tucano"
+          }
+        }
+      }
+    },
     "Type" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -819,6 +1853,94 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non disponibile"
+          }
+        }
+      }
+    },
+    "Ursa Major" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orsa Maggiore"
+          }
+        }
+      }
+    },
+    "Ursa Minor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orsa Minore"
+          }
+        }
+      }
+    },
+    "Vela" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vele"
+          }
+        }
+      }
+    },
+    "Virgo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergine"
+          }
+        }
+      }
+    },
+    "Volans" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pesce Volante"
+          }
+        }
+      }
+    },
+    "Vulpecula" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volpetta"
+          }
+        }
+      }
+    },
+    "WESTERN HORIZON" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ORIZZONTE OVEST"
+          }
+        }
+      }
+    },
+    "Zeus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeus"
           }
         }
       }

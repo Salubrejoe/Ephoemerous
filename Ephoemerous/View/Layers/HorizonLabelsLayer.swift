@@ -65,13 +65,13 @@ struct HorizonLabelsLayer: EGridLayer {
         // drawn glyph-by-glyph (~30 chars/frame), so this keeps the asset
         // resolution off the per-character path.
         let color = dc.resolve(artist.horizonFillColor)
-        drawCurvedLabel("EASTERN HORIZON",
+        drawCurvedLabel(String(localized: "EASTERN HORIZON"),
                         centreT: eastT,
                         fontPt:  fontPt,
                         deltaT:  deltaT,
                         color:   color,
                         in: &dc)
-        drawCurvedLabel("WESTERN HORIZON",
+        drawCurvedLabel(String(localized: "WESTERN HORIZON"),
                         centreT: westT,
                         fontPt:  fontPt,
                         deltaT:  deltaT,

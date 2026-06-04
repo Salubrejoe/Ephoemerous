@@ -72,13 +72,27 @@ enum POIConstellationMyth: String, CaseIterable, Identifiable {
     /// so the two surfaces can never drift out of sync.
     var tagline: String {
         switch self {
-        case .perseus:  return "Andromeda and the sea-monster"
-        case .hercules: return "The twelve impossible labours"
-        case .argo:     return "The voyage for the Golden Fleece"
-        case .zeus:     return "The father-god's transformations"
-        case .orion:    return "The hunter and the scorpion"
-        case .orpheus:  return "The lyre that charmed Hades"
-        case .none:     return "Constellation cycle"
+        case .perseus:  return String(localized: "Andromeda and the sea-monster")
+        case .hercules: return String(localized: "The twelve impossible labours")
+        case .argo:     return String(localized: "The voyage for the Golden Fleece")
+        case .zeus:     return String(localized: "The father-god's transformations")
+        case .orion:    return String(localized: "The hunter and the scorpion")
+        case .orpheus:  return String(localized: "The lyre that charmed Hades")
+        case .none:     return String(localized: "Constellation cycle")
+        }
+    }
+
+    /// Localised display title for the cycle (the myth's name). The
+    /// `rawValue` stays the canonical JSON key; this is the on-screen name.
+    var localizedTitle: String {
+        switch self {
+        case .perseus:  return String(localized: "Perseus")
+        case .hercules: return String(localized: "Hercules")
+        case .argo:     return String(localized: "Argo")
+        case .zeus:     return String(localized: "Zeus")
+        case .orion:    return String(localized: "Orion")
+        case .orpheus:  return String(localized: "Orpheus")
+        case .none:     return String(localized: "Other constellations")
         }
     }
 }
