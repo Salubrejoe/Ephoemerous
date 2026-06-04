@@ -129,6 +129,39 @@ extension EAppState {
     /// fluid swap to the user.
     private var sheetSwapDelay: TimeInterval { 0.35 }
 
+    // MARK: Scene editors (location / date) override the root sheet
+
+    /// Present a scene editor (the location or date picker), making it
+    /// take precedence over any open detail / myth sheet.
+    ///
+    /// A detail / myth sheet and a picker both want the bottom slot, and
+    /// SwiftUI presents only one sheet per anchor — so raising a picker
+    /// while a detail card is up was silently a no-op. This clears the
+    /// root sheet first, then runs `open` once it has torn down (the same
+    /// `sheetSwapDelay` dance `focus()` / `openMyth()` use; presenting in
+    /// the same frame as the dismiss makes the incoming sheet inherit
+    /// stale state). When nothing owns the slot, `open` runs immediately.
+    ///
+    /// `_sceneEditorOpening` is held across the teardown so the persistent
+    /// search sheet (which would otherwise see "no detail, no picker yet"
+    /// and present) doesn't flash in during the gap. `_focusEpoch` is
+    /// bumped so an in-flight deferred `focus()` can't resurrect a
+    /// destination after we've cleared it.
+    func presentSceneEditor(_ open: @escaping () -> Void) {
+        _focusEpoch &+= 1
+        let hadRootSheet = detailDestination != nil || mythDestination != nil
+        guard hadRootSheet else { open(); return }
+
+        _sceneEditorOpening = true
+        detailDestination   = nil
+        mythDestination     = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
+            guard let self else { return }
+            self._sceneEditorOpening = false
+            open()
+        }
+    }
+
     // MARK: Screen-position lookup
 
     /// Where on screen `obj` currently sits, if we know. Falls back to

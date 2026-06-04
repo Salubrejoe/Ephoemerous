@@ -177,6 +177,9 @@ struct MainView: View {
                     && state.mythDestination == nil
                     && !state.isShowingLocationPicker
                     && !state.isShowingDatePicker
+                    // Suppress search during the brief detail→picker
+                    // teardown so it doesn't flash into the gap.
+                    && !state._sceneEditorOpening
             },
             set: { _ in }
         )

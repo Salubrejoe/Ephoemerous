@@ -72,20 +72,25 @@ extension EAppState {
     /// closes the location picker if it's open (the two inline panels
     /// share the bottom slot and shouldn't stack).
     func toggleDatePicker() {
-        // Batch all flag mutations into a single animation
-        // transaction. See `toggleLocationPicker` for the full
-        // rationale — short version: when the user rapid-taps
-        // between the date and location pills, both flags can flip
-        // in the same frame and `.animation(value:)` modifiers on
-        // the toolbar collide into a jerky cross-fade. Driving the
-        // transition explicitly from here applies one coherent
-        // curve to every state change in the closure.
-        withAnimation(.easeInOut(duration: 0.25)) {
-            if !isShowingDatePicker {
-                resetView()
-                isShowingLocationPicker = false
+        // Closing → just flip off.
+        if isShowingDatePicker {
+            withAnimation(.easeInOut(duration: 0.25)) { isShowingDatePicker = false }
+            return
+        }
+        // Opening → the scene editor OVERRIDES any open detail / myth
+        // sheet (presentSceneEditor clears it first, then runs this once
+        // the slot is free). See `toggleLocationPicker` for the full
+        // rationale on batching every flag flip into one `withAnimation`
+        // transaction — short version: rapid-tapping between the date and
+        // location pills can flip both flags in one frame, and per-flag
+        // `.animation(value:)` modifiers would collide into a jerky
+        // cross-fade otherwise.
+        presentSceneEditor {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                self.resetView()
+                self.isShowingLocationPicker = false
+                self.isShowingDatePicker     = true
             }
-            isShowingDatePicker.toggle()
         }
     }
 

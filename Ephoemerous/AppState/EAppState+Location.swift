@@ -47,20 +47,26 @@ extension EAppState {
     /// isn't fighting a tracking transition, and closes the date picker
     /// to avoid two inline panels stacking in the bottom slot.
     func toggleLocationPicker() {
-        // Batch all flag mutations into a single animation
-        // transaction. When the user rapid-taps between the two
-        // toolbar pills, isShowingLocationPicker and
-        // isShowingDatePicker can both flip in the same frame; with
-        // `.animation(value:)` modifiers each flag triggers its own
-        // animation pass and the two collide into a jerky cross-
-        // fade. `withAnimation` here applies a single coherent curve
-        // to every state change in the closure.
-        withAnimation(.easeInOut(duration: 0.25)) {
-            if !isShowingLocationPicker {
-                resetView()
-                isShowingDatePicker = false
+        // Closing → just flip off.
+        if isShowingLocationPicker {
+            withAnimation(.easeInOut(duration: 0.25)) { isShowingLocationPicker = false }
+            return
+        }
+        // Opening → the scene editor OVERRIDES any open detail / myth
+        // sheet (presentSceneEditor clears it first, then runs this once
+        // the slot is free). Batch all flag mutations into a single
+        // animation transaction: when the user rapid-taps between the two
+        // toolbar pills, isShowingLocationPicker and isShowingDatePicker
+        // can both flip in the same frame; with `.animation(value:)`
+        // modifiers each flag triggers its own animation pass and the two
+        // collide into a jerky cross-fade. `withAnimation` here applies a
+        // single coherent curve to every state change in the closure.
+        presentSceneEditor {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                self.resetView()
+                self.isShowingDatePicker     = false
+                self.isShowingLocationPicker = true
             }
-            isShowingLocationPicker.toggle()
         }
     }
 }
