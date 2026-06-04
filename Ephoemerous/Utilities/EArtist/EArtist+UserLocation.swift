@@ -181,12 +181,13 @@ extension EArtist {
         }
         path.closeSubpath()
 
+        let cone = dc.resolve(userPuckConeColor)
         dc.ctx.fill(
             path,
             with: .radialGradient(
                 Gradient(colors: [
-                    userPuckConeColor.opacity(userPuckConeOpacity),
-                    userPuckConeColor.opacity(0)
+                    cone.opacity(userPuckConeOpacity),
+                    cone.opacity(0)
                 ]),
                 center:      sc,
                 startRadius: 0,
@@ -219,7 +220,7 @@ extension EArtist {
         // fade that keeps real colour out to mid-radius so the wash covers
         // most of the sky before easing to nothing at the rim.
         let a = aimBlobOpacity * opacity
-        let c = color ?? userPuckConeColor
+        let c = dc.resolve(color ?? userPuckConeColor)
         let gradient = GraphicsContext.Shading.radialGradient(
             Gradient(stops: [
                 .init(color: c.opacity(a),        location: 0),
@@ -254,20 +255,22 @@ extension EArtist {
         let inset = size * userPuckRingFraction
         let shape = Squircle(corners: horizonBumpCorners,
                              bulge:   horizonBumpBulge)
+        // Resolve the puck's asset colours once — it redraws every frame.
+        let ring  = dc.resolve(userPuckRingColor)
+        let discC = dc.resolve(userPuckDiscColor)
 
         let outer = CGRect(x: sc.x - size / 2, y: sc.y - size / 2,
                            width: size, height: size)
         let disc  = outer.insetBy(dx: inset, dy: inset)
 
         // White scalloped ring.
-        dc.ctx.fill(shape.path(in: outer), with: .color(userPuckRingColor))
+        dc.ctx.fill(shape.path(in: outer), with: .color(ring))
 
         // Tinted disc with a soft top→bottom sheen.
         dc.ctx.fill(
             shape.path(in: disc),
             with: .linearGradient(
-                Gradient(colors: [userPuckDiscColor,
-                                  userPuckDiscColor.opacity(0.82)]),
+                Gradient(colors: [discC, discC.opacity(0.82)]),
                 startPoint: CGPoint(x: disc.midX, y: disc.minY),
                 endPoint:   CGPoint(x: disc.midX, y: disc.maxY))
         )
@@ -278,7 +281,7 @@ extension EArtist {
         globe.draw(
             Text(Image(symbol: symbol))
                 .font(.system(size: size * userPuckGlyphScale, weight: .regular))
-                .foregroundStyle(userPuckRingColor.opacity(userPuckGlyphOpacity)),
+                .foregroundStyle(ring.opacity(userPuckGlyphOpacity)),
             at:     CGPoint(x: disc.midX, y: disc.midY),
             anchor: .center)
     }

@@ -15,13 +15,20 @@ struct ConstellationLinesLayer: EGridLayer {
         )
         let observerLat = dc.state.origin.latitude.degrees
 
+        // Resolve the neutral line colour to concrete RGBA once for the
+        // whole frame — drawn once per segment (hundreds of segments), so
+        // without this every dotted stroke would re-resolve the asset on
+        // the main thread.
+        let lineColor = dc.resolve(artist.constellationLineColor)
+
         for (cons, segs) in ConstellationLines.shared.segments {
             let isFavourite = favouriteIDs.contains(cons.rawValue)
             // Look up the myth tint only when needed — most
             // constellations aren't favourites, so the lookup stays
-            // cold on the hot loop.
+            // cold on the hot loop. Resolve it once per favourite
+            // constellation (shared by all its segments).
             let favouriteColor: Color? = isFavourite
-                ? favouriteTint(for: cons, observerLatitude: observerLat)
+                ? dc.resolve(favouriteTint(for: cons, observerLatitude: observerLat))
                 : nil
 
             for seg in segs {
@@ -41,6 +48,7 @@ struct ConstellationLinesLayer: EGridLayer {
                     artist.drawConstellationSegment(
                         from:   pa, to: pb,
                         insetA: ra + gap, insetB: rb + gap,
+                        color:  lineColor,
                         in:     &dc
                     )
                 }

@@ -61,15 +61,21 @@ struct HorizonLabelsLayer: EGridLayer {
 
     func draw(in dc: inout EGraphicContext) {
         let (fontPt, deltaT) = tuning(scale: dc.renderedScale)
+        // Resolve the label colour to concrete RGBA once — each label is
+        // drawn glyph-by-glyph (~30 chars/frame), so this keeps the asset
+        // resolution off the per-character path.
+        let color = dc.resolve(artist.horizonFillColor)
         drawCurvedLabel("EASTERN HORIZON",
                         centreT: eastT,
                         fontPt:  fontPt,
                         deltaT:  deltaT,
+                        color:   color,
                         in: &dc)
         drawCurvedLabel("WESTERN HORIZON",
                         centreT: westT,
                         fontPt:  fontPt,
                         deltaT:  deltaT,
+                        color:   color,
                         in: &dc)
     }
 
@@ -79,6 +85,7 @@ struct HorizonLabelsLayer: EGridLayer {
                                  centreT: Double,
                                  fontPt: CGFloat,
                                  deltaT: Double,
+                                 color: Color,
                                  in dc: inout EGraphicContext) {
         let chars = Array(text)
         let n     = chars.count
@@ -139,7 +146,7 @@ struct HorizonLabelsLayer: EGridLayer {
                 layer.draw(
                     Text(String(char))
                         .font(.system(size: fontPt, weight: .semibold))
-                        .foregroundStyle(artist.horizonFillColor)
+                        .foregroundStyle(color)
                         .kerning(0.4),
                     at:     .zero,
                     anchor: .center

@@ -54,6 +54,12 @@ extension EArtist {
         let scale = dc.renderedScale
         let promo = min(max(promotion, 0), 1)
 
+        // Resolve the badge's asset gradient colours to concrete RGBA once
+        // (used by the badge fill, the dot, and the text gradient) so this
+        // badge does no main-thread asset I/O per draw.
+        let gradTop    = dc.resolve(style.gradientTop)
+        let gradBottom = dc.resolve(style.gradientBottom)
+
         // Each tier eases in/out as a smooth function of scale rather
         // than popping at a hard threshold — see `labelTierProgress`.
         let badgeFade = labelTierProgress(scale: scale, threshold: style.badgeIn)
@@ -163,7 +169,7 @@ extension EArtist {
         caseCtx.opacity *= badgeFade
 //        caseCtx.fill(casingPath, with: .color(poiTextBorderColor))
 
-        let gradient = Gradient(colors: [style.gradientTop, style.gradientBottom])
+        let gradient = Gradient(colors: [gradTop, gradBottom])
         var fillCtx = dc.ctx
         fillCtx.opacity *= badgeFade
         fillCtx.fill(
@@ -216,7 +222,7 @@ extension EArtist {
             var dotCtx = dc.ctx
             dotCtx.opacity *= promo * badgeFade
             dotCtx.addFilter(poiTextShadow)
-            dotCtx.fill(Path(ellipseIn: dotRect), with: .color(style.gradientBottom))
+            dotCtx.fill(Path(ellipseIn: dotRect), with: .color(gradBottom))
         }
 
         // Tier 2 — the name. Trailing-right of the badge when flat; as
@@ -233,7 +239,7 @@ extension EArtist {
         // rest of the app renders standard.
         let textFont = Font.system(.footnote, design: .serif).weight(.bold)
         let textGradient = LinearGradient(
-            colors:     [style.gradientTop, style.gradientBottom],
+            colors:     [gradTop, gradBottom],
             startPoint: .top,
             endPoint:   .bottom
         )
@@ -311,6 +317,6 @@ extension EArtist {
         }
         var ctx = dc.ctx
         ctx.opacity *= opacity
-        ctx.fill(path, with: .color(style.gradientBottom))
+        ctx.fill(path, with: .color(dc.resolve(style.gradientBottom)))
     }
 }

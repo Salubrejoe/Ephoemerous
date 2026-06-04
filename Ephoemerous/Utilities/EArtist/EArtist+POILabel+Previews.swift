@@ -65,6 +65,7 @@ private func previewGraphicsContext(
         ctx:                     ctx,
         size:                    size,
         state:                   EAppState(),
+        environment:             EnvironmentValues(),
         renderedScale:           scale,
         renderedOffset:          .zero,
         renderedObservationDate: .now,

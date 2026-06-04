@@ -4,6 +4,10 @@ import LoreKit
 
 struct HorizonLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
+        // Resolve the horizon wash to concrete RGBA once — used for every
+        // twilight band plus the rim, so this avoids re-resolving the
+        // asset on the main thread per fill.
+        let fill = dc.resolve(artist.horizonFillColor)
         var bands = dc
         // Twilight bands: small circles at constant altitude just
         // above / below the horizon (the values in `Angle.sunsets`
@@ -21,7 +25,7 @@ struct HorizonLayer: EGridLayer {
 //                              width: 12 / abs(alt.degrees))
             bands.fillOutsideCurve(artist.bumpedHorizonRim(pts),
 //            bands.fillOutsideCurve(pts,
-                                   color: artist.horizonFillColor.opacity(0.2))
+                                   color: fill.opacity(0.2))
         }
 
         // Horizon great circle as a deformable squircle: each projection
@@ -49,6 +53,6 @@ struct HorizonLayer: EGridLayer {
 //        rim.ctx.addFilter(.shadow(color: .primary, radius: 4))
 //        rim.fillOutsideCurve(pts,
         rim.fillOutsideCurve(artist.bumpedHorizonRim(pts),
-                             color: artist.horizonFillColor)
+                             color: fill)
     }
 }

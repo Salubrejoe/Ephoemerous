@@ -174,7 +174,7 @@ extension EArtist {
             shadowed.opacity *= placeholderOpacity
             shadowed.addFilter(poiShadow)
             shadowed.fill(Capsule(style: .continuous).path(in: rect),
-                          with: .color(constellationPlaceholderFill))
+                          with: .color(dc.resolve(constellationPlaceholderFill)))
         }
 
         // Tier 2 — plain text (with an inline ♥ prefix for

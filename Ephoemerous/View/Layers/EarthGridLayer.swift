@@ -13,13 +13,17 @@ struct EarthGridLayer: EGridLayer {
         // free-form regardless. Now that appMode is gone, the local-
         // copy / clip dance has nothing left to do; pass `dc` straight
         // through.
-        drawMeridians(in:   &dc)
-        drawParallels(in:   &dc)
+        // Resolve the grid colour to concrete RGBA once for the whole
+        // frame — drawn ~24× (meridians + parallels), so without this each
+        // stroke would re-resolve the "grid" asset on the main thread.
+        let gridColor = dc.resolve(artist.gridColor)
+        drawMeridians(in:   &dc, color: gridColor)
+        drawParallels(in:   &dc, color: gridColor)
         drawPoleLabels(in:  &dc)
         drawHourLabels(in:  &dc)
     }
-    
-    func drawParallels(in dc: inout EGraphicContext) {
+
+    func drawParallels(in dc: inout EGraphicContext, color: Color) {
 //        guard dc.state.showHorizon else { return }
 
         for decl in Angle.parallels {
@@ -32,13 +36,13 @@ struct EarthGridLayer: EGridLayer {
             var local = dc
             local.strokeCurve(
                 pts,
-                color: artist.gridColor,
+                color: color,
                 width: artist.gridWidth
             )
         }
     }
 
-    func drawMeridians(in dc: inout EGraphicContext) {
+    func drawMeridians(in dc: inout EGraphicContext, color: Color) {
 //        let show = mode == .northSouth ? dc.state.showNSMeridians : dc.state.showULMeridians
 //        guard show else { return }
 
@@ -53,7 +57,7 @@ struct EarthGridLayer: EGridLayer {
             var local = dc
             local.strokeCurve(
                 pts,
-                color: artist.gridColor,
+                color: color,
                 width: artist.gridWidth
             )
         }

@@ -7,6 +7,11 @@ import LoreKit
 struct CelestialCanva: View {
 
     @Environment(EAppState.self) var state
+    // Whole environment, captured so the Canvas closure can resolve
+    // asset-catalog colours to concrete RGBA once per frame (see
+    // `EGraphicContext.resolve`) instead of doing main-thread asset I/O
+    // on every draw.
+    @Environment(\.self) private var environment
 
     // Every touch interaction lives in the coordinator (own file / class).
     @State private var gestures = CelestialGestureCoordinator()
@@ -71,6 +76,7 @@ struct CelestialCanva: View {
                         ctx:                     ctx,
                         size:                    size,
                         state:                   state,
+                        environment:             environment,
                         renderedScale:           state.renderedScale,
                         renderedOffset:          state.renderedOffset,
                         renderedObservationDate: state.renderedObservationDate,

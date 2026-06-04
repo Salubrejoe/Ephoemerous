@@ -13,6 +13,10 @@ struct EGraphicContext {
     let size:  CGSize
     let state: EAppState
 
+    /// The view environment, captured once per frame. Used by `resolve`
+    /// to turn an asset-catalog `Color` into a concrete RGBA value.
+    let environment: EnvironmentValues
+
     // MARK: Per-frame snapshot
     // Resolved exactly ONCE per frame in `CelestialCanva` and held as
     // plain values. A frame projects 10k+ points (the RA/Dec grid alone
@@ -174,6 +178,27 @@ struct EGraphicContext {
             .sidereallyRotated(by: -localSiderealOffset)
 
         return StarCull(zenithUnrotated: zenithUnrotated, minDot: sinAltMin)
+    }
+
+    // MARK: Colour resolution
+    //
+    // Asset-catalog colours (`Color("grid")`, every `EPalette` entry) are
+    // LAZY: the value just holds the asset name, and the disk read happens
+    // when SwiftUI resolves it to pixels. In a `Canvas` that resolution
+    // runs inside the draw closure on the MAIN thread — so a hot loop that
+    // draws with a named colour does asset I/O on main every iteration
+    // (the Thread Performance Checker flags "Performing I/O on the main
+    // thread", e.g. the grid labels).
+    //
+    // `resolve` turns a named colour into a concrete RGBA `Color` ONCE,
+    // using the frame's `environment` (so light/dark still tracks). The
+    // returned colour carries no asset reference, so drawing with it never
+    // touches the catalog. Call it once per frame / before a loop and
+    // reuse the result — never inside the per-point body.
+
+    /// Concrete RGBA snapshot of `color` for this frame's appearance.
+    func resolve(_ color: Color) -> Color {
+        Color(color.resolve(in: environment))
     }
 
     // MARK: Drawing helpers

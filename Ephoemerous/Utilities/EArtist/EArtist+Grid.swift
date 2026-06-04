@@ -21,7 +21,11 @@ extension EArtist {
         dc.ctx.draw(
             Text(text)
                 .font(.footnote.weight(weight))
-                .foregroundStyle(gridColor),
+                // Resolve the asset colour to concrete RGBA so this draw
+                // does no main-thread asset I/O (Thread Performance
+                // Checker). Few labels per frame, and the resolution is
+                // cached after first use.
+                .foregroundStyle(dc.resolve(gridColor)),
             at:     sc,
             anchor: .center
         )

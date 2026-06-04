@@ -33,6 +33,7 @@ extension EArtist {
     /// touching) — drawing nothing is the right call there.
     func drawConstellationSegment(from a: CGPoint, to b: CGPoint,
                                   insetA: Double, insetB: Double,
+                                  color: Color,
                                   in dc: inout EGraphicContext) {
         let dx = b.x - a.x
         let dy = b.y - a.y
@@ -53,7 +54,7 @@ extension EArtist {
         // rhythmised across the segment.
         dc.ctx.stroke(
             path,
-            with: .color(constellationLineColor),
+            with: .color(color),
             style: StrokeStyle(
                 lineWidth: constellationLineWidth,
                 lineCap:   .round,
