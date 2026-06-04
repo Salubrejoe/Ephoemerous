@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - ENSPlanetDetailView
 // Three-tile compact planet detail. Same shape as the star detail —
@@ -36,7 +37,7 @@ struct ENSPlanetDetailView: View {
                 subtitle:      planet.mythology,
                 accent:        accent,
                 icon:          { POIBadgeView(category: .planet(planet)) },
-                leadingSymbol: "square.and.arrow.up.circle.fill",
+                leadingSymbol: .shareCircleFill,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

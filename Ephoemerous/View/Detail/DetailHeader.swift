@@ -33,9 +33,9 @@ struct DetailHeader<Icon: View>: View {
     let subtitle:               String
     let accent:                 Color
     let icon:                   Icon
-    let leadingSymbol:          String
+    let leadingSymbol:          LoreSymbol
     let onLeading:              () -> Void
-    let secondaryLeadingSymbol: String?
+    let secondaryLeadingSymbol: LoreSymbol?
     let onSecondaryLeading:     (() -> Void)?
     let onNow:                  (() -> Void)?
     let nowIsActive:            Bool
@@ -45,9 +45,9 @@ struct DetailHeader<Icon: View>: View {
          subtitle:               String,
          accent:                 Color,
          @ViewBuilder icon:      () -> Icon,
-         leadingSymbol:          String,
+         leadingSymbol:          LoreSymbol,
          onLeading:              @escaping () -> Void,
-         secondaryLeadingSymbol: String?           = nil,
+         secondaryLeadingSymbol: LoreSymbol?       = nil,
          onSecondaryLeading:     (() -> Void)?     = nil,
          onNow:                  (() -> Void)?     = nil,
          nowIsActive:            Bool              = false,
@@ -92,14 +92,14 @@ struct DetailHeader<Icon: View>: View {
             .frame(maxWidth: .infinity)
 
             HStack(spacing: 8) {
-                CircleIconButton(systemName: leadingSymbol, action: onLeading)
+                CircleIconButton(symbol: leadingSymbol, action: onLeading)
                 if let sym = secondaryLeadingSymbol,
                    let act = onSecondaryLeading {
-                    CircleIconButton(systemName: sym, action: act)
+                    CircleIconButton(symbol: sym, action: act)
                 }
                 Spacer()
-                
-                CircleIconButton(systemName: "xmark.circle.fill", action: onDismiss)
+
+                CircleIconButton(symbol: .xmarkCircleFill, action: onDismiss)
             }
             .padding(.horizontal, 10)
         }
@@ -115,12 +115,12 @@ struct DetailHeader<Icon: View>: View {
 // magnitudeIcon, etc.) so the header reads as part of the same
 // chrome system.
 private struct CircleIconButton: View {
-    let systemName: String
-    let action:     () -> Void
+    let symbol: LoreSymbol
+    let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemName)
+            Image(symbol: symbol)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 32, height: 32)

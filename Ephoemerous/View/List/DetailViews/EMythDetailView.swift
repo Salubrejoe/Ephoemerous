@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - EMythDetailView
 // Detail sheet for a mythological cycle (Perseus / Hercules / Argo /
@@ -68,7 +69,7 @@ struct EMythDetailView: View {
                 subtitle:      subtitleText,
                 accent:        accent,
                 icon:          { EmptyView() },
-                leadingSymbol: "square.and.arrow.up",
+                leadingSymbol: .shareCircleFill,
                 onLeading:     {},
                 onDismiss:     { state.dismissMyth() }
             )

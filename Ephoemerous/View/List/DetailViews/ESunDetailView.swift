@@ -37,7 +37,7 @@ struct ESunDetailView: View {
                 subtitle:      "G-type star",
                 accent:        accent,
                 icon:          { POIBadgeView(category: .sun) },
-                leadingSymbol: "square.and.arrow.up.circle.fill",
+                leadingSymbol: .shareCircleFill,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

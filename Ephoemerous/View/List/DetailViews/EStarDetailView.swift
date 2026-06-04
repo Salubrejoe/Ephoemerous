@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - EStarDetailView
 // Three-tile compact star detail. Fits the bottom-third sheet detent
@@ -49,9 +50,9 @@ struct EStarDetailView: View {
                 subtitle:               subtitleText,
                 accent:                 accent,
                 icon:                   { POIBadgeView(category: .followedStar(star)) },
-                leadingSymbol:          showsBackChevron ? "chevron.backward" : "square.and.arrow.up.circle.fill",
+                leadingSymbol:          showsBackChevron ? .chevronBackward : .shareCircleFill,
                 onLeading:              { showsBackChevron ? dismiss() : () },
-                secondaryLeadingSymbol: showsBackChevron ? "square.and.arrow.up.circle.fill" : nil,
+                secondaryLeadingSymbol: showsBackChevron ? .shareCircleFill : nil,
                 onSecondaryLeading:     showsBackChevron ? {} : nil,
                 onDismiss:              { state.dismissDetail() }
             )

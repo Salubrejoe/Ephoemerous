@@ -1,4 +1,5 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - EConstellationDetailView
 // Detail sheet for a constellation. Header + Remember button + a
@@ -67,7 +68,7 @@ struct EConstellationDetailView: View {
                 subtitle:      subtitleText,
                 accent:        accent,
                 icon:          { Image(systemName: iconSymbolName) },
-                leadingSymbol: "square.and.arrow.up.circle.fill",
+                leadingSymbol: .shareCircleFill,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

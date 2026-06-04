@@ -58,7 +58,7 @@ struct EMoonDetailView: View {
                 subtitle:      String(format: "%.0f%% illuminated", moonData.fraction * 100),
                 accent:        accent,
                 icon:          { POIBadgeView(category: .moon) },
-                leadingSymbol: "square.and.arrow.up.circle.fill",
+                leadingSymbol: .shareCircleFill,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )
