@@ -109,8 +109,14 @@ extension EAppState {
     func animateRotation(to target: Angle) {
         _rotationTransition = ERotationTransition(
             from:      renderedRotation,
+            // Wall-clock now, NOT `animationTime` — the canvas is parked
+            // (idle) by the time the compass is tapped, so `animationTime`
+            // is frozen at the last pre-park tick. Seeding the transition
+            // from that stale value makes the first restarted frame read
+            // elapsed > duration and finish instantly (a snap). Mirror
+            // `animateTo`, which seeds from `Date.now` for this reason.
             to:        target,
-            startTime: animationTime,
+            startTime: Date.now.timeIntervalSinceReferenceDate,
             duration:  AstroConstants.transitionDuration
         )
         canvasRotation = target
