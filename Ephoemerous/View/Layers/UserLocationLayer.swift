@@ -35,17 +35,32 @@ struct UserLocationLayer: EGridLayer {
         artist.drawSquircleGlobePuck(at: sc, symbol: symbol, in: &dc)
     }
 
-    /// Where-am-I-pointing mark. Prefers the device-motion aim blob,
-    /// positioned on the real sky via the projection; falls back to the
-    /// fixed heading cone when there's no gyro (Simulator) or no attitude
-    /// sample yet.
+    /// Where-am-I-pointing mark. Prefers the device-motion cone — a
+    /// wedge from the puck whose direction is the phone's azimuth and
+    /// whose length tracks pitch (reaching the horizon when the phone lies
+    /// flat, shrinking to the puck when it stands vertical). Falls back to
+    /// the fixed heading cone when there's no gyro (Simulator) or no
+    /// attitude sample yet.
     private func drawAim(in dc: inout EGraphicContext, zenith sc: CGPoint) {
-        // When device motion is live, the aim is shown as the blue sky
-        // wash behind the stars (`SkyAimWashLayer`) — no on-top blob here.
-        if EMotionService.shared.aim != nil { return }
+        // Compass heading uncertainty drives the fan WIDTH for either
+        // cone; negative means the magnetometer isn't calibrated yet.
+        let compass = ELocationService.shared.heading
+        let accuracy = (compass?.headingAccuracy ?? -1) >= 0
+            ? compass!.headingAccuracy
+            : artist.userPuckConeMinHalfAngle
 
-        // Fallback: heading cone (needs a calibrated compass).
-        if let h = ELocationService.shared.heading, h.headingAccuracy >= 0 {
+        // Live device motion → the real direction cone.
+        if let aim = EMotionService.shared.aim {
+            artist.drawAimCone(at:       sc,
+                               azimuth:  aim.azimuth,
+                               altitude: aim.altitude,
+                               accuracy: accuracy,
+                               in:       &dc)
+            return
+        }
+
+        // Fallback: fixed-length heading cone (needs a calibrated compass).
+        if let h = compass, h.headingAccuracy >= 0 {
             // Prefer `trueHeading` (geographic north); fall back to
             // magnetic if true is invalid (no fix yet).
             let heading = h.trueHeading >= 0 ? h.trueHeading : h.magneticHeading

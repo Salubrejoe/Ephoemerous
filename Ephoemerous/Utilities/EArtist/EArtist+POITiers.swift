@@ -36,4 +36,35 @@ extension EArtist {
     func labelTierScale(_ progress: Double) -> CGFloat {
         labelTierScaleFloor + (1 - labelTierScaleFloor) * CGFloat(progress)
     }
+
+    // MARK: - Zoom-dynamic label size
+
+    /// Continuous zoom response for POI label TEXT. Once a label's tier
+    /// has revealed it, the font no longer locks to a fixed size — it
+    /// breathes with the map (smaller zoomed out, larger zoomed in), the
+    /// same "scale dynamic" feel the promoted pin has. Cheap: it's just a
+    /// scalar on the text scale the label already applies — no new font,
+    /// no extra draws, and only the few dozen visible labels pay it.
+    ///
+    /// Anchored at the default scale (factor 1.0, so the resting look is
+    /// unchanged), eased between these bounds at the zoom extremes. Same
+    /// two-anchor shape as `magnitudeCap` / the puck size curve.
+    var poiTextZoomMinFactor: CGFloat { 0.9 }   // toward the zoom-out floor
+    var poiTextZoomMaxFactor: CGFloat { 1.3 }   // toward the zoom-in ceiling
+
+    func poiTextZoomFactor(forScale scale: Double) -> CGFloat {
+        let floorScale   = 25.0
+        let defaultScale = AstroConstants.defaultScale
+        let ceilScale    = AstroConstants.maximumScale
+
+        if scale <= floorScale { return poiTextZoomMinFactor }
+        if scale >= ceilScale  { return poiTextZoomMaxFactor }
+
+        if scale <= defaultScale {
+            let t = CGFloat((scale - floorScale) / (defaultScale - floorScale))
+            return poiTextZoomMinFactor + (1 - poiTextZoomMinFactor) * t
+        }
+        let t = CGFloat((scale - defaultScale) / (ceilScale - defaultScale))
+        return 1 + (poiTextZoomMaxFactor - 1) * t
+    }
 }

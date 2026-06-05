@@ -259,7 +259,10 @@ extension EArtist {
         let textAnchor = UnitPoint(x: CGFloat(promo) * 0.5,
                                    y: 0.5 - CGFloat(promo) * 0.5)
 
-        let textScale = labelTierScale(textFade)
+        // Tier reveal scale × continuous zoom response, so the label keeps
+        // breathing with the map after it's revealed (not locked to one
+        // size). Anchored at 1.0 for the default view — see `poiTextZoomFactor`.
+        let textScale = labelTierScale(textFade) * poiTextZoomFactor(forScale: scale)
         var textCtx = dc.ctx
         textCtx.opacity *= textOpacity
         textCtx.translateBy(x: textPoint.x, y: textPoint.y)

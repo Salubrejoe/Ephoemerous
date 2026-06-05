@@ -17,8 +17,14 @@ extension EArtist {
 
     // MARK: - Tunables  ▼ TWEAK HERE ▼
 
-    /// Total puck diameter in pt.
-    var userPuckSize       : CGFloat { 28 }
+    /// Total puck diameter in pt at the default (resting) zoom.
+    var userPuckSize       : CGFloat { 22 }
+    /// Gentle zoom response: the puck eases between these multiples of
+    /// `userPuckSize` — a touch smaller when zoomed out, a touch larger
+    /// zoomed in — anchored at 1.0 for the default view so the resting
+    /// look is unchanged. Keep the spread narrow ("just so slightly").
+    var userPuckMinScaleFactor: CGFloat { 0.45 }   // at the zoom-out floor
+    var userPuckMaxScaleFactor: CGFloat { 1.46 }   // at the zoom-in ceiling
     /// White ring thickness as a fraction of the puck — the ring
     /// traces the scallop instead of a clean circle.
     var userPuckRingFraction: CGFloat { 0.08 }
@@ -43,6 +49,32 @@ extension EArtist {
     /// in blue, and a flawless one doesn't shrink to a sliver.
     var userPuckConeMinHalfAngle: Double { 8 }    // degrees
     var userPuckConeMaxHalfAngle: Double { 60 }   // degrees
+
+    // MARK: - Aim cone tunables  ▼ TWEAK HERE ▼
+    // The device-motion direction cone — a translucent Apple-Maps-style
+    // wedge fanning from the puck toward the patch of sky the phone is
+    // aimed at. Unlike the fixed heading cone, its LENGTH comes from pitch
+    // straight out of the projection (`drawAimCone`):
+    //   • phone parallel to ground → top edge points at altitude 0 → the
+    //     aim point projects onto the horizon ring → cone REACHES the rim.
+    //   • phone vertical           → top edge points up (altitude ~90°) →
+    //     the aim point projects to the zenith → cone SHRINKS to the puck.
+    // Its WIDTH is the compass's heading uncertainty (the fan), its
+    // DIRECTION is the device azimuth. Colour/opacity/half-angle reuse the
+    // heading-cone tunables above; only the pitch→length dials live here.
+
+    /// Pitch→length honesty. 1.0 = the cone tip sits exactly on the sky
+    /// point the phone aims at. <1 compresses (cone hugs the puck more);
+    /// >1 exaggerates (reaches the horizon while still tilted up).
+    var aimConeLengthGain    : Double { 1.0 }
+    /// Clamp display altitude off the zenith singularity, where azimuth is
+    /// undefined and the cone direction would spin. The cone can't fully
+    /// vanish — it bottoms out as a sliver tucked under the puck.
+    var aimConeMaxAltitudeDeg: Double { 86 }
+    /// Floor display altitude at the horizon: aiming at or below the ring
+    /// holds the cone at full (horizon) length instead of letting the tip
+    /// shoot past the rim toward the projection's below-horizon infinity.
+    var aimConeMinAltitudeDeg: Double { 0 }
 
     // MARK: - Aim blob tunables  ▼ TWEAK HERE ▼
     // The aim blob is the device-motion successor to the heading cone:
@@ -125,6 +157,30 @@ extension EArtist {
         disc * aimBlobSkyFraction + CGFloat(max(0, acc)) * aimBlobRadiusPerDegree
     }
 
+    /// Puck diameter for the current zoom: `userPuckSize` eased between the
+    /// min/max factors. Two segments anchored at the default scale (factor
+    /// 1.0) — shrinking toward `userPuckMinScaleFactor` at the zoom-out
+    /// floor, growing toward `userPuckMaxScaleFactor` at the ceiling —
+    /// clamped beyond the ends. Same two-anchor shape as `magnitudeCap`.
+    func userPuckScaledSize(forScale scale: Double) -> CGFloat {
+        let floorScale   = 25.0
+        let defaultScale = AstroConstants.defaultScale
+        let ceilScale    = AstroConstants.maximumScale
+
+        if scale <= floorScale { return userPuckSize * userPuckMinScaleFactor }
+        if scale >= ceilScale  { return userPuckSize * userPuckMaxScaleFactor }
+
+        let factor: CGFloat
+        if scale <= defaultScale {
+            let t = CGFloat((scale - floorScale) / (defaultScale - floorScale))
+            factor = userPuckMinScaleFactor + (1 - userPuckMinScaleFactor) * t
+        } else {
+            let t = CGFloat((scale - defaultScale) / (ceilScale - defaultScale))
+            factor = 1 + (userPuckMaxScaleFactor - 1) * t
+        }
+        return userPuckSize * factor
+    }
+
     // MARK: - Symbol picker
 
     /// Apple's four hemisphere globe SF Symbols, mapped to the
@@ -196,6 +252,74 @@ extension EArtist {
         )
     }
 
+    /// Device-motion direction cone — the live successor to
+    /// `drawHeadingCone`. A translucent wedge from the puck (`sc`, the
+    /// zenith) toward the patch of sky the phone is physically aimed at.
+    ///
+    /// The trick that gives the requested behaviour for free: the cone tip
+    /// is the *projected aim point*, `screenPoint(azimuth, altitude)`. The
+    /// projection's own radial law `rho = 2·cos(alt)/(1 + sin(alt))` means
+    /// the tip rides the horizon ring at altitude 0 (phone flat) and
+    /// collapses onto the zenith at altitude 90° (phone vertical) — so the
+    /// cone's LENGTH tracks pitch with no extra mapping. Its DIRECTION is
+    /// the screen vector to that point (so it already carries canvas
+    /// rotation + the planetarium east-left mirror), and its WIDTH is the
+    /// compass `accuracy` fan, clamped to a usable range.
+    ///
+    /// `azimuth` / `altitude` are the raw device aim in radians;
+    /// `accuracy` is the compass heading uncertainty in degrees.
+    func drawAimCone(at sc:    CGPoint,
+                     azimuth:  Double,
+                     altitude: Double,
+                     accuracy: Double,
+                     in dc:    inout EGraphicContext) {
+        // Pitch → display altitude: honest gain, clamped off the zenith
+        // (azimuth spins there) and floored at the horizon (tip won't
+        // spill past the ring).
+        let geared     = altitude * 180 / .pi * aimConeLengthGain
+        let clampedDeg = min(aimConeMaxAltitudeDeg, max(aimConeMinAltitudeDeg, geared))
+        let displayAlt = clampedDeg * .pi / 180
+
+        // Tip = where the phone points, on the real sky. nil only if it
+        // somehow projects behind the viewer (shouldn't, above horizon).
+        guard let tip = dc.screenPoint(azimuth: azimuth, altitude: displayAlt) else { return }
+        let dx = tip.x - sc.x
+        let dy = tip.y - sc.y
+        let length = hypot(dx, dy)
+        // Phone near-vertical → tip sits on the puck; nothing to draw.
+        guard length > 0.5 else { return }
+        let axis = atan2(dy, dx)
+
+        let halfAngle = max(userPuckConeMinHalfAngle,
+                            min(userPuckConeMaxHalfAngle, accuracy)) * .pi / 180
+
+        // Pie-slice fan: apex at the puck, far edge an arc at `length`.
+        var path = Path()
+        path.move(to: sc)
+        let steps = 40
+        for i in 0...steps {
+            let t     = Double(i) / Double(steps)
+            let angle = axis - halfAngle + 2 * halfAngle * t
+            path.addLine(to: CGPoint(x: sc.x + cos(angle) * length,
+                                     y: sc.y + sin(angle) * length))
+        }
+        path.closeSubpath()
+
+        let cone = dc.resolve(userPuckConeColor)
+        dc.ctx.fill(
+            path,
+            with: .radialGradient(
+                Gradient(colors: [
+                    cone.opacity(userPuckConeOpacity),
+                    cone.opacity(0)
+                ]),
+                center:      sc,
+                startRadius: 0,
+                endRadius:   length
+            )
+        )
+    }
+
     /// Soft green disc marking where the phone is currently aimed on the
     /// sky — the device-motion successor to `drawHeadingCone`. The caller
     /// has already routed the device's (azimuth, altitude) through the
@@ -251,7 +375,7 @@ extension EArtist {
     func drawSquircleGlobePuck(at sc:    CGPoint,
                                symbol:    ESymbol,
                                in dc:     inout EGraphicContext) {
-        let size  = userPuckSize
+        let size  = userPuckScaledSize(forScale: dc.renderedScale)
         let inset = size * userPuckRingFraction
         let shape = Squircle(corners: horizonBumpCorners,
                              bulge:   horizonBumpBulge)
