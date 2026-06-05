@@ -18,7 +18,7 @@
     {
       "appearance" : "dark",
       "value" : {
-        "automatic-gradient" : "srgb:0.08600,0.09400,0.11400,1.00000",
+        "automatic-gradient" : "display-p3:0.04544,0.02418,0.07452,1.00000",
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -107,14 +107,14 @@
           }
         },
         {
-          "hidden" : true,
+          "hidden" : false,
           "image-name" : "poi_sun.svg",
           "name" : "poi_sun",
           "position" : {
             "scale" : 0.4,
             "translation-in-points" : [
-              -94.24800000000005,
-              -71.203125
+              76.0992,
+              -273.21875
             ]
           }
         },
@@ -189,7 +189,7 @@
               }
             }
           ],
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "horizon_squircle.svg",
           "name" : "horizon_squircle",
           "position" : {
@@ -246,7 +246,7 @@
               }
             }
           ],
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "horizon_squircle.svg",
           "name" : "horizon_squircle",
           "position" : {
@@ -303,7 +303,7 @@
               }
             }
           ],
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "horizon_squircle.svg",
           "name" : "horizon_squircle",
           "position" : {
@@ -318,10 +318,7 @@
           "fill-specializations" : [
             {
               "value" : {
-                "linear-gradient" : [
-                  "display-p3:0.78881,0.68525,0.60515,0.55000",
-                  "srgb:0.88000,0.76000,0.68000,0.55000"
-                ],
+                "automatic-gradient" : "display-p3:0.88776,0.68500,0.64032,1.00000",
                 "orientation" : {
                   "start" : {
                     "x" : 0.5,
@@ -337,11 +334,11 @@
             {
               "appearance" : "dark",
               "value" : {
-                "automatic-gradient" : "display-p3:0.61274,0.54062,0.48905,0.55000"
+                "automatic-gradient" : "display-p3:0.11368,0.08173,0.36194,1.00000"
               }
             }
           ],
-          "hidden" : true,
+          "hidden" : false,
           "image-name" : "horizon_squircle_negative.svg",
           "name" : "horizon_squircle_negative",
           "position" : {

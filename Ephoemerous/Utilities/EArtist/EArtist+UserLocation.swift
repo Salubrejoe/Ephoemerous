@@ -273,21 +273,56 @@ extension EArtist {
                      altitude: Double,
                      accuracy: Double,
                      in dc:    inout EGraphicContext) {
+        guard let wedge = aimConeWedge(at: sc, azimuth: azimuth,
+                                       altitude: altitude,
+                                       accuracy: accuracy, in: dc)
+        else { return }
+
+        let cone = dc.resolve(userPuckConeColor)
+        dc.ctx.fill(
+            wedge.path,
+            with: .radialGradient(
+                Gradient(colors: [
+                    cone.opacity(userPuckConeOpacity),
+                    cone.opacity(0)
+                ]),
+                center:      sc,
+                startRadius: 0,
+                endRadius:   wedge.length
+            )
+        )
+    }
+
+    /// The device-aim wedge as a pure pie-slice `Path` (apex at the puck
+    /// `sc`, far edge an arc at the projected aim distance) plus that
+    /// distance. Geometry only, no fill — so it can EITHER paint the cone
+    /// OR clip another layer to the cone's footprint. `EarthGridLayer` uses
+    /// it the second way: it clips the graticule to this wedge and redraws
+    /// those lines in the cone tint, so the cone reads as the grid lighting
+    /// up rather than a glow laid over it.
+    ///
+    /// The tip is the projected aim point `screenPoint(azimuth, altitude)`,
+    /// so the projection's `rho = 2·cos/(1+sin)` law makes the wedge reach
+    /// the horizon ring when the phone is flat and collapse to the puck when
+    /// vertical — pitch → length for free. Width is the compass `accuracy`
+    /// fan; direction carries canvas rotation + the planetarium mirror.
+    func aimConeWedge(at sc:    CGPoint,
+                      azimuth:  Double,
+                      altitude: Double,
+                      accuracy: Double,
+                      in dc:    EGraphicContext) -> (path: Path, length: CGFloat)? {
         // Pitch → display altitude: honest gain, clamped off the zenith
-        // (azimuth spins there) and floored at the horizon (tip won't
-        // spill past the ring).
+        // (azimuth spins there) and floored at the horizon.
         let geared     = altitude * 180 / .pi * aimConeLengthGain
         let clampedDeg = min(aimConeMaxAltitudeDeg, max(aimConeMinAltitudeDeg, geared))
         let displayAlt = clampedDeg * .pi / 180
 
-        // Tip = where the phone points, on the real sky. nil only if it
-        // somehow projects behind the viewer (shouldn't, above horizon).
-        guard let tip = dc.screenPoint(azimuth: azimuth, altitude: displayAlt) else { return }
+        guard let tip = dc.screenPoint(azimuth: azimuth, altitude: displayAlt) else { return nil }
         let dx = tip.x - sc.x
         let dy = tip.y - sc.y
         let length = hypot(dx, dy)
         // Phone near-vertical → tip sits on the puck; nothing to draw.
-        guard length > 0.5 else { return }
+        guard length > 0.5 else { return nil }
         let axis = atan2(dy, dx)
 
         let halfAngle = max(userPuckConeMinHalfAngle,
@@ -304,20 +339,7 @@ extension EArtist {
                                      y: sc.y + sin(angle) * length))
         }
         path.closeSubpath()
-
-        let cone = dc.resolve(userPuckConeColor)
-        dc.ctx.fill(
-            path,
-            with: .radialGradient(
-                Gradient(colors: [
-                    cone.opacity(userPuckConeOpacity),
-                    cone.opacity(0)
-                ]),
-                center:      sc,
-                startRadius: 0,
-                endRadius:   length
-            )
-        )
+        return (path, length)
     }
 
     /// Soft green disc marking where the phone is currently aimed on the
