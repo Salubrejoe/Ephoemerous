@@ -71,7 +71,7 @@ struct CompassButton: View {
     private var needle: some View {
         VStack(spacing: 0) {
             CompassArrow()
-                .fill(.orange)
+                .fill(.puckDisc)
                 .frame(width: 8, height: 11)
             CompassArrow()
                 .fill(.secondary)
@@ -88,7 +88,7 @@ struct CompassButton: View {
     /// "N" rides over the red needle tip, the rest follow 90° apart.
     private var cardinals: some View {
         ZStack {
-            cardinal("N", color: .orange,       dx: 0,            dy: -labelRadius)
+            cardinal("N", color: .puckDisc,       dx: 0,            dy: -labelRadius)
             cardinal("E", color: .secondary, dx:  labelRadius, dy: 0)
             cardinal("S", color: .secondary, dx: 0,            dy:  labelRadius)
             cardinal("W", color: .secondary, dx: -labelRadius, dy: 0)

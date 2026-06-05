@@ -27,7 +27,7 @@ struct CompassModeButton: View {
                 haptic.impactOccurred()
                 state.toggleCompassMode()
             } label: {
-                Image(systemName: "location.north.line.fill")
+                Image(systemName: on ? "location.north.line.fill" : "location.north.line")
                     .font(.system(size: 17, weight: .semibold))
                     // Lit orange (matching the rose's north tip) while
                     // active; muted when off.
@@ -35,7 +35,7 @@ struct CompassModeButton: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical,   10)
                     .clipShape(.circle)
-                    .foregroundStyle(on ? Color.orange : Color.secondary)
+                    .foregroundStyle(.puckDisc)
                     .background(
                         Circle().fill(.ultraThickMaterial)
                     )

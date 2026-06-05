@@ -142,7 +142,15 @@ extension EArtist {
             // the user is clearly past constellation-name territory.
             // Selecting one promotes it to `.followedStar` (which has
             // the early thresholds + favourite heart).
-            let g = star.spectralClass.badgeGradient
+            //
+            // Brightness cascade: the badge + text reveal scales are
+            // pushed later for dimmer stars (3 tiers), so the brightest
+            // named stars label themselves first. The dot threshold
+            // (`namedStarDotIn`) stays shared, so dimmer stars hold their
+            // dot until their badge catches up — see `EArtist+NamedStars`.
+            let g    = star.spectralClass.badgeGradient
+            let tier = namedStarTier(magnitude: star.magnitude)
+            let bump = Double(tier) * namedStarTierStep
             return POICategoryStyle(
                 gradientTop:     g.top,
                 gradientBottom:  g.bottom,
@@ -154,8 +162,8 @@ extension EArtist {
                 badgeCorners:    5,    // pentagon — star
                 dotShape:        .squircle(corners: 5, bulge: poiBadgeBulge),
                 dotRadius:       2.0,  // slightly smaller than followedStar
-                badgeIn:         280,  // well past constellation textIn (190)
-                textIn:          360
+                badgeIn:         namedStarBadgeIn + bump,   // tier 0 = 280
+                textIn:          namedStarTextIn  + bump    // tier 0 = 360
             )
         case .sun:
             return solarStyle(
