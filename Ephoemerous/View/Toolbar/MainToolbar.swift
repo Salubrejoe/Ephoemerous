@@ -24,37 +24,59 @@ struct MainToolbar: View {
     /// (the body never has any reason to re-evaluate).
     @State private var refreshTick: Int = 0
 
+    /// Morph namespace so the flanking reset chips grow out of / melt back
+    /// into the status capsule (Liquid Glass `glassEffectID`).
+    @Namespace private var glassNS
+
+    /// Capsule + reset-chip height.
+    private let barHeight: CGFloat = 32
+
     var body: some View {
         // Reading `refreshTick` here registers the dependency for
         // every label call downstream; bumping the tick re-renders
         // the toolbar and rewalks the dateLabel / locationLabel
         // computed properties.
         let _ = refreshTick
-        // Status pills. Each shows its current value (Here/London,
-        // Now/21:40) and acts as a button that RAISES a bottom sheet
-        // editor (map / date picker) — see MainView's .sheet bindings.
-        // The pill stays lit while its sheet is open, the spatial tether
-        // that links a top tap to the editor that rises at the bottom.
-        // No more xmark-swap or inline panels.
-        HStack(spacing: 0) {
-            locationButton
-            Divider()
-                .padding(.vertical, 8)
-            dateButton
+        // Status capsule flanked by two reset chips. The pills show the
+        // current value (Here/London, Now/21:40) and raise a bottom-sheet
+        // editor; the chips appear OUTSIDE the capsule when the observer
+        // has drifted off Here / Now — a one-tap "go back". They morph out
+        // of (and melt back into) the capsule via the Liquid Glass
+        // container + `glassEffectID`, so they read as growing from its
+        // ends. Leading chip ↔ location (Here); trailing chip ↔ date (Now).
+        GlassEffectContainer(spacing: 6) {
+            HStack(spacing: 6) {
+                if notHere {
+                    resetButton("resetHere") { state.goToDeviceLocation() }
+                        // Slide out from the capsule's leading end (starts
+                        // shifted toward it); the container morphs the glass.
+                        .transition(.offset(x: barHeight).combined(with: .opacity))
+                }
+
+                HStack(spacing: 0) {
+                    locationButton
+                    Divider()
+                        .padding(.vertical, 8)
+                    dateButton
+                }
+                .frame(height: barHeight)
+                .glassEffect(.regular.interactive(), in: .capsule)
+                .glassEffectID("bar", in: glassNS)
+
+                if notNow {
+                    resetButton("resetNow") { state.commitPickedObservationDate(.now) }
+                        // Slide out from the capsule's trailing end.
+                        .transition(.offset(x: -barHeight).combined(with: .opacity))
+                }
+            }
         }
-        .frame(height: 32)
-        .glassEffect(.regular.interactive(), in: .capsule)
-        // No `.animation(value:)` modifiers here — both toggle
-        // helpers (`toggleDatePicker` / `toggleLocationPicker` in
-        // EAppState+Time / +Location) wrap their flag mutations in
-        // `withAnimation(.easeInOut(duration: 0.25))`. Two modifiers
-        // here used to fight each other when both flags flipped in
-        // the same frame (rapid pill-tapping) and produced a jerky
-        // cross-fade.
+        // Animate the chips growing in / shrinking out as the flags flip.
+        .animation(.snappy(duration: 0.35), value: notHere)
+        .animation(.snappy(duration: 0.35), value: notNow)
         // Bump the refresh tick on initial appear and every time the
         // scene returns to `.active` (phone woken from sleep, app
-        // returning from background). Re-evaluating the body
-        // recomputes the dateLabel / locationLabel against the
+        // returning from background). Re-evaluating the body recomputes
+        // the dateLabel / locationLabel — and `notNow` — against the
         // current wall-clock and device-location fix.
         .onAppear { refreshTick &+= 1 }
         .onChange(of: scenePhase) { _, new in
@@ -72,6 +94,38 @@ struct MainToolbar: View {
             guard !Task.isCancelled else { return }
             await state.refreshLocalityName()
         }
+    }
+
+    // MARK: - Reset chips
+
+    /// True when the observer has been moved off the device's real fix —
+    /// and we actually have a fix to return to — so the leading "back to
+    /// Here" chip is worth showing.
+    private var notHere: Bool {
+        ELocationService.shared.location != nil && !state.isAtDeviceLocation
+    }
+
+    /// True when the observation time is more than a minute off real now,
+    /// so the trailing "back to Now" chip shows. Same 60 s rule as the
+    /// pill's "Now" label and the date picker's Now button.
+    private var notNow: Bool {
+        abs(state.observationDate.timeIntervalSinceNow) >= 60
+    }
+
+    /// A small circular glass chip carrying the reset glyph, sized to the
+    /// capsule height. `id` keys its Liquid Glass morph into `glassNS`.
+    private func resetButton(_ id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.primary)
+                .offset(y: -0.5)
+                .frame(width: barHeight, height: barHeight)
+                .contentShape(.circle)
+                .glassEffect(.regular.interactive(), in: .circle)
+                .glassEffectID(id, in: glassNS)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Pills
