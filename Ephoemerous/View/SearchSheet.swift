@@ -38,10 +38,15 @@ struct SearchSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            searchHeader
-                .padding(.horizontal, 16)
+            HStack(spacing: 4) {
+                searchHeader
+                
+                CompassModeButton()
+            }
+                .padding(.leading, 16)
+                .padding(.trailing, 16)
                 .padding(.top, 14)
-                .padding(.bottom, 12)
+                .padding(.bottom, 14)
 
             if searchText.isEmpty && detent != Self.barDetent {
                 // Idle browse state: favourites scroll + recents list,
@@ -87,8 +92,8 @@ struct SearchSheet: View {
     private var searchHeader: some View {
         HStack(spacing: 8) {
             Image(symbol: .search)
-                .foregroundStyle(.secondary)
             TextField("Search the sky…", text: $searchText)
+                .fontWeight(.semibold)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -99,16 +104,19 @@ struct SearchSheet: View {
                     searchFocused = false
                 } label: {
                     Image(symbol: .xmarkCircleFill)
-                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
+            
+            
         }
         .font(.callout)
         .padding(.horizontal, 14)
         .padding(.vertical,   10)
-        .background(Color(.secondarySystemFill),
-                    in: Capsule())
+        .background(
+            Capsule()
+                .fill(.ultraThickMaterial)
+        )
     }
 
     // MARK: Favourites scroll

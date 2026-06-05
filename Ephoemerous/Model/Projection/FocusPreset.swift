@@ -94,6 +94,15 @@ extension EAppState {
     /// `renderedScale`. The Canvas snapshot AND the compass dial both read
     /// this, so they animate together.
     var renderedRotation: Angle {
+        // Compass (heading-up) mode wins: spin the map so the phone's
+        // heading sits at the top, leaving the aim cone fixed pointing up.
+        // Azimuth is CW+ from north; the canvas rotation is CCW+ (toScreen
+        // flips Y), so negate. Reading `aim` here makes the canvas + the
+        // compass rose repaint on every heading change — the same hook the
+        // cone uses — so the rotation tracks the phone with no tick driver.
+        if compassMode, let aim = EMotionService.shared.aim {
+            return .radians(-aim.azimuth)
+        }
         guard let t = _rotationTransition else { return canvasRotation }
         if t.isFinished(at: animationTime) {
             _rotationTransition = nil
@@ -120,6 +129,40 @@ extension EAppState {
             duration:  AstroConstants.transitionDuration
         )
         canvasRotation = target
+    }
+
+    // MARK: - Compass (heading-up) mode
+
+    /// Flip heading-up mode on or off.
+    ///
+    /// • ON — if the observer has panned away from the device location,
+    ///   recenter there first (compass mode is about orienting from where
+    ///   you actually stand), drop any in-flight spin-back, then engage:
+    ///   `renderedRotation` starts following the heading immediately.
+    /// • OFF — freeze the map exactly where the heading left it (commit the
+    ///   live heading rotation into `canvasRotation`) so nothing jumps.
+    func toggleCompassMode() {
+        if compassMode {
+            let frozen = renderedRotation     // current heading rotation
+            compassMode = false
+            _rotationTransition = nil
+            canvasRotation = frozen
+        } else {
+            if !isAtDeviceLocation { goToDeviceLocation() }
+            _rotationTransition = nil
+            compassMode = true
+        }
+    }
+
+    /// Spring the canvas back to North, leaving compass mode if it was on.
+    /// Captures the live heading rotation BEFORE clearing the flag so the
+    /// spin-back starts from where the sky actually is (not a stale
+    /// `canvasRotation`) — otherwise it would snap.
+    func resetRotationToNorth() {
+        let current = renderedRotation
+        compassMode = false
+        canvasRotation = current
+        animateRotation(to: .zero)
     }
 }
 

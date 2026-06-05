@@ -25,16 +25,20 @@ struct CompassButton: View {
     var body: some View {
         // Hide only once settled at North AND no spin-back is in flight —
         // so the compass stays on screen to play the bouncy reset rather
-        // than fading out the instant it's tapped.
-        let aligned = abs(state.canvasRotation.degrees) < alignedEpsilon
+        // than fading out the instant it's tapped. In compass mode it's
+        // never "aligned": the dial is a live heading readout, always shown.
+        let aligned = !state.compassMode
+            && abs(state.renderedRotation.degrees) < alignedEpsilon
             && state._rotationTransition == nil
 
         Button {
             resetHaptic.impactOccurred()
-            // Bouncy spin-back to North. Driven through a canvas
-            // transition (not withAnimation) so the *sky* animates too —
-            // both the dial and the Canvas snapshot read `renderedRotation`.
-            state.animateRotation(to: .zero)
+            // Bouncy spin-back to North — and drop out of compass mode if
+            // it was on (you can't be heading-up and North-locked at once).
+            // Driven through a canvas transition (not withAnimation) so the
+            // *sky* animates too — both the dial and the Canvas snapshot
+            // read `renderedRotation`.
+            state.resetRotationToNorth()
         } label: {
             dial
                 .frame(width: faceSize, height: faceSize)

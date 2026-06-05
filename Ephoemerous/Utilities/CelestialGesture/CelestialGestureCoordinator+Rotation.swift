@@ -17,6 +17,9 @@ import SwiftUI
 extension CelestialGestureCoordinator {
 
     func rotationBegan(state: EAppState) {
+        // Heading-up mode owns the rotation — the phone is the dial. Ignore
+        // a two-finger twist so it can't silently desync `canvasRotation`.
+        guard !state.compassMode else { return }
         commitAnyRunningPresetTransition(state: state)
         stopInertia(state: state)
         guard !isRotatingCanvas else { return }
@@ -37,6 +40,7 @@ extension CelestialGestureCoordinator {
     /// in `toScreen` (which flips Y), so without this the sky spins against
     /// the twist.
     func rotationChanged(rotation radians: Double, state: EAppState) {
+        guard !state.compassMode else { return }
         let raw = normalizedDegrees(
             canvasRotationAtStart.degrees - radians * 180 / .pi
         )

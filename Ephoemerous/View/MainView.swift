@@ -65,7 +65,12 @@ struct MainView: View {
             VStack {
                 HStack {
                     Spacer()
-                    CompassButton()
+                    VStack(spacing: 10) {
+                        CompassButton()
+                        // Heading-up toggle, directly beneath the rose
+                        // (hidden when there's no gyro).
+//                        CompassModeButton()
+                    }
                 }
                 Spacer()
             }
