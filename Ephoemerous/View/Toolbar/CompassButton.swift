@@ -1,14 +1,24 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - CompassButton
-// Apple-Maps-style compass rose. The whole dial — needle + N/E/S/W
-// markers — spins with `state.canvasRotation`, so the red north tip and
-// the "N" always sit over where North currently lands on the rotated
-// sky. The cardinal letters counter-rotate inside the dial so they stay
-// upright and readable at any angle. Tapping springs the canvas back to
-// aligned (0°) with a settling overshoot. Like Maps, it fades away when
-// the sky is already upright — nothing to reset — and fades back in the
-// moment a two-finger twist (or any rotation) knocks it off North.
+// Squircle compass chip. Pared back from the four-letter rose to two
+// moving parts:
+//
+//   • a single orange DOT that rides the perimeter where North currently
+//     lands on the rotated sky (the old needle's north tip, set free), and
+//   • one CENTRAL letter naming whichever cardinal is nearest the top of
+//     the screen — i.e. the direction you're currently facing "up".
+//
+// When North is up the dot sits at the top and the letter reads "N"; as
+// the sky rotates (two-finger twist, or compass mode following the phone)
+// the dot orbits and the letter swaps to the nearest cardinal. Tapping
+// springs the canvas back to North (and drops compass mode). Like Maps it
+// fades away when the sky is already upright — unless compass mode is on,
+// where it stays as a live heading readout.
+//
+// E/W run the SKY way here (East left of North), matching the
+// inside-the-dome projection — see `EProjection` / `cardinalAtTop`.
 struct CompassButton: View {
 
     @Environment(EAppState.self) private var state
@@ -18,15 +28,24 @@ struct CompassButton: View {
 
     /// Below this the sky reads as aligned: hide the compass.
     private let alignedEpsilon: Double = 0.5
-    /// Face diameter and the radius the cardinal letters orbit at.
-    private let faceSize:    CGFloat = 46
-    private let labelRadius: CGFloat = 16
+
+    // Squircle face + orbiting-dot geometry.
+    private let faceSize:    CGFloat = 32
+//    private let faceSize:    CGFloat = 46
+    private let roseCorners: Int     = 12
+    private let roseBulge:   CGFloat = 2.2
+    private let orbitRadius: CGFloat = 10
+//    private let orbitRadius: CGFloat = 16
+    private let dotSize:     CGFloat = 5
+//    private let dotSize:     CGFloat = 6
+
+    private var roseShape: Squircle { Squircle(corners: roseCorners, bulge: roseBulge) }
 
     var body: some View {
         // Hide only once settled at North AND no spin-back is in flight —
-        // so the compass stays on screen to play the bouncy reset rather
-        // than fading out the instant it's tapped. In compass mode it's
-        // never "aligned": the dial is a live heading readout, always shown.
+        // so the chip stays on screen to play the bouncy reset rather than
+        // fading out the instant it's tapped. In compass mode it's never
+        // "aligned": the dot is a live heading readout, always shown.
         let aligned = !state.compassMode
             && abs(state.renderedRotation.degrees) < alignedEpsilon
             && state._rotationTransition == nil
@@ -34,86 +53,101 @@ struct CompassButton: View {
         Button {
             resetHaptic.impactOccurred()
             // Bouncy spin-back to North — and drop out of compass mode if
-            // it was on (you can't be heading-up and North-locked at once).
-            // Driven through a canvas transition (not withAnimation) so the
-            // *sky* animates too — both the dial and the Canvas snapshot
-            // read `renderedRotation`.
+            // it was on. Driven through a canvas transition (not
+            // withAnimation) so the *sky* animates too; both the dial and
+            // the Canvas snapshot read `renderedRotation`.
             state.resetRotationToNorth()
         } label: {
-            dial
+            centralLetter
                 .frame(width: faceSize, height: faceSize)
-                .contentShape(.circle)
-                .glassEffect(.regular.interactive(), in: .circle)
+                .contentShape(roseShape)
+                .glassEffect(.clear.interactive(), in: roseShape)
+                .overlay {
+                    Capsule()
+                    //                    .fill(.primary)
+                        .frame(width: 1, height: 4)
+                        .offset(y: -9)
+                }
+
         }
         .buttonStyle(CompassPressStyle())
         // Auto-hide when upright (Maps behaviour) — nothing to reset.
-        .opacity(aligned ? 0 : 1)
         .scaleEffect(aligned ? 0.6 : 1)
         .allowsHitTesting(!aligned)
         .animation(.snappy(duration: 0.3), value: aligned)
+        .overlay {
+            orbitingDot
+                .rotationEffect(-state.renderedRotation)
+        }
+        .opacity(aligned ? 0 : 1)
     }
 
     // MARK: - Dial
 
-    /// Needle + cardinal rose, rotated as one by `renderedRotation` — the
-    /// interpolated value, so the dial rides the bouncy reset in lock-step
-    /// with the sky (both read the same source).
     private var dial: some View {
         ZStack {
-            cardinals
-            needle
-        }
-        .rotationEffect(-state.renderedRotation)
-    }
-
-    /// Two-tone bowtie: red north tip, muted south tail, with a small hub
-    /// where they meet.
-    private var needle: some View {
-        VStack(spacing: 0) {
-            CompassArrow()
-                .fill(.puckDisc)
-                .frame(width: 8, height: 11)
-            CompassArrow()
-                .fill(.secondary)
-                .rotationEffect(.degrees(180))
-                .frame(width: 8, height: 11)
+            
+            
         }
     }
 
-    // MARK: - Cardinal letters
-
-    /// N / E / S / W placed at the four edges. Each is counter-rotated by
-    /// `-canvasRotation` so, once the parent dial spins by `+canvasRotation`,
-    /// the glyph nets back to upright while its *position* still orbits —
-    /// "N" rides over the red needle tip, the rest follow 90° apart.
-    ///
-    /// E and W are SWAPPED from a ground compass (E on the left, W on the
-    /// right): the sky map is the inside-of-the-dome / looking-up view
-    /// where East falls to the left of North (the planetarium convention —
-    /// see `EProjection`). So this is a *sky* compass: its "E" sits over
-    /// where East actually is on the map, not where a hiking compass would
-    /// put it. Flipping these would mean lying about the sky's handedness.
-    private var cardinals: some View {
-        ZStack {
-            cardinal("N", color: .puckDisc,  dx: 0,             dy: -labelRadius)
-            cardinal("E", color: .secondary, dx: -labelRadius,  dy: 0)
-            cardinal("S", color: .secondary, dx: 0,             dy:  labelRadius)
-            cardinal("W", color: .secondary, dx:  labelRadius,  dy: 0)
-        }
+    /// The cardinal nearest the top, dead centre and always upright.
+    private var centralLetter: some View {
+        Text(cardinalAtTop)
+            .font(.system(size: 11, weight: .heavy, design: .rounded))
+            .foregroundStyle(.primary)
+//            .rotationEffect(state.renderedRotation)
+            .contentTransition(.opacity)
+            .animation(.snappy(duration: 0.2), value: cardinalAtTop)
+            
     }
 
-    private func cardinal(_ letter: String, color: Color,
-                          dx: CGFloat, dy: CGFloat) -> some View {
-        Text(letter)
-            .font(.system(size: 8, weight: .heavy, design: .rounded))
-            .foregroundStyle(color)
-            .rotationEffect(state.renderedRotation)   // keep upright
-            .offset(x: dx, y: dy)
+    /// Orange dot marking North's screen position. Pinned at the top, then
+    /// rotated by `-renderedRotation` so it orbits the centre exactly where
+    /// the old needle's north tip pointed — interpolated value, so it rides
+    /// the bouncy reset in lock-step with the sky.
+    private var orbitingDot: some View {
+//        Image(systemName: "location.north.fill")
+//            .resizable()
+//            .scaledToFit()
+        Text("N")
+            .font(.system(size: dotSize))
+//            .frame(width: dotSize, height: dotSize)
+            .foregroundStyle(Color.orange)
+            .offset(y: -orbitRadius)
+    }
+
+    // MARK: - Cardinal readout
+
+    /// The cardinal letter closest to the top of the screen for the
+    /// current rotation. North's screen bearing (clockwise from up) is
+    /// `-renderedRotation`; on the inside-the-dome / E-left sky map the
+    /// clockwise order from North is N → W → S → E. The one whose bearing
+    /// is nearest 0 (straight up) wins — so at rest it reads "N".
+    private var cardinalAtTop: String {
+        let r = state.renderedRotation.degrees
+        let candidates: [(String, Double)] = [
+            ("N", -r),
+            ("W", -r + 90),
+            ("S", -r + 180),
+            ("E", -r + 270),
+        ]
+        return candidates.min {
+            angularDistance($0.1) < angularDistance($1.1)
+        }!.0
+    }
+
+    /// Absolute angle from straight-up, folded into [0°, 180°].
+    private func angularDistance(_ degrees: Double) -> Double {
+        var x = degrees.truncatingRemainder(dividingBy: 360)
+        if x >  180 { x -= 360 }
+        if x < -180 { x += 360 }
+        return abs(x)
     }
 }
 
 // MARK: - CompassPressStyle
-// Springy shrink on press so the tap feels physical before the needle
+// Springy shrink on press so the tap feels physical before the dot
 // flies home.
 private struct CompassPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
@@ -121,20 +155,6 @@ private struct CompassPressStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.84 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.5),
                        value: configuration.isPressed)
-    }
-}
-
-// MARK: - CompassArrow
-// A simple upward-pointing triangle (apex at top-centre, base along the
-// bottom edge). Two of them, one flipped, make the compass needle.
-private struct CompassArrow: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        p.closeSubpath()
-        return p
     }
 }
 
@@ -146,7 +166,7 @@ private struct CompassArrow: Shape {
         CompassButton()
             .environment({
                 let s = EAppState()
-                s.canvasRotation = .degrees(35)
+                s.canvasRotation = .degrees(134)
                 return s
             }())
     }

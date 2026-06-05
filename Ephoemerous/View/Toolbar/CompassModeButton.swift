@@ -35,7 +35,7 @@ struct CompassModeButton: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical,   10)
                     .clipShape(.circle)
-                    .foregroundStyle(.puckDisc)
+                    .foregroundStyle(.orange)
                     .background(
                         Circle().fill(.ultraThickMaterial)
                     )
