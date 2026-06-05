@@ -56,26 +56,9 @@ struct MainView: View {
             .padding(.horizontal, 24)
             .padding(.top,        topPadding)
             .padding(.bottom,     80)
-
-            // Compass — top-trailing, clear of the centred pills and the
-            // bottom search sheet. The needle spins with
-            // `state.canvasRotation` and taps to realign; it auto-hides
-            // when the sky is upright. Driven by the two-finger rotation
-            // gesture (see CelestialGesture); replaces the dev slider.
-            VStack {
-                HStack {
-                    Spacer()
-                    VStack(spacing: 10) {
-                        CompassButton()
-                        // Heading-up toggle, directly beneath the rose
-                        // (hidden when there's no gyro).
-//                        CompassModeButton()
-                    }
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.top,        topPadding)
+            // Compass rose + heading-up toggle now live in the SearchSheet
+            // header (trailing of the search bar), grouped as one cluster —
+            // see `SearchSheet`. The old top-trailing overlay is gone.
         }
         .ignoresSafeArea()
         // Engage compass (heading-up) mode when the phone is raised up to

@@ -80,6 +80,9 @@ struct CompassButton: View {
                 .rotationEffect(-state.renderedRotation)
         }
         .opacity(aligned ? 0 : 1)
+        // Collapse to zero width when hidden so it leaves no gap in a
+        // horizontal layout (the SearchSheet header) — not just invisible.
+        .frame(width: aligned ? 0 : faceSize)
     }
 
     // MARK: - Dial

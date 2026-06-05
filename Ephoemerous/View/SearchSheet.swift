@@ -40,8 +40,11 @@ struct SearchSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 4) {
                 searchHeader
-                
+
                 CompassModeButton()
+                // Compass rose, trailing of the heading-up toggle — auto-
+                // hides (collapses) when the sky is already upright.
+                CompassButton()
             }
                 .padding(.leading, 16)
                 .padding(.trailing, 16)
