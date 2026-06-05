@@ -145,7 +145,7 @@ struct ECanvasSchedule: TimelineSchedule {
         mutating func next() -> Date? {
             let current = next_date
             if isAnimating {
-                next_date = current.addingTimeInterval(1.0 / 60.0)
+                next_date = current.addingTimeInterval(1.0 / 120.0)
                 return current
             }
             // Idle: emit one tick at start so the canvas paints once,
