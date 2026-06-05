@@ -86,12 +86,19 @@ struct CompassButton: View {
     /// `-canvasRotation` so, once the parent dial spins by `+canvasRotation`,
     /// the glyph nets back to upright while its *position* still orbits —
     /// "N" rides over the red needle tip, the rest follow 90° apart.
+    ///
+    /// E and W are SWAPPED from a ground compass (E on the left, W on the
+    /// right): the sky map is the inside-of-the-dome / looking-up view
+    /// where East falls to the left of North (the planetarium convention —
+    /// see `EProjection`). So this is a *sky* compass: its "E" sits over
+    /// where East actually is on the map, not where a hiking compass would
+    /// put it. Flipping these would mean lying about the sky's handedness.
     private var cardinals: some View {
         ZStack {
-            cardinal("N", color: .puckDisc,       dx: 0,            dy: -labelRadius)
-            cardinal("E", color: .secondary, dx:  labelRadius, dy: 0)
-            cardinal("S", color: .secondary, dx: 0,            dy:  labelRadius)
-            cardinal("W", color: .secondary, dx: -labelRadius, dy: 0)
+            cardinal("N", color: .puckDisc,  dx: 0,             dy: -labelRadius)
+            cardinal("E", color: .secondary, dx: -labelRadius,  dy: 0)
+            cardinal("S", color: .secondary, dx: 0,             dy:  labelRadius)
+            cardinal("W", color: .secondary, dx:  labelRadius,  dy: 0)
         }
     }
 
