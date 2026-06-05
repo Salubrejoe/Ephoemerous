@@ -80,14 +80,10 @@ struct EMythDetailView: View {
 
             Spacer(minLength: 0)
         }
-        // Pan the canvas to the centroid of the first constellation
-        // in the cycle when the sheet opens — gives the canvas a
-        // sensible anchor even though "the myth" itself has no
-        // single sky position. Skipped for `.none` (no anchor).
-        .onAppear {
-            guard let first = constellations.first else { return }
-            state.panTo(.constellation(first))
-        }
+        // No programmatic pan on appear: "the myth" has no single sky
+        // position, and auto-panning the canvas out from under the user
+        // when the story sheet rises just reads as distracting. The sheet
+        // stands on its own; the canvas stays where the user left it.
     }
 
     // MARK: Constellations roster
