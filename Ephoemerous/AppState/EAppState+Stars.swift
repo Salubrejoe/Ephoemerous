@@ -2,6 +2,25 @@ import SwiftUI
 import simd
 import LoreKit
 
+// MARK: - Star projection cache key
+// The projection invariants — everything `EGraphicContext.toScreen`
+// depends on EXCEPT the pan offset. Two frames that share a key project
+// every star to the same base point, so a pan (which only moves offset)
+// can reuse the cached bases instead of re-projecting. See `StarsLayer`.
+struct StarProjectionKey: Equatable {
+    let scale:    Double
+    let rotation: Double
+    let date:     Date
+    let lat:      Double
+    let lon:      Double
+    let width:    Double
+    let height:   Double
+    /// Favourites count — changes the cache's skip pattern (a favourited
+    /// star is dropped here and drawn by FavouritesLayer instead), so a
+    /// favourite toggle must invalidate the base cache even mid-view.
+    let favourites: Int
+}
+
 // MARK: - EAppState + Stars
 // Star set (magnitude-sorted cache + zoom-driven visible prefix),
 // selection history, and recently viewed. The sorted cache depends only
