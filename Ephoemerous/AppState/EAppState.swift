@@ -139,17 +139,19 @@ class EAppState {
 
     var _starsCache: [EStar]? = nil
 
-    // MARK: - Star projection cache (pan optimisation)
-    // A pan only changes `offset`, which `toScreen` adds in screen space
-    // *after* projection — so a pan is a rigid translation, and the
-    // expensive precess→project→toScreen chain is invariant. We cache each
-    // visible star's OFFSET-FREE base screen point keyed by the projection
-    // invariants; while they hold (a pan, a settled view), each frame just
-    // adds the live offset instead of re-projecting ~2k stars. See
-    // `StarsLayer`. All ObservationIgnored — pure per-frame render scratch.
+    // MARK: - Star projection cache (gesture optimisation)
+    // A star's PROJECTION (precess → project → projection-unit point)
+    // depends only on (date, origin). `canvasRotation`, `scale` and
+    // `offset` are all applied later, in `toScreen` — so pan, pinch AND
+    // rotate leave the projection untouched and only change the cheap
+    // post-transform. We cache each star's projection-unit point keyed by
+    // (date, origin); while those hold, every gesture frame just re-runs
+    // toScreen instead of re-projecting ~2k stars. Aligned 1:1 with
+    // `sortedStars` (NaN where a star doesn't project). All
+    // ObservationIgnored — pure per-frame render scratch. See `StarsLayer`.
     @ObservationIgnored var _lastStarKey:    StarProjectionKey? = nil
-    @ObservationIgnored var _starBaseKey:    StarProjectionKey? = nil
-    @ObservationIgnored var _starBasePoints: [CGPoint] = []
+    @ObservationIgnored var _starProjKey:    StarProjectionKey? = nil
+    @ObservationIgnored var _starProjPoints: [CGPoint] = []
 
     // MARK: - Detail destination  (logic → EAppState+Detail.swift)
     // Single source of truth for "what detail is the user looking at?".

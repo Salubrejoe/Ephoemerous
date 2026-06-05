@@ -3,22 +3,16 @@ import simd
 import LoreKit
 
 // MARK: - Star projection cache key
-// The projection invariants — everything `EGraphicContext.toScreen`
-// depends on EXCEPT the pan offset. Two frames that share a key project
-// every star to the same base point, so a pan (which only moves offset)
-// can reuse the cached bases instead of re-projecting. See `StarsLayer`.
+// The PROJECTION invariants — the only inputs to precess → project (a
+// star's projection-unit point). `canvasRotation`, `scale` and `offset`
+// are applied afterwards in `EGraphicContext.toScreen`, so they're NOT
+// keys: pan, pinch and rotate all share one key and reuse the cached
+// projections, re-running only the cheap toScreen. The cache is rebuilt
+// only when date or origin changes. See `StarsLayer`.
 struct StarProjectionKey: Equatable {
-    let scale:    Double
-    let rotation: Double
-    let date:     Date
-    let lat:      Double
-    let lon:      Double
-    let width:    Double
-    let height:   Double
-    /// Favourites count — changes the cache's skip pattern (a favourited
-    /// star is dropped here and drawn by FavouritesLayer instead), so a
-    /// favourite toggle must invalidate the base cache even mid-view.
-    let favourites: Int
+    let date: Date
+    let lat:  Double
+    let lon:  Double
 }
 
 // MARK: - EAppState + Stars
