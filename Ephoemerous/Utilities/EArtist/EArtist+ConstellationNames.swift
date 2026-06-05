@@ -142,6 +142,7 @@ extension EArtist {
     func drawConstellationLabel(at sc: CGPoint,
                                 fullName: String,
                                 isFavourite: Bool,
+                                isSelected: Bool,
                                 heartColor: Color,
                                 in dc: inout EGraphicContext) -> CGRect? {
         let scale = dc.renderedScale
@@ -193,16 +194,30 @@ extension EArtist {
         shadowed.addFilter(poiShadow)
 
         let label: Text
-        if isFavourite {
-            label = Text("\(Text(Image(symbol: .heartFill)).foregroundStyle(heartColor)) \(fullName)")
-                .fontDesign(.serif)
-                .fontWeight(.light)
-                        .foregroundStyle(.secondary)
+        if isSelected {
+            if isFavourite {
+                label = Text("\(Text(Image(symbol: .heartFill)).foregroundStyle(heartColor)) \(fullName)")
+                    .fontDesign(.serif)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+            } else {
+                label = Text(fullName)
+                    .fontDesign(.serif)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+            }
         } else {
-            label = Text(fullName)
-                .fontDesign(.serif)
-                .fontWeight(.light)
-                        .foregroundStyle(.secondary)
+            if isFavourite {
+                label = Text("\(Text(Image(symbol: .heartFill)).foregroundStyle(heartColor)) \(fullName)")
+                    .fontDesign(.serif)
+                    .fontWeight(.light)
+                    .foregroundStyle(.secondary)
+            } else {
+                label = Text(fullName)
+                    .fontDesign(.serif)
+                    .fontWeight(.light)
+                    .foregroundStyle(.secondary)
+            }
         }
         shadowed.draw(
             label.font(constellationLabelFont(isFavourite: isFavourite)),

@@ -43,6 +43,7 @@ struct ConstellationNamesLayer: EGridLayer {
             if case .foreverInvisible = kind { continue }
 
             let isFavourite = favouriteIDs.contains(cons.rawValue)
+            let isSelected  = dc.state.detailDestination == ESkyObject.constellation(cons)
             // Heart tint mirrors the favourite line colour for the
             // same constellation, so the inline ♥ reads as part of
             // the same coloured shape as the stick-figure.
@@ -52,6 +53,7 @@ struct ConstellationNamesLayer: EGridLayer {
                 at:          sc,
                 fullName:    cons.localizedName.uppercased(),
                 isFavourite: isFavourite,
+                isSelected:  isSelected,
                 heartColor:  heartColor,
                 in:          &dc
             ) else { continue }    // tier 0 / placeholder → no tap target
