@@ -29,14 +29,15 @@ struct CompassButton: View {
     /// Below this the sky reads as aligned: hide the compass.
     private let alignedEpsilon: Double = 0.5
 
-    // Squircle face + orbiting-dot geometry.
-    private let faceSize:    CGFloat = 32
+    // Circular face (matches the heading-up toggle's diameter) +
+    // orbiting-dot geometry.
+    private let faceSize:    CGFloat = 37
 //    private let faceSize:    CGFloat = 46
     private let roseCorners: Int     = 12
     private let roseBulge:   CGFloat = 2.2
-    private let orbitRadius: CGFloat = 10
+    private let orbitRadius: CGFloat = 13
 //    private let orbitRadius: CGFloat = 16
-    private let dotSize:     CGFloat = 5
+    private let dotSize:     CGFloat = 7
 //    private let dotSize:     CGFloat = 6
 
     private var roseShape: Squircle { Squircle(corners: roseCorners, bulge: roseBulge) }
@@ -60,13 +61,15 @@ struct CompassButton: View {
         } label: {
             centralLetter
                 .frame(width: faceSize, height: faceSize)
-                .contentShape(roseShape)
-                .glassEffect(.regular.interactive(), in: roseShape)
+                // Plain ultra-thin material circle — it sits inside the
+                // search sheet's own glass, so no glass-on-glass. Matches
+                // the heading-up toggle's circle.
+                .background(.ultraThinMaterial, in: .circle)
+                .contentShape(.circle)
                 .overlay {
                     Capsule()
-                    //                    .fill(.primary)
-                        .frame(width: 1, height: 4)
-                        .offset(y: -9)
+                        .frame(width: 1, height: 6)
+                        .offset(y: -11)
                 }
 
         }
@@ -97,7 +100,7 @@ struct CompassButton: View {
     /// The cardinal nearest the top, dead centre and always upright.
     private var centralLetter: some View {
         Text(cardinalAtTop)
-            .font(.system(size: 11, weight: .heavy, design: .rounded))
+            .font(.system(size: 15, weight: .heavy, design: .rounded))
             .foregroundStyle(.primary)
 //            .rotationEffect(state.renderedRotation)
             .contentTransition(.opacity)
@@ -115,7 +118,6 @@ struct CompassButton: View {
 //            .scaledToFit()
         Text("N")
             .font(.system(size: dotSize))
-//            .frame(width: dotSize, height: dotSize)
             .foregroundStyle(Color.orange)
             .offset(y: -orbitRadius)
     }
