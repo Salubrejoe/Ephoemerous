@@ -34,6 +34,28 @@ final class EMotionService {
 
     private(set) var aim: Aim? = nil
 
+    /// True while the phone is held UP toward the sky (screen tilted to
+    /// face downward at the user). Hysteretic so it doesn't flutter at the
+    /// boundary. Drives "engage compass mode on raise" — observed in
+    /// `MainView`. `false` until the first sample / when motion is off.
+    private(set) var raisedToSky: Bool = false
+
+    // MARK: - Aim tuning  ▼ TWEAK HERE ▼  (device only — no gyro in the sim)
+
+    /// Aim-axis blend band, measured on "screen-down-ness" (−m33, how far
+    /// the screen-out normal leans below horizontal). Below `lo` the aim is
+    /// the phone's TOP edge (reading / pointing pose); above `hi` it's the
+    /// BACK-camera normal (held up to the sky); smoothstepped between, so
+    /// the cone glides from one axis to the other as the phone lays back.
+    private static let aimBlendLo = 0.25
+    private static let aimBlendHi = 0.75
+
+    /// Raise-to-sky thresholds (also on screen-down-ness) for the
+    /// auto-compass trigger. Separate on/off values = hysteresis: it flips
+    /// ON past `raiseOn` and only back OFF below `raiseOff`.
+    private static let raiseOn  = 0.60
+    private static let raiseOff = 0.40
+
     @ObservationIgnored private let manager = CMMotionManager()
     @ObservationIgnored private let queue   = OperationQueue()
 
@@ -62,13 +84,20 @@ final class EMotionService {
 
         manager.startDeviceMotionUpdates(using: frame, to: queue) { [weak self] motion, _ in
             guard let self, let motion else { return }
-            let next = Self.aim(from: motion.attitude)
+            let sample = Self.sample(from: motion.attitude)
             // @Observable writes must land on main. We also suppress
             // no-op writes so a still phone leaves the idle Canvas
             // parked (see `ECanvasSchedule`) instead of forcing a
             // 30 Hz redraw of the whole starfield.
             DispatchQueue.main.async {
-                if next != self.aim { self.aim = next }
+                if sample.aim != self.aim { self.aim = sample.aim }
+
+                // Raise-to-sky with hysteresis: flip ON above `raiseOn`,
+                // back OFF below `raiseOff`. Only written on a real change.
+                let raised = self.raisedToSky
+                    ? sample.screenDown > Self.raiseOff
+                    : sample.screenDown > Self.raiseOn
+                if raised != self.raisedToSky { self.raisedToSky = raised }
             }
         }
     }
@@ -76,42 +105,66 @@ final class EMotionService {
     func stop() {
         manager.stopDeviceMotionUpdates()
         aim = nil
+        raisedToSky = false
     }
 
     // MARK: - Attitude → aim
 
-    /// Convert a Core Motion attitude into the horizon-frame azimuth +
-    /// altitude of the phone's TOP edge (device +Y) — the axis that,
-    /// held in a natural "reading" tilt, points along your facing
-    /// azimuth and rises into the sky as you lift the top of the phone.
-    /// That posture is what the azimuth-led hybrid mapping expects.
+    /// Convert a Core Motion attitude into the horizon-frame aim (azimuth +
+    /// altitude) the projection speaks, blending TWO device axes by posture:
+    ///
+    ///   • TOP edge (device +Y) — the natural "reading / pointing" axis:
+    ///     held upright or tilted back, its top points along your facing
+    ///     azimuth and rises as you lift the phone.
+    ///   • BACK normal (−device +Z) — the camera axis: when the phone is
+    ///     held flat UP to the sky, this is what's actually pointed at the
+    ///     stars overhead, while the top edge has fallen to the horizon.
+    ///
+    /// We blend top → back by "screen-down-ness" (−m33: how far the screen
+    /// normal leans below horizontal), so a reading tilt follows the top
+    /// edge and raising the phone overhead smoothly hands off to the back
+    /// normal. Blending the 3-D vectors (then reading angles off the
+    /// result) avoids azimuth wrap-around at the crossover.
     ///
     /// CONVENTION (resolved on hardware 2026-05-31): Apple's
     /// `attitude.rotationMatrix` maps REFERENCE → device (v_dev = M·v_ref),
-    /// so a device axis expressed in reference coords is the matching ROW
-    /// of M, not the column. Device +Y (top edge) → row 2 =
-    /// (m21, m22, m23). The reference frame is X = true north, Y = west,
-    /// Z = up.
-    ///
-    /// The first cut read the column instead (device→reference), which
-    /// inverted pitch — tilting the phone up drove the blob *below* the
-    /// horizon — and also threw azimuth 180° off. Reading the row fixes
-    /// both: lift the top edge and `up = m23 = +sin(tilt)` rises as it
-    /// should; top-pointing-north reads azimuth 0.
-    private static func aim(from attitude: CMAttitude) -> Aim {
+    /// so a device axis in reference coords is the matching ROW of M.
+    /// Device +Y (top) → row 2 = (m21, m22, m23); device +Z (screen-out) →
+    /// row 3 = (m31, m32, m33). Reference frame: X = true north, Y = west,
+    /// Z = up. Returns the aim plus the raw screen-down-ness (for the
+    /// raise-to-sky trigger).
+    private static func sample(from attitude: CMAttitude) -> (aim: Aim, screenDown: Double) {
         let m = attitude.rotationMatrix
 
-        // Phone top edge (device +Y) expressed in the reference frame —
-        // row 2 of the reference→device matrix.
-        let north = m.m21
-        let west  = m.m22
-        let up    = m.m23
+        // Top edge (device +Y) and back-camera normal (−device +Z), each in
+        // reference-frame (north, west, up) components.
+        let tN = m.m21, tW = m.m22, tU = m.m23
+        let bN = -m.m31, bW = -m.m32, bU = -m.m33
+
+        // Screen-out normal's downward lean: ~0 upright, →1 held flat
+        // overhead (screen facing the user, back to the sky).
+        let screenDown = max(0, -m.m33)
+        let w = smoothstep(screenDown, lo: aimBlendLo, hi: aimBlendHi)
+
+        // Blend, then normalise.
+        var n = (1 - w) * tN + w * bN
+        var west = (1 - w) * tW + w * bW
+        var up = (1 - w) * tU + w * bU
+        let len = (n * n + west * west + up * up).squareRoot()
+        if len > 1e-9 { n /= len; west /= len; up /= len }
 
         let altitude = asin(max(-1, min(1, up)))
-        let azimuth  = atan2(-west, north)        // clockwise from north
+        let azimuth  = atan2(-west, n)            // clockwise from north
 
-        return Aim(azimuth:  quantize(azimuth),
-                   altitude: quantize(altitude))
+        let aim = Aim(azimuth: quantize(azimuth), altitude: quantize(altitude))
+        return (aim, screenDown)
+    }
+
+    /// Smoothstep 0→1 across [lo, hi].
+    private static func smoothstep(_ x: Double, lo: Double, hi: Double) -> Double {
+        guard hi > lo else { return x < lo ? 0 : 1 }
+        let t = min(1, max(0, (x - lo) / (hi - lo)))
+        return t * t * (3 - 2 * t)
     }
 
     /// Round to ~0.5° so magnetometer micro-jitter on a still phone

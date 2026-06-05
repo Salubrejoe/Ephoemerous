@@ -78,6 +78,18 @@ struct MainView: View {
             .padding(.top,        topPadding)
         }
         .ignoresSafeArea()
+        // Engage compass (heading-up) mode when the phone is raised up to
+        // the sky — the AR gesture. Engage-only: lifting turns it ON, but
+        // it never auto-disengages (the user lowers and taps the toggle to
+        // exit). Gated on being at the device location, and we set the flag
+        // directly rather than via `toggleCompassMode()` so it doesn't
+        // recenter under the user. `raisedToSky` is hysteretic, so this
+        // fires once per raise, not repeatedly at the threshold.
+        .onChange(of: EMotionService.shared.raisedToSky) { _, raised in
+            if raised, state.isAtDeviceLocation, !state.compassMode {
+                state.compassMode = true
+            }
+        }
         // App is portrait-only — no device-orientation rotation. The
         // canvas's `state.canvasRotation` is entirely user-owned (the
         // rotation slider; the two-finger gesture next), so there's no
