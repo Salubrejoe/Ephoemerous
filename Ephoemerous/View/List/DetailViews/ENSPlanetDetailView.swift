@@ -33,7 +33,7 @@ struct ENSPlanetDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
-                title:         planet.name,
+                title:         planet.displayName,
                 subtitle:      planet.mythology,
                 accent:        accent,
                 icon:          { POIBadgeView(category: .planet(planet)) },

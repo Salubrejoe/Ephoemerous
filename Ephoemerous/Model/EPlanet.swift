@@ -12,6 +12,25 @@ struct EPlanet: Identifiable, Hashable {
 
     var id: String { name }
 
+    /// Localised, user-facing name. `name` stays the canonical English
+    /// identity (EPalette / PlanetFacts switch keys, CloudKit favourites,
+    /// `id`); this is the only thing that should ever be shown on screen.
+    /// This is the "separate display layer" the `Strings.Planets` comment
+    /// deferred. Keys mirror the English identity so the String Catalog
+    /// extracts them cleanly.
+    var displayName: String {
+        switch name {
+        case Strings.Planets.mercury: return String(localized: "Mercury", comment: "Planet name")
+        case Strings.Planets.venus:   return String(localized: "Venus",   comment: "Planet name")
+        case Strings.Planets.mars:    return String(localized: "Mars",    comment: "Planet name")
+        case Strings.Planets.jupiter: return String(localized: "Jupiter", comment: "Planet name")
+        case Strings.Planets.saturn:  return String(localized: "Saturn",  comment: "Planet name")
+        case Strings.Planets.uranus:  return String(localized: "Uranus",  comment: "Planet name")
+        case Strings.Planets.neptune: return String(localized: "Neptune", comment: "Planet name")
+        default:                      return name
+        }
+    }
+
     // Hashable / Equatable by name only
     func hash(into hasher: inout Hasher) { hasher.combine(name) }
     static func == (lhs: EPlanet, rhs: EPlanet) -> Bool { lhs.name == rhs.name }

@@ -1404,6 +1404,39 @@
         }
       }
     },
+    "Jupiter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giove"
+          }
+        }
+      }
+    },
+    "Mars" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marte"
+          }
+        }
+      }
+    },
+    "Mercury" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mercurio"
+          }
+        }
+      }
+    },
     "Moon" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2197,6 +2230,28 @@
         }
       }
     },
+    "Neptune" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nettuno"
+          }
+        }
+      }
+    },
+    "Saturn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saturno"
+          }
+        }
+      }
+    },
     "Sun" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2259,6 +2314,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Toro"
+          }
+        }
+      }
+    },
+    "Uranus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urano"
+          }
+        }
+      }
+    },
+    "Venus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venere"
           }
         }
       }

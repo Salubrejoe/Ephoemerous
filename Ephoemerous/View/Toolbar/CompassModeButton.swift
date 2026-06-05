@@ -37,7 +37,7 @@ struct CompassModeButton: View {
                     .clipShape(.circle)
                     .foregroundStyle(.orange)
                     .background(
-                        Circle().fill(.ultraThickMaterial)
+                        Circle().fill(.ultraThinMaterial)
                     )
 //                    .glassEffect(.regular.interactive(), in: .circle)
             }

@@ -28,7 +28,7 @@ struct EPlanetsLayer: EGridLayer {
             artist.drawPOILabel(
                 at:        sc,
                 glyph:     .unicode(artist.planetGlyph(planet)),
-                text:      planet.name,
+                text:      planet.displayName,
                 category:  .planet(planet),
                 drawDot:   true,
                 promotion: dc.poiPromotion(forObjectID: ESkyObject.planet(planet).id),

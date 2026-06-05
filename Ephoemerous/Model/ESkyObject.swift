@@ -22,9 +22,9 @@ enum ESkyObject: Identifiable, Hashable {
     var displayName: String {
         switch self {
         case .star(let s):          return s.displayName
-        case .sun:                  return "Sun"
-        case .moon:                 return "Moon"
-        case .planet(let p):        return p.name
+        case .sun:                  return String(localized: "Sun")
+        case .moon:                 return String(localized: "Moon")
+        case .planet(let p):        return p.displayName
         case .constellation(let c): return c.localizedName
         }
     }
@@ -38,7 +38,9 @@ enum ESkyObject: Identifiable, Hashable {
         case .moon:
             return Strings.SearchTokens.moonFullToken
         case .planet(let p):
-            return "\(p.name) planet".lowercased()
+            // Match on both the English identity and the localised name so
+            // search works whatever the device language.
+            return "\(p.name) \(p.displayName) planet".lowercased()
         case .constellation(let c):
             return "\(c.localizedName) \(c.fullName) \(c.rawValue) constellation".lowercased()
         }

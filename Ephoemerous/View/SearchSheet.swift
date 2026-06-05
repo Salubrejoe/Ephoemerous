@@ -115,7 +115,7 @@ struct SearchSheet: View {
         .padding(.vertical,   10)
         .background(
             Capsule()
-                .fill(.ultraThickMaterial)
+                .fill(.ultraThinMaterial)
         )
     }
 

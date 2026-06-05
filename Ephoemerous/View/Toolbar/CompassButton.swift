@@ -61,7 +61,7 @@ struct CompassButton: View {
             centralLetter
                 .frame(width: faceSize, height: faceSize)
                 .contentShape(roseShape)
-                .glassEffect(.clear.interactive(), in: roseShape)
+                .glassEffect(.regular.interactive(), in: roseShape)
                 .overlay {
                     Capsule()
                     //                    .fill(.primary)
