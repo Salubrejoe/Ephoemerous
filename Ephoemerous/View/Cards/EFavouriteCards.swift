@@ -80,8 +80,7 @@ struct ConstellationCard: View {
     /// constellation has no entity classification (Lacaille /
     /// Bayer / Hevelius modern additions).
     private var subtitle: String {
-        let entity = artist.constellationEntity(of: constellation)
-        return entity == .none ? "Constellation" : entity.rawValue.capitalized
+        artist.constellationEntity(of: constellation).localizedName
     }
 
     var body: some View {

@@ -114,6 +114,20 @@ enum POIConstellationEntity: String, CaseIterable {
     /// Constellations with no `types` entry — falls back to a
     /// generic glyph.
     case none
+
+    /// Localised display name for the entity (the detail/card subtitle).
+    /// `rawValue` stays the canonical JSON key; this is the on-screen word.
+    var localizedName: String {
+        switch self {
+        case .hero:       return String(localized: "Hero")
+        case .animal:     return String(localized: "Animal")
+        case .creature:   return String(localized: "Creature")
+        case .object:     return String(localized: "Object")
+        case .instrument: return String(localized: "Instrument")
+        case .deity:      return String(localized: "Deity")
+        case .none:       return String(localized: "Constellation")
+        }
+    }
 }
 
 /// Top-level kind for a constellation badge. Either it's never

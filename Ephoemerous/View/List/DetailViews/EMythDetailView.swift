@@ -98,7 +98,7 @@ struct EMythDetailView: View {
 
     private var constellationsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionLabel("Constellations")
+            sectionLabel(String(localized: "Constellations"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(constellations, id: \.self) { cons in
@@ -127,7 +127,7 @@ struct EMythDetailView: View {
         // continuous string ("STORY I — The Hunter") instead of
         // a section heading + a chapter. The extra breath fixes it.
         VStack(alignment: .leading, spacing: 12) {
-            sectionLabel("Story")
+            sectionLabel(String(localized: "Story"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Array(storyBeats.enumerated()), id: \.offset) { _, beat in
@@ -214,89 +214,89 @@ struct EMythDetailView: View {
 
     private var perseusBeats: [Beat] { [
         Beat(ordinal: "I",
-             title:   "The Boast",
-             body:    "Queen Cassiopeia declares her daughter Andromeda more beautiful than the Nereids — and the sea-god Poseidon hears her."),
+             title:   String(localized: "The Boast"),
+             body:    String(localized: "Queen Cassiopeia declares her daughter Andromeda more beautiful than the Nereids — and the sea-god Poseidon hears her.")),
         Beat(ordinal: "II",
-             title:   "The Sacrifice",
-             body:    "To appease Poseidon's sea-monster Cetus, king Cepheus chains Andromeda to a coastal rock and walks away."),
+             title:   String(localized: "The Sacrifice"),
+             body:    String(localized: "To appease Poseidon's sea-monster Cetus, king Cepheus chains Andromeda to a coastal rock and walks away.")),
         Beat(ordinal: "III",
-             title:   "The Hero Arrives",
-             body:    "Perseus, returning from beheading Medusa, sweeps in on the winged horse Pegasus and finds the princess in chains."),
+             title:   String(localized: "The Hero Arrives"),
+             body:    String(localized: "Perseus, returning from beheading Medusa, sweeps in on the winged horse Pegasus and finds the princess in chains.")),
         Beat(ordinal: "IV",
-             title:   "The Petrifaction",
-             body:    "Perseus lifts the Gorgon's head from his bag. Cetus turns to stone in the surf, and Andromeda is freed."),
+             title:   String(localized: "The Petrifaction"),
+             body:    String(localized: "Perseus lifts the Gorgon's head from his bag. Cetus turns to stone in the surf, and Andromeda is freed.")),
     ] }
 
     private var herculesBeats: [Beat] { [
         Beat(ordinal: "I",
-             title:   "The Twelve Labours",
-             body:    "Driven mad by Hera, Heracles slays his own family. To atone he must complete twelve impossible labours for king Eurystheus."),
+             title:   String(localized: "The Twelve Labours"),
+             body:    String(localized: "Driven mad by Hera, Heracles slays his own family. To atone he must complete twelve impossible labours for king Eurystheus.")),
         Beat(ordinal: "II",
-             title:   "The Nemean Lion",
-             body:    "His first labour: strangle the invulnerable Lion of Nemea. Heracles wears its golden pelt for the rest of his life."),
+             title:   String(localized: "The Nemean Lion"),
+             body:    String(localized: "His first labour: strangle the invulnerable Lion of Nemea. Heracles wears its golden pelt for the rest of his life.")),
         Beat(ordinal: "III",
-             title:   "Hydra and Crab",
-             body:    "He burns the necks of the many-headed Hydra. Hera sends a giant Crab to pinch his heel — Heracles crushes it underfoot."),
+             title:   String(localized: "Hydra and Crab"),
+             body:    String(localized: "He burns the necks of the many-headed Hydra. Hera sends a giant Crab to pinch his heel — Heracles crushes it underfoot.")),
         Beat(ordinal: "IV",
-             title:   "The Sleepless Dragon",
-             body:    "To steal the golden apples of the Hesperides he must slip past Ladon — the dragon Draco, coiled around their tree."),
+             title:   String(localized: "The Sleepless Dragon"),
+             body:    String(localized: "To steal the golden apples of the Hesperides he must slip past Ladon — the dragon Draco, coiled around their tree.")),
     ] }
 
     private var argoBeats: [Beat] { [
         Beat(ordinal: "I",
-             title:   "The Golden Ram",
-             body:    "The ram Chrysomallos — fleece of pure gold — carries the children Phrixus and Helle out of Boeotia and is sacrificed in Colchis."),
+             title:   String(localized: "The Golden Ram"),
+             body:    String(localized: "The ram Chrysomallos — fleece of pure gold — carries the children Phrixus and Helle out of Boeotia and is sacrificed in Colchis.")),
         Beat(ordinal: "II",
-             title:   "The Argo Sails",
-             body:    "Jason builds the ship Argo and gathers fifty heroes — Heracles, Orpheus, the Dioscuri — to recover the fleece."),
+             title:   String(localized: "The Argo Sails"),
+             body:    String(localized: "Jason builds the ship Argo and gathers fifty heroes — Heracles, Orpheus, the Dioscuri — to recover the fleece.")),
         Beat(ordinal: "III",
-             title:   "The Crossing",
-             body:    "They thread the Clashing Rocks, escape the Harpies, and reach Colchis, where king Aeëtes guards the prize."),
+             title:   String(localized: "The Crossing"),
+             body:    String(localized: "They thread the Clashing Rocks, escape the Harpies, and reach Colchis, where king Aeëtes guards the prize.")),
         Beat(ordinal: "IV",
-             title:   "The Fleece Won",
-             body:    "With sorceress Medea's help Jason charms the sleepless dragon, seizes the fleece, and the Argo flees for home."),
+             title:   String(localized: "The Fleece Won"),
+             body:    String(localized: "With sorceress Medea's help Jason charms the sleepless dragon, seizes the fleece, and the Argo flees for home.")),
     ] }
 
     private var zeusBeats: [Beat] { [
         Beat(ordinal: "I",
-             title:   "Ganymede's Cup",
-             body:    "Zeus takes the shape of an eagle and carries the beautiful boy Ganymede to Olympus to be cupbearer to the gods."),
+             title:   String(localized: "Ganymede's Cup"),
+             body:    String(localized: "Zeus takes the shape of an eagle and carries the beautiful boy Ganymede to Olympus to be cupbearer to the gods.")),
         Beat(ordinal: "II",
-             title:   "Leda and the Swan",
-             body:    "Disguised as a swan, Zeus visits Leda. From the union are born the twin heroes Castor and Pollux."),
+             title:   String(localized: "Leda and the Swan"),
+             body:    String(localized: "Disguised as a swan, Zeus visits Leda. From the union are born the twin heroes Castor and Pollux.")),
         Beat(ordinal: "III",
-             title:   "Europa and the Bull",
-             body:    "As a snow-white bull Zeus carries the Phoenician princess Europa across the sea to Crete, where she bears him Minos."),
+             title:   String(localized: "Europa and the Bull"),
+             body:    String(localized: "As a snow-white bull Zeus carries the Phoenician princess Europa across the sea to Crete, where she bears him Minos.")),
         Beat(ordinal: "IV",
-             title:   "Callisto's Bear",
-             body:    "Hera transforms Zeus's lover Callisto into a bear. Zeus lifts her into the sky as a great bear, safe forever."),
+             title:   String(localized: "Callisto's Bear"),
+             body:    String(localized: "Hera transforms Zeus's lover Callisto into a bear. Zeus lifts her into the sky as a great bear, safe forever.")),
     ] }
 
     private var orionBeats: [Beat] { [
         Beat(ordinal: "I",
-             title:   "The Hunter",
-             body:    "Orion, son of Poseidon, walks the night with his two hounds — Canis Major and Canis Minor — chasing the hare Lepus through the sky."),
+             title:   String(localized: "The Hunter"),
+             body:    String(localized: "Orion, son of Poseidon, walks the night with his two hounds — Canis Major and Canis Minor — chasing the hare Lepus through the sky.")),
         Beat(ordinal: "II",
-             title:   "The Boast",
-             body:    "Orion vows to kill every animal on earth. Gaia, mother of beasts, recoils — and sends a punishment shaped like a scorpion."),
+             title:   String(localized: "The Boast"),
+             body:    String(localized: "Orion vows to kill every animal on earth. Gaia, mother of beasts, recoils — and sends a punishment shaped like a scorpion.")),
         Beat(ordinal: "III",
-             title:   "The Sting",
-             body:    "Scorpius emerges from the ground and stings the hunter dead. The gods set them at opposite ends of the sky so they never meet again."),
+             title:   String(localized: "The Sting"),
+             body:    String(localized: "Scorpius emerges from the ground and stings the hunter dead. The gods set them at opposite ends of the sky so they never meet again.")),
     ] }
 
     private var orpheusBeats: [Beat] { [
         Beat(ordinal: "I",
-             title:   "The Lyre",
-             body:    "Apollo gives Orpheus a lyre. He plays so beautifully that trees lean toward him and rivers slow to listen."),
+             title:   String(localized: "The Lyre"),
+             body:    String(localized: "Apollo gives Orpheus a lyre. He plays so beautifully that trees lean toward him and rivers slow to listen.")),
         Beat(ordinal: "II",
-             title:   "Eurydice Lost",
-             body:    "His bride Eurydice is bitten by a viper and dies. Orpheus descends into Hades to bring her back."),
+             title:   String(localized: "Eurydice Lost"),
+             body:    String(localized: "His bride Eurydice is bitten by a viper and dies. Orpheus descends into Hades to bring her back.")),
         Beat(ordinal: "III",
-             title:   "The Backward Glance",
-             body:    "Hades agrees on one condition: Orpheus must not look back until they reach the upper world. He looks — and she is gone."),
+             title:   String(localized: "The Backward Glance"),
+             body:    String(localized: "Hades agrees on one condition: Orpheus must not look back until they reach the upper world. He looks — and she is gone.")),
         Beat(ordinal: "IV",
-             title:   "The Lyre in the Sky",
-             body:    "After his death the Muses set his lyre among the stars as Lyra; the swan Cygnus sails the Milky Way close by."),
+             title:   String(localized: "The Lyre in the Sky"),
+             body:    String(localized: "After his death the Muses set his lyre among the stars as Lyra; the swan Cygnus sails the Milky Way close by.")),
     ] }
 }
 

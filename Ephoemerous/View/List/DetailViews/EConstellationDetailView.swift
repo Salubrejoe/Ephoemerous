@@ -30,9 +30,9 @@ struct EConstellationDetailView: View {
         let artist = EArtist.shared
         let entity = artist.constellationEntity(of: constellation)
         let myth   = artist.constellationMyth(of: constellation)
-        let entityStr = entity == .none ? "Constellation" : entity.rawValue.capitalized
+        let entityStr = entity.localizedName
         if myth == .none { return entityStr }
-        return "\(entityStr) in the \(myth.rawValue.capitalized) Myth"
+        return String(localized: "\(entityStr) in the \(myth.localizedTitle) Myth")
     }
 
     /// Top of the myth gradient — same accent used for the canvas badge.

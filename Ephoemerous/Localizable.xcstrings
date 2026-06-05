@@ -1,6 +1,17 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ in the %@ Myth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ nel mito di %@"
+          }
+        }
+      }
+    },
     "%lld stars shown" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -41,6 +52,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiungi"
+          }
+        }
+      }
+    },
+    "After his death the Muses set his lyre among the stars as Lyra; the swan Cygnus sails the Milky Way close by." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dopo la sua morte le Muse pongono la sua lira tra le stelle come la Lira; il cigno Cygnus naviga la Via Lattea lì accanto."
           }
         }
       }
@@ -89,6 +111,17 @@
         }
       }
     },
+    "Animal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animale"
+          }
+        }
+      }
+    },
     "Antlia" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -100,6 +133,17 @@
         }
       },
       "shouldTranslate" : false
+    },
+    "Apollo gives Orpheus a lyre. He plays so beautifully that trees lean toward him and rivers slow to listen." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apollo dona a Orfeo una lira. Suona così divinamente che gli alberi si piegano verso di lui e i fiumi rallentano per ascoltare."
+          }
+        }
+      }
     },
     "Apus" : {
       "extractionState" : "manual",
@@ -164,6 +208,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ariete"
+          }
+        }
+      }
+    },
+    "As a snow-white bull Zeus carries the Phoenician princess Europa across the sea to Crete, where she bears him Minos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Come un toro bianco come la neve, Zeus porta la principessa fenicia Europa oltre il mare fino a Creta, dove gli dà Minosse."
           }
         }
       }
@@ -235,6 +290,17 @@
         }
       },
       "shouldTranslate" : false
+    },
+    "Callisto's Bear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'orsa di Callisto"
+          }
+        }
+      }
     },
     "Camelopardus" : {
       "extractionState" : "manual",
@@ -555,6 +621,17 @@
         }
       }
     },
+    "Creature" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creatura"
+          }
+        }
+      }
+    },
     "Crux" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -643,6 +720,17 @@
         }
       }
     },
+    "Deity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Divinità"
+          }
+        }
+      }
+    },
     "Delete" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -672,6 +760,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diametro"
+          }
+        }
+      }
+    },
+    "Disguised as a swan, Zeus visits Leda. From the union are born the twin heroes Castor and Pollux." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Travestito da cigno, Zeus visita Leda. Dall'unione nascono i gemelli eroi Castore e Polluce."
           }
         }
       }
@@ -716,6 +815,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dragone"
+          }
+        }
+      }
+    },
+    "Driven mad by Hera, Heracles slays his own family. To atone he must complete twelve impossible labours for king Eurystheus." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reso folle da Era, Eracle uccide la propria famiglia. Per espiare deve compiere dodici fatiche impossibili per il re Euristeo."
           }
         }
       }
@@ -797,6 +907,28 @@
         }
       }
     },
+    "Europa and the Bull" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Europa e il toro"
+          }
+        }
+      }
+    },
+    "Eurydice Lost" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Euridice perduta"
+          }
+        }
+      }
+    },
     "Favourites" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -852,6 +984,17 @@
         }
       }
     },
+    "Ganymede's Cup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La coppa di Ganimede"
+          }
+        }
+      }
+    },
     "Gemini" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -874,6 +1017,39 @@
         }
       }
     },
+    "Hades agrees on one condition: Orpheus must not look back until they reach the upper world. He looks — and she is gone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ade acconsente a una condizione: Orfeo non deve voltarsi finché non raggiungono il mondo di sopra. Lui si volta — e lei svanisce."
+          }
+        }
+      }
+    },
+    "He burns the necks of the many-headed Hydra. Hera sends a giant Crab to pinch his heel — Heracles crushes it underfoot." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Brucia i colli dell'Idra dalle molte teste. Era invia un Granchio gigante a pizzicargli il tallone — Eracle lo schiaccia sotto il piede."
+          }
+        }
+      }
+    },
+    "Hera transforms Zeus's lover Callisto into a bear. Zeus lifts her into the sky as a great bear, safe forever." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Era trasforma in orsa Callisto, amante di Zeus. Zeus la solleva nel cielo come una grande orsa, al sicuro per sempre."
+          }
+        }
+      }
+    },
     "Hercules" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -892,6 +1068,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qui"
+          }
+        }
+      }
+    },
+    "Hero" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eroe"
+          }
+        }
+      }
+    },
+    "His bride Eurydice is bitten by a viper and dies. Orpheus descends into Hades to bring her back." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La sua sposa Euridice è morsa da una vipera e muore. Orfeo discende nell'Ade per riportarla indietro."
+          }
+        }
+      }
+    },
+    "His first labour: strangle the invulnerable Lion of Nemea. Heracles wears its golden pelt for the rest of his life." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La prima fatica: strangolare l'invulnerabile leone di Nemea. Eracle ne indosserà la pelle dorata per tutta la vita."
           }
         }
       }
@@ -925,6 +1134,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Idra"
+          }
+        }
+      }
+    },
+    "Hydra and Crab" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'Idra e il Granchio"
           }
         }
       }
@@ -975,6 +1195,28 @@
       },
       "shouldTranslate" : false
     },
+    "Instrument" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strumento"
+          }
+        }
+      }
+    },
+    "Jason builds the ship Argo and gathers fifty heroes — Heracles, Orpheus, the Dioscuri — to recover the fleece." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giasone costruisce la nave Argo e raduna cinquanta eroi — Eracle, Orfeo, i Dioscuri — per recuperare il vello."
+          }
+        }
+      }
+    },
     "Lacerta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -982,6 +1224,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lucertola"
+          }
+        }
+      }
+    },
+    "Leda and the Swan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leda e il cigno"
           }
         }
       }
@@ -1306,6 +1559,17 @@
         }
       }
     },
+    "Object" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oggetto"
+          }
+        }
+      }
+    },
     "Octans" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1335,6 +1599,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Orione"
+          }
+        }
+      }
+    },
+    "Orion vows to kill every animal on earth. Gaia, mother of beasts, recoils — and sends a punishment shaped like a scorpion." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Orione giura di uccidere ogni animale della terra. Gaia, madre delle bestie, inorridisce — e invia un castigo a forma di scorpione."
+          }
+        }
+      }
+    },
+    "Orion, son of Poseidon, walks the night with his two hounds — Canis Major and Canis Minor — chasing the hare Lepus through the sky." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Orione, figlio di Poseidone, cammina nella notte con i suoi due cani — Cane Maggiore e Cane Minore — inseguendo la lepre Lepus nel cielo."
           }
         }
       }
@@ -1401,6 +1687,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Perseo"
+          }
+        }
+      }
+    },
+    "Perseus lifts the Gorgon's head from his bag. Cetus turns to stone in the surf, and Andromeda is freed." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Perseo solleva dalla sacca la testa della Gorgone. Ceto si tramuta in pietra tra le onde, e Andromeda è libera."
+          }
+        }
+      }
+    },
+    "Perseus, returning from beheading Medusa, sweeps in on the winged horse Pegasus and finds the princess in chains." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Perseo, di ritorno dall'aver decapitato Medusa, piomba sul cavallo alato Pegaso e trova la principessa in catene."
           }
         }
       }
@@ -1500,6 +1808,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bussola"
+          }
+        }
+      }
+    },
+    "Queen Cassiopeia declares her daughter Andromeda more beautiful than the Nereids — and the sea-god Poseidon hears her." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La regina Cassiopea proclama la figlia Andromeda più bella delle Nereidi — e il dio del mare Poseidone la sente."
           }
         }
       }
@@ -1658,6 +1977,17 @@
         }
       }
     },
+    "Scorpius emerges from the ground and stings the hunter dead. The gods set them at opposite ends of the sky so they never meet again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lo Scorpione emerge dal suolo e uccide il cacciatore con la sua puntura. Gli dèi li pongono ai lati opposti del cielo perché non si incontrino mai più."
+          }
+        }
+      }
+    },
     "Sculptor" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1746,17 +2076,6 @@
         }
       }
     },
-    "Solar system" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sistema solare"
-          }
-        }
-      }
-    },
     "Solar System" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1764,6 +2083,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sistema Solare"
+          }
+        }
+      }
+    },
+    "Solar system" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema solare"
           }
         }
       }
@@ -1856,6 +2186,17 @@
         }
       }
     },
+    "Story" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storia"
+          }
+        }
+      }
+    },
     "Sun" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1944,6 +2285,182 @@
         }
       }
     },
+    "The Argo Sails" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'Argo salpa"
+          }
+        }
+      }
+    },
+    "The Backward Glance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo sguardo indietro"
+          }
+        }
+      }
+    },
+    "The Boast" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La vanteria"
+          }
+        }
+      }
+    },
+    "The Crossing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La traversata"
+          }
+        }
+      }
+    },
+    "The Fleece Won" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il vello conquistato"
+          }
+        }
+      }
+    },
+    "The Golden Ram" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'ariete d'oro"
+          }
+        }
+      }
+    },
+    "The Hero Arrives" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'arrivo dell'eroe"
+          }
+        }
+      }
+    },
+    "The Hunter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il cacciatore"
+          }
+        }
+      }
+    },
+    "The Lyre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lira"
+          }
+        }
+      }
+    },
+    "The Lyre in the Sky" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lira nel cielo"
+          }
+        }
+      }
+    },
+    "The Nemean Lion" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il leone di Nemea"
+          }
+        }
+      }
+    },
+    "The Petrifaction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La pietrificazione"
+          }
+        }
+      }
+    },
+    "The Sacrifice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il sacrificio"
+          }
+        }
+      }
+    },
+    "The Sleepless Dragon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il drago insonne"
+          }
+        }
+      }
+    },
+    "The Sting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La puntura"
+          }
+        }
+      }
+    },
+    "The Twelve Labours" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le dodici fatiche"
+          }
+        }
+      }
+    },
     "The father-god's transformations" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1977,6 +2494,17 @@
         }
       }
     },
+    "The ram Chrysomallos — fleece of pure gold — carries the children Phrixus and Helle out of Boeotia and is sacrificed in Colchis." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L'ariete Crisomallo — dal vello d'oro puro — porta i fanciulli Frisso ed Elle fuori dalla Beozia ed è sacrificato in Colchide."
+          }
+        }
+      }
+    },
     "The twelve impossible labours" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1995,6 +2523,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il viaggio per il Vello d'Oro"
+          }
+        }
+      }
+    },
+    "They thread the Clashing Rocks, escape the Harpies, and reach Colchis, where king Aeëtes guards the prize." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Attraversano le Rocce Cozzanti, sfuggono alle Arpie e raggiungono la Colchide, dove il re Eeta custodisce il tesoro."
+          }
+        }
+      }
+    },
+    "To appease Poseidon's sea-monster Cetus, king Cepheus chains Andromeda to a coastal rock and walks away." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Per placare Ceto, il mostro marino di Poseidone, il re Cefeo incatena Andromeda a uno scoglio e si allontana."
+          }
+        }
+      }
+    },
+    "To steal the golden apples of the Hesperides he must slip past Ladon — the dragon Draco, coiled around their tree." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Per rubare le mele d'oro delle Esperidi deve eludere Ladone — il dragone Draco, avvolto attorno al loro albero."
           }
         }
       }
@@ -2176,6 +2737,17 @@
         }
       }
     },
+    "With sorceress Medea's help Jason charms the sleepless dragon, seizes the fleece, and the Argo flees for home." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Con l'aiuto della maga Medea, Giasone incanta il drago insonne, afferra il vello, e l'Argo fugge verso casa."
+          }
+        }
+      }
+    },
     "Year" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2194,6 +2766,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zeus"
+          }
+        }
+      }
+    },
+    "Zeus takes the shape of an eagle and carries the beautiful boy Ganymede to Olympus to be cupbearer to the gods." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zeus assume le sembianze di un'aquila e porta il bel giovane Ganimede sull'Olimpo perché sia coppiere degli dèi."
           }
         }
       }
