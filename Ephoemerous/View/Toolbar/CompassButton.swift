@@ -31,8 +31,8 @@ struct CompassButton: View {
 
     // Circular face (matches the heading-up toggle's diameter) +
     // orbiting-dot geometry.
-    private let faceSize:    CGFloat = 37
-//    private let faceSize:    CGFloat = 46
+//    private let faceSize:    CGFloat = 37
+    private let faceSize:    CGFloat = 42
     private let roseCorners: Int     = 12
     private let roseBulge:   CGFloat = 2.2
     private let orbitRadius: CGFloat = 13
@@ -64,6 +64,7 @@ struct CompassButton: View {
                 // Plain ultra-thin material circle — it sits inside the
                 // search sheet's own glass, so no glass-on-glass. Matches
                 // the heading-up toggle's circle.
+            
                 .background(.ultraThinMaterial, in: .circle)
                 .contentShape(.circle)
                 .overlay {

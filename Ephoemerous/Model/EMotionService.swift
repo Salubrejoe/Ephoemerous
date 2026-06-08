@@ -110,21 +110,35 @@ final class EMotionService {
 
     // MARK: - Attitude → aim
 
+    /// Last well-defined azimuth, held across the zenith singularity where
+    /// the back normal has no horizontal projection. Single-queue access
+    /// (serial motion queue) → no race.
+    nonisolated(unsafe) private static var lastAzimuth: Double = 0
+
     /// Convert a Core Motion attitude into the horizon-frame aim (azimuth +
-    /// altitude) the projection speaks, blending TWO device axes by posture:
+    /// altitude) the projection speaks. Two device axes matter:
     ///
-    ///   • TOP edge (device +Y) — the natural "reading / pointing" axis:
-    ///     held upright or tilted back, its top points along your facing
-    ///     azimuth and rises as you lift the phone.
-    ///   • BACK normal (−device +Z) — the camera axis: when the phone is
-    ///     held flat UP to the sky, this is what's actually pointed at the
-    ///     stars overhead, while the top edge has fallen to the horizon.
+    ///   • TOP edge (device +Y) — the "reading / pointing" axis: tilted
+    ///     back, it points at the patch of sky in front of you and rises as
+    ///     you lift the phone.
+    ///   • BACK normal (−device +Z) — the camera axis: held flat UP to the
+    ///     sky it points at the stars overhead.
     ///
-    /// We blend top → back by "screen-down-ness" (−m33: how far the screen
-    /// normal leans below horizontal), so a reading tilt follows the top
-    /// edge and raising the phone overhead smoothly hands off to the back
-    /// normal. Blending the 3-D vectors (then reading angles off the
-    /// result) avoids azimuth wrap-around at the crossover.
+    /// AZIMUTH comes from the BACK NORMAL alone, ALTITUDE from a blend of
+    /// the two by posture ("screen-down-ness", −m33). Why split them:
+    ///
+    ///   The top edge sweeps *through the zenith* as the phone passes the
+    ///   upright pose — and at the zenith azimuth flips 180° (N↔S). Reading
+    ///   azimuth off a blend that's top-weighted there made the whole canvas
+    ///   double-flip on the way up and read 180°-inverted after (point south,
+    ///   sky shows north). The back normal instead stays on the facing
+    ///   bearing the entire raise (it rises within the facing vertical plane,
+    ///   never crossing to the far azimuth), so its horizontal projection is
+    ///   a stable heading. Only when the phone is flat overhead does the back
+    ///   normal reach the zenith and lose its bearing — there altitude ≈ 90°
+    ///   (cone collapses to the puck, heading-up is moot), so we just hold
+    ///   the last azimuth. Altitude still blends so reading points at the
+    ///   front sky and overhead points straight up.
     ///
     /// CONVENTION (resolved on hardware 2026-05-31): Apple's
     /// `attitude.rotationMatrix` maps REFERENCE → device (v_dev = M·v_ref),
@@ -136,9 +150,9 @@ final class EMotionService {
     private static func sample(from attitude: CMAttitude) -> (aim: Aim, screenDown: Double) {
         let m = attitude.rotationMatrix
 
-        // Top edge (device +Y) and back-camera normal (−device +Z), each in
-        // reference-frame (north, west, up) components.
-        let tN = m.m21, tW = m.m22, tU = m.m23
+        // Top edge (device +Y) up-component, back-camera normal (−device +Z)
+        // in reference-frame (north, west, up) components.
+        let tU = m.m23
         let bN = -m.m31, bW = -m.m32, bU = -m.m33
 
         // Screen-out normal's downward lean: ~0 upright, →1 held flat
@@ -146,15 +160,19 @@ final class EMotionService {
         let screenDown = max(0, -m.m33)
         let w = smoothstep(screenDown, lo: aimBlendLo, hi: aimBlendHi)
 
-        // Blend, then normalise.
-        var n = (1 - w) * tN + w * bN
-        var west = (1 - w) * tW + w * bW
-        var up = (1 - w) * tU + w * bU
-        let len = (n * n + west * west + up * up).squareRoot()
-        if len > 1e-9 { n /= len; west /= len; up /= len }
+        // ALTITUDE: blend the two axes' elevations by posture.
+        let altitude = asin(max(-1, min(1, (1 - w) * tU + w * bU)))
 
-        let altitude = asin(max(-1, min(1, up)))
-        let azimuth  = atan2(-west, n)            // clockwise from north
+        // AZIMUTH: back normal's horizontal bearing only (stable through the
+        // raise). Hold the last value at the zenith, where it's undefined.
+        let horiz = (bN * bN + bW * bW).squareRoot()
+        let azimuth: Double
+        if horiz > 0.05 {
+            azimuth = atan2(-bW, bN)               // clockwise from north
+            lastAzimuth = azimuth
+        } else {
+            azimuth = lastAzimuth
+        }
 
         let aim = Aim(azimuth: quantize(azimuth), altitude: quantize(altitude))
         return (aim, screenDown)

@@ -2,7 +2,10 @@
   "fill-specializations" : [
     {
       "value" : {
-        "automatic-gradient" : "srgb:0.95000,0.93000,0.87000,1.00000",
+        "linear-gradient" : [
+          "display-p3:0.85479,0.83771,0.77863,1.00000",
+          "srgb:0.95000,0.93000,0.87000,1.00000"
+        ],
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -18,15 +21,18 @@
     {
       "appearance" : "dark",
       "value" : {
-        "automatic-gradient" : "display-p3:0.04544,0.02418,0.07452,1.00000",
+        "linear-gradient" : [
+          "display-p3:0.04544,0.02418,0.07452,1.00000",
+          "display-p3:0.23845,0.21804,0.26637,1.00000"
+        ],
         "orientation" : {
           "start" : {
             "x" : 0.5,
-            "y" : 1
+            "y" : 0
           },
           "stop" : {
             "x" : 0.5,
-            "y" : 0.3
+            "y" : 0.7
           }
         }
       }
@@ -107,7 +113,7 @@
           }
         },
         {
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "poi_sun.svg",
           "name" : "poi_sun",
           "position" : {
@@ -318,15 +324,18 @@
           "fill-specializations" : [
             {
               "value" : {
-                "automatic-gradient" : "display-p3:0.88776,0.68500,0.64032,1.00000",
+                "linear-gradient" : [
+                  "display-p3:0.94424,0.77392,0.73639,1.00000",
+                  "display-p3:0.90055,0.62926,0.55204,1.00000"
+                ],
                 "orientation" : {
                   "start" : {
-                    "x" : 0.5,
-                    "y" : 1
+                    "x" : 0.5000000000000001,
+                    "y" : 0
                   },
                   "stop" : {
-                    "x" : 0.5,
-                    "y" : 0.2898656671697443
+                    "x" : 0.5000000000000001,
+                    "y" : 0.5852272727272727
                   }
                 }
               }
@@ -334,10 +343,11 @@
             {
               "appearance" : "dark",
               "value" : {
-                "automatic-gradient" : "display-p3:0.11368,0.08173,0.36194,1.00000"
+                "automatic-gradient" : "display-p3:0.50600,0.48000,0.61300,0.55000"
               }
             }
           ],
+          "glass" : true,
           "hidden" : false,
           "image-name" : "horizon_squircle_negative.svg",
           "name" : "horizon_squircle_negative",
