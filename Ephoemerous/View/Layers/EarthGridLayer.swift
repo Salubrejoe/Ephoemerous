@@ -77,6 +77,7 @@ struct EarthGridLayer: EGridLayer {
             var mask = layer
             mask.blendMode = .destinationIn
             mask.addFilter(.blur(radius: feather))
+            mask.addFilter(.brightness(0.5))
             mask.fill(wedge.path, with: .color(.white))
         }
     }

@@ -24,11 +24,14 @@ struct EphoemerousApp: App {
                     .fontDesign(.rounded)
             }
             .ignoresSafeArea()
+            
             .onAppear(perform: state.startCloudSync)
-            .onAppear(perform: EMotionService.shared.start)
+            
             .onChange(of: ELocationService.shared.location) { _, location in
                 if let location { state.adoptInitialDeviceLocation(location) }
             }
+
+            .onAppear(perform: EMotionService.shared.start)
             .onChange(of: scenePhase) { _, phase in
                 // Attitude streaming is battery-cheap but pointless in
                 // the background — stop with the app, resume on return.
