@@ -31,6 +31,11 @@ struct SearchSheet: View {
     @FocusState private var searchFocused: Bool
     @State private var detent: PresentationDetent = Self.barDetent
 
+    /// Full-screen Hertzsprung–Russell diagram. Presented from THIS
+    /// sheet (not MainView) because the search sheet is always up — a
+    /// cover hung off the root would fight the active presentation.
+    @State private var showHRDiagram = false
+
     /// Resting "search bar only" detent — the persistent always-present
     /// state, just tall enough for the field + grabber. Drag up (or focus
     /// the field) to reveal favourites, then results.
@@ -41,6 +46,8 @@ struct SearchSheet: View {
             HStack(spacing: 12) {
                 searchHeader
 
+                // Hertzsprung–Russell diagram — full-screen star chart.
+                hrButton
                 CompassModeButton()
                 // Compass rose, trailing of the heading-up toggle — auto-
                 // hides (collapses) when the sky is already upright.
@@ -86,6 +93,22 @@ struct SearchSheet: View {
         .onChange(of: searchText) { _, text in
             if !text.isEmpty, detent == Self.barDetent { detent = .medium }
         }
+        .fullScreenCover(isPresented: $showHRDiagram) {
+            EHRDiagramView()
+        }
+    }
+
+    /// Glass chip matching the compass cluster — opens the HR diagram.
+    private var hrButton: some View {
+        Button { showHRDiagram = true } label: {
+            Image(systemName: "chart.dots.scatter")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 42, height: 42)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
     }
 
     // MARK: Header

@@ -23,6 +23,17 @@
         }
       }
     },
+    "ABSOLUTE MAGNITUDE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MAGNITUDINE ASSOLUTA"
+          }
+        }
+      }
+    },
     "ASTRONOMICAL" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1017,6 +1028,17 @@
         }
       }
     },
+    "GIANTS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GIGANTI"
+          }
+        }
+      }
+    },
     "Ganymede's Cup" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1356,6 +1378,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lira"
+          }
+        }
+      }
+    },
+    "MAIN SEQUENCE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SEQUENZA PRINCIPALE"
           }
         }
       }
@@ -2010,6 +2043,17 @@
         }
       }
     },
+    "SPECTRAL CLASS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CLASSE SPETTRALE"
+          }
+        }
+      }
+    },
     "SUMMER SOLSTICE" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2039,6 +2083,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "TRAMONTO"
+          }
+        }
+      }
+    },
+    "SUPERGIANTS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SUPERGIGANTI"
           }
         }
       }
@@ -2292,6 +2347,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stelle"
+          }
+        }
+      }
+    },
+    "Stars by colour and luminosity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le stelle per colore e luminosità"
           }
         }
       }
@@ -2898,6 +2964,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ORIZZONTE OCCIDENTALE"
+          }
+        }
+      }
+    },
+    "WHITE DWARFS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NANE BIANCHE"
           }
         }
       }
