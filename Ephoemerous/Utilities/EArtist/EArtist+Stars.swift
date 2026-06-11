@@ -72,10 +72,13 @@ extension EArtist {
     // same casing as the POI labels, fading in with the zoom overshoot and
     // out as the view settles back. No badge, no selection.
 
-    /// Scale at which the over-zoom labels begin to show (a faint hint at
-    /// the ceiling) and the scale by which they're fully in (well into the
-    /// rubber overshoot). Anchored to `AstroConstants.maximumScale`.
-    var overZoomLabelStartScale: Double  { AstroConstants.maximumScale * 0.95 }
+    /// Scale at which the over-zoom labels begin to show and the scale by
+    /// which they're fully in (well into the rubber overshoot). Anchored
+    /// to `AstroConstants.maximumScale` — and starting strictly AT the
+    /// ceiling, not before: below it `overZoomLabelOpacity` is exactly 0,
+    /// so ordinary max-zoom panning never pays a single label draw; only
+    /// pushing into the rubber buys them in.
+    var overZoomLabelStartScale: Double  { AstroConstants.maximumScale }
     var overZoomLabelFullScale:  Double  { AstroConstants.maximumScale * 1.30 }
     /// Gap from the star dot to the leading edge of its name.
     var overZoomLabelGap:        CGFloat { 7 }
@@ -93,22 +96,32 @@ extension EArtist {
     }
 
     /// Plain catalogue-designation label for a star, trailing-right of its
-    /// dot — used only during over-zoom. Same cased treatment as the POI
-    /// text so it stays legible over a busy field. `opacity` is the
-    /// `overZoomLabelOpacity`, so it transitions in/out with the zoom.
+    /// dot — used only during over-zoom. ONE quiet secondary-colour pass,
+    /// deliberately NOT the cased POI treatment: that's a shadow (blur
+    /// filter) + 8 casing redraws + fill per label, and these labels run
+    /// on EVERY visible star — the cased version multiplied into
+    /// thousands of text draws + hundreds of blurs per over-zoom frame.
+    /// `opacity` is the `overZoomLabelOpacity`, so it transitions in/out
+    /// with the zoom.
     func drawStarNameLabel(_ star: EStar, at sc: CGPoint,
                            opacity: Double, in dc: inout EGraphicContext) {
         guard opacity > 0.01 else { return }
-        let font  = Font.system(.caption2).weight(.semibold)
+        // Bayer designations only — "α CMa" yes, "23 UMa" / "HR" no. The
+        // Greek-letter stars are the figure-bearers worth a whisper; it
+        // also keeps the over-zoom label count to a fraction of the
+        // field. One scalar test: Α…ω is U+0391…U+03C9.
+        guard let first = star.name.unicodeScalars.first,
+              (0x0391...0x03C9).contains(first.value) else { return }
         let point = CGPoint(x: sc.x + overZoomLabelGap, y: sc.y)
         var ctx = dc.ctx
         ctx.opacity *= opacity
-        drawCasedLabel(
-            filled: Text(star.displayName).font(font).foregroundStyle(Color.primary),
-            cased:  Text(star.displayName).font(font).foregroundStyle(poiTextBorderColor),
+        ctx.draw(
+            Text(star.displayName)
+                .font(.system(.caption2).weight(.semibold))
+                .fontDesign(.serif)            // sky-object name → serif
+                .foregroundStyle(.secondary),
             at:     point,
-            anchor: .leading,          // text extends right from the dot
-            in:     ctx
+            anchor: .leading                   // text extends right from the dot
         )
     }
 
