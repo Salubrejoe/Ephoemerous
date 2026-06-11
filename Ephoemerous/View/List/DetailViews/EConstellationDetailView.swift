@@ -68,7 +68,7 @@ struct EConstellationDetailView: View {
                 subtitle:      subtitleText,
                 accent:        accent,
                 icon:          { Image(symbol: iconSymbol) },
-                leadingSymbol: .shareCircleFill,
+                leadingSymbol: .share,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

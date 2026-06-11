@@ -37,7 +37,7 @@ struct ENSPlanetDetailView: View {
                 subtitle:      planet.mythology,
                 accent:        accent,
                 icon:          { POIBadgeView(category: .planet(planet)) },
-                leadingSymbol: .shareCircleFill,
+                leadingSymbol: .share,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )

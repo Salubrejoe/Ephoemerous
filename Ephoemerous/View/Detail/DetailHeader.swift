@@ -88,7 +88,7 @@ struct DetailHeader<Icon: View>: View {
             // Padding scales with whether the secondary leading slot
             // is occupied — keeps the title centred in the available
             // horizontal space rather than drifting toward the X.
-            .padding(.horizontal, secondaryLeadingSymbol == nil ? 56 : 100)
+//            .padding(.horizontal, secondaryLeadingSymbol == nil ? 56 : 100)
             .frame(maxWidth: .infinity)
 
             HStack(spacing: 8) {
@@ -99,7 +99,7 @@ struct DetailHeader<Icon: View>: View {
                 }
                 Spacer()
 
-                CircleIconButton(symbol: .xmarkCircleFill, action: onDismiss)
+                CircleIconButton(symbol: .xmark, action: onDismiss)
             }
             .padding(.horizontal, 10)
         }
@@ -121,41 +121,11 @@ private struct CircleIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(symbol: symbol)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 32, height: 32)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
+                .offset(y: symbol == .share ? -2 : 0)
         }
+        .frame(width: 36, height: 36)
+        .contentShape(.circle)
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - NowPillButton
-// "Now" shortcut — same glass capsule + Label idiom the
-// DatePickerPanel toolbar uses for its own Now action, so the two
-// surfaces feel like the same gesture. Tap commits whatever the
-// caller wants (e.g. `state.observationDate = .now`).
-//
-// `isDisabled` greys the pill out and blocks taps when the
-// observation date is already at real-world now — no point firing
-// the same gesture twice.
-private struct NowPillButton: View {
-    let action:     () -> Void
-    let isDisabled: Bool
-
-    var body: some View {
-        Button(action: action) {
-            Label("Now", symbol: .clockFill)
-                .font(.callout.weight(.medium))
-                .foregroundStyle(isDisabled ? .secondary : .primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical,    9)
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .glassEffect(.clear.interactive(), in: .capsule)
-        .opacity(isDisabled ? 0.55 : 1.0)
-        .disabled(isDisabled)
+        .glassEffect(.clear.interactive(), in: .circle)
     }
 }

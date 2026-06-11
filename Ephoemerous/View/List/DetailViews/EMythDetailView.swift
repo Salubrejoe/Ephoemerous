@@ -67,7 +67,7 @@ struct EMythDetailView: View {
                 subtitle:      subtitleText,
                 accent:        accent,
                 icon:          { EmptyView() },
-                leadingSymbol: .shareCircleFill,
+                leadingSymbol: .share,
                 onLeading:     {},
                 onDismiss:     { state.dismissMyth() }
             )

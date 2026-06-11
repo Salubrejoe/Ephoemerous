@@ -23,7 +23,7 @@ extension EArtist {
     /// this does the depth.
     var poiTextShadow: GraphicsContext.Filter {
         .shadow(color: .black.opacity(0.5),
-                radius: 4.8, x: 0, y: 2.5)
+                radius: 2.8, x: 0, y: 0.5)
     }
 
     /// Colour of the crisp casing around label text. `.primary` gives

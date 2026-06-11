@@ -47,8 +47,8 @@ extension EAppState {
     /// Smooth enough that stars fade in as you pinch rather than popping.
     func magnitudeCap(forScale scale: Double) -> Double {
         let floorScale   = 25.0,                       floorMag   = 4.5
-        let defaultScale = AstroConstants.defaultScale, defaultMag = 6.2
-        let ceilScale    = AstroConstants.maximumScale, ceilMag    = 8.0
+        let defaultScale = AstroConstants.defaultScale, defaultMag = 4.2
+        let ceilScale    = AstroConstants.maximumScale, ceilMag    = 7.0
 
         if scale <= floorScale { return floorMag }
         if scale >= ceilScale  { return ceilMag }

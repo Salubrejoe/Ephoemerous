@@ -50,9 +50,9 @@ struct EStarDetailView: View {
                 subtitle:               subtitleText,
                 accent:                 accent,
                 icon:                   { POIBadgeView(category: .followedStar(star)) },
-                leadingSymbol:          showsBackChevron ? .chevronBackward : .shareCircleFill,
+                leadingSymbol:          showsBackChevron ? .chevronBackward : .share,
                 onLeading:              { showsBackChevron ? dismiss() : () },
-                secondaryLeadingSymbol: showsBackChevron ? .shareCircleFill : nil,
+                secondaryLeadingSymbol: showsBackChevron ? .share : nil,
                 onSecondaryLeading:     showsBackChevron ? {} : nil,
                 onDismiss:              { state.dismissDetail() }
             )

@@ -1,13 +1,12 @@
 import SwiftUI
 import simd
 
-struct EMoonLayer: EGridLayer {
+struct MoonLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let (moonVec, _, _) = EMoonPosition.vector(for: dc.renderedObservationDate,
                                                    siderealOffset: dc.localSiderealOffset)
         guard let proj = EProjection.project(moonVec, viewpoint: dc.viewpoint) else { return }
         let sc = dc.toScreen(proj)
-        guard dc.onScreen(sc, margin: 40) else { return }
 
         let pos = sc; let state = dc.state
         // Equality-guard — see SunLayer for the rationale.

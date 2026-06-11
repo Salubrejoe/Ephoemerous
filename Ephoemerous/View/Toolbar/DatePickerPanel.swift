@@ -109,11 +109,10 @@ struct DatePickerPanel: View {
             } label: {
                 Text("Now")
                     .font(.callout.weight(.semibold))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical,    7)
-                    .background(Capsule().fill(.regularMaterial))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical,   2)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glass)
             .disabled(abs(state.observationDate.timeIntervalSinceNow) < 60)
             .frame(width: 100, alignment: .leading)
             Spacer()
@@ -126,14 +125,11 @@ struct DatePickerPanel: View {
             Spacer()
             
             Button { state.isShowingDatePicker = false } label: {
-                Image(symbol: .xmarkCircleFill)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 32, height: 32)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
+                Image(symbol: .xmark)
+                    .padding(8)
             }
             .buttonStyle(.plain)
+            .glassEffect(.clear.interactive(), in: .circle)
             .frame(width: 100, alignment: .trailing)
         }
     }

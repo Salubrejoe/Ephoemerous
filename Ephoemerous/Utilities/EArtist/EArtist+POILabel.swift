@@ -167,7 +167,7 @@ extension EArtist {
 
         var caseCtx = dc.ctx
         caseCtx.opacity *= badgeFade
-//        caseCtx.fill(casingPath, with: .color(poiTextBorderColor))
+        caseCtx.fill(casingPath, with: .color(poiTextBorderColor))
 
         let gradient = Gradient(colors: [gradTop, gradBottom])
         var fillCtx = dc.ctx

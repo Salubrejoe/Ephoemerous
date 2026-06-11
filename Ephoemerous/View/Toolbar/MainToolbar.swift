@@ -1,16 +1,7 @@
 import SwiftUI
 import LoreKit
 
-// MARK: - MainToolbar
-// Bottom-of-canvas glass capsule. Two pill-shaped buttons — one for
-// observation date, one for observer location — each toggling an
-// inline panel that springs up from above the bar.
-//
-// The toolbar itself never holds the picker UI. State for each panel
-// lives on `EAppState` (`isShowingDatePicker` / `isShowingLocationPicker`)
-// so other entry points (gestures, deep links, etc.) can open them too,
-// and so the two panels stay mutually exclusive via the toggle helpers
-// in `EAppState+Time.swift` / `EAppState+Location.swift`.
+
 struct MainToolbar: View {
 
     @Environment(EAppState.self) private var state
@@ -31,6 +22,9 @@ struct MainToolbar: View {
     /// Capsule + reset-chip height.
     private let barHeight: CGFloat = 32
 
+    
+    
+    // MARK: - body
     var body: some View {
         // Reading `refreshTick` here registers the dependency for
         // every label call downstream; bumping the tick re-renders
@@ -48,8 +42,6 @@ struct MainToolbar: View {
             HStack(spacing: 6) {
                 if notHere {
                     resetButton("resetHere") { state.goToDeviceLocation() }
-                        // Slide out from the capsule's leading end (starts
-                        // shifted toward it); the container morphs the glass.
                         .transition(.offset(x: barHeight).combined(with: .opacity))
                 }
 
@@ -65,14 +57,18 @@ struct MainToolbar: View {
 
                 if notNow {
                     resetButton("resetNow") { state.commitPickedObservationDate(.now) }
-                        // Slide out from the capsule's trailing end.
                         .transition(.offset(x: -barHeight).combined(with: .opacity))
                 }
             }
-        }
+        } //: GlassEffectContainer
+        
+       
+        // MARK: - REFRESH HERE/NOW
+        
         // Animate the chips growing in / shrinking out as the flags flip.
-        .animation(.snappy(duration: 0.35), value: notHere)
-        .animation(.snappy(duration: 0.35), value: notNow)
+        .animation(.bouncy, value: notHere)
+        .animation(.bouncy, value: notNow)
+        
         // Bump the refresh tick on initial appear and every time the
         // scene returns to `.active` (phone woken from sleep, app
         // returning from background). Re-evaluating the body recomputes
@@ -82,6 +78,7 @@ struct MainToolbar: View {
         .onChange(of: scenePhase) { _, new in
             if new == .active { refreshTick &+= 1 }
         }
+        
         // Re-resolve the locality name whenever the rounded origin
         // changes. `.task(id:)` cancels and restarts when the id
         // shifts, which gives us a built-in debounce — the 400 ms
@@ -96,7 +93,9 @@ struct MainToolbar: View {
         }
     }
 
-    // MARK: - Reset chips
+    
+    
+    // MARK: - Reset Conditions
 
     /// True when the observer has been moved off the device's real fix —
     /// and we actually have a fix to return to — so the leading "back to
@@ -111,7 +110,40 @@ struct MainToolbar: View {
     private var notNow: Bool {
         abs(state.observationDate.timeIntervalSinceNow) >= 60
     }
+}
 
+
+// MARK: - Buttons
+extension MainToolbar {
+    
+    private var locationButton: some View {
+        Button(action: state.toggleLocationPicker) {
+            Text(locationLabel)
+                .font(.callout.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical,    8)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var dateButton: some View {
+        Button(action: state.toggleDatePicker) {
+            Text(dateLabel)
+                .font(.callout.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical,    8)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+    
     /// A small circular glass chip carrying the reset glyph, sized to the
     /// capsule height. `id` keys its Liquid Glass morph into `glassNS`.
     private func resetButton(_ id: String, action: @escaping () -> Void) -> some View {
@@ -127,51 +159,13 @@ struct MainToolbar: View {
         }
         .buttonStyle(.plain)
     }
+}
 
-    // MARK: - Pills
 
-    private var locationButton: some View {
-        Button(action: state.toggleLocationPicker) {
-            Text(locationLabel)
-                .font(.callout.weight(.bold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical,    8)
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-//        // Lit while its editor sheet is open — the tether that links
-//        // this top pill to the sheet rising at the bottom.
-//        .background {
-//            if state.isShowingLocationPicker {
-//                Capsule().fill(.primary.opacity(0.15))
-//            }
-//        }
-    }
 
-    private var dateButton: some View {
-        Button(action: state.toggleDatePicker) {
-            Text(dateLabel)
-                .font(.callout.weight(.bold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical,    8)
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-//        .background {
-//            if state.isShowingDatePicker {
-//                Capsule().fill(.primary.opacity(0.15))
-//            }
-//        }
-    }
-
-    // MARK: - Pill labels
-
+// MARK: - Pill labels
+extension MainToolbar {
+    
     /// Locality label, three tiers from terse to verbose:
     ///   • observer is at the device's current fix → "Here"
     ///   • locality name resolved by the geocoder   → that name
@@ -191,7 +185,7 @@ struct MainToolbar: View {
         let lonStr = String(format: "%.1f°%@", abs(lon), lon >= 0 ? "E" : "W")
         return "\(latStr)  \(lonStr)"
     }
-
+    
     /// Stable id for `.task(id:)` — re-fires the geocode only when
     /// the origin shifts by more than 0.1° (~11 km), so a per-frame
     /// slerp doesn't queue up dozens of geocodes.
@@ -200,7 +194,7 @@ struct MainToolbar: View {
                state.origin.latitude.degrees,
                state.origin.longitude.degrees)
     }
-
+    
     /// Four tiers, from terse to verbose:
     ///   • observation within 60 s of real now → "Now"
     ///   • today                               → "HH:mm"
@@ -212,13 +206,13 @@ struct MainToolbar: View {
     private var dateLabel: String {
         let date = state.observationDate
         if abs(date.timeIntervalSinceNow) < 60 { return String(localized: "Now") }
-
+        
         let cal = Calendar.current
         let format: String
         if cal.isDateInToday(date) {
             format = "HH:mm"
         } else if cal.component(.year, from: date)
-               == cal.component(.year, from: .now) {
+                    == cal.component(.year, from: .now) {
             format = "d MMM HH:mm"
         } else {
             format = "d MMM yyyy HH:mm"
@@ -228,6 +222,7 @@ struct MainToolbar: View {
         return f.string(from: date)
     }
 }
+
 
 #Preview {
     ZStack {

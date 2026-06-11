@@ -1,22 +1,11 @@
+
 import SwiftUI
-import UIKit
-import CoreLocation
-import LoreKit
+
 
 struct MainView: View {
     @Environment(EAppState.self) var state
-    /// Inline magnitude slider in the bottom toolbar. Tapping the
-    /// magnitude icon toggles it; the slider replaces the Spacer
-    /// between the two corner buttons.
-    @State private var showMagnitudeSlider = false
-    /// Search-sheet presentation. Tapping the search icon presents
-    /// `SearchSheet` — Apple-Maps-style sheet with the favourites
-    /// horizontal scroll + search results.
-    @State private var showSearchSheet = false
-
-    @State private var height : Double = 0.0
-    @State private var width : Double = 0.0
-
+    
+    
     /// Selected detent for the detail place card, so it can fold down to
     /// a header-only stop (Apple-Maps style) while still *opening* at the
     /// third-height. `presentationDetents` takes an unordered Set and
@@ -33,10 +22,9 @@ struct MainView: View {
     /// larger Dynamic Type.
     private let detailHeaderDetent: PresentationDetent = .height(70)
 
-    /// Top inset clearing the dynamic island + status-bar zone. The app
-    /// is portrait-only, so this is a constant.
-    private let topPadding: CGFloat = 64
-
+    
+    
+    // MARK: - body
     var body: some View {
         ZStack {
             EArtist.shared.canvasBackground
@@ -45,22 +33,22 @@ struct MainView: View {
             CelestialCanva()
             ObjectsTrackingOverlay()
 
-            // Bottom toolbar: date + location pills with inline
-            // expandable panels above them. Pinned to the bottom safe
-            // area; the canvas stays full-bleed behind it.
             VStack {
                 MainToolbar()
 
                 Spacer()
             }
             .padding(.horizontal, 24)
-            .padding(.top,        topPadding)
-            .padding(.bottom,     80)
-            // Compass rose + heading-up toggle now live in the SearchSheet
-            // header (trailing of the search bar), grouped as one cluster —
-            // see `SearchSheet`. The old top-trailing overlay is gone.
-        }
+            .padding(.top,        64)
+            
+        } //: ZStack
         .ignoresSafeArea()
+        .toolbar(.hidden, for: .navigationBar)
+        
+        
+        
+        // MARK: - COMPASS
+        
         // Engage compass (heading-up) mode when the phone is raised up to
         // the sky — the AR gesture. Engage-only: lifting turns it ON, but
         // it never auto-disengages (the user lowers and taps the toggle to
@@ -73,16 +61,11 @@ struct MainView: View {
                 state.compassMode = true
             }
         }
-        // App is portrait-only — no device-orientation rotation. The
-        // canvas's `state.canvasRotation` is entirely user-owned (the
-        // rotation slider; the two-finger gesture next), so there's no
-        // orientation observer here any more.
-        //
-        // The outer NavigationStack in EphoemerousApp.swift reserves a
-        // ~44 pt navigation-bar slot at the top; we don't navigate from
-        // MainView itself (sheets host their own NavigationStacks), so
-        // the bar is pure ghost chrome — hide it.
-        .toolbar(.hidden, for: .navigationBar)
+        
+        
+        
+        // MARK: - DETAIL HOST
+        
         // Detail sheet — single sheet at the root level, item-bound to
         // `state.detailDestination`. Opens at the bottom third; the
         // canvas stays interactive behind it. Two detents, Apple-Maps
@@ -112,6 +95,11 @@ struct MainView: View {
                 // wherever the previous one was left folded.
                 .onAppear { detailDetent = .fraction(1.0 / 3.0) }
         }
+        
+        
+        
+        // MARK: - MYTH
+        
         // Myth sheet — sibling root sheet, item-bound to
         // `state.mythDestination`. Adaptive: `.medium` adapts to
         // device class / dynamic type so on small phones it lands
@@ -130,6 +118,11 @@ struct MainView: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
+        
+        
+        
+        // MARK: SEARCH
+        
         // Persistent search sheet — Apple-Maps-style. It's ALWAYS up
         // (parked at its bar-only detent) whenever nothing else owns the
         // bottom: no object selected and no myth sheet. Selecting an
@@ -138,9 +131,12 @@ struct MainView: View {
         // dismissing the detail flips it back true → search returns.
         // One source of truth (`detailDestination` / `mythDestination`),
         // so the two sheets are mutually exclusive with no manual toggle.
-        .sheet(isPresented: searchPresented) {
-            SearchSheet()
-        }
+        .sheet(isPresented: searchPresented) { SearchSheet() }
+    
+        
+        
+        // MARK: - MAP
+        
         // Location editor — raised by the toolbar's location pill. A
         // proper bottom sheet (swaps search out, same as detail/myth),
         // with its own X to close. `isShowingLocationPicker` is the
@@ -153,6 +149,11 @@ struct MainView: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
+        
+        
+        
+        // MARK: - DATE PICK
+        
         // Date editor — raised by the toolbar's date pill. Wheel picker;
         // a medium sheet is plenty for five wheels + the close row.
         .sheet(isPresented: Bindable(state).isShowingDatePicker) {
@@ -188,14 +189,11 @@ struct MainView: View {
 }
 
 
-extension View {
-    func sheetFormat() -> some View {
-        scrollContentBackground(.hidden)
-            .presentationDetents([.medium, .large])
-            .presentationBackgroundInteraction(.enabled)
-    }
-}
 
+
+
+
+// MARK: - Preview
 
 #Preview("Light") {
     NavigationStack {
@@ -210,28 +208,23 @@ extension View {
     }
 }
 
+
+
+
+
 /*
- .overlay {
- VStack {
- GameBoyControlPad()
- }.padding(.horizontal, 32)
- .frame(maxWidth: 400, maxHeight: 700, alignment: .bottom)
- }
-
-
- .toolbar {
- ToolbarItem(placement: .principal) {
- VStack(spacing: 12) {
- CoordinatesTile(origin: state.origin)
- OmniButton()
- }
- }
- }
-
- .sheet(isPresented: Bindable(state).showStarList) {
- NavigationStack {
- EListView()
- .sheetFormat()
- }
- }
+ // MARK: - DEPRECATION
+ /// Inline magnitude slider in the bottom toolbar. Tapping the
+ /// magnitude icon toggles it; the slider replaces the Spacer
+ /// between the two corner buttons.
+ 
+ @State private var showMagnitudeSlider = false
+ 
+ /// Search-sheet presentation. Tapping the search icon presents
+ /// `SearchSheet` — Apple-Maps-style sheet with the favourites
+ /// horizontal scroll + search results.
+ @State private var showSearchSheet = false
+ 
+ @State private var height : Double = 0.0
+ @State private var width : Double = 0.0
  */

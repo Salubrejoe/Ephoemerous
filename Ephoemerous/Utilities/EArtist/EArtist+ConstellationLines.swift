@@ -7,7 +7,7 @@ import SwiftUI
 extension EArtist {
 
     var constellationLineColor : Color  { palette.constellationLine }
-    var constellationLineWidth : Double { 0.7 }
+    var constellationLineWidth : Double { 1.0 }
 
     /// Stroke width for a favourited constellation's stick-figure
     /// lines. Slightly bumped over the normal width so the solid
@@ -16,7 +16,7 @@ extension EArtist {
 
     /// Centre-to-centre spacing between dots along a stick-figure
     /// segment. Tunable — increase for sparser, decrease for denser.
-    var constellationLineDotPitch : Double { 5.4 }
+    var constellationLineDotPitch : Double { 2.4 }
 
     /// Extra screen-space gap added to each end of a segment, *on top*
     /// of the projected star radius. Keeps a visible halo of bare canvas

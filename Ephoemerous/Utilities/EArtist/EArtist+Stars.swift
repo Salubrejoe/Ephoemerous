@@ -57,10 +57,12 @@ extension EArtist {
         local.translateBy(x: sc.x, y: sc.y)
         local.rotate(by: spin)
         local.scaleBy(x: r, y: r)
+//        local.addFilter(.brightness(0.7))
+        local.addFilter(.shadow(color: star.spectralClass.color, radius: 1))
         local.fill(
             Self.starPath,
             with: .color(.primary)
-//            with: .color(star.spectralClass.lightColor.opacity(0.9))
+//            with: .color(star.spectralClass.lightColor.opacity(0.2))
         )
     }
 

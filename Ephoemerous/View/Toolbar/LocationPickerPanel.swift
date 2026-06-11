@@ -107,31 +107,27 @@ struct LocationPickerPanel: View {
             } label: {
                 Text("Here")
                     .font(.callout.weight(.semibold))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical,    7)
-                    .background(Capsule().fill(.regularMaterial))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical,   2)
             }
             .disabled(state.isAtDeviceLocation)
             .frame(width: 100, alignment: .leading)
+            .buttonStyle(.glass)
+            
             Spacer()
             
             Text(coordinateLabel)
-                .font(.subheadline.monospacedDigit())
+                .font(.footnote.monospacedDigit())
                 .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
-                .shadow(radius: 2)
                 .lineLimit(1)
             Spacer()
             
             Button { state.isShowingLocationPicker = false } label: {
-                Image(symbol: .xmarkCircleFill)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 32, height: 32)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
+                Image(symbol: .xmark)
+                    .padding(8)
             }
             .buttonStyle(.plain)
+            .glassEffect(.clear.interactive(), in: .circle)
             .frame(width: 100, alignment: .trailing)
         }
     }
@@ -141,7 +137,6 @@ struct LocationPickerPanel: View {
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(symbol: .search)
-                .foregroundStyle(.secondary)
             TextField("Search a place",
                       text: Binding(get: { completer.query },
                                     set: { completer.query = $0 }))
@@ -154,7 +149,6 @@ struct LocationPickerPanel: View {
                     completer.query = ""
                 } label: {
                     Image(symbol: .xmarkCircleFill)
-                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
@@ -163,7 +157,7 @@ struct LocationPickerPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical,    9)
         .background(
-            Capsule().fill(.regularMaterial)
+            Capsule().fill(.clear).glassEffect(.clear.interactive())
         )
     }
 

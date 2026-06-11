@@ -116,10 +116,7 @@ struct SearchSheet: View {
         .font(.callout)
         .padding(.horizontal, 14)
         .padding(.vertical,   10)
-        .background(
-            Capsule()
-                .fill(.ultraThinMaterial)
-        )
+        .glassEffect(.regular.interactive(), in: .containerRelative)
     }
 
     // MARK: Favourites scroll

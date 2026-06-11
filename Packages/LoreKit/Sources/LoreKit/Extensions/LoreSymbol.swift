@@ -24,7 +24,7 @@ public enum LoreSymbol: String, Sendable, CaseIterable {
     case bookFill       = "book.fill"
     case calendar       = "calendar"
     case checkmark      = "checkmark"
-    case chevronBackward = "chevron.backward.circle.fill"
+    case chevronBackward = "chevron.backward"
     case chevronUpDown  = "chevron.up.chevron.down"
     case circle         = "circle"
     case clockFill      = "clock.fill"

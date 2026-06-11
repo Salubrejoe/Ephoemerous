@@ -31,7 +31,7 @@ struct CelestialCanva: View {
             // Aim sky-wash: blue glow where the phone points, clipped to
             // the horizon dome. Drawn early so it tints the background
             // behind every star rather than fogging the foreground.
-//            SkyAimWashLayer(),
+            SkyAimWashLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
@@ -40,10 +40,10 @@ struct CelestialCanva: View {
             // in (handled by `drawPOILabel` + `.namedStar` thresholds).
             NamedStarsLayer(),
             FavouritesLayer(),
-//            EclipticLayer(),
+            EclipticLayer(),
             EPlanetsLayer(),
             SunLayer(),
-            EMoonLayer(),
+            MoonLayer(),
             HorizonLayer(),
             // EASTERN / WESTERN HORIZON cartographic labels curving
             // along the projected alt = 0 rim. Sits after HorizonLayer
