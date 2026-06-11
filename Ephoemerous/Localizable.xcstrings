@@ -23,6 +23,28 @@
         }
       }
     },
+    "ASTRONOMICAL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ASTRONOMICO"
+          }
+        }
+      }
+    },
+    "AUTUMNAL EQUINOX" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EQUINOZIO D'AUTUNNO"
+          }
+        }
+      }
+    },
     "Abbreviation" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -275,6 +297,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Più luminose di"
+          }
+        }
+      }
+    },
+    "CIVIL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CIVILE"
           }
         }
       }
@@ -1503,6 +1536,17 @@
         }
       }
     },
+    "NAUTICAL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NAUTICO"
+          }
+        }
+      }
+    },
     "Name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1966,6 +2010,39 @@
         }
       }
     },
+    "SUMMER SOLSTICE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SOLSTIZIO D'ESTATE"
+          }
+        }
+      }
+    },
+    "SUNRISE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ALBA"
+          }
+        }
+      }
+    },
+    "SUNSET" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TRAMONTO"
+          }
+        }
+      }
+    },
     "Sagitta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2325,6 +2402,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Urano"
+          }
+        }
+      }
+    },
+    "VERNAL EQUINOX" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EQUINOZIO DI PRIMAVERA"
           }
         }
       }
@@ -2810,6 +2898,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ORIZZONTE OCCIDENTALE"
+          }
+        }
+      }
+    },
+    "WINTER SOLSTICE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SOLSTIZIO D'INVERNO"
           }
         }
       }
