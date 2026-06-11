@@ -64,18 +64,11 @@ struct CompassButton: View {
                 // Plain ultra-thin material circle — it sits inside the
                 // search sheet's own glass, so no glass-on-glass. Matches
                 // the heading-up toggle's circle.
-            
-                .background(.ultraThinMaterial, in: .circle)
-                .contentShape(.circle)
-                .overlay {
-                    Capsule()
-                        .frame(width: 1, height: 6)
-                        .offset(y: -11)
-                }
 
         }
         .buttonStyle(CompassPressStyle())
-        .buttonStyle(.glass)
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
         // Auto-hide when upright (Maps behaviour) — nothing to reset.
         .scaleEffect(aligned ? 0.6 : 1)
         .allowsHitTesting(!aligned)
