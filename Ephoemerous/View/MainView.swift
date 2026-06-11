@@ -78,6 +78,15 @@ struct MainView: View {
         // third.
         .sheet(item: Bindable(state).detailDestination) { obj in
             DetailHost(obj: obj)
+                // Tie the host's identity to the object so a new selection
+                // builds a BRAND-NEW NavigationStack instead of swapping the
+                // root in place. Without this, selecting another object while
+                // a star is pushed (from a constellation roster) leaves the
+                // old pushed path alive on the reused presentation — its
+                // `navigationDestination(for:)` is gone, so it renders as the
+                // ⚠️ placeholder with a stuck back chevron. New id → full
+                // teardown → fresh stack, empty path.
+                .id(obj.id)
                 // Fold to header-only when at the smallest detent —
                 // DetailHeader drops its icon and each detail view drops
                 // its body, so only title + subtitle + buttons remain.
