@@ -31,7 +31,7 @@ struct CelestialCanva: View {
             // Aim sky-wash: blue glow where the phone points, clipped to
             // the horizon dome. Drawn early so it tints the background
             // behind every star rather than fogging the foreground.
-            SkyAimWashLayer(),
+//            SkyAimWashLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
             ConstellationNamesLayer(),
@@ -50,6 +50,11 @@ struct CelestialCanva: View {
             // so the text reads against the tinted below-horizon wash,
             // before the user puck so the puck draws on top.
             HorizonLabelsLayer(),
+            // VERNAL / SUMMER / AUTUMNAL / WINTER labels curving along the
+            // four principal meridians (the colures), same cartographic
+            // treatment as the horizon labels — riding constant-RA grid
+            // lines instead of the alt = 0 rim.
+            MeridianLabelsLayer(),
         ]
     }
 

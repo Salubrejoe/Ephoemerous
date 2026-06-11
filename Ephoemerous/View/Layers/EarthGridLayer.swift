@@ -20,7 +20,6 @@ struct EarthGridLayer: EGridLayer {
         drawMeridians(in:   &dc, color: gridColor)
         drawParallels(in:   &dc, color: gridColor)
         drawPoleLabels(in:  &dc)
-        drawHourLabels(in:  &dc)
     }
 
     func drawParallels(in dc: inout EGraphicContext, color: Color) {
@@ -85,24 +84,8 @@ struct EarthGridLayer: EGridLayer {
         }
     }
 
-    // MARK: - RA hour numerals (0h / 6h / 12h / 18h)
-    //
-    // Dropped onto the celestial equator (dec = 0) so they ride the
-    // dec=0 parallel as the sky rotates sidereally. Only the four
-    // principal hours to keep the grid uncluttered. Any hour whose
-    // projection lands off-canvas is culled.
-    func drawHourLabels(in dc: inout EGraphicContext) {
-        for h in [0.0, 6.0, 12.0, 18.0] {
-            let ra = Angle.radians(h / 24.0 * Double.twoPi)
-            guard let sc = projectedScreenPoint(ra: ra, dec: .zero, in: dc),
-                  dc.onScreen(sc, margin: 12)
-            else { continue }
-            artist.drawGridLabel("\(Int(h))h", at: sc, in: &dc)
-        }
-    }
-
-    /// Sidereally-rotated equatorial → screen projection. Shared
-    /// by both label loops — they only differ in (ra, dec) tuples.
+    /// Sidereally-rotated equatorial → screen projection. Used by the
+    /// pole labels to place "N" / "S" at the meridian-fan convergence.
     private func projectedScreenPoint(ra:  Angle,
                                       dec: Angle,
                                       in dc: EGraphicContext) -> CGPoint? {
