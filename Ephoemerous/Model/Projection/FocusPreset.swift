@@ -100,41 +100,24 @@ extension EAppState {
         // flips Y), so negate. Reading `aim` here makes the canvas + the
         // compass rose repaint on every heading change — the same hook the
         // cone uses — so the rotation tracks the phone with no tick driver.
-        if compassMode, let aim = EMotionService.shared.aim {
-            let target = -aim.azimuth
-            // First compass frame: snap to the live heading, seed the smoother.
-            guard let cur = _compassRotCurrent else {
-                _compassRotCurrent = target
-                _compassRotTime    = animationTime
-                return .radians(target)
-            }
-            // Critically-damped low-pass toward the heading, integrated
-            // against the frame clock. `aim.azimuth` is delivered at 30 Hz
-            // and quantized to 0.5°; easing toward it each 120 Hz tick
-            // dissolves those steps (and magnetometer jitter) into a glide.
-            // dt is clamped so a parked gap or an off-frame read can't fling
-            // the rotation. tau = time constant: smaller snappier, larger
-            // smoother.
-            let dt  = min(0.1, max(0, animationTime - _compassRotTime))
-            _compassRotTime = animationTime
-            let tau = 0.10
-            let k   = dt > 0 ? (1 - exp(-dt / tau)) : 0
-            // Shortest-arc delta so wrapping past ±π eases the short way.
-            var delta = (target - cur).truncatingRemainder(dividingBy: 2 * .pi)
-            if delta >  .pi { delta -= 2 * .pi }
-            if delta < -.pi { delta += 2 * .pi }
-            let next = cur + delta * k
-            _compassRotCurrent = next
-            return .radians(next)
+        // Heading-up: return the per-frame-smoothed heading. The low-pass is
+        // integrated once per frame in `advanceCanvasClock`, NOT here — this
+        // getter MUST be a pure read. The rose dial reads `renderedRotation`
+        // several times in one body (alignment test, central letter, orbiting
+        // dot) AND reads `_rotationTransition`; a getter that mutated observed
+        // state mid-read would make that body an AttributeGraph cycle →
+        // main-thread abort. We still touch `aim` so heading changes
+        // invalidate the readers, and fall back to the raw heading on the
+        // very first frame before the smoother is seeded.
+        if compassMode {
+            let live = EMotionService.shared.aim
+            if let smoothed = _compassRotCurrent { return .radians(smoothed) }
+            if let live { return .radians(-live.azimuth) }
         }
-        // Out of compass mode → drop the smoother so a fresh raise snaps to
-        // the live heading rather than easing up from a stale value.
-        _compassRotCurrent = nil
+        // Pure read: return the interpolated spin, or the committed value once
+        // finished. The finished transition is retired in `advanceCanvasClock`.
         guard let t = _rotationTransition else { return canvasRotation }
-        if t.isFinished(at: animationTime) {
-            _rotationTransition = nil
-            return canvasRotation
-        }
+        if t.isFinished(at: animationTime) { return canvasRotation }
         return t.interpolated(at: animationTime)
     }
 
@@ -252,24 +235,22 @@ extension EAppState {
         set { _activeTransition = newValue }
     }
 
-    /// Use this in EGraphicContext instead of `.scale` directly.
+    /// Use this in EGraphicContext instead of `.scale` directly. PURE read —
+    /// the finished transition is retired in `advanceCanvasClock`, not here,
+    /// so a view body that reads both `renderedScale` and `_activeTransition`
+    /// (e.g. the canvas via `isAnimating`) can't trip an AttributeGraph cycle.
     var renderedScale: Double {
         guard let t = _activeTransition else { return scale }
-        if t.isFinished(at: animationTime) {
-            _activeTransition = nil
-            return scale
-        }
-        return t.interpolatedScale(at: animationTime)
+        return t.isFinished(at: animationTime) ? scale
+                                               : t.interpolatedScale(at: animationTime)
     }
 
-    /// Use this in EGraphicContext instead of `.offset` directly.
+    /// Use this in EGraphicContext instead of `.offset` directly. PURE read
+    /// (see `renderedScale`).
     var renderedOffset: CGPoint {
         guard let t = _activeTransition else { return offset }
-        if t.isFinished(at: animationTime) {
-            _activeTransition = nil
-            return offset
-        }
-        return t.interpolatedOffset(at: animationTime)
+        return t.isFinished(at: animationTime) ? offset
+                                               : t.interpolatedOffset(at: animationTime)
     }
 
     /// THE single camera-animation primitive. Every programmatic camera

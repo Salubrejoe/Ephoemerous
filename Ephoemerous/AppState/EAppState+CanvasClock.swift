@@ -58,6 +58,44 @@ extension EAppState {
             if deselSettled, _deselectingID != nil { _deselectingID = nil }
             if selSettled && deselSettled { _promotionActive = false }
         }
+        // Compass heading low-pass — integrated ONCE per frame here so every
+        // reader (canvas snapshot + the rose dial) sees one consistent value,
+        // and `renderedRotation` can stay a pure getter. `aim` is delivered
+        // at 30 Hz quantized to 0.5°; easing toward it each tick dissolves the
+        // steps (and magnetometer jitter) into a glide. dt is clamped so a
+        // parked gap can't fling it; tau is the time constant. ▼ TWEAK tau ▼
+        if compassMode, let aim = EMotionService.shared.aim {
+            let target = -aim.azimuth
+            if let cur = _compassRotCurrent {
+                let dt  = Swift.min(0.1, Swift.max(0, time - _compassRotTime))
+                let tau = 0.10
+                let k   = dt > 0 ? (1 - exp(-dt / tau)) : 0
+                var delta = (target - cur).truncatingRemainder(dividingBy: 2 * .pi)
+                if delta >  .pi { delta -= 2 * .pi }
+                if delta < -.pi { delta += 2 * .pi }
+                _compassRotCurrent = cur + delta * k
+            } else {
+                _compassRotCurrent = target      // first frame: snap to heading
+            }
+            _compassRotTime = time
+        } else {
+            // Out of compass mode → drop the smoother so a fresh raise snaps
+            // to the live heading rather than easing up from a stale value.
+            _compassRotCurrent = nil
+        }
+
+        // Retire finished camera / rotation transitions HERE rather than
+        // lazily inside the rendered* getters. Those getters are read from
+        // view bodies that ALSO read these transitions (the rose reads
+        // `renderedRotation` + `_rotationTransition`; the canvas reads
+        // `renderedScale` + `_activeTransition` via `isAnimating`), so a
+        // getter that nils mid-read turns the body into an AttributeGraph
+        // cycle → main-thread abort. Cleaning up once per frame in the draw
+        // phase (like `_promotionActive` above) keeps the getters pure.
+        if let t = _activeTransition,   t.isFinished(at: time) { _activeTransition   = nil }
+        if let t = _rotationTransition, t.isFinished(at: time) { _rotationTransition = nil }
+        if let t = _dateTransition,     t.isFinished(at: time) { _dateTransition     = nil }
+
         advanceInertiaTransition(at: time)
         advanceOriginTransition(at:  time)
         if canvasSize != size {

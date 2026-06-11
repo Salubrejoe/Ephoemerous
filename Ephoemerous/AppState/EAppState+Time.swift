@@ -30,13 +30,14 @@ extension EAppState {
     /// The date every canvas layer should use for rendering.
     /// Returns the animated intermediate date while a transition is in flight,
     /// falling back to `observationDate` once it completes.
+    /// PURE read — the finished transition is retired in
+    /// `advanceCanvasClock`, not here, so a body that reads both
+    /// `renderedObservationDate` and `_dateTransition` (the canvas, via
+    /// `isAnimating`) can't trip an AttributeGraph cycle.
     var renderedObservationDate: Date {
         guard let t = _dateTransition else { return observationDate }
-        if t.isFinished(at: animationTime) {
-            _dateTransition = nil
-            return observationDate
-        }
-        return t.interpolated(at: animationTime)
+        return t.isFinished(at: animationTime) ? observationDate
+                                               : t.interpolated(at: animationTime)
     }
 
     /// Set the observation date, optionally animating the sky rotation.
