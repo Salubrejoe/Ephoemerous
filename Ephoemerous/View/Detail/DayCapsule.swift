@@ -70,9 +70,9 @@ struct DayCapsule: View {
 
     // MARK: Layout knobs
 
-    /// Same height as RememberButton so the two are interchangeable in
-    /// the layout slot under the header.
-    private var capsuleHeight: CGFloat { 50 }
+    /// A touch taller than RememberButton (50) to fit the hour numerals
+    /// under the comb; still close enough to share the layout slot.
+    private var capsuleHeight: CGFloat { 56 }
     /// Apple-HIG 44pt glass knob.
     private var knobDiameter:  CGFloat { 44 }
 
@@ -80,6 +80,19 @@ struct DayCapsule: View {
     private var hourCount: Int     { 24 }
     private var barWidth:  CGFloat { 3 }
     private var barHeight: CGFloat { 22 }
+
+    /// A numeral under every Nth hour bar — a ruler scale so the knob's
+    /// position reads as a clock time at a glance.
+    private var hourLabelStep: Int     { 2 }
+    /// Gap from the bottom of a bar to the centre of its numeral.
+    private var labelGap:      CGFloat { 8 }
+
+    /// Vertical centre of the comb + knob, pinned so the 44pt knob clears
+    /// the top edge (centre ≥ its radius) and leaves a band underneath for
+    /// the hour numerals.
+    private var trackY:  CGFloat { knobDiameter / 2 + 2 }
+    /// Centre Y of the numeral band, just under the comb.
+    private var labelY:  CGFloat { trackY + barHeight / 2 + labelGap }
 
     // MARK: Body
 
@@ -96,7 +109,22 @@ struct DayCapsule: View {
                         .position(
                             x: x(forFraction: Double(h) / Double(hourCount),
                                  width: geo.size.width),
-                            y: geo.size.height / 2
+                            y: trackY
+                        )
+                }
+
+                // Hour numerals every `hourLabelStep` hours, aligned under
+                // their bar — the ruler scale that makes the slider read as
+                // a clock (00, 02, … 22), capped one short of 24.
+                ForEach(Array(stride(from: 0, to: hourCount, by: hourLabelStep)), id: \.self) { h in
+                    Text("\(h)")
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(tint)
+                        .position(
+                            x: x(forFraction: Double(h) / Double(hourCount),
+                                 width: geo.size.width),
+                            y: labelY
                         )
                 }
 
@@ -109,7 +137,7 @@ struct DayCapsule: View {
                         .position(
                             x: x(forFraction: secondsOfDay(event.time) / 86_400.0,
                                  width: geo.size.width),
-                            y: geo.size.height / 2
+                            y: trackY
                         )
                         .accessibilityLabel("\(event.label) at \(event.time.timeString)")
                 }
@@ -120,7 +148,7 @@ struct DayCapsule: View {
                         .glassEffect(.clear.interactive(), in: .circle)
                         .position(
                             x: knobX(width: geo.size.width),
-                            y: geo.size.height / 2
+                            y: trackY
                         )
                         .accessibilityLabel("Time: \(knobDate.timeString)")
                         .accessibilityAddTraits(.isButton)
