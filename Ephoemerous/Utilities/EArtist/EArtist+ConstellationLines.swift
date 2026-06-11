@@ -14,6 +14,13 @@ extension EArtist {
     /// (un-dotted) emphasis reads cleanly.
     var constellationFavouriteLineWidth : Double { 1.0 }
 
+    /// Hand-drawn "squiggle" flare for the SELECTED constellation: each
+    /// segment becomes a gentle sine wave instead of a straight line.
+    /// `Amplitude` is the perpendicular wiggle in points; `Wavelength` the
+    /// screen distance per full wave (so denser figures wiggle more times).
+    var constellationSquiggleAmplitude  : Double { 0.0 }
+    var constellationSquiggleWavelength : Double { 16 }
+
     /// Centre-to-centre spacing between dots along a stick-figure
     /// segment. Tunable — increase for sparser, decrease for denser.
     var constellationLineDotPitch : Double { 2.4 }
@@ -93,6 +100,52 @@ extension EArtist {
             style: StrokeStyle(
                 lineWidth: constellationFavouriteLineWidth,
                 lineCap:   .round
+            )
+        )
+    }
+
+    /// Hand-drawn squiggle variant for the SELECTED constellation — same
+    /// trim/inset as the others, but the trimmed span is drawn as a sine
+    /// wave offset perpendicular to the segment. An INTEGER number of
+    /// half-waves keeps the offset zero at both ends, so it still meets each
+    /// star cleanly. Scoped to the selected figure (a handful of segments),
+    /// so the extra points are negligible; no animation, so no redraw tick.
+    func drawConstellationSegmentSquiggle(from a: CGPoint, to b: CGPoint,
+                                          insetA: Double, insetB: Double,
+                                          color: Color,
+                                          in dc: inout EGraphicContext) {
+        let dx = b.x - a.x
+        let dy = b.y - a.y
+        let len = sqrt(dx * dx + dy * dy)
+        let needed = insetA + insetB
+        guard len > needed + 0.5 else { return }
+
+        let ux = dx / len, uy = dy / len          // along
+        let px = -uy,      py = ux                 // perpendicular
+        let p0 = CGPoint(x: a.x + ux * insetA, y: a.y + uy * insetA)
+        let span = len - needed
+
+        // Integer half-waves so offset = 0 at t = 0 and t = 1.
+        let halfWaves = max(1.0, (2 * span / constellationSquiggleWavelength).rounded())
+        let amp   = constellationSquiggleAmplitude
+        let steps = max(12, Int(halfWaves * 8))
+
+        var path = Path()
+        for i in 0...steps {
+            let t     = Double(i) / Double(steps)
+            let along = span * t
+            let off   = amp * sin(halfWaves * .pi * t)
+            let pt = CGPoint(x: p0.x + ux * along + px * off,
+                             y: p0.y + uy * along + py * off)
+            if i == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
+        }
+        dc.ctx.stroke(
+            path,
+            with: .color(color),
+            style: StrokeStyle(
+                lineWidth: constellationFavouriteLineWidth,
+                lineCap:   .round,
+                lineJoin:  .round
             )
         )
     }

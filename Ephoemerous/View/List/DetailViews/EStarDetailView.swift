@@ -74,7 +74,6 @@ struct EStarDetailView: View {
             }
             Spacer(minLength: 0)
         }
-        .background(glowBackground())
         // Hide the system NavigationStack chrome on this view
         // specifically. DetailHost already hides the bar for the
         // *root* view of the stack, but pushed destinations (this

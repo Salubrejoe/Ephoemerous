@@ -21,13 +21,21 @@ struct ConstellationLinesLayer: EGridLayer {
         // the main thread.
         let lineColor = dc.resolve(artist.constellationLineColor)
 
+        // The currently-selected constellation (its detail sheet is open)
+        // traces SOLID, like a favourite — so the picked figure reads as one
+        // cohesive shape instead of the quiet dotted grey. Parsed once.
+        let selectedCons: EConstellation? = {
+            if case let .constellation(c)? = dc.state.detailDestination { return c }
+            return nil
+        }()
+
         for (cons, segs) in ConstellationLines.shared.segments {
             let isFavourite = favouriteIDs.contains(cons.rawValue)
-            // Look up the myth tint only when needed — most
-            // constellations aren't favourites, so the lookup stays
-            // cold on the hot loop. Resolve it once per favourite
-            // constellation (shared by all its segments).
-            let favouriteColor: Color? = isFavourite
+            let isSelected  = cons == selectedCons
+            // Myth tint is for FAVOURITES only now — resolved once per
+            // favourite (cold on the hot loop). A selected non-favourite
+            // squiggles in the neutral line colour instead.
+            let tint: Color? = isFavourite
                 ? dc.resolve(favouriteTint(for: cons, observerLatitude: observerLat))
                 : nil
 
@@ -37,7 +45,17 @@ struct ConstellationLinesLayer: EGridLayer {
                 let ra = artist.starRadius(seg.a, in: dc)
                 let rb = artist.starRadius(seg.b, in: dc)
                 let gap = artist.constellationLineGapPad
-                if let color = favouriteColor {
+                if isSelected {
+                    // Selected → hand-drawn squiggle. Tinted only if it's
+                    // also a favourite; otherwise neutral.
+                    artist.drawConstellationSegmentSquiggle(
+                        from:   pa, to: pb,
+                        insetA: ra + gap, insetB: rb + gap,
+                        color:  tint ?? lineColor,
+                        in:     &dc
+                    )
+                } else if let color = tint {
+                    // Favourite (not selected) → solid straight line.
                     artist.drawConstellationSegmentFavourite(
                         from:   pa, to: pb,
                         insetA: ra + gap, insetB: rb + gap,

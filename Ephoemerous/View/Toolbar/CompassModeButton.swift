@@ -41,7 +41,8 @@ struct CompassModeButton: View {
                     )
 //                    .glassEffect(.regular.interactive(), in: .circle)
             }
-            .buttonStyle(CompassModePressStyle())
+//            .buttonStyle(CompassModePressStyle())
+            .buttonStyle(.glass)
             .animation(.snappy(duration: 0.25), value: on)
         }
     }

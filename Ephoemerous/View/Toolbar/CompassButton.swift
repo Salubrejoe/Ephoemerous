@@ -75,6 +75,7 @@ struct CompassButton: View {
 
         }
         .buttonStyle(CompassPressStyle())
+        .buttonStyle(.glass)
         // Auto-hide when upright (Maps behaviour) — nothing to reset.
         .scaleEffect(aligned ? 0.6 : 1)
         .allowsHitTesting(!aligned)
