@@ -23,7 +23,7 @@ extension EArtist {
     /// Radius of the precise-location dot left under a promoted pin.
     var poiSelectDotRadius: CGFloat { 2.5 }
     /// Seconds the promotion takes to ease in / out — a quick scale-up.
-    var poiSelectRise: Double { 0.3 }
+    var poiSelectRise: Double { 0.7 }
     /// Seconds after a (de)selection past which the promotion is settled.
     /// It's a plain ease now (no wiggle tail), so this is just the rise:
     /// `EAppState` keeps the canvas ticking for exactly the ease, then
@@ -37,5 +37,33 @@ extension EArtist {
         let t = min(max(elapsed / poiSelectRise, 0), 1)
         let e = t * t * (3 - 2 * t)
         return from + (to - from) * e
+    }
+
+    /// Spring damping for the badge-scale bounce. LOWER = looser, bigger
+    /// overshoot, more visible wobble; higher = settles faster. ~5 is a
+    /// lively-but-tasteful spring; drop toward 3 for a real boing.
+    var poiSelectSpringDamping: Double { 3 }
+    /// Number of half-swings in the spring — effectively the bounce count.
+    /// 1 = a single overshoot; 2 = overshoot + a little undershoot; 3+ =
+    /// more wobble. Rounded to an integer so the curve lands exactly on its
+    /// settled size at the end.
+    var poiSelectSpringBounces: Double { 3 }
+
+    /// Badge-scale promotion fraction as a DAMPED COSINE — the symbol
+    /// overshoots and springs to rest instead of easing flatly. Mapped from
+    /// the smooth `promo` (0→1):
+    ///
+    ///   f(p) = 1 − e^(−damping·p) · cos(freq·p),   freq = (bounces+½)·π
+    ///
+    /// `f(0) = 0` and — because `cos(freq) == 0` by construction —
+    /// `f(1) == 1` EXACTLY, so the badge lands on its settled size the
+    /// instant the canvas parks (no residual, no snap, no extra frames).
+    /// The overshoot/wobble amplitude is the physical spring response, set
+    /// by `poiSelectSpringDamping`. Only the badge SCALE rides this; lift,
+    /// name slide and opacities stay on the plain `promo`.
+    func poiSelectScaleFraction(_ promo: Double) -> CGFloat {
+        let p    = min(max(promo, 0), 1)
+        let freq = (poiSelectSpringBounces.rounded() + 0.5) * .pi
+        return CGFloat(1 - exp(-poiSelectSpringDamping * p) * cos(freq * p))
     }
 }

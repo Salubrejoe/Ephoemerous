@@ -97,7 +97,9 @@ extension EArtist {
         // At promo 0 this collapses to just the tier scale, leaving
         // unselected labels untouched.
         let tierScale  = labelTierScale(reveal)
-        let selScale   = 1 + CGFloat(promo) * (poiSelectScale - 1)
+        // Badge scale carries a gentle late overshoot (the "alive" bounce);
+        // lift / text / opacity below stay on the plain `promo`.
+        let selScale   = 1 + poiSelectScaleFraction(promo) * (poiSelectScale - 1)
         let badgeScale = tierScale * selScale
 
         // Scale baked into GEOMETRY, not the drawing context. A scaled
