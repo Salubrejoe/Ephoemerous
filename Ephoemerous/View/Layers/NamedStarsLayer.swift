@@ -72,10 +72,18 @@ struct NamedStarsLayer: EGridLayer {
         let stateRef = dc.state
         let scale    = dc.renderedScale
 
-        // Below the dot threshold — clear any stale hit-rects from a
-        // previous frame and bail. Skipping the clear when the dict
-        // is already empty saves an unnecessary main-queue dispatch.
+        // Promoted star UUIDs, parsed ONCE per frame from the selection ids
+        // ("star_<uuid>"). Needed before the gate below so a star selected
+        // at low zoom still promotes.
+        let selStarUUID   = Self.starUUID(from: dc.selectedObjectID)
+        let deselStarUUID = Self.starUUID(from: dc.deselectingID)
+
+        // Below the dot threshold the layer normally doesn't run — but we
+        // pan to a selected object WITHOUT zooming, so a star tapped/searched
+        // at low zoom must still show its promoted pin. Draw just the
+        // promoted star(s) here, clear stale hit-rects, and bail.
         guard scale >= artist.namedStarDotIn else {
+            drawPromotedBelowGate(selected: selStarUUID, deselecting: deselStarUUID, in: &dc)
             if !stateRef.namedStarHitRects.isEmpty {
                 DispatchQueue.main.async { stateRef.namedStarHitRects = [:] }
             }
@@ -94,15 +102,6 @@ struct NamedStarsLayer: EGridLayer {
 
         var rects: [String: CGRect] = [:]
         if tappable { rects.reserveCapacity(Self.candidates.count) }
-
-        // Promoted star UUIDs, parsed ONCE per frame from the selection
-        // ids ("star_<uuid>"). The per-star loop then compares `star.id`
-        // (a UUID — zero allocation) instead of building an ESkyObject
-        // id string for all ~300 stars every frame, which was pure ARC
-        // churn during a selected pan. The string id + `poiPromotion`
-        // call now happen only for the ≤2 actually-promoted stars.
-        let selStarUUID   = Self.starUUID(from: dc.selectedObjectID)
-        let deselStarUUID = Self.starUUID(from: dc.deselectingID)
 
         // Same zoom-driven magnitude cap StarsLayer uses (frozen at the
         // pan destination during a transition) so named-star badges
@@ -152,6 +151,39 @@ struct NamedStarsLayer: EGridLayer {
             if stateRef.namedStarHitRects != snapshot {
                 stateRef.namedStarHitRects = snapshot
             }
+        }
+    }
+
+    /// Draw ONLY the promoted (selected / deselecting) named star(s), used
+    /// below `namedStarDotIn` where the main loop doesn't run. Keeps a star
+    /// selected from search/tap at low zoom showing its promoted pin (we
+    /// pan to it but never zoom). No dot, no hit-rects — just the pin; it
+    /// fades out on its own as `promo` returns to 0 (drawPOILabel bails when
+    /// reveal hits 0).
+    private func drawPromotedBelowGate(selected: UUID?,
+                                       deselecting: UUID?,
+                                       in dc: inout EGraphicContext) {
+        let ids = [selected, deselecting].compactMap { $0 }
+        guard !ids.isEmpty else { return }
+
+        for star in Self.candidates where ids.contains(star.id) {
+            let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
+                                                  to: dc.renderedObservationDate)
+            let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
+                .sidereallyRotated(by: dc.localSiderealOffset)
+            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
+            let sc = dc.toScreen(proj)
+
+            let promo = dc.poiPromotion(forObjectID: ESkyObject.star(star).id)
+            artist.drawPOILabel(
+                at:        sc,
+                glyph:     .symbol(.starFill),
+                text:      star.displayName,
+                category:  .namedStar(star),
+                drawDot:   false,
+                promotion: promo,
+                in:        &dc
+            )
         }
     }
 }

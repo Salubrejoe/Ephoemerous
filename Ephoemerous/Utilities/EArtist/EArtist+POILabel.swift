@@ -65,14 +65,24 @@ extension EArtist {
         let badgeFade = labelTierProgress(scale: scale, threshold: style.badgeIn)
         let textFade  = labelTierProgress(scale: scale, threshold: style.textIn)
 
-        // Tier 0 — maybe-dot, crossfading out as the badge fades in
-        // across `badgeIn`. Shape + radius come from the category
-        // style so a followed star collapses to a tiny pentagon.
-        if drawDot && badgeFade < 1 {
-            drawPOIDot(at: sc, style: style, opacity: 1 - badgeFade, in: &dc)
+        // Selection forces the label to REVEAL regardless of zoom. We pan
+        // to a selected object but never zoom it in, so at a low scale
+        // `badgeFade` can be 0 and the badge would never draw — a tap would
+        // show only a pan + the sheet, nothing on the canvas. `reveal` lifts
+        // the badge's presence to at least `promo`, so a promoted pin always
+        // appears (badge + name) even below the tier threshold. At promo 0
+        // this is exactly `badgeFade`, so unselected labels are untouched.
+        let reveal = max(badgeFade, promo)
+
+        // Tier 0 — maybe-dot, crossfading out as the badge fades/promotes
+        // in. Shape + radius come from the category style so a followed
+        // star collapses to a tiny pentagon.
+        if drawDot && reveal < 1 {
+            drawPOIDot(at: sc, style: style, opacity: 1 - reveal, in: &dc)
         }
-        // Below the badge ramp entirely → the dot (if any) is all there is.
-        guard badgeFade > 0 else { return }
+        // Below the badge ramp AND not promoted → the dot (if any) is all
+        // there is.
+        guard reveal > 0 else { return }
 
         // Tier 1 — squircle badge.
         //
@@ -86,7 +96,7 @@ extension EArtist {
         // Effective badge scale: tier fade-in × selection enlargement.
         // At promo 0 this collapses to just the tier scale, leaving
         // unselected labels untouched.
-        let tierScale  = labelTierScale(badgeFade)
+        let tierScale  = labelTierScale(reveal)
         let selScale   = 1 + CGFloat(promo) * (poiSelectScale - 1)
         let badgeScale = tierScale * selScale
 
@@ -159,19 +169,19 @@ extension EArtist {
         // casing fill in pass 2 then covers the inner half, leaving only
         // the soft outer rim — exactly like the text casing.
         var shadow = dc.ctx
-        shadow.opacity *= badgeFade
+        shadow.opacity *= reveal
         shadow.addFilter(poiTextShadow)
         shadow.stroke(casingPath,
                       with: .color(poiTextBorderColor),
                       lineWidth: poiTextBorderWidth)
 
         var caseCtx = dc.ctx
-        caseCtx.opacity *= badgeFade
+        caseCtx.opacity *= reveal
         caseCtx.fill(casingPath, with: .color(poiTextBorderColor))
 
         let gradient = Gradient(colors: [gradTop, gradBottom])
         var fillCtx = dc.ctx
-        fillCtx.opacity *= badgeFade
+        fillCtx.opacity *= reveal
         fillCtx.fill(
             badgePath,
             with: .linearGradient(
@@ -188,7 +198,7 @@ extension EArtist {
         // `ctx.draw(Text, at:, anchor:)` overload (Image alone doesn't
         // accept `.font` / `.foregroundStyle`).
         var glyphCtx = dc.ctx
-        glyphCtx.opacity *= badgeFade
+        glyphCtx.opacity *= reveal
         glyphCtx.translateBy(x: badgeCenter.x, y: badgeCenter.y)
         glyphCtx.scaleBy(x: badgeScale, y: badgeScale)
         glyphCtx.translateBy(x: -badgeCenter.x, y: -badgeCenter.y)
@@ -220,7 +230,7 @@ extension EArtist {
             let r = poiSelectDotRadius
             let dotRect = CGRect(x: sc.x - r, y: sc.y - r, width: 2 * r, height: 2 * r)
             var dotCtx = dc.ctx
-            dotCtx.opacity *= promo * badgeFade
+            dotCtx.opacity *= promo * reveal
             dotCtx.addFilter(poiTextShadow)
             dotCtx.fill(Path(ellipseIn: dotRect), with: .color(gradBottom))
         }
@@ -262,7 +272,10 @@ extension EArtist {
         // Tier reveal scale × continuous zoom response, so the label keeps
         // breathing with the map after it's revealed (not locked to one
         // size). Anchored at 1.0 for the default view — see `poiTextZoomFactor`.
-        let textScale = labelTierScale(textFade) * poiTextZoomFactor(forScale: scale)
+        // `textOpacity` (= max(textFade, promo)) also drives the size, so a
+        // promoted name shows full-size at low zoom instead of stuck at the
+        // tier floor.
+        let textScale = labelTierScale(textOpacity) * poiTextZoomFactor(forScale: scale)
         var textCtx = dc.ctx
         textCtx.opacity *= textOpacity
         textCtx.translateBy(x: textPoint.x, y: textPoint.y)

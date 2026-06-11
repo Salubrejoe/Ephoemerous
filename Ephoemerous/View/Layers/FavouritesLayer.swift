@@ -77,7 +77,14 @@ struct FavouritesLayer: EGridLayer {
         //                              top-leading corner.
         let style      = artist.poiStyle(for: .followedStar(star))
         let heartColor = star.spectralClass.color
-        if dc.renderedScale < style.badgeIn {
+        let promo      = dc.poiPromotion(forObjectID: ESkyObject.star(star).id)
+
+        // Below the badge tier the heart IS the marker — UNLESS this
+        // favourite is the selected one. We pan to a selection without
+        // zooming, so a favourite tapped/searched at low zoom must still
+        // promote; fall through to the full badge in that case (drawPOILabel
+        // forces the reveal from `promo`).
+        if dc.renderedScale < style.badgeIn && promo <= 0 {
             artist.drawFavouriteHeart(at: sc, size: 8, color: heartColor, in: &dc)
             return sc
         }
@@ -88,7 +95,7 @@ struct FavouritesLayer: EGridLayer {
             text:      star.displayName,
             category:  .followedStar(star),
             drawDot:   false,    // heart handles the low-zoom case
-            promotion: dc.poiPromotion(forObjectID: ESkyObject.star(star).id),
+            promotion: promo,
             in:        &dc
         )
         let heartCorner = CGPoint(x: sc.x - style.badgeSize / 2,
