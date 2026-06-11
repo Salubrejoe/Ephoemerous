@@ -53,6 +53,12 @@ struct HorizonLabelsLayer: EGridLayer {
     private let eastT: Double = 0.75
     private let westT: Double = 0.25
 
+    /// Cardinal words, localised once at init — `draw` runs every canvas
+    /// frame and a `String(localized:)` table lookup per label per frame
+    /// is pure waste.
+    private let easternWord = String(localized: "EASTERN HORIZON")
+    private let westernWord = String(localized: "WESTERN HORIZON")
+
     // MARK: Dawn / dusk roster
     //
     // Each band names a sun altitude — the same values `Angle.sunsets`
@@ -90,11 +96,19 @@ struct HorizonLabelsLayer: EGridLayer {
     // a *screen-pt* target spacing that grows slightly slower than the
     // font. That widens the kerning-to-font ratio at small scales —
     // letters get more breathing room precisely when they shrink.
+    // Both ramps are quantized to 0.5-pt steps. During a pinch the scale
+    // varies continuously, and an unquantized font size mints a NEW font
+    // variant every frame — CoreText / SwiftUI cache glyph layouts per
+    // (glyph, size), so a long zoom grows those caches without bound →
+    // memory pressure → multi-second main-thread stall. Half-point steps
+    // are imperceptible and bound the variants to ~a dozen.
     private func fontPt(scale: Double) -> CGFloat {
-        CGFloat(max(7.5, min(13.0, 5.5 + scale * 0.025)))
+        let raw = max(7.5, min(13.0, 5.5 + scale * 0.025))
+        return CGFloat((raw * 2).rounded() / 2)
     }
     private func spacingPt(scale: Double) -> CGFloat {
-        CGFloat(max(6.0, min(11.0, 4.5 + scale * 0.020)))
+        let raw = max(6.0, min(11.0, 4.5 + scale * 0.020))
+        return CGFloat((raw * 2).rounded() / 2)
     }
 
     func draw(in dc: inout EGraphicContext) {
@@ -104,21 +118,28 @@ struct HorizonLabelsLayer: EGridLayer {
         // drawn glyph-by-glyph (~90 chars/frame), so this keeps the asset
         // resolution off the per-character path.
         let color = dc.resolve(artist.horizonFillColor)
+        // Per-frame resolved-glyph cache: every label this frame shares one
+        // (font, colour) style, and the words reuse a small alphabet — so
+        // each distinct character is laid out ONCE per frame instead of
+        // once per occurrence (~90 → ~20 Text resolutions).
+        var glyphs: [Character: GraphicsContext.ResolvedText] = [:]
 
         // Cardinal rim labels.
-        drawCurvedLabel(String(localized: "EASTERN HORIZON"),
+        drawCurvedLabel(easternWord,
                         centreT:   eastT,
                         altitude:  .horizon,
                         fontPt:    fontPt,
                         spacingPt: spacingPt,
                         color:     color,
+                        glyphs:    &glyphs,
                         in: &dc)
-        drawCurvedLabel(String(localized: "WESTERN HORIZON"),
+        drawCurvedLabel(westernWord,
                         centreT:   westT,
                         altitude:  .horizon,
                         fontPt:    fontPt,
                         spacingPt: spacingPt,
                         color:     color,
+                        glyphs:    &glyphs,
                         in: &dc)
 
         // Sun dawn / dusk labels — positioned from the observation date.
@@ -139,6 +160,7 @@ struct HorizonLabelsLayer: EGridLayer {
                             fontPt:    fontPt,
                             spacingPt: spacingPt,
                             color:     color,
+                            glyphs:    &glyphs,
                             in: &dc)
             drawCurvedLabel(band.setting,
                             centreT:   azimuthToT(2 * .pi - riseAz),
@@ -146,6 +168,7 @@ struct HorizonLabelsLayer: EGridLayer {
                             fontPt:    fontPt,
                             spacingPt: spacingPt,
                             color:     color,
+                            glyphs:    &glyphs,
                             in: &dc)
         }
     }
@@ -201,6 +224,7 @@ struct HorizonLabelsLayer: EGridLayer {
                                  fontPt:    CGFloat,
                                  spacingPt: CGFloat,
                                  color:     Color,
+                                 glyphs:    inout [Character: GraphicsContext.ResolvedText],
                                  in dc: inout EGraphicContext) {
         let chars = Array(text)
         let n     = chars.count
@@ -216,6 +240,20 @@ struct HorizonLabelsLayer: EGridLayer {
         let deltaT = Double(spacingPt) / (2.0 * .pi * rho * dc.renderedScale)
 
         let halfSpan = deltaT * Double(n - 1) / 2.0
+
+        // Whole-label viewport cull. Zoomed in, the rim (and its words) is
+        // usually far off-screen — skip the ~3 projections + glyph draw per
+        // character before doing any of it. The label's characters all sit
+        // within ~half the word's arc length of its centre, so testing the
+        // centre against the canvas rect expanded by that span is exact
+        // enough, with a small safety margin.
+        let halfSpanPt = Double(spacingPt) * Double(n - 1) / 2
+        guard let centre = bumpedPoint(at: centreT, altitude: altitude, in: dc),
+              CGRect(origin: .zero, size: dc.size)
+                  .insetBy(dx: -(halfSpanPt + 40), dy: -(halfSpanPt + 40))
+                  .contains(centre)
+        else { return }
+
         // The stereographic image of a constant-altitude circle is
         // centred on the projection origin, i.e. the zenith. We re-use it
         // both as the "inward" target for character rotation and as the
@@ -264,18 +302,29 @@ struct HorizonLabelsLayer: EGridLayer {
                 y: pHere.y + CGFloat(inwardY) / CGFloat(inwardLen) * inwardInsetPt
             )
 
-            dc.ctx.drawLayer { layer in
-                layer.translateBy(x: pos.x, y: pos.y)
-                layer.rotate(by: .radians(rotation))
-                layer.draw(
+            // Per-glyph cull — a label can straddle the viewport edge.
+            guard pos.x > -24, pos.x < dc.size.width  + 24,
+                  pos.y > -24, pos.y < dc.size.height + 24 else { continue }
+
+            // Resolve each distinct character once per frame (shared via
+            // `glyphs` across every label this layer draws), then draw it
+            // through a transformed COPY of the context. A copy is a cheap
+            // value — unlike `drawLayer`, which pushes a full offscreen
+            // transparency layer per call (~90/frame at 120 fps was real
+            // allocation churn).
+            let resolved = glyphs[char] ?? {
+                let r = dc.ctx.resolve(
                     Text(String(char))
                         .font(.system(size: fontPt, weight: .semibold))
                         .foregroundStyle(color)
-                        .kerning(0.4),
-                    at:     .zero,
-                    anchor: .center
                 )
-            }
+                glyphs[char] = r
+                return r
+            }()
+            var g = dc.ctx
+            g.translateBy(x: pos.x, y: pos.y)
+            g.rotate(by: .radians(rotation))
+            g.draw(resolved, at: .zero, anchor: .center)
         }
     }
 

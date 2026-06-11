@@ -24,7 +24,12 @@ struct CelestialCanva: View {
     // then the horizon wash that dims the below-horizon region, then
     // anything that should always pop (favourites, ecliptic, badges,
     // user puck) on top.
-    private var layers: [any EGridLayer] {
+    // `static let`, NOT a computed property: this is read inside the Canvas
+    // closure, so a computed array would re-build all the layer structs —
+    // including HorizonLabelsLayer's localized-string table — once per
+    // frame, 120×/s during gestures. The layers are stateless values; build
+    // them once.
+    private static let layers: [any EGridLayer] =
         [
             UserLocationLayer(),   // "you are here" puck
             EarthGridLayer(),
@@ -56,7 +61,6 @@ struct CelestialCanva: View {
             // lines instead of the alt = 0 rim.
             MeridianLabelsLayer(),
         ]
-    }
 
     // MARK: - Body
 
@@ -94,7 +98,7 @@ struct CelestialCanva: View {
                         deselectingID:           state._deselectingID,
                         deselectStart:           state._deselectStart
                     )
-                    for layer in layers { layer.draw(in: &dc) }
+                    for layer in Self.layers { layer.draw(in: &dc) }
                 }
 
                 // Topmost, sharp & interactive: owns every canvas touch.

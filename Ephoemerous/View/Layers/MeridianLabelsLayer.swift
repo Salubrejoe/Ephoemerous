@@ -38,7 +38,11 @@ struct MeridianLabelsLayer: EGridLayer {
         let text:      String
     }
 
-    private var colures: [Colure] {
+    /// Stored, not computed — `draw` runs every canvas frame, and a
+    /// computed table would re-run four `String(localized:)` lookups
+    /// per frame. (The layer itself is built once: see the `static let
+    /// layers` note in `CelestialCanva`.)
+    private let colures: [Colure] = {
         let eps = AstroConstants.obliquity.radians
         return [
             .init(ra: Angle(hours: 0),  centreDec:  0,   text: String(localized: "VERNAL EQUINOX")),
@@ -46,18 +50,22 @@ struct MeridianLabelsLayer: EGridLayer {
             .init(ra: Angle(hours: 12), centreDec:  0,   text: String(localized: "AUTUMNAL EQUINOX")),
             .init(ra: Angle(hours: 18), centreDec: -eps, text: String(localized: "WINTER SOLSTICE")),
         ]
-    }
+    }()
 
     // MARK: Scale-aware sizing
     //
     // Same ramps as `HorizonLabelsLayer`: font + spacing both grow with
     // the rendered scale, spacing slower than font, so the kerning-to-
     // glyph ratio widens at small scales — the antique-atlas reading.
+    // Quantized to 0.5-pt steps so a continuous pinch doesn't mint a new
+    // font variant every frame (see the cache-growth note over there).
     private func fontPt(scale: Double) -> CGFloat {
-        CGFloat(max(7.5, min(13.0, 5.5 + scale * 0.025)))
+        let raw = max(7.5, min(13.0, 5.5 + scale * 0.025))
+        return CGFloat((raw * 2).rounded() / 2)
     }
     private func spacingPt(scale: Double) -> CGFloat {
-        CGFloat(max(6.0, min(11.0, 4.5 + scale * 0.020)))
+        let raw = max(6.0, min(11.0, 4.5 + scale * 0.020))
+        return CGFloat((raw * 2).rounded() / 2)
     }
 
     func draw(in dc: inout EGraphicContext) {
@@ -68,6 +76,9 @@ struct MeridianLabelsLayer: EGridLayer {
         // per-character path (Thread Performance Checker). Grid voice:
         // these ride the grid meridians, so they share its tint.
         let color = dc.resolve(artist.gridColor)
+        // Per-frame resolved-glyph cache, shared by all four labels —
+        // see HorizonLabelsLayer.
+        var glyphs: [Character: GraphicsContext.ResolvedText] = [:]
 
         for colure in colures {
             drawCurvedLabel(colure.text,
@@ -76,6 +87,7 @@ struct MeridianLabelsLayer: EGridLayer {
                             fontPt:    fontPt,
                             spacingPt: spacingPt,
                             color:     color,
+                            glyphs:    &glyphs,
                             in: &dc)
         }
     }
@@ -88,6 +100,7 @@ struct MeridianLabelsLayer: EGridLayer {
                                  fontPt:    CGFloat,
                                  spacingPt: CGFloat,
                                  color:     Color,
+                                 glyphs:    inout [Character: GraphicsContext.ResolvedText],
                                  in dc: inout EGraphicContext) {
         let chars = Array(text)
         let n     = chars.count
@@ -107,6 +120,19 @@ struct MeridianLabelsLayer: EGridLayer {
         let deltaDec = Double(spacingPt) / perRad
 
         let halfSpan = deltaDec * Double(n - 1) / 2.0
+
+        // Whole-label viewport cull — the characters all sit within ~half
+        // the word's arc length of its centre (the probe midpoint), so if
+        // that centre is outside the canvas by more than the span + margin,
+        // nothing of the label can be visible. Skips the ~3 projections +
+        // glyph draw per character for off-screen colures, which is most of
+        // them when zoomed in.
+        let halfSpanPt = Double(spacingPt) * Double(n - 1) / 2
+        let centre = CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+        guard CGRect(origin: .zero, size: dc.size)
+                  .insetBy(dx: -(halfSpanPt + 40), dy: -(halfSpanPt + 40))
+                  .contains(centre)
+        else { return }
         // The projection origin is the zenith — re-used as the "inward"
         // target so the word turns its readable side toward the centre of
         // the sky, matching the horizon labels.
@@ -159,18 +185,28 @@ struct MeridianLabelsLayer: EGridLayer {
                 y: pHere.y + CGFloat(cos(rotation)) * sideInset
             )
 
-            dc.ctx.drawLayer { layer in
-                layer.translateBy(x: pos.x, y: pos.y)
-                layer.rotate(by: .radians(rotation))
-                layer.draw(
+            // Per-glyph cull — a label can straddle the viewport edge.
+            guard pos.x > -24, pos.x < dc.size.width  + 24,
+                  pos.y > -24, pos.y < dc.size.height + 24 else { continue }
+
+            // Resolve each distinct character once per frame and draw it
+            // through a transformed COPY of the context — `drawLayer`
+            // pushes an offscreen transparency layer per call, which at a
+            // glyph per call per frame was real allocation churn. See
+            // HorizonLabelsLayer for the matching pattern.
+            let resolved = glyphs[char] ?? {
+                let r = dc.ctx.resolve(
                     Text(String(char))
                         .font(.system(size: fontPt, weight: .light))
                         .foregroundStyle(color)
-                        .kerning(0.4),
-                    at:     .zero,
-                    anchor: .center
                 )
-            }
+                glyphs[char] = r
+                return r
+            }()
+            var g = dc.ctx
+            g.translateBy(x: pos.x, y: pos.y)
+            g.rotate(by: .radians(rotation))
+            g.draw(resolved, at: .zero, anchor: .center)
         }
     }
 
