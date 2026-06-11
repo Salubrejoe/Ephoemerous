@@ -39,7 +39,7 @@ extension CelestialGestureCoordinator {
     /// (`minimumScale` / `maximumScale`), independent of `defaultScale`.
     func rubberScale(_ raw: Double, state: EAppState) -> Double {
         let ceiling = maximumScale
-        let floor   = minimumScale
+        let floor   = effectiveMinScale(state)   // never above defaultScale — see clampScale
         guard raw.isFinite, raw > 0 else { return floor }
 
         let k  = scaleRubberStiffness

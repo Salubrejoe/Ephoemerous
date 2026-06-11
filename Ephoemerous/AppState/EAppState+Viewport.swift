@@ -29,9 +29,10 @@ extension EAppState {
         guard canvasSize.width  > 0,
               canvasSize.height > 0,
               s.isFinite else { return nil }
-        // Below the anchor zoom: rubber pulls everything home.
-        // At or above: free pan, no rubber.
-        return s < defaultScale ? (x: 0, y: 0) : nil
+        // At or below the anchor zoom: rubber pulls everything home — so the
+        // most-zoomed-out floor (which the gesture clamps to ≤ defaultScale)
+        // recenters. Above: free pan, no rubber.
+        return s <= defaultScale ? (x: 0, y: 0) : nil
     }
 
     func viewportOffsetLimits() -> (x: Double, y: Double)? {

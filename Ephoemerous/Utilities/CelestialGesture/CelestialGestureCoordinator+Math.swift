@@ -50,14 +50,26 @@ extension CelestialGestureCoordinator {
         )
     }
 
-    /// Order- and NaN-safe scale clamp. Floor and ceiling are the
-    /// gesture-coordinator's `minimumScale` / `maximumScale` — both
-    /// independent of `state.defaultScale` (which is *launch* scale,
-    /// not a hard limit). `state` is kept on the signature for
-    /// symmetry with other math helpers in this extension.
+    /// The effective zoom-out floor for the current frame. It NEVER exceeds
+    /// `defaultScale` (the canvas-derived home-framing zoom). If the hard
+    /// `minimumScale` constant sits above `defaultScale` you can't zoom out
+    /// far enough to enter the "below default → recenter home" zone
+    /// (EAppState+Viewport), so the zoom-out recenter silently never fires.
+    /// On phones `defaultScale` ≈ (shorterSide−48)/4 ≈ 88, which can fall
+    /// just under a hard `minimumScale` of 90 — exactly the case that broke
+    /// the recenter. Clamping the floor to `defaultScale` keeps the home
+    /// frame reachable on every device.
+    func effectiveMinScale(_ state: EAppState) -> Double {
+        let d = state.defaultScale
+        return (d.isFinite && d > 0) ? Swift.min(minimumScale, d) : minimumScale
+    }
+
+    /// Order- and NaN-safe scale clamp. Ceiling is `maximumScale`; the floor
+    /// is `effectiveMinScale` so the home-framing zoom always stays in reach.
     func clampScale(_ candidate: Double, state: EAppState) -> Double {
-        guard candidate.isFinite else { return minimumScale }
-        return Swift.min(Swift.max(candidate, minimumScale), maximumScale)
+        let floor = effectiveMinScale(state)
+        guard candidate.isFinite else { return floor }
+        return Swift.min(Swift.max(candidate, floor), maximumScale)
     }
 
     /// Zoom-out reset. While the raw (pre-rubber) scale is pulled below
