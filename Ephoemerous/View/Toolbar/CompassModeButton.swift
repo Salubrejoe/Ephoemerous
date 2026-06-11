@@ -31,18 +31,15 @@ struct CompassModeButton: View {
                     .font(.system(size: 17, weight: .semibold))
                     // Lit orange (matching the rose's north tip) while
                     // active; muted when off.
-//                    .frame(width: faceSize, height: faceSize)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical,   10)
-                    .clipShape(.circle)
+                    .frame(width: faceSize, height: faceSize)
+                    .padding()
+//                    .clipShape(.circle)
                     .foregroundStyle(.orange)
-                    .background(
-                        Circle().fill(.ultraThinMaterial)
-                    )
 //                    .glassEffect(.regular.interactive(), in: .circle)
             }
 //            .buttonStyle(CompassModePressStyle())
-            .buttonStyle(.glass)
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: .circle)
             .animation(.snappy(duration: 0.25), value: on)
         }
     }
