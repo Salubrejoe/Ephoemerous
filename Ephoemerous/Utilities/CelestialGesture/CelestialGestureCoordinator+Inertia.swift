@@ -16,7 +16,8 @@ extension CelestialGestureCoordinator {
             velX:            velocity.height * damp,   // offset.x follows vertical
             velY:            velocity.width  * damp,   // offset.y follows horizontal
             startTime:       now,
-            lastEmittedTime: now
+            lastEmittedTime: now,
+            decayRate:       flingDecayRate            // lower than LoreKit's default → longer glide
         )
     }
 

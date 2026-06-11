@@ -77,11 +77,12 @@ final class CelestialGestureCoordinator {
 
     let minimumFlingSpeed:      Double = 150    // pt/s, below this: no inertia
     let maximumFlingSpeed:      Double = 4000   // pt/s, clamp wild flicks
+    let flingDecayRate:         Double = 16     // 1/s; lower = longer glide (more inertia). LoreKit default 80; travel ≈ v/k
     let tapMaxMovement:         Double = 10     // pt: beyond this it's a drag
     let tapMaxDuration:         Double = 0.30   // s: longer (still) isn't a tap
     let zoomDragSensitivity:    Double = 0.005  // scale e-fold per pt dragged
     let zoomDragMaxStep:        Double = 0.40   // max |Δln(scale)| per event (de-gain)
-    let minimumScale:           Double = 25     // hard zoom-out floor for all gestures — independent of launch scale
+    let minimumScale:           Double = 50     // hard zoom-out floor for all gestures — independent of launch scale
     let maximumScale:           Double = 1200    // hard zoom-in ceiling — must clear the named-star textIn (360) with headroom
     let rubberC:                Double = 0.55   // iOS scroll rubber-band constant
     let scaleOvershootFraction: Double = 0.18   // damped zoom-past-ceiling room
