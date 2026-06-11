@@ -39,6 +39,46 @@ struct EGraphicContext {
     /// device orientation — the app is portrait-only. See
     /// `EAppState.canvasRotation`.
     let canvasRotation:          Angle
+    /// `canvasRotation`'s cos/sin, hoisted to init: `toScreen` runs on
+    /// every projected point (~15k/frame with the curve caches feeding
+    /// it), and recomputing the same two trig values per point was real
+    /// per-frame work whenever the sky is rotated.
+    private let rotCos: CGFloat
+    private let rotSin: CGFloat
+
+    init(ctx:                     GraphicsContext,
+         size:                    CGSize,
+         state:                   EAppState,
+         environment:             EnvironmentValues,
+         renderedScale:           Double,
+         renderedOffset:          CGPoint,
+         renderedObservationDate: Date,
+         localSiderealOffset:     Angle,
+         animationTime:           Double,
+         viewpoint:               EProjection.Viewpoint,
+         canvasRotation:          Angle,
+         selectedObjectID:        String?,
+         selectionStart:          Double,
+         deselectingID:           String?,
+         deselectStart:           Double) {
+        self.ctx                     = ctx
+        self.size                    = size
+        self.state                   = state
+        self.environment             = environment
+        self.renderedScale           = renderedScale
+        self.renderedOffset          = renderedOffset
+        self.renderedObservationDate = renderedObservationDate
+        self.localSiderealOffset     = localSiderealOffset
+        self.animationTime           = animationTime
+        self.viewpoint               = viewpoint
+        self.canvasRotation          = canvasRotation
+        self.selectedObjectID        = selectedObjectID
+        self.selectionStart          = selectionStart
+        self.deselectingID           = deselectingID
+        self.deselectStart           = deselectStart
+        self.rotCos                  = CGFloat(cos(canvasRotation.radians))
+        self.rotSin                  = CGFloat(sin(canvasRotation.radians))
+    }
 
     // MARK: Selection promotion snapshot
     // Resolved once per frame (like the camera values above) so the
@@ -86,11 +126,9 @@ struct EGraphicContext {
         if canvasRotation == .zero {
             pRot = p
         } else {
-            let θ    = canvasRotation.radians
-            let cosθ = cos(θ)
-            let sinθ = sin(θ)
-            pRot = CGPoint(x: p.x * cosθ - p.y * sinθ,
-                           y: p.x * sinθ + p.y * cosθ)
+            // cos/sin hoisted to init — see `rotCos`/`rotSin`.
+            pRot = CGPoint(x: p.x * rotCos - p.y * rotSin,
+                           y: p.x * rotSin + p.y * rotCos)
         }
         return CGPoint(
             x: size.width  / 2 + pRot.x * renderedScale + renderedOffset.y,

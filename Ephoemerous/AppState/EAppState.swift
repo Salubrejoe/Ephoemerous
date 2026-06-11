@@ -171,6 +171,28 @@ class EAppState {
     @ObservationIgnored var _starProjKey:    StarProjectionKey? = nil
     @ObservationIgnored var _starProjPoints: [CGPoint] = []
 
+    // MARK: - Curve projection caches (gesture optimisation)
+    // Same invariant as the star cache, applied to every curve layer: the
+    // grid meridians/parallels, the (bumped) horizon rim + twilight bands,
+    // the zodiac-bulged ecliptic rim + glyph anchors, and the constellation
+    // segment endpoints are all fixed in PROJECTION space while
+    // (date, origin) hold — i.e. for every frame of a pan / pinch / rotate.
+    // Each layer rebuilds its slice when its key falls stale and otherwise
+    // just re-runs `toScreen` / `strokeCurve` on the cached points. All
+    // ObservationIgnored — pure per-frame render scratch, written from
+    // inside the Canvas closure.
+    @ObservationIgnored var _gridProjKey:     StarProjectionKey? = nil
+    @ObservationIgnored var _gridCurves:      [[CGPoint?]] = []
+    @ObservationIgnored var _horizonProjKey:  StarProjectionKey? = nil
+    @ObservationIgnored var _twilightBandPts: [[CGPoint?]] = []
+    @ObservationIgnored var _horizonRimPts:   [CGPoint?] = []
+    @ObservationIgnored var _eclipticProjKey: StarProjectionKey? = nil
+    @ObservationIgnored var _eclipticRimPts:  [CGPoint?] = []
+    @ObservationIgnored var _eclipticCentre:  CGPoint = .zero
+    @ObservationIgnored var _zodiacGlyphPts:  [CGPoint?] = []
+    @ObservationIgnored var _consSegProjKey:  StarProjectionKey? = nil
+    @ObservationIgnored var _consSegProj:     [EConstellation: [(a: CGPoint, b: CGPoint)?]] = [:]
+
     // MARK: - Detail destination  (logic → EAppState+Detail.swift)
     // Single source of truth for "what detail is the user looking at?".
     // Replaces the old four-boolean / four-modal-sheet system

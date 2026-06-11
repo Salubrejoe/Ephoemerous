@@ -8,58 +8,55 @@ import LoreKit
 struct EarthGridLayer: EGridLayer {
     
     func draw(in dc: inout EGraphicContext) {
-        // The old clock-mode clip-to-disc lived here but every clip
-        // line had already been commented out — the grid was rendering
-        // free-form regardless. Now that appMode is gone, the local-
-        // copy / clip dance has nothing left to do; pass `dc` straight
-        // through.
         // Resolve the grid colour to concrete RGBA once for the whole
-        // frame — drawn ~24× (meridians + parallels), so without this each
+        // frame — drawn ~31× (meridians + parallels), so without this each
         // stroke would re-resolve the "grid" asset on the main thread.
         let gridColor = dc.resolve(artist.gridColor)
-        drawMeridians(in:   &dc, color: gridColor)
-        drawParallels(in:   &dc, color: gridColor)
-        drawPoleLabels(in:  &dc)
-    }
 
-    func drawParallels(in dc: inout EGraphicContext, color: Color) {
-//        guard dc.state.showHorizon else { return }
-
-        for decl in Angle.parallels {
-            let pts = EProjection.sampleCurve(viewpoint: dc.viewpoint) { t in
-                EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: decl)
-                    .sidereallyRotated(by: dc.localSiderealOffset)
-            }
-
-            // MARK: - DRAW
-            var local = dc
-            local.strokeCurve(
-                pts,
-                color: color,
-                width: artist.gridWidth
-            )
+        // Projection cache — same invariant as StarsLayer: the 31 sampled
+        // curves (12 meridians + 19 parallels × 361 points ≈ 11k full
+        // projections) depend only on (date, origin). While those hold —
+        // i.e. every frame of a pan / pinch / rotate — `strokeCurve`
+        // re-runs only the cheap `toScreen` on the cached points.
+        let key = StarProjectionKey(
+            date: dc.renderedObservationDate,
+            lat:  dc.state.origin.latitude.degrees,
+            lon:  dc.state.origin.longitude.degrees
+        )
+        if dc.state._gridProjKey != key {
+            dc.state._gridCurves  = sampleAllCurves(in: dc)
+            dc.state._gridProjKey = key
         }
+
+        var local = dc
+        for pts in dc.state._gridCurves {
+            local.strokeCurve(pts, color: gridColor, width: artist.gridWidth)
+        }
+        drawPoleLabels(in: &dc)
     }
 
-    func drawMeridians(in dc: inout EGraphicContext, color: Color) {
-//        let show = mode == .northSouth ? dc.state.showNSMeridians : dc.state.showULMeridians
-//        guard show else { return }
+    /// Full (date, origin)-dependent sampling pass: every meridian and
+    /// parallel, in projection units. Runs only when the cache key falls
+    /// stale (a date scrub or an origin move), not per gesture frame.
+    private func sampleAllCurves(in dc: EGraphicContext) -> [[CGPoint?]] {
+        var curves: [[CGPoint?]] = []
+        curves.reserveCapacity(12 + Angle.parallels.count)
 
         for h in stride(from: 0.0, to: 12.0, by: 1.0) {
-            let ra  = h / 24.0 * Double.twoPi
-            let pts = EProjection.sampleCurve(viewpoint: dc.viewpoint) { t in
+            let ra = h / 24.0 * Double.twoPi
+            curves.append(EProjection.sampleCurve(viewpoint: dc.viewpoint) { t in
                 EPrecession.equatorialVector(ra: .radians(ra),
-                                             dec: .radians((t - 0.5) * 2*Double.pi))
-                .sidereallyRotated(by: dc.localSiderealOffset)
-            }
-            // MARK: - DRAW
-            var local = dc
-            local.strokeCurve(
-                pts,
-                color: color,
-                width: artist.gridWidth
-            )
+                                             dec: .radians((t - 0.5) * 2 * Double.pi))
+                    .sidereallyRotated(by: dc.localSiderealOffset)
+            })
         }
+        for decl in Angle.parallels {
+            curves.append(EProjection.sampleCurve(viewpoint: dc.viewpoint) { t in
+                EPrecession.equatorialVector(ra: .radians(t * .twoPi), dec: decl)
+                    .sidereallyRotated(by: dc.localSiderealOffset)
+            })
+        }
+        return curves
     }
 
     // MARK: - Celestial-pole labels (N / S)

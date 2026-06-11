@@ -29,7 +29,24 @@ struct ConstellationLinesLayer: EGridLayer {
             return nil
         }()
 
+        // Projection cache — same invariant as StarsLayer: a segment
+        // endpoint's projection (precess → project) depends only on
+        // (date, origin), so during every pan / pinch / rotate frame the
+        // ~700 segments reuse cached projection-unit endpoints and pay only
+        // the cheap `toScreen`. The precession per endpoint was the
+        // heaviest repeated math on the gesture path after the grid.
+        let key = StarProjectionKey(
+            date: dc.renderedObservationDate,
+            lat:  dc.state.origin.latitude.degrees,
+            lon:  dc.state.origin.longitude.degrees
+        )
+        if dc.state._consSegProjKey != key {
+            rebuildCache(in: dc)
+            dc.state._consSegProjKey = key
+        }
+
         for (cons, segs) in ConstellationLines.shared.segments {
+            guard let projSegs = dc.state._consSegProj[cons] else { continue }
             let isFavourite = favouriteIDs.contains(cons.rawValue)
             let isSelected  = cons == selectedCons
             // Myth tint is for FAVOURITES only now — resolved once per
@@ -39,9 +56,10 @@ struct ConstellationLinesLayer: EGridLayer {
                 ? dc.resolve(favouriteTint(for: cons, observerLatitude: observerLat))
                 : nil
 
-            for seg in segs {
-                guard let pa = projected(seg.a, in: dc),
-                      let pb = projected(seg.b, in: dc) else { continue }
+            for (i, seg) in segs.enumerated() {
+                guard i < projSegs.count, let pair = projSegs[i] else { continue }
+                let pa = dc.toScreen(pair.a)
+                let pb = dc.toScreen(pair.b)
                 let ra = artist.starRadius(seg.a, in: dc)
                 let rb = artist.starRadius(seg.b, in: dc)
                 let gap = artist.constellationLineGapPad
@@ -87,12 +105,30 @@ struct ConstellationLinesLayer: EGridLayer {
         return artist.constellationGradient(kind: kind).top
     }
 
+    /// Full projection pass over every constellation's segments, in
+    /// projection units (no `toScreen` — that's per frame). Runs only when
+    /// the cache key falls stale (date scrub / origin move). Arrays stay
+    /// aligned 1:1 with each constellation's `segs`, `nil` where an
+    /// endpoint doesn't project.
+    private func rebuildCache(in dc: EGraphicContext) {
+        var cache: [EConstellation: [(a: CGPoint, b: CGPoint)?]] = [:]
+        cache.reserveCapacity(ConstellationLines.shared.segments.count)
+        for (cons, segs) in ConstellationLines.shared.segments {
+            cache[cons] = segs.map { seg in
+                guard let a = projected(seg.a, in: dc),
+                      let b = projected(seg.b, in: dc) else { return nil }
+                return (a, b)
+            }
+        }
+        dc.state._consSegProj = cache
+    }
+
+    /// Precess + project one figure-star to projection units.
     private func projected(_ star: EStar, in dc: EGraphicContext) -> CGPoint? {
         let (pRA, pDec) = EPrecession.precess(ra: star.rightAscension, dec: star.declination,
                                               to: dc.renderedObservationDate)
         let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
             .sidereallyRotated(by: dc.localSiderealOffset)
-        guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { return nil }
-        return dc.toScreen(proj)
+        return EProjection.project(Q, viewpoint: dc.viewpoint)
     }
 }

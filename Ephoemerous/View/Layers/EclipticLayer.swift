@@ -25,40 +25,72 @@ struct EclipticLayer: EGridLayer {
     private let sunMargin : CGFloat = 10   // screen px — sun disc + a touch
 
     func draw(in dc: inout EGraphicContext) {
+        // Projection cache — same invariant as StarsLayer: the bulged rim
+        // (which used to re-project the full 361-sample ecliptic TWICE per
+        // frame — once for the circle fit, again for the rim) and the 12
+        // glyph anchors are fixed in projection space while (date, origin)
+        // hold, so gesture frames only pay `toScreen`.
+        let key = StarProjectionKey(
+            date: dc.renderedObservationDate,
+            lat:  dc.state.origin.latitude.degrees,
+            lon:  dc.state.origin.longitude.degrees
+        )
+        if dc.state._eclipticProjKey != key {
+            rebuildCache(in: dc)
+            dc.state._eclipticProjKey = key
+        }
+        guard !dc.state._eclipticRimPts.isEmpty else { return }
+
+        // Resolved once: the rim stroke + all 12 glyphs share it, and an
+        // unresolved asset colour would re-hit the catalog per draw.
+        let color = dc.resolve(artist.eclColor)
+
+        var local = dc
+        local.strokeCurve(dc.state._eclipticRimPts,
+                          color: color,
+                          width: artist.eclWidth)
+
+        drawZodiacGlyphs(centre: dc.state._eclipticCentre, color: color, in: &dc)
+    }
+
+    /// Full sampling pass — ecliptic samples, circle fit, bulged rim and
+    /// glyph anchors, all in projection units. Runs only when the cache
+    /// key falls stale (date scrub / origin move), not per gesture frame.
+    private func rebuildCache(in dc: EGraphicContext) {
         let samples = EProjection.sampleEcliptic(viewpoint:      dc.viewpoint,
                                                  siderealOffset: dc.localSiderealOffset)
             .compactMap { $0 }
-        guard samples.count >= 8 else { return }
-        
-        let (centre, radius) = fitCircle(samples)
-        guard radius > 0.0001 else { return }
-        
-        // Two parallel ecliptic rims straddling the true ecliptic so the
-        // Sun (which sits on it by definition) is held between them.
-        // `δ` lives in screen px and gets converted to projection units
-        // so the band's apparent width stays constant under zoom.
-//        let δ = sunMargin / dc.renderedScale
-        
-        var local = dc
-        for offset in [0.0] {
-            //        for offset in [0.0, δ] {
-            //            local.ctx.addFilter(
-            //                .shadow(
-            //                    color: .yellow,
-            //                    radius: 3,
-            //                    x: 0,
-            //                    y: 1,
-            //                    blendMode: .destinationOver,
-            //                    options: .shadowAbove
-            //                )
-            //            )
-//            local.ctx.addFilter(.blur(radius: 1))
-            local.strokeCurve(zodiacRim(extraOffset: offset, centre: centre, in: dc),
-                              color: artist.eclColor,
-                              width: artist.eclWidth)
+        guard samples.count >= 8 else {
+            dc.state._eclipticRimPts = []
+            dc.state._zodiacGlyphPts = []
+            return
         }
-        
-        drawZodiacGlyphs(centre: centre, in: &dc)
+
+        let (centre, radius) = fitCircle(samples)
+        guard radius > 0.0001 else {
+            dc.state._eclipticRimPts = []
+            dc.state._zodiacGlyphPts = []
+            return
+        }
+
+        dc.state._eclipticCentre = centre
+        // (The old two-rim straddle — extraOffset δ in screen px — is
+        // parked; a non-zero offset would be scale-dependent and would
+        // need rebuilding on zoom, so reintroduce it per-frame if ever
+        // revived.)
+        dc.state._eclipticRimPts = zodiacRim(extraOffset: 0, centre: centre, in: dc)
+
+        // Glyph anchors at each sign's midpoint (15°, 45°, 75°…).
+        let th     = dc.localSiderealOffset.radians
+        let (c, s) = (cos(th), sin(th))
+        dc.state._zodiacGlyphPts = EZodiacSign.zodiac.map { sign in
+            let lambda = Angle.degrees(Double(sign.index - 1) * 30 + 15)
+            let eq     = SIMD3<Double>.eclipticPoint(lambda: lambda)
+            let Q      = SIMD3(eq.x * c - eq.y * s,
+                               eq.x * s + eq.y * c,
+                               eq.z)
+            return EProjection.project(Q, viewpoint: dc.viewpoint)
+        }
     }
     
     // Walk λ around the ecliptic, project each point, then push it
@@ -104,17 +136,11 @@ struct EclipticLayer: EGridLayer {
     // radially outward from the ecliptic's centroid — celestial
     // typography that reads naturally when you tilt your head around
     // the rim.
-    private func drawZodiacGlyphs(centre: CGPoint, in dc: inout EGraphicContext) {
-        let th         = dc.localSiderealOffset.radians
-        let (c, s)     = (cos(th), sin(th))
+    private func drawZodiacGlyphs(centre: CGPoint, color: Color, in dc: inout EGraphicContext) {
         let centroidSc = dc.toScreen(centre)
-        for sign in EZodiacSign.zodiac {
-            let lambda = Angle.degrees(Double(sign.index - 1) * 30 + 15)
-            let eq     = SIMD3<Double>.eclipticPoint(lambda: lambda)
-            let Q      = SIMD3(eq.x * c - eq.y * s,
-                               eq.x * s + eq.y * c,
-                               eq.z)
-            guard let proj = EProjection.project(Q, viewpoint: dc.viewpoint) else { continue }
+        for (i, sign) in EZodiacSign.zodiac.enumerated() {
+            guard i < dc.state._zodiacGlyphPts.count,
+                  let proj = dc.state._zodiacGlyphPts[i] else { continue }
             let sc = dc.toScreen(proj)
             // Rotation that makes the text's "up" point along the
             // outward radial — atan2(Nx, −Ny) inverts the y because
@@ -129,7 +155,7 @@ struct EclipticLayer: EGridLayer {
             local.draw(
                 Text(sign.symbol)
                     .font(.footnote)
-                    .foregroundStyle(artist.eclColor),
+                    .foregroundStyle(color),
                 at:     .zero,
                 anchor: .center
             )
