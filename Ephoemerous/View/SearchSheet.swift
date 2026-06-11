@@ -38,7 +38,7 @@ struct SearchSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 4) {
+            HStack(spacing: 12) {
                 searchHeader
 
                 CompassModeButton()

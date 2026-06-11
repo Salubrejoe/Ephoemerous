@@ -51,36 +51,37 @@ struct CompassButton: View {
             && abs(state.renderedRotation.degrees) < alignedEpsilon
             && state._rotationTransition == nil
 
-        Button {
-            resetHaptic.impactOccurred()
-            // Bouncy spin-back to North — and drop out of compass mode if
-            // it was on. Driven through a canvas transition (not
-            // withAnimation) so the *sky* animates too; both the dial and
-            // the Canvas snapshot read `renderedRotation`.
-            state.resetRotationToNorth()
-        } label: {
-            centralLetter
-                .frame(width: faceSize, height: faceSize)
+        if !aligned {
+            Button {
+                resetHaptic.impactOccurred()
+                // Bouncy spin-back to North — and drop out of compass mode if
+                // it was on. Driven through a canvas transition (not
+                // withAnimation) so the *sky* animates too; both the dial and
+                // the Canvas snapshot read `renderedRotation`.
+                state.resetRotationToNorth()
+            } label: {
+                centralLetter
+                    .frame(width: faceSize, height: faceSize)
                 // Plain ultra-thin material circle — it sits inside the
                 // search sheet's own glass, so no glass-on-glass. Matches
                 // the heading-up toggle's circle.
-
+                
+            }
+            //        .buttonStyle(CompassPressStyle())
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: .circle)
+            // Auto-hide when upright (Maps behaviour) — nothing to reset.
+            .scaleEffect(aligned ? 0.6 : 1)
+            .allowsHitTesting(!aligned)
+            .animation(.snappy(duration: 0.3), value: aligned)
+            .overlay {
+                orbitingDot
+                    .rotationEffect(-state.renderedRotation)
+            }
+            //        .opacity(aligned ? 0 : 1)
+            // Collapse to zero width when hidden so it leaves no gap in a
+            // horizontal layout (the SearchSheet header) — not just invisible.
         }
-        .buttonStyle(CompassPressStyle())
-        .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .circle)
-        // Auto-hide when upright (Maps behaviour) — nothing to reset.
-        .scaleEffect(aligned ? 0.6 : 1)
-        .allowsHitTesting(!aligned)
-        .animation(.snappy(duration: 0.3), value: aligned)
-        .overlay {
-            orbitingDot
-                .rotationEffect(-state.renderedRotation)
-        }
-        .opacity(aligned ? 0 : 1)
-        // Collapse to zero width when hidden so it leaves no gap in a
-        // horizontal layout (the SearchSheet header) — not just invisible.
-        .frame(width: aligned ? 0 : faceSize)
     }
 
 
