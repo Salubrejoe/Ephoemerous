@@ -66,6 +66,52 @@ extension EArtist {
         )
     }
 
+    // MARK: - Over-zoom name labels
+    // Past the max scale (and faintly hinting just before it), every
+    // generic star shows its catalogue designation — plain cased text, the
+    // same casing as the POI labels, fading in with the zoom overshoot and
+    // out as the view settles back. No badge, no selection.
+
+    /// Scale at which the over-zoom labels begin to show (a faint hint at
+    /// the ceiling) and the scale by which they're fully in (well into the
+    /// rubber overshoot). Anchored to `AstroConstants.maximumScale`.
+    var overZoomLabelStartScale: Double  { AstroConstants.maximumScale * 0.95 }
+    var overZoomLabelFullScale:  Double  { AstroConstants.maximumScale * 1.30 }
+    /// Gap from the star dot to the leading edge of its name.
+    var overZoomLabelGap:        CGFloat { 7 }
+
+    /// 0…1 reveal for the over-zoom star-name labels, smoothstepped between
+    /// `overZoomLabelStartScale` and `overZoomLabelFullScale`. 0 at normal
+    /// zoom (no label work), so callers can early-out.
+    func overZoomLabelOpacity(scale: Double) -> Double {
+        let lo = overZoomLabelStartScale
+        let hi = overZoomLabelFullScale
+        guard hi > lo else { return scale >= hi ? 1 : 0 }
+        let t = (scale - lo) / (hi - lo)
+        let c = min(max(t, 0), 1)
+        return c * c * (3 - 2 * c)        // smoothstep
+    }
+
+    /// Plain catalogue-designation label for a star, trailing-right of its
+    /// dot — used only during over-zoom. Same cased treatment as the POI
+    /// text so it stays legible over a busy field. `opacity` is the
+    /// `overZoomLabelOpacity`, so it transitions in/out with the zoom.
+    func drawStarNameLabel(_ star: EStar, at sc: CGPoint,
+                           opacity: Double, in dc: inout EGraphicContext) {
+        guard opacity > 0.01 else { return }
+        let font  = Font.system(.caption2).weight(.semibold)
+        let point = CGPoint(x: sc.x + overZoomLabelGap, y: sc.y)
+        var ctx = dc.ctx
+        ctx.opacity *= opacity
+        drawCasedLabel(
+            filled: Text(star.displayName).font(font).foregroundStyle(Color.primary),
+            cased:  Text(star.displayName).font(font).foregroundStyle(poiTextBorderColor),
+            at:     point,
+            anchor: .leading,          // text extends right from the dot
+            in:     ctx
+        )
+    }
+
     /// Deterministic-but-arbitrary rotation derived from the star's
     /// RA / Dec — every star keeps a fixed orientation across frames
     /// while no two neighbours line up.

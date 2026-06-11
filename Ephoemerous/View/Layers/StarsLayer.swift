@@ -30,6 +30,9 @@ struct StarsLayer: EGridLayer {
     func draw(in dc: inout EGraphicContext) {
         let favouriteNames = Set(dc.state.favouriteStars.map(\.name))
         let hideNamed      = dc.renderedScale >= artist.namedStarDotIn
+        // Over-zoom name reveal: 0 at normal zoom (no label work), ramps in
+        // as the scale pushes past the ceiling. Drawn per on-screen star.
+        let overZoom       = artist.overZoomLabelOpacity(scale: dc.renderedScale)
 
         let key = StarProjectionKey(
             date: dc.renderedObservationDate,
@@ -51,10 +54,10 @@ struct StarsLayer: EGridLayer {
                 buildProjCache(all, key: key, in: &dc)
             }
             drawFromCache(stars, favouriteNames: favouriteNames,
-                          hideNamed: hideNamed, in: &dc)
+                          hideNamed: hideNamed, overZoom: overZoom, in: &dc)
         } else {
             drawFullPipeline(stars, favouriteNames: favouriteNames,
-                             hideNamed: hideNamed, in: &dc)
+                             hideNamed: hideNamed, overZoom: overZoom, in: &dc)
         }
     }
 
@@ -88,6 +91,7 @@ struct StarsLayer: EGridLayer {
     private func drawFromCache(_ stars: ArraySlice<EStar>,
                                favouriteNames: Set<String>,
                                hideNamed: Bool,
+                               overZoom: Double,
                                in dc: inout EGraphicContext) {
         let projs = dc.state._starProjPoints
         let skipFavourites = !favouriteNames.isEmpty
@@ -99,6 +103,9 @@ struct StarsLayer: EGridLayer {
             let sc = dc.toScreen(p)
             guard artist.starPointFallsWithinMarigin(sc, in: dc) else { continue }
             artist.drawStar(star, at: sc, in: &dc)
+            if overZoom > 0 {
+                artist.drawStarNameLabel(star, at: sc, opacity: overZoom, in: &dc)
+            }
         }
     }
 
@@ -107,6 +114,7 @@ struct StarsLayer: EGridLayer {
     private func drawFullPipeline(_ stars: ArraySlice<EStar>,
                                   favouriteNames: Set<String>,
                                   hideNamed: Bool,
+                                  overZoom: Double,
                                   in dc: inout EGraphicContext) {
         let cull = dc.makeStarCull()
         for star in stars {
@@ -122,6 +130,9 @@ struct StarsLayer: EGridLayer {
             let sc = dc.toScreen(proj)
             guard artist.starPointFallsWithinMarigin(sc, in: dc) else { continue }
             artist.drawStar(star, at: sc, in: &dc)
+            if overZoom > 0 {
+                artist.drawStarNameLabel(star, at: sc, opacity: overZoom, in: &dc)
+            }
         }
     }
 }
