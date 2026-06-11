@@ -181,15 +181,19 @@ extension EArtist {
         caseCtx.opacity *= reveal
         caseCtx.fill(casingPath, with: .color(poiTextBorderColor))
 
+        // Concentric fill: brighter `gradTop` at the centre fading to the
+        // deeper `gradBottom` at the rim, so the badge reads as a little
+        // glowing orb rather than a top-lit pill.
         let gradient = Gradient(colors: [gradTop, gradBottom])
         var fillCtx = dc.ctx
         fillCtx.opacity *= reveal
         fillCtx.fill(
             badgePath,
-            with: .linearGradient(
+            with: .radialGradient(
                 gradient,
-                startPoint: CGPoint(x: badgeRect.midX, y: badgeRect.minY),
-                endPoint:   CGPoint(x: badgeRect.midX, y: badgeRect.maxY)
+                center:      badgeCenter,
+                startRadius: 0,
+                endRadius:   scaledHalf
             )
         )
 
@@ -250,11 +254,6 @@ extension EArtist {
         // global fontDesign) so the canvas label stays serif while the
         // rest of the app renders standard.
         let textFont = Font.system(.footnote, design: .serif).weight(.bold)
-        let textGradient = LinearGradient(
-            colors:     [gradTop, gradBottom],
-            startPoint: .top,
-            endPoint:   .bottom
-        )
 
         // Flat (trailing, vertically-centred) vs promoted (centred
         // below the dot) anchor + point — lerped by promo. The flat
@@ -292,7 +291,9 @@ extension EArtist {
             var flatCtx = textCtx
             flatCtx.opacity *= (1 - promo)
             drawCasedLabel(
-                filled: Text(text).font(textFont).foregroundStyle(textGradient),
+                // Outer (rim) colour of the badge's concentric fill — the
+                // deeper `gradBottom`, not the bright centre.
+                filled: Text(text).font(textFont).foregroundStyle(gradBottom),
                 cased:  Text(text).font(textFont).foregroundStyle(poiTextBorderColor),
                 at:     textPoint,
                 anchor: textAnchor,

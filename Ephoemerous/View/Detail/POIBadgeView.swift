@@ -25,10 +25,13 @@ struct POIBadgeView: View {
             Squircle(corners: style.badgeCorners,
                      bulge:   artist.poiBadgeBulge)
                 .fill(
-                    LinearGradient(
-                        colors:     [style.gradientTop, style.gradientBottom],
-                        startPoint: .top,
-                        endPoint:   .bottom
+                    // Concentric fill matching the canvas badge: bright
+                    // centre (`gradientTop`) → deeper rim (`gradientBottom`).
+                    RadialGradient(
+                        colors:      [style.gradientTop, style.gradientBottom],
+                        center:      .center,
+                        startRadius: 0,
+                        endRadius:   size / 2
                     )
                 )
                 .overlay {

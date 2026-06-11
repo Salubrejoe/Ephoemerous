@@ -121,8 +121,8 @@ extension EArtist {
             // gives us a natural light → deep ramp for the gradient.
             let g = star.spectralClass.badgeGradient
             return POICategoryStyle(
-                gradientTop:     g.top,
-                gradientBottom:  g.bottom,
+                gradientTop:     g.bottom,
+                gradientBottom:  g.top,
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
@@ -152,8 +152,8 @@ extension EArtist {
             let tier = namedStarTier(magnitude: star.magnitude)
             let bump = Double(tier) * namedStarTierStep
             return POICategoryStyle(
-                gradientTop:     g.top,
-                gradientBottom:  g.bottom,
+                gradientTop:     g.bottom,
+                gradientBottom:  g.top,
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
                 textColor:       .primary,
@@ -167,19 +167,22 @@ extension EArtist {
             )
         case .sun:
             return solarStyle(
-                top:     palette.sun.top,
-                bottom:  palette.sun.bottom,
+                top:     palette.sun.bottom,
+                bottom:  palette.sun.top,
                 corners: 12     // hexagon
             )
         case .moon:
             return moonStyle(
-                top:     palette.moon.top,
-                bottom:  palette.moon.bottom,
+                top:     palette.moon.bottom,
+                bottom:  palette.moon.top,
                 corners: 3     // triangle
             )
         case .planet(let p):
             let g = planetGradient(p)
-            return planetStyle(top: g.top, bottom: g.bottom)
+            return planetStyle(
+                top: g.bottom,
+                bottom: g.top
+            )
         }
     }
 
@@ -202,11 +205,11 @@ extension EArtist {
     var poiBadgeBulge: CGFloat { 3.9 }
     /// Horizontal gap between the badge's right edge and the text's
     /// left edge — keeps the pill from feeling crowded.
-    var poiTextLeadingGap: CGFloat { 5 }
+    var poiTextLeadingGap: CGFloat { 6 }
     /// Shadow under the badge — a tight halo in the canvas colour so
     /// the pill lifts off the sky as one shape.
     var poiShadow: GraphicsContext.Filter {
         .shadow(color: .systemBackground,
-                radius: 1, x: 0, y: 0)
+                radius: 1, x: 0, y: 1)
     }
 }

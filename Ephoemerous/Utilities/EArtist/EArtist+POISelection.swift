@@ -42,7 +42,7 @@ extension EArtist {
     /// Spring damping for the badge-scale bounce. LOWER = looser, bigger
     /// overshoot, more visible wobble; higher = settles faster. ~5 is a
     /// lively-but-tasteful spring; drop toward 3 for a real boing.
-    var poiSelectSpringDamping: Double { 3 }
+    var poiSelectSpringDamping: Double { 4 }
     /// Number of half-swings in the spring — effectively the bounce count.
     /// 1 = a single overshoot; 2 = overshoot + a little undershoot; 3+ =
     /// more wobble. Rounded to an integer so the curve lands exactly on its
