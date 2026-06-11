@@ -34,7 +34,7 @@ struct CompassButton: View {
 //    private let faceSize:    CGFloat = 37
     private let faceSize:    CGFloat = 42
     private let roseCorners: Int     = 12
-    private let roseBulge:   CGFloat = 2.2
+    private let roseBulge:   CGFloat = 2.5
     private let orbitRadius: CGFloat = 13
 //    private let orbitRadius: CGFloat = 16
     private let dotSize:     CGFloat = 7
@@ -83,14 +83,6 @@ struct CompassButton: View {
         .frame(width: aligned ? 0 : faceSize)
     }
 
-    // MARK: - Dial
-
-    private var dial: some View {
-        ZStack {
-            
-            
-        }
-    }
 
     /// The cardinal nearest the top, dead centre and always upright.
     private var centralLetter: some View {
@@ -113,6 +105,7 @@ struct CompassButton: View {
 //            .scaledToFit()
         Text("N")
             .font(.system(size: dotSize))
+            .fontWeight(.heavy)
             .foregroundStyle(Color.orange)
             .offset(y: -orbitRadius)
     }

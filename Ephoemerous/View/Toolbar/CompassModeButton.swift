@@ -16,7 +16,7 @@ struct CompassModeButton: View {
     @Environment(EAppState.self) private var state
 
     private let haptic   = UIImpactFeedbackGenerator(style: .medium)
-    private let faceSize: CGFloat = 46
+    private let faceSize: CGFloat = 42
 
     var body: some View {
         // No gyro → nothing to follow; don't offer the control at all.
@@ -32,7 +32,6 @@ struct CompassModeButton: View {
                     // Lit orange (matching the rose's north tip) while
                     // active; muted when off.
                     .frame(width: faceSize, height: faceSize)
-                    .padding()
 //                    .clipShape(.circle)
                     .foregroundStyle(.orange)
 //                    .glassEffect(.regular.interactive(), in: .circle)
