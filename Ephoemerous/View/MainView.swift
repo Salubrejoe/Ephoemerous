@@ -93,8 +93,11 @@ struct MainView: View {
                 // Animated so the body slides away rather than snapping.
                 .environment(\.detailCollapsed, detailDetent == detailHeaderDetent)
                 .animation(.snappy(duration: 0.28), value: detailDetent)
+                // `.large` lets the constellation detail be dragged up
+                // to read the full on-device origin story; star / planet
+                // details just stay top-aligned with their Spacer.
                 .presentationDetents(
-                    [detailHeaderDetent, .fraction(1.0 / 3.0)],
+                    [detailHeaderDetent, .fraction(1.0 / 3.0), .large],
                     selection: $detailDetent
                 )
                 .interactiveDismissDisabled()
