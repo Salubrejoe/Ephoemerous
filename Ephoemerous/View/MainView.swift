@@ -58,8 +58,24 @@ struct MainView: View {
         // fires once per raise, not repeatedly at the threshold.
         .onChange(of: EMotionService.shared.raisedToSky) { _, raised in
             if raised, state.isAtDeviceLocation, !state.compassMode {
-                state.compassMode = true
+                // Already at Here (gated above), so engage straight away —
+                // no return-to-location prompt needed. `engageCompassMode`
+                // also frames the sky (puck low, horizon up).
+                state.engageCompassMode()
             }
+        }
+
+        // MARK: - COMPASS: return-to-Here confirmation
+
+        // Tapping the heading-up toggle while the map is showing somewhere
+        // other than the device location asks before snapping back — compass
+        // mode only makes sense from where you actually stand.
+        .alert("Return to your location?",
+               isPresented: Bindable(state)._compassReturnHomePrompt) {
+            Button("Cancel", role: .cancel) { }
+            Button("Switch to Here") { state.confirmReturnHomeAndEngageCompass() }
+        } message: {
+            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
         }
         
         

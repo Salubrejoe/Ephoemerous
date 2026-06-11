@@ -172,6 +172,10 @@ struct ECanvasSchedule: TimelineSchedule {
 extension CelestialCanva {
     private var isAnimating: Bool {
         gestures.isInteracting         ||
+        state.compassMode              ||   // heading-up: tick smoothly so the
+                                            // sky glides with the phone instead
+                                            // of repainting only on quantized
+                                            // 30 Hz aim changes (the stutter).
         state._activeTransition  != nil ||
         state._dateTransition    != nil ||
         state._originTransition  != nil ||

@@ -69,6 +69,19 @@ class EAppState {
     /// spins under a fixed-up aim cone — the phone becomes the dial. Driven
     /// by `EMotionService.aim`; toggled via `toggleCompassMode()`.
     var compassMode: Bool = false
+    /// Smoothed heading rotation (radians) while in compass mode — the
+    /// low-pass `renderedRotation` eases toward `−aim.azimuth` each frame.
+    /// `nil` when not in compass mode (re-entry snaps fresh to the live
+    /// heading). ObservationIgnored: it's mutated from inside the
+    /// `renderedRotation` getter every frame and must not invalidate the
+    /// view; the continuous redraw comes from the timeline, not from this.
+    @ObservationIgnored var _compassRotCurrent: Double? = nil
+    /// `animationTime` at the last compass-rotation step, for the per-frame
+    /// dt the low-pass integrates against.
+    @ObservationIgnored var _compassRotTime: Double = 0
+    /// Drives the "return to your location?" confirmation before compass
+    /// mode snaps the observer back to Here. Observed → MainView's `.alert`.
+    var _compassReturnHomePrompt: Bool = false
     /// In-flight bouncy spin-back (the compass reset). Interpolated lazily
     /// in `renderedRotation` and nil'd when finished — same pattern as
     /// `_activeTransition`. Lets the *canvas* animate the rotation (it

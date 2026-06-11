@@ -101,8 +101,35 @@ extension EAppState {
         // compass rose repaint on every heading change — the same hook the
         // cone uses — so the rotation tracks the phone with no tick driver.
         if compassMode, let aim = EMotionService.shared.aim {
-            return .radians(-aim.azimuth)
+            let target = -aim.azimuth
+            // First compass frame: snap to the live heading, seed the smoother.
+            guard let cur = _compassRotCurrent else {
+                _compassRotCurrent = target
+                _compassRotTime    = animationTime
+                return .radians(target)
+            }
+            // Critically-damped low-pass toward the heading, integrated
+            // against the frame clock. `aim.azimuth` is delivered at 30 Hz
+            // and quantized to 0.5°; easing toward it each 120 Hz tick
+            // dissolves those steps (and magnetometer jitter) into a glide.
+            // dt is clamped so a parked gap or an off-frame read can't fling
+            // the rotation. tau = time constant: smaller snappier, larger
+            // smoother.
+            let dt  = min(0.1, max(0, animationTime - _compassRotTime))
+            _compassRotTime = animationTime
+            let tau = 0.10
+            let k   = dt > 0 ? (1 - exp(-dt / tau)) : 0
+            // Shortest-arc delta so wrapping past ±π eases the short way.
+            var delta = (target - cur).truncatingRemainder(dividingBy: 2 * .pi)
+            if delta >  .pi { delta -= 2 * .pi }
+            if delta < -.pi { delta += 2 * .pi }
+            let next = cur + delta * k
+            _compassRotCurrent = next
+            return .radians(next)
         }
+        // Out of compass mode → drop the smoother so a fresh raise snaps to
+        // the live heading rather than easing up from a stale value.
+        _compassRotCurrent = nil
         guard let t = _rotationTransition else { return canvasRotation }
         if t.isFinished(at: animationTime) {
             _rotationTransition = nil
@@ -133,36 +160,86 @@ extension EAppState {
 
     // MARK: - Compass (heading-up) mode
 
-    /// Flip heading-up mode on or off.
+    // Heading-up framing tunables (fractions of canvas height). The puck
+    // (zenith) drops low so the sky fans up in front of you; the horizon
+    // arc lifts toward the top edge — the AR "looking up & forward" pose.
+    // ▼ TWEAK HERE ▼
+    private var compassPuckYFraction:    Double { 0.82 }   // puck near the bottom
+    private var compassHorizonYFraction: Double { 0.08 }   // horizon near the top
+
+    /// Scale + offset for the heading-up pose. The horizon is a circle of
+    /// radius 2 projection-units about the zenith (see `EProjection`), so
+    /// the zenith→horizon span on screen is `2·scale` — solve that to land
+    /// the horizon at `compassHorizonYFraction` while the puck sits at
+    /// `compassPuckYFraction`. `offset.x` drives the vertical placement
+    /// (see `toScreenPoint`); `offset.y` stays 0 to keep the puck centred.
+    var compassFraming: (scale: Double, offset: CGPoint) {
+        let h = canvasSize.height
+        guard h > 0 else { return (defaultScale, defaultOffset) }
+        let puckY    = compassPuckYFraction    * h
+        let horizonY = compassHorizonYFraction * h
+        let scale    = Swift.max(defaultScale, (puckY - horizonY) / 2)
+        return (scale, CGPoint(x: puckY - h / 2, y: 0))
+    }
+
+    /// Engage heading-up mode and frame the sky for it (puck low, horizon
+    /// up). Assumes the observer is already at the device location — the
+    /// toggle / auto-engage callers gate that (and prompt) themselves.
+    func engageCompassMode() {
+        _rotationTransition = nil
+        compassMode = true
+        let f = compassFraming
+        animateTo(scale: f.scale, offset: f.offset)
+    }
+
+    /// Leave heading-up mode: freeze the live heading into `canvasRotation`
+    /// so nothing jumps, then zoom back to the default centred view.
+    func disengageCompassMode() {
+        let frozen = renderedRotation     // current heading rotation
+        compassMode = false
+        _rotationTransition = nil
+        canvasRotation = frozen
+        resetView()
+    }
+
+    /// Flip heading-up mode on or off (the toolbar toggle).
     ///
-    /// • ON — if the observer has panned away from the device location,
-    ///   recenter there first (compass mode is about orienting from where
-    ///   you actually stand), drop any in-flight spin-back, then engage:
-    ///   `renderedRotation` starts following the heading immediately.
-    /// • OFF — freeze the map exactly where the heading left it (commit the
-    ///   live heading rotation into `canvasRotation`) so nothing jumps.
+    /// • ON, at Here — engage + frame immediately.
+    /// • ON, away from Here — compass mode orients from where you actually
+    ///   stand, so we must snap the observer back to Here first. Rather than
+    ///   do that silently, raise the `_compassReturnHomePrompt` confirmation;
+    ///   `confirmReturnHomeAndEngageCompass()` does the recenter + engage.
+    /// • OFF — freeze the heading and restore the pre-compass framing.
     func toggleCompassMode() {
         if compassMode {
-            let frozen = renderedRotation     // current heading rotation
-            compassMode = false
-            _rotationTransition = nil
-            canvasRotation = frozen
+            disengageCompassMode()
+        } else if isAtDeviceLocation {
+            engageCompassMode()
         } else {
-            if !isAtDeviceLocation { goToDeviceLocation() }
-            _rotationTransition = nil
-            compassMode = true
+            _compassReturnHomePrompt = true
         }
+    }
+
+    /// User accepted the return-to-Here prompt: recenter on the device
+    /// location, then engage heading-up.
+    func confirmReturnHomeAndEngageCompass() {
+        _compassReturnHomePrompt = false
+        goToDeviceLocation()
+        engageCompassMode()
     }
 
     /// Spring the canvas back to North, leaving compass mode if it was on.
     /// Captures the live heading rotation BEFORE clearing the flag so the
     /// spin-back starts from where the sky actually is (not a stale
-    /// `canvasRotation`) — otherwise it would snap.
+    /// `canvasRotation`) — otherwise it would snap. Also zooms back to the
+    /// default view when it was a heading-up exit.
     func resetRotationToNorth() {
-        let current = renderedRotation
+        let current    = renderedRotation
+        let wasCompass = compassMode
         compassMode = false
         canvasRotation = current
         animateRotation(to: .zero)
+        if wasCompass { resetView() }
     }
 }
 
