@@ -25,8 +25,20 @@ struct SkyLabView: View {
     @Environment(EAppState.self) private var app
 
     // Committed (resting) camera — FROZEN during a gesture.
-    @State private var scale:  CGFloat = 90
+    @State private var scale:  CGFloat = Self.defaultScale
     @State private var offset: CGSize  = .zero
+
+    // Production scale model (hard clamp — no rubber, no recentering yet).
+    private static let defaultScale: CGFloat = 90
+    private static let minScale:     CGFloat = 90
+    private static let maxScale:     CGFloat = 1200
+
+    /// Only PROPER-named stars (Sirius, Betelgeuse…) get the POI label —
+    /// like production. The Bayer / Flamsteed rest will get plain
+    /// secondary text past max scale later; skipped for now. Computed
+    /// ONCE (workableStars rebuilds ~9k EStars per access).
+    private static let properNamedStars: [EStar] =
+        StarDatabase.shared.workableStars.filter { $0.properName != nil }
 
     // Transient gesture deltas — applied to the shared parent transform,
     // folded into the committed camera on release.
@@ -66,17 +78,26 @@ struct SkyLabView: View {
             // point, and the reference the focal compensation works from.
             let center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
 
+            // Hard-clamp the live zoom to [min, max] — a wall, no rubber.
+            // `effPinch` is the magnification actually applied this frame
+            // (and `liveScale` the resulting committed-equivalent scale),
+            // so everything downstream — the scaleEffect, the pan
+            // compensation, the overlay counter-scale, the named-star
+            // gate — speaks one clamped value.
+            let liveScale = min(max(scale * pinch, Self.minScale), Self.maxScale)
+            let effPinch  = scale > 0 ? liveScale / scale : 1
+
             // Total translation applied OUTSIDE the scale. Three terms:
-            //   • `(focal − center)·(1 − pinch)` — focal compensation. The
-            //     scaleEffect zooms about screen centre; this shifts so the
-            //     sky point under the FINGERS stays under the fingers.
-            //   • `offset · pinch` — the committed pan, scaled, because a
+            //   • `(focal − center)·(1 − effPinch)` — focal compensation.
+            //     The scaleEffect zooms about screen centre; this shifts so
+            //     the sky point under the FINGERS stays under the fingers.
+            //   • `offset · effPinch` — the committed pan, scaled, because a
             //     zoom about a point scales the whole already-panned image.
             //   • `drag` — live one-finger / centroid pan.
-            // At rest (pinch 1, drag 0) this is exactly `offset`.
+            // At rest (effPinch 1, drag 0) this is exactly `offset`.
             let applied = CGSize(
-                width:  (focal.x - center.x) * (1 - pinch) + offset.width  * pinch + drag.width,
-                height: (focal.y - center.y) * (1 - pinch) + offset.height * pinch + drag.height
+                width:  (focal.x - center.x) * (1 - effPinch) + offset.width  * effPinch + drag.width,
+                height: (focal.y - center.y) * (1 - effPinch) + offset.height * effPinch + drag.height
             )
 
             ZStack {
@@ -88,9 +109,26 @@ struct SkyLabView: View {
                     .equatable()
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
+                // Tiered native labels — each object reveals at its
+                // production zoom tier (see each overlay's gate):
+                //   • favourite stars  — .followedStar (badgeIn 70)
+                //   • proper-name stars — .namedStar   (badgeIn ~280)
+                //   • Sun/Moon/planets  — bodies overlay (0 / 80)
+                // Constellation names + Greek-letter stars: skipped for now.
+                SkyLabStarLabelsOverlay(camera: camera,
+                                        stars: app.favouriteStars,
+                                        pinch: effPinch,
+                                        scale: liveScale,
+                                        category: { .followedStar($0) })
+                SkyLabStarLabelsOverlay(camera: camera,
+                                        stars: Self.properNamedStars,
+                                        pinch: effPinch,
+                                        scale: liveScale,
+                                        category: { .namedStar($0) })
                 SkyLabBodiesOverlay(camera: camera,
                                     date:  app.renderedObservationDate,
-                                    pinch: pinch)
+                                    pinch: effPinch,
+                                    scale: liveScale)
             }
             .frame(width: canvasSize.width, height: canvasSize.height)
             // THE shared parent transform — both children, one commit.
@@ -98,7 +136,7 @@ struct SkyLabView: View {
             // translation. Keeping translation outside the scale is what
             // makes the pinch-release commit land exactly where the gesture
             // left it — see `applied` and the commit in the gesture.
-            .scaleEffect(pinch, anchor: .center)
+            .scaleEffect(effPinch, anchor: .center)
             .offset(x: applied.width, y: applied.height)
             // Constrain the layout back to the screen (centres the oversize
             // content; overflow renders off-screen, ready for the pan).
@@ -121,14 +159,17 @@ struct SkyLabView: View {
                         let mag = v.second?.magnification ?? 1
                         let f   = v.second?.startLocation ?? center
                         let tr  = v.first?.translation ?? .zero
-                        // Fold the live transform into the committed camera
-                        // with the SAME formula `applied` uses, so the
-                        // resting render reproduces the final gesture frame.
+                        // Clamp the committed scale to the same wall the
+                        // live frame used, and fold the transform with the
+                        // CLAMPED factor so the resting render reproduces
+                        // the final (clamped) gesture frame exactly.
+                        let newScale = min(max(scale * mag, Self.minScale), Self.maxScale)
+                        let cMag     = scale > 0 ? newScale / scale : 1
                         offset = CGSize(
-                            width:  (f.x - center.x) * (1 - mag) + offset.width  * mag + tr.width,
-                            height: (f.y - center.y) * (1 - mag) + offset.height * mag + tr.height
+                            width:  (f.x - center.x) * (1 - cMag) + offset.width  * cMag + tr.width,
+                            height: (f.y - center.y) * (1 - cMag) + offset.height * cMag + tr.height
                         )
-                        scale *= mag
+                        scale = newScale
                         drag  = .zero
                         pinch = 1
                     }
@@ -139,7 +180,7 @@ struct SkyLabView: View {
         // bright outline. Without a dark background (and dark scheme) the
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
-        .background(EArtist.shared.canvasBackground)
+//        .background(EArtist.shared.canvasBackground)
 //        .preferredColorScheme(.dark)
         .ignoresSafeArea()
     }

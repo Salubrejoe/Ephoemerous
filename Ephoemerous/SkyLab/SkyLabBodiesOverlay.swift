@@ -19,6 +19,10 @@ struct SkyLabBodiesOverlay: View {
     let camera: SkyLabCamera
     let date:   Date
     let pinch:  CGFloat
+    /// Live (clamped) scale — gates each body by its category tier. Sun /
+    /// Moon are `badgeIn 0` (always), planets `badgeIn 80`; names follow
+    /// at each `textIn`.
+    let scale:  CGFloat
 
     private var artist: EArtist { .shared }
 
@@ -53,9 +57,15 @@ struct SkyLabBodiesOverlay: View {
                         glyph: POIGlyph,
                         text: String) -> some View {
         if let sc {
-            POILabelView(category: category, glyph: glyph, text: text)
-                .scaleEffect(1 / pinch)
-                .position(sc)
+            let style = artist.poiStyle(for: category)
+            if scale >= style.badgeIn {        // tier gate (Sun/Moon = 0)
+                POILabelView(category:  category,
+                             glyph:     glyph,
+                             text:      text,
+                             showsName: scale >= style.textIn)
+                    .scaleEffect(1 / pinch)
+                    .position(sc)
+            }
         }
     }
 
