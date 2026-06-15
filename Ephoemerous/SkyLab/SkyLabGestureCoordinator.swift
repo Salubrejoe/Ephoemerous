@@ -80,9 +80,17 @@ final class SkyLabGestureCoordinator {
     var effPinch:  CGFloat { scale > 0 ? liveScale / scale : 1 }
     var applied: CGSize {
         let ep = effPinch
-        return CGSize(
-            width:  (focal.x - center.x) * (1 - ep) + drag.width  - homeBlend * ep * offset.width,
-            height: (focal.y - center.y) * (1 - ep) + drag.height - homeBlend * ep * offset.height)
+        let hb = homeBlend
+        // Effective on-screen offset (no homing) = the scaleEffect's pull
+        // on the committed offset + focal compensation + live pan. Homing
+        // eases the WHOLE of it toward 0 — a TRUE recentre — not just the
+        // committed part (the old bug left the focal term behind, so it
+        // recentred off-centre). The parent `.offset` is that homed
+        // effective minus the scaleEffect part (`ep·offset`).
+        let effW = ep * offset.width  + (focal.x - center.x) * (1 - ep) + drag.width
+        let effH = ep * offset.height + (focal.y - center.y) * (1 - ep) + drag.height
+        return CGSize(width:  (1 - hb) * effW - ep * offset.width,
+                      height: (1 - hb) * effH - ep * offset.height)
     }
 
     // MARK: Recogniser input
@@ -194,10 +202,12 @@ final class SkyLabGestureCoordinator {
         let lr = liveRotation.radians
         let rc = CGFloat(cos(lr)), rs = CGFloat(sin(lr))
         let hb = homeBlend
-        let rox = (offset.width * rc - offset.height * rs) * cMag * (1 - hb)
-        let roy = (offset.width * rs + offset.height * rc) * cMag * (1 - hb)
-        offset = CGSize(width:  (focal.x - center.x) * (1 - cMag) + rox + drag.width,
-                        height: (focal.y - center.y) * (1 - cMag) + roy + drag.height)
+        // Whole effective offset (rotated committed offset + focal comp +
+        // pan), then homed toward 0 by `hb` — so hb = 1 lands exactly at
+        // centre, matching the live `applied`.
+        let effW = cMag * (offset.width * rc - offset.height * rs) + (focal.x - center.x) * (1 - cMag) + drag.width
+        let effH = cMag * (offset.width * rs + offset.height * rc) + (focal.y - center.y) * (1 - cMag) + drag.height
+        offset   = CGSize(width: (1 - hb) * effW, height: (1 - hb) * effH)
         scale    = settled
         rotation = rotation + liveRotation
         pinch = 1; drag = .zero; liveRotation = .zero; homeBlend = 0
