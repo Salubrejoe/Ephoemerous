@@ -115,8 +115,7 @@ struct POILabelView: View {
 //        .glassEffect()
         .frame(width: d, height: d)
         // Casing ring — the light outline doing the legibility work.
-        .overlay(Circle().stroke(style.border, lineWidth: bw)
-            .glassEffect(.clear.interactive()))
+        .overlay(Circle().stroke(style.border, lineWidth: bw))
         // Soft drop shadow for lift (one view → cheap, unlike the Canvas
         // per-glyph blur).
         .shadow(color: .black.opacity(0.35), radius: 2.5, y: 0.5)

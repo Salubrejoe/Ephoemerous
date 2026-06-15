@@ -107,8 +107,17 @@ struct SkyLabView: View {
                 // whole point. The starfield is the stress test.
                 SkyLabGridCanvas(camera: camera)
                     .equatable()
+                // Horizon + twilight rings — native concentric circles
+                // about the zenith, riding the parent transform.
+                SkyLabHorizonCircles(camera: camera)
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
+                // Curved cartographic labels — horizon rim + colures.
+                // Canvas (per-glyph curve), frozen via .equatable().
+//                SkyLabCartographyLabels(camera:   camera,
+//                                        latitude: app.origin.latitude,
+//                                        date:     app.renderedObservationDate)
+//                    .equatable()
                 // Tiered native labels — each object reveals at its
                 // production zoom tier (see each overlay's gate):
                 //   • favourite stars  — .followedStar  (badgeIn 70)
@@ -184,7 +193,7 @@ struct SkyLabView: View {
         // bright outline. Without a dark background (and dark scheme) the
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
-//        .background(EArtist.shared.canvasBackground)
+        .background(EArtist.shared.canvasBackground)
 //        .preferredColorScheme(.dark)
         .ignoresSafeArea()
     }

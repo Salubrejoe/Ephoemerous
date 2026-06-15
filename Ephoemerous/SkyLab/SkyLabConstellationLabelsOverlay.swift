@@ -38,8 +38,8 @@ struct SkyLabConstellationLabelsOverlay: View {
     var body: some View {
         ZStack {
             ForEach(marks) { mark in
-                OutlinedText(text:      mark.name,
-                             fill:      .primary,            // quiet cartographic name
+                OutlinedText(text:      mark.name.uppercased(),
+                             fill:      .secondary,            // quiet cartographic name
                              stroke:    .systemBackground,   // dark knockout vs stars
                              lineWidth: 2.5,
                              font:      Self.font)
