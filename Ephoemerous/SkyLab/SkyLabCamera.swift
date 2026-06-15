@@ -15,6 +15,13 @@ import simd
 // transform (scale / offset) is the lab's own, independent of production.
 struct SkyLabCamera: Equatable {
     var scale:  CGFloat
+    /// COMMITTED pan, baked into the projection so the Canvas draws
+    /// centred on the view you're actually looking at — not on the
+    /// zenith. Without this, at high zoom the panned-to region projects
+    /// outside the (fixed, oversized) Canvas bounds and is CLIPPED → the
+    /// grid / cartography vanish. The live gesture delta stays the
+    /// parent transform; this is only the resting offset (see SkyLabView).
+    var offset: CGSize
     var size:   CGSize
 
     var viewpoint: EProjection.Viewpoint
@@ -22,22 +29,22 @@ struct SkyLabCamera: Equatable {
 
     static func == (l: SkyLabCamera, r: SkyLabCamera) -> Bool {
         l.scale == r.scale
+            && l.offset == r.offset
             && l.size == r.size
             && l.sidereal == r.sidereal
             && l.viewpoint.originVector == r.viewpoint.originVector
             && l.viewpoint.planeVector == r.viewpoint.planeVector
     }
 
-    /// Projection-unit point → screen pixel (N up, scale about centre
-    /// ONLY). Pan deliberately lives OUTSIDE the camera, as a SwiftUI
-    /// `.offset` applied outside the `.scaleEffect` (see SkyLabView): if
-    /// the offset were baked in here, `.scaleEffect` would scale it and
-    /// the gesture-commit would mismatch by `offset·(1−pinch)` — the
-    /// "view travels on pinch release" bug. No canvas-rotation term yet;
-    /// rotation joins once pan/zoom sync is proven.
+    /// Projection-unit point → screen pixel: scale about centre + the
+    /// COMMITTED pan. Only the committed (resting) offset lives here so the
+    /// Canvas draws centred on the view (no high-zoom clipping); the LIVE
+    /// gesture delta is the parent transform, and the commit folds it in
+    /// with the matching `offset·cMag` term — so there's still no
+    /// pinch-release travel. No canvas-rotation term yet.
     func screen(_ p: CGPoint) -> CGPoint {
-        CGPoint(x: size.width  / 2 + p.x * scale,
-                y: size.height / 2 - p.y * scale)
+        CGPoint(x: size.width  / 2 + p.x * scale + offset.width,
+                y: size.height / 2 - p.y * scale + offset.height)
     }
 
     /// Equatorial unit vector → screen, or `nil` when it projects behind

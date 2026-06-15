@@ -69,7 +69,8 @@ struct SkyLabView: View {
             // centred in the screen below) lands on the screen centre.
             let camera = SkyLabCamera(
                 scale:     scale,
-                size:      canvasSize,
+                offset:    offset,           // committed pan baked in → Canvas
+                size:      canvasSize,       //   draws centred on the view
                 viewpoint: app.viewpoint,
                 sidereal:  app.localSiderealOffset
             )
@@ -87,17 +88,17 @@ struct SkyLabView: View {
             let liveScale = min(max(scale * pinch, Self.minScale), Self.maxScale)
             let effPinch  = scale > 0 ? liveScale / scale : 1
 
-            // Total translation applied OUTSIDE the scale. Three terms:
-            //   • `(focal − center)·(1 − effPinch)` — focal compensation.
-            //     The scaleEffect zooms about screen centre; this shifts so
-            //     the sky point under the FINGERS stays under the fingers.
-            //   • `offset · effPinch` — the committed pan, scaled, because a
-            //     zoom about a point scales the whole already-panned image.
+            // LIVE gesture delta applied OUTSIDE the scale (the committed
+            // pan now lives in the camera). Two terms:
+            //   • `(focal − center)·(1 − effPinch)` — focal compensation, so
+            //     the sky point under the FINGERS stays under the fingers as
+            //     the scaleEffect zooms about screen centre.
             //   • `drag` — live one-finger / centroid pan.
-            // At rest (effPinch 1, drag 0) this is exactly `offset`.
+            // At rest (effPinch 1, drag 0) this is .zero — parent identity,
+            // canvas shown exactly as drawn.
             let applied = CGSize(
-                width:  (focal.x - center.x) * (1 - effPinch) + offset.width  * effPinch + drag.width,
-                height: (focal.y - center.y) * (1 - effPinch) + offset.height * effPinch + drag.height
+                width:  (focal.x - center.x) * (1 - effPinch) + drag.width,
+                height: (focal.y - center.y) * (1 - effPinch) + drag.height
             )
 
             ZStack {
@@ -114,10 +115,10 @@ struct SkyLabView: View {
                     .equatable()
                 // Curved cartographic labels — horizon rim + colures.
                 // Canvas (per-glyph curve), frozen via .equatable().
-//                SkyLabCartographyLabels(camera:   camera,
-//                                        latitude: app.origin.latitude,
-//                                        date:     app.renderedObservationDate)
-//                    .equatable()
+                SkyLabCartographyLabels(camera:   camera,
+                                        latitude: app.origin.latitude,
+                                        date:     app.renderedObservationDate)
+                    .equatable()
                 // Tiered native labels — each object reveals at its
                 // production zoom tier (see each overlay's gate):
                 //   • favourite stars  — .followedStar  (badgeIn 70)

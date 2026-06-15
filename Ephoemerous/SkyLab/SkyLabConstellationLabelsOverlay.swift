@@ -23,7 +23,7 @@ struct SkyLabConstellationLabelsOverlay: View {
     private static let font: UIFont = {
         let base = UIFont.preferredFont(forTextStyle: .footnote)
         var d = base.fontDescriptor
-        d = d.withDesign(.serif) ?? d
+        d = d.withDesign(.rounded) ?? d
         d = d.withSymbolicTraits(.traitBold) ?? d
         return UIFont(descriptor: d, size: base.pointSize)
     }()
