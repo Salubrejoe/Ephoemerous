@@ -70,7 +70,9 @@ struct SkyLabGestureView: UIViewRepresentable {
             switch g.state {
             case .began:   sky.panBegan()
             case .changed: sky.panChanged(CGSize(width: t.x, height: t.y))
-            case .ended, .cancelled, .failed: sky.panEnded()
+            case .ended, .cancelled, .failed:
+                let vel = g.velocity(in: v)
+                sky.panEnded(velocity: CGSize(width: vel.x, height: vel.y))
             default: break
             }
         }
