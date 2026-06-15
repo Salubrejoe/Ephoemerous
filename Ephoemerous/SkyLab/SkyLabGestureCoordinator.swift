@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - SkyLabGestureCoordinator
 // Gesture engine for the SkyLab, modelled on the production
@@ -52,6 +53,12 @@ final class SkyLabGestureCoordinator {
     @ObservationIgnored private var holdAnchor = CGPoint.zero
     @ObservationIgnored private var flingVel   = CGSize.zero
     @ObservationIgnored private var releaseID  = 0     // invalidates a superseded completion
+
+    // North detent — within ±threshold of north the rotation sticks to 0
+    // with one haptic tick on entry (production's "realign right").
+    private let northSnap: Double = 7 * .pi / 180
+    @ObservationIgnored private var northEngaged = false
+    @ObservationIgnored private let rotationHaptic = UIImpactFeedbackGenerator(style: .rigid)
 
     // MARK: Scale model
 
@@ -108,9 +115,34 @@ final class SkyLabGestureCoordinator {
     }
     func pinchEnded() { endOne() }
 
-    func rotationBegan() { begin() }
-    func rotationChanged(_ radians: Double) { liveRotation = .radians(radians) }
+    func rotationBegan() {
+        begin()
+        // Don't re-tick if we START already aligned with north.
+        northEngaged = abs(Self.wrapPi(rotation.radians)) <= northSnap
+        rotationHaptic.prepare()
+    }
+    func rotationChanged(_ radians: Double) {
+        // Total displayed rotation if we applied the raw delta.
+        let total = Self.wrapPi(rotation.radians + radians)
+        if abs(total) <= northSnap {
+            // Inside the detent → hold the TOTAL at north (live delta
+            // cancels the committed rotation); tick once on entry.
+            if !northEngaged { northEngaged = true; rotationHaptic.impactOccurred() }
+            liveRotation = .radians(-rotation.radians)
+        } else {
+            northEngaged = false
+            liveRotation = .radians(radians)
+        }
+    }
     func rotationEnded() { endOne() }
+
+    /// Fold an angle into (−π, π].
+    private static func wrapPi(_ a: Double) -> Double {
+        var x = a.truncatingRemainder(dividingBy: 2 * .pi)
+        if x >  .pi { x -= 2 * .pi }
+        if x < -.pi { x += 2 * .pi }
+        return x
+    }
 
     func holdBegan(at p: CGPoint) { begin(); holdAnchor = p; focal = p }
     func holdChanged(_ t: CGSize) {
