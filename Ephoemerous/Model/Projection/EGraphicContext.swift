@@ -39,6 +39,15 @@ struct EGraphicContext {
     /// device orientation — the app is portrait-only. See
     /// `EAppState.canvasRotation`.
     let canvasRotation:          Angle
+    /// True while the user is actively moving the sky (a live gesture or
+    /// the fling-inertia glide). The text-heavy label layers — POI name
+    /// text, the curved horizon / meridian cartographic labels — drop
+    /// their glyph work while this holds and bloom back on settle (the
+    /// Apple-Maps "labels fade during a pan" model). Glyph rasterisation
+    /// is the dominant per-frame cost; nobody reads labels mid-fling, so
+    /// suppressing them is the cheapest path to butter gestures. Badges
+    /// and dots stay up for spatial continuity.
+    let suppressLabels:          Bool
     /// `canvasRotation`'s cos/sin, hoisted to init: `toScreen` runs on
     /// every projected point (~15k/frame with the curve caches feeding
     /// it), and recomputing the same two trig values per point was real
@@ -60,7 +69,8 @@ struct EGraphicContext {
          selectedObjectID:        String?,
          selectionStart:          Double,
          deselectingID:           String?,
-         deselectStart:           Double) {
+         deselectStart:           Double,
+         suppressLabels:          Bool = false) {
         self.ctx                     = ctx
         self.size                    = size
         self.state                   = state
@@ -76,6 +86,7 @@ struct EGraphicContext {
         self.selectionStart          = selectionStart
         self.deselectingID           = deselectingID
         self.deselectStart           = deselectStart
+        self.suppressLabels          = suppressLabels
         self.rotCos                  = CGFloat(cos(canvasRotation.radians))
         self.rotSin                  = CGFloat(sin(canvasRotation.radians))
     }

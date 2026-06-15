@@ -69,6 +69,9 @@ struct MeridianLabelsLayer: EGridLayer {
     }
 
     func draw(in dc: inout EGraphicContext) {
+        // Cartographic glyph work is dropped while the sky moves (the
+        // labels bloom back on settle) — see `EGraphicContext.suppressLabels`.
+        guard !dc.suppressLabels else { return }
         let fontPt    = fontPt(scale: dc.renderedScale)
         let spacingPt = spacingPt(scale: dc.renderedScale)
         // Resolve the label colour to concrete RGBA once — each label is

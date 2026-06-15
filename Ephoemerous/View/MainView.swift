@@ -36,6 +36,12 @@ struct MainView: View {
             VStack {
                 MainToolbar()
 
+                // Perf probe — live canvas frame cost for on-device
+                // testing (TestFlight can't run Instruments). Remove or
+                // gate once the gesture perf hunt is over.
+                FrameMeterHUD()
+                    .padding(.top, 8)
+
                 Spacer()
             }
             .padding(.horizontal, 24)

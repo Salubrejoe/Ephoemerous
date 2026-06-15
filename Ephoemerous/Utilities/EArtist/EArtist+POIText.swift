@@ -26,6 +26,12 @@ extension EArtist {
                 radius: 2.8, x: 0, y: 0.5)
     }
 
+    /// Master switch for the per-label text + badge drop shadows. OFF:
+    /// each is a Gaussian blur filter rendered per on-screen label per
+    /// frame — the dominant POI-label cost. The casing alone keeps labels
+    /// legible; turn back on only if the lift is worth the frames.
+    var poiTextShadowEnabled: Bool { false }
+
     /// Colour of the crisp casing around label text. `.primary` gives
     /// the punchy light-outline-on-colour look from the Apple Maps
     /// reference; switch to `.systemBackground` if you'd rather the
@@ -69,15 +75,22 @@ extension EArtist {
                         at point: CGPoint,
                         anchor: UnitPoint,
                         in ctx: GraphicsContext) {
-        // 1 — soft drop shadow, cast by the casing silhouette. This
-        //     glyph is fully covered by passes 2–3; only its shadow
-        //     escapes around the casing edge.
-        
         let serFilled = filled.fontDesign(.serif)
-        let serCased = cased.fontDesign(.serif)
-        var shadow = ctx
-        shadow.addFilter(poiTextShadow)
-        shadow.draw(serCased, at: point, anchor: anchor)
+        let serCased  = cased.fontDesign(.serif)
+
+        // 1 — PERF: the soft drop shadow is a per-label Gaussian BLUR
+        //     FILTER (offscreen alloc + convolution + composite) — the
+        //     most expensive primitive on the canvas, and it ran on every
+        //     on-screen label every frame (the POI-label stutter the user
+        //     bisected). The 8-copy casing below already carries the
+        //     legibility against a busy sky; the shadow was only
+        //     lift/depth polish. Disabled by default — flip
+        //     `poiTextShadowEnabled` to restore it.
+        if poiTextShadowEnabled {
+            var shadow = ctx
+            shadow.addFilter(poiTextShadow)
+            shadow.draw(serCased, at: point, anchor: anchor)
+        }
 
         // 2 — crisp casing: the glyph redrawn in a ring around the
         //     anchor. Resolve once, redraw eight times.

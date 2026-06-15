@@ -39,27 +39,27 @@ struct CelestialCanva: View {
 //            SkyAimWashLayer(),
             ConstellationLinesLayer(),
             StarsLayer(),
-            ConstellationNamesLayer(),
             // Proper-named stars: hidden below `namedStarDotIn`, then
             // dot → badge → text-tier reveal as the user zooms further
             // in (handled by `drawPOILabel` + `.namedStar` thresholds).
+            ConstellationNamesLayer(),
             NamedStarsLayer(),
             FavouritesLayer(),
             EclipticLayer(),
             EPlanetsLayer(),
             SunLayer(),
             MoonLayer(),
-            HorizonLayer(),
+                        HorizonLabelsLayer(),
+                        MeridianLabelsLayer(),
+//            HorizonLayer(),
             // EASTERN / WESTERN HORIZON cartographic labels curving
             // along the projected alt = 0 rim. Sits after HorizonLayer
             // so the text reads against the tinted below-horizon wash,
             // before the user puck so the puck draws on top.
-            HorizonLabelsLayer(),
             // VERNAL / SUMMER / AUTUMNAL / WINTER labels curving along the
             // four principal meridians (the colures), same cartographic
             // treatment as the horizon labels — riding constant-RA grid
             // lines instead of the alt = 0 rim.
-            MeridianLabelsLayer(),
         ]
 
     // MARK: - Body
@@ -72,10 +72,18 @@ struct CelestialCanva: View {
         TimelineView(schedule) { timeline in
             ZStack {
                 Canvas { ctx, size in
+                    let frameStart = CACurrentMediaTime()   // EFrameMeter probe
                     state.advanceCanvasClock(
                         to:         timeline.date.timeIntervalSinceReferenceDate,
                         canvasSize: size
                     )
+                    // Drop the glyph-heavy labels while the sky is being
+                    // moved (live gesture or fling glide) — Maps-style.
+                    // Reading `isInteracting` / `_inertiaTransition` here
+                    // registers the dependency, so the canvas repaints
+                    // (labels back) the moment motion ends.
+                    let suppressLabels = gestures.isInteracting
+                        || state._inertiaTransition != nil
                     // Resolve every per-frame observable value exactly
                     // once here. The draw loops below project 10k+
                     // points; reading these off `state` per point would
@@ -96,9 +104,11 @@ struct CelestialCanva: View {
                         selectedObjectID:        state.detailDestination?.id,
                         selectionStart:          state._selectionStart,
                         deselectingID:           state._deselectingID,
-                        deselectStart:           state._deselectStart
+                        deselectStart:           state._deselectStart,
+                        suppressLabels:          suppressLabels
                     )
                     for layer in Self.layers { layer.draw(in: &dc) }
+                    EFrameMeter.shared.record(frameStart: frameStart)
                 }
 
                 // Topmost, sharp & interactive: owns every canvas touch.
@@ -154,7 +164,7 @@ struct ECanvasSchedule: TimelineSchedule {
         mutating func next() -> Date? {
             let current = next_date
             if isAnimating {
-                next_date = current.addingTimeInterval(1.0 / 120.0)
+                next_date = current.addingTimeInterval(1.0 / 60)
                 return current
             }
             // Idle: emit one tick at start so the canvas paints once,

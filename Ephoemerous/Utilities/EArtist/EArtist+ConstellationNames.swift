@@ -184,6 +184,11 @@ extension EArtist {
         // concatenation lets the heart take its own colour while the
         // name stays primary; one font modifier wraps the whole pill.
         guard textFade > 0 else { return nil }
+        // Drop the name's glyph work while the sky moves (the placeholder
+        // capsule above already drew, keeping spatial context) — see
+        // `EGraphicContext.suppressLabels`. Returns nil so the hit-rect
+        // isn't published for a label that isn't on screen.
+        guard !dc.suppressLabels else { return nil }
 
         let textScale = labelTierScale(textFade)
         var shadowed  = dc.ctx

@@ -31,7 +31,8 @@ struct HorizonLayer: EGridLayer {
         // opacity so they stack into a smooth twilight gradient.
         var bands = dc
         for pts in dc.state._twilightBandPts {
-            bands.fillOutsideCurve(pts, color: fill.opacity(0.2))
+            bands.strokeCurve(pts, color: fill.opacity(0.2))
+//            bands.fillOutsideCurve(pts, color: fill.opacity(0.2))
         }
 
         // Fill *outside* the rim, leaving the visible-sky disc bare.
@@ -40,7 +41,8 @@ struct HorizonLayer: EGridLayer {
         // the sky rather than a small wash sitting on top of it.
         guard !dc.state._horizonRimPts.isEmpty else { return }
         var rim = dc
-        rim.fillOutsideCurve(dc.state._horizonRimPts, color: fill)
+        rim.strokeCurve(dc.state._horizonRimPts, color: fill)
+//        rim.fillOutsideCurve(dc.state._horizonRimPts, color: fill)
     }
 
     /// Full sampling pass, run only when the cache key falls stale (date

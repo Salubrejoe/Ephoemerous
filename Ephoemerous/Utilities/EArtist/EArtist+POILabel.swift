@@ -170,12 +170,18 @@ extension EArtist {
         // badge cast the same thin, soft halo the text does. The solid
         // casing fill in pass 2 then covers the inner half, leaving only
         // the soft outer rim — exactly like the text casing.
-        var shadow = dc.ctx
-        shadow.opacity *= reveal
-        shadow.addFilter(poiTextShadow)
-        shadow.stroke(casingPath,
-                      with: .color(poiTextBorderColor),
-                      lineWidth: poiTextBorderWidth)
+        // PERF: same per-label Gaussian blur as the text shadow — gated
+        // off by default (see `poiTextShadowEnabled`). The solid casing
+        // fill below covers the badge body either way; only the soft outer
+        // rim is lost.
+        if poiTextShadowEnabled {
+            var shadow = dc.ctx
+            shadow.opacity *= reveal
+            shadow.addFilter(poiTextShadow)
+            shadow.stroke(casingPath,
+                          with: .color(poiTextBorderColor),
+                          lineWidth: poiTextBorderWidth)
+        }
 
         var caseCtx = dc.ctx
         caseCtx.opacity *= reveal
@@ -184,16 +190,15 @@ extension EArtist {
         // Concentric fill: brighter `gradTop` at the centre fading to the
         // deeper `gradBottom` at the rim, so the badge reads as a little
         // glowing orb rather than a top-lit pill.
-        let gradient = Gradient(colors: [gradTop, gradBottom])
+        let gradient = Gradient(colors: [gradBottom, gradTop])
         var fillCtx = dc.ctx
         fillCtx.opacity *= reveal
         fillCtx.fill(
             badgePath,
-            with: .radialGradient(
+            with: .linearGradient(
                 gradient,
-                center:      badgeCenter,
-                startRadius: 0,
-                endRadius:   scaledHalf
+                startPoint: CGPoint(x: badgeCenter.x, y: badgeCenter.y - scaledHalf),
+                endPoint:   CGPoint(x: badgeCenter.x, y: badgeCenter.y + scaledHalf)
             )
         )
 
@@ -221,13 +226,13 @@ extension EArtist {
             glyphText = Text(str)
             glyphSize = style.symbolPointSize + 2
         }
-        glyphCtx.draw(
-            glyphText
-                .font(.system(size: glyphSize, weight: .semibold))
-                .foregroundStyle(style.symbolColor),
-            at:     badgeCenter,
-            anchor: .center
-        )
+//        glyphCtx.draw(
+//            glyphText
+//                .font(.system(size: glyphSize, weight: .semibold))
+//                .foregroundStyle(style.symbolColor),
+//            at:     badgeCenter,
+//            anchor: .center
+//        )
 
         // Precise-location dot left under a promoted pin — the tail
         // points at it, and it marks the exact spot the badge lifted
@@ -249,6 +254,10 @@ extension EArtist {
         // text yet, so a tapped badge always shows its name.
         let textOpacity = max(textFade, promo)
         guard textOpacity > 0 else { return }
+        // While the sky is moving, keep the (cheap) badge but drop the
+        // glyph-heavy name — except for a promoted/selected pin, which the
+        // user is actively reading. See `EGraphicContext.suppressLabels`.
+        guard !dc.suppressLabels || promo > 0 else { return }
 
         // Sky-object name → serif. Set explicitly (not inherited from a
         // global fontDesign) so the canvas label stays serif while the
