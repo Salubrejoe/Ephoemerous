@@ -58,11 +58,12 @@ struct SkyLabBodiesOverlay: View {
                         text: String) -> some View {
         if let sc {
             let style = artist.poiStyle(for: category)
-            if scale >= style.badgeIn {        // tier gate (Sun/Moon = 0)
-                POILabelView(category:  category,
-                             glyph:     glyph,
-                             text:      text,
-                             showsName: scale >= style.textIn)
+            if scale >= style.badgeIn {        // badge tier gate (Sun/Moon = 0)
+                POILabelView(category:    category,
+                             glyph:       glyph,
+                             text:        text,
+                             badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
+                             nameReveal:  POILabelView.tierReveal(scale: scale, threshold: style.textIn))
                     .scaleEffect(1 / pinch)
                     .position(sc)
             }

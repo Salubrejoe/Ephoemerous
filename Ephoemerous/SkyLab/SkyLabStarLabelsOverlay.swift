@@ -20,10 +20,11 @@ struct SkyLabStarLabelsOverlay: View {
     var body: some View {
         ZStack {
             ForEach(marks) { mark in
-                POILabelView(category:  category(mark.star),
-                             glyph:     .sfSymbol("star.fill"),
-                             text:      mark.star.displayName,
-                             showsName: mark.showsName)
+                POILabelView(category:    category(mark.star),
+                             glyph:       .sfSymbol("star.fill"),
+                             text:        mark.star.displayName,
+                             badgeReveal: mark.badgeReveal,
+                             nameReveal:  mark.nameReveal)
                     .scaleEffect(1 / pinch)
                     .position(mark.sc)
             }
@@ -31,9 +32,10 @@ struct SkyLabStarLabelsOverlay: View {
     }
 
     private struct Mark: Identifiable {
-        let star:      EStar
-        let sc:        CGPoint
-        let showsName: Bool
+        let star:        EStar
+        let sc:          CGPoint
+        let badgeReveal: Double
+        let nameReveal:  Double
         var id: UUID { star.id }
     }
 
@@ -41,10 +43,12 @@ struct SkyLabStarLabelsOverlay: View {
         let w = camera.size.width, h = camera.size.height
         return stars.compactMap { star in
             let style = EArtist.shared.poiStyle(for: category(star))
-            guard scale >= style.badgeIn else { return nil }        // tier gate
+            guard scale >= style.badgeIn else { return nil }        // badge tier gate
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -40, sc.x < w + 40, sc.y > -40, sc.y < h + 40 else { return nil }
-            return Mark(star: star, sc: sc, showsName: scale >= style.textIn)
+            return Mark(star: star, sc: sc,
+                        badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
+                        nameReveal:  POILabelView.tierReveal(scale: scale, threshold: style.textIn))
         }
     }
 }

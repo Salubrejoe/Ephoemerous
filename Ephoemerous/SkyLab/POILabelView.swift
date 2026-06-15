@@ -27,34 +27,55 @@ struct POILabelView: View {
     let category: POICategory
     let glyph:    POIGlyph
     let text:     String
-    var showsName: Bool = true
-    
+    /// Badge + name reveals, 0…1 — each fades + unblurs in as the zoom
+    /// crosses its tier (`badgeIn` / `textIn`). Caller computes them via
+    /// `tierReveal(scale:threshold:)`. 0 = absent, 1 = full crisp.
+    var badgeReveal: Double = 1
+    var nameReveal:  Double = 1
+
     /// Gap (pt) between the badge's trailing edge and the name.
     private let nameGap: CGFloat = 6
-    
+    /// Max blur (pt) at reveal 0 — the mark resolves out of a soft haze.
+    private static let nameBlur:  CGFloat = 4
+    private static let badgeBlur: CGFloat = 3
+
     private var style: EArtist.POICategoryStyle { EArtist.shared.poiStyle(for: category) }
-    
+
     var body: some View {
         badge
+            // Badge blooms in with opacity + blur at its tier — applied
+            // BEFORE the name overlay so the name keeps its own reveal.
+            .opacity(badgeReveal)
+            .blur(radius: (1 - badgeReveal) * Self.badgeBlur)
             .overlay(alignment: .leading) {
-                VStack {
-                    if showsName {
-                        // Real glyph-outline casing (see `OutlinedText`); fill
-                        // in the gradient's OUTER colour, same as the Canvas
-                        // flat label.
-                        OutlinedText(text:      text,
-                                     fill:      style.gradientTop,
-                                     stroke:    style.border,
-                                     lineWidth: 2.5,
-                                     font:      Self.nameFont)
+                if nameReveal > 0.01 {
+                    // Real glyph-outline casing (see `OutlinedText`); fill
+                    // in the gradient's OUTER colour, same as the Canvas
+                    // flat label. Blooms in with opacity + blur as the
+                    // zoom crosses the tier — cheap on a few native labels.
+                    OutlinedText(text:      text,
+                                 fill:      style.gradientTop,
+                                 stroke:    style.border,
+                                 lineWidth: 2.5,
+                                 font:      Self.nameFont)
+                        .opacity(nameReveal)
+                        .blur(radius: (1 - nameReveal) * Self.nameBlur)
                         // Overlay aligns the name's leading to the badge's
                         // leading; push it right past the badge so the text
                         // trails the symbol and never overlaps it.
                         .offset(x: style.badgeSize + nameGap)
-                    }
                 }
-                
             }
+    }
+
+    /// Smoothstep 0→1 as `scale` rises from `threshold` to `threshold·1.18`
+    /// — the zoom-driven tier fade (no timer; ramps as the user pinches).
+    /// `threshold 0` (Sun/Moon badge) → always 1.
+    static func tierReveal(scale: CGFloat, threshold: Double) -> Double {
+        guard threshold > 0 else { return 1 }
+        let band = threshold * 0.18
+        let x = max(0, min(1, (Double(scale) - threshold) / band))
+        return x * x * (3 - 2 * x)
     }
 
     /// Footnote serif bold, as a `UIFont` (CoreText needs a concrete font
