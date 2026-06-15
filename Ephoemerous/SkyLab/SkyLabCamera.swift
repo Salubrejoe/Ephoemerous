@@ -22,6 +22,11 @@ struct SkyLabCamera: Equatable {
     /// grid / cartography vanish. The live gesture delta stays the
     /// parent transform; this is only the resting offset (see SkyLabView).
     var offset: CGSize
+    /// COMMITTED canvas rotation, applied to the projection point about
+    /// the centre (matching SwiftUI `.rotationEffect`, so the live
+    /// parent rotation folds in seamlessly). Pan stays in screen space
+    /// (added after rotation), so panning is unaffected by spin.
+    var rotation: Angle = .zero
     var size:   CGSize
 
     var viewpoint: EProjection.Viewpoint
@@ -30,6 +35,7 @@ struct SkyLabCamera: Equatable {
     static func == (l: SkyLabCamera, r: SkyLabCamera) -> Bool {
         l.scale == r.scale
             && l.offset == r.offset
+            && l.rotation == r.rotation
             && l.size == r.size
             && l.sidereal == r.sidereal
             && l.viewpoint.originVector == r.viewpoint.originVector
@@ -43,8 +49,14 @@ struct SkyLabCamera: Equatable {
     /// with the matching `offset·cMag` term — so there's still no
     /// pinch-release travel. No canvas-rotation term yet.
     func screen(_ p: CGPoint) -> CGPoint {
-        CGPoint(x: size.width  / 2 + p.x * scale + offset.width,
-                y: size.height / 2 - p.y * scale + offset.height)
+        // Scaled, y-flipped projection vector, rotated about the centre
+        // (same operator as `.rotationEffect`), then panned in screen space.
+        let vx = p.x * scale
+        let vy = -p.y * scale
+        let c  = CGFloat(cos(rotation.radians))
+        let s  = CGFloat(sin(rotation.radians))
+        return CGPoint(x: size.width  / 2 + (vx * c - vy * s) + offset.width,
+                       y: size.height / 2 + (vx * s + vy * c) + offset.height)
     }
 
     /// Equatorial unit vector → screen, or `nil` when it projects behind
