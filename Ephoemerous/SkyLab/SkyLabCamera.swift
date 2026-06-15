@@ -42,10 +42,18 @@ struct SkyLabCamera: Equatable {
 
     /// Equatorial unit vector → screen, or `nil` when it projects behind
     /// the viewer. Same pipeline the production layers use:
-    /// sidereally rotate → stereographic project → screen.
+    /// sidereally rotate → stereographic project → screen. Use for
+    /// UN-rotated vectors (star `equatorialVector`, the Sun's ecliptic
+    /// point).
     func screen(equatorial Q: SIMD3<Double>) -> CGPoint? {
-        let rotated = Q.sidereallyRotated(by: sidereal)
-        guard let p = EProjection.project(rotated, viewpoint: viewpoint) else { return nil }
+        screen(rotatedEquatorial: Q.sidereallyRotated(by: sidereal))
+    }
+
+    /// Screen point for a vector that is ALREADY in the sidereally-rotated
+    /// frame — the Moon / planet position helpers bake the rotation in
+    /// (they take a `siderealOffset`), so re-rotating would double it.
+    func screen(rotatedEquatorial Q: SIMD3<Double>) -> CGPoint? {
+        guard let p = EProjection.project(Q, viewpoint: viewpoint) else { return nil }
         return screen(p)
     }
 }

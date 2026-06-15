@@ -43,7 +43,7 @@ struct POILabelView: View {
                         // in the gradient's OUTER colour, same as the Canvas
                         // flat label.
                         OutlinedText(text:      text,
-                                     fill:      style.gradientBottom,
+                                     fill:      style.gradientTop,
                                      stroke:    style.border,
                                      lineWidth: 2.5,
                                      font:      Self.nameFont)

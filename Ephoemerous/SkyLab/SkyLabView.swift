@@ -88,9 +88,9 @@ struct SkyLabView: View {
                     .equatable()
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
-                SkyLabSunLabel(camera: camera,
-                               date:  app.renderedObservationDate,
-                               pinch: pinch)
+                SkyLabBodiesOverlay(camera: camera,
+                                    date:  app.renderedObservationDate,
+                                    pinch: pinch)
             }
             .frame(width: canvasSize.width, height: canvasSize.height)
             // THE shared parent transform — both children, one commit.
