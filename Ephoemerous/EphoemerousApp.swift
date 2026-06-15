@@ -17,7 +17,8 @@ struct EphoemerousApp: App {
         WindowGroup {
             NavigationStack {
                 
-                MainView()
+//                MainView()
+                SkyLabView()
                     .fontDesign(.rounded)
             }
             .ignoresSafeArea()

@@ -41,7 +41,7 @@ extension EArtist {
     /// Casing half-width, in points. The glyph is redrawn in a ring
     /// this far out, so ~1pt reads as a clean hairline at footnote
     /// size; push toward 1.5 for a chunkier sticker edge.
-    var poiTextBorderWidth: CGFloat { 2 }
+    var poiTextBorderWidth: CGFloat { 1.7 }
 
     /// Eight offsets (NSEW + diagonals) forming the casing ring. Four
     /// would leave gaps at the corners; past eight costs draws for no
