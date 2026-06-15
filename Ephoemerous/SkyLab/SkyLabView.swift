@@ -111,10 +111,14 @@ struct SkyLabView: View {
                     .equatable()
                 // Tiered native labels — each object reveals at its
                 // production zoom tier (see each overlay's gate):
-                //   • favourite stars  — .followedStar (badgeIn 70)
-                //   • proper-name stars — .namedStar   (badgeIn ~280)
+                //   • favourite stars  — .followedStar  (badgeIn 70)
+                //   • constellation names — tier ~190
+                //   • proper-name stars — .namedStar    (badgeIn ~280)
                 //   • Sun/Moon/planets  — bodies overlay (0 / 80)
-                // Constellation names + Greek-letter stars: skipped for now.
+                // Greek-letter stars: skipped for now.
+                SkyLabConstellationLabelsOverlay(camera: camera,
+                                                 pinch: effPinch,
+                                                 scale: liveScale)
                 SkyLabStarLabelsOverlay(camera: camera,
                                         stars: app.favouriteStars,
                                         pinch: effPinch,
