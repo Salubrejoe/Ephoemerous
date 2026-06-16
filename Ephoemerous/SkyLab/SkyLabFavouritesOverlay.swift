@@ -15,6 +15,9 @@ struct SkyLabFavouritesOverlay: View {
     /// Live map rotation — counter-rotated so the heart stays upright while
     /// the sky spins (Apple-Maps).
     var rotation: Angle = .zero
+    /// Selected star is shown by the promoted pin instead — skip its heart
+    /// so a highlighted favourite isn't drawn twice (pin + heart).
+    var selectedID: UUID? = nil
 
     var body: some View {
         ZStack {
@@ -41,6 +44,7 @@ struct SkyLabFavouritesOverlay: View {
     private var marks: [Mark] {
         let w = camera.size.width, h = camera.size.height
         return stars.compactMap { star in
+            guard star.id != selectedID else { return nil }    // shown as the promoted pin
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -20, sc.x < w + 20, sc.y > -20, sc.y < h + 20 else { return nil }
             return Mark(id: star.id, sc: sc, color: star.spectralClass.color)

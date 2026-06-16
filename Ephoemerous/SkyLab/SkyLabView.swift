@@ -90,6 +90,12 @@ struct SkyLabView: View {
             let selectedStarID: UUID?  = { if case .star(let s) = selection { return s.id };          return nil }()
             let selectedConsID: String? = { if case .constellation(let c) = selection { return c.rawValue }; return nil }()
 
+            // A favourite that's also proper-named would otherwise draw BOTH
+            // a `.followedStar` and a `.namedStar` badge — exclude favourites
+            // from the named overlay so each star gets exactly one label.
+            let favIDs = Set(app.favouriteStars.map(\.id))
+            let namedOnly = Self.properNamedStars.filter { !favIDs.contains($0.id) }
+
             // Myth tint per favourite constellation (for its solid lines).
             let favTints = Dictionary(uniqueKeysWithValues: app.favouriteConstellations.map { cons -> (EConstellation, Color) in
                 let dec  = ConstellationLines.shared.labelAnchors[cons]?.dec.degrees ?? 0
@@ -139,13 +145,15 @@ struct SkyLabView: View {
                                         rotation: sky.liveRotation,
                                         category: { .followedStar($0) },
                                         selectedID: selectedStarID)
-                // Favourite-star heart signal (always visible).
+                // Favourite-star heart signal (always visible, except the
+                // selected one — the promoted pin stands in for it).
                 SkyLabFavouritesOverlay(camera: camera,
                                         stars: app.favouriteStars,
                                         pinch: effPinch,
-                                        rotation: sky.liveRotation)
+                                        rotation: sky.liveRotation,
+                                        selectedID: selectedStarID)
                 SkyLabStarLabelsOverlay(camera: camera,
-                                        stars: Self.properNamedStars,
+                                        stars: namedOnly,
                                         pinch: effPinch,
                                         scale: liveScale,
                                         rotation: sky.liveRotation,
