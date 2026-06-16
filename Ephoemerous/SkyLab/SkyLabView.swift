@@ -66,12 +66,25 @@ struct SkyLabView: View {
             // `.clipped()` and a `.frame` doesn't clip overflow.
             let canvasSize = CGSize(width:  geo.size.width  + overdraw * 2,
                                     height: geo.size.height + overdraw * 2)
+
+            // Compass (heading-up) mode: the device heading OWNS the
+            // rotation. The committed `sky.rotation` is replaced by the
+            // smoothed heading (`renderedRotation` — positions only, so
+            // labels stay upright), and the live rotation gesture is ignored
+            // (`liveRot` → 0). The clock ticks continuously while it's on
+            // (see `clockSchedule`) so the heading low-pass integrates each
+            // frame; on exit the heading is frozen back into `sky.rotation`
+            // (see `onChange`) so nothing jumps.
+            let inCompass      = app.compassMode
+            let cameraRotation = inCompass ? app.renderedRotation : sky.rotation
+            let liveRot        = inCompass ? .zero : sky.liveRotation
+
             // Centre = canvasSize/2, which (because the oversize content is
             // centred in the screen below) lands on the screen centre.
             let camera = SkyLabCamera(
                 scale:     sky.scale,
                 offset:    sky.offset,        // committed pan baked in → Canvas
-                rotation:  sky.rotation,      //   draws centred + spun for the view
+                rotation:  cameraRotation,    //   draws centred + spun for the view
                 size:      canvasSize,
                 viewpoint: app.viewpoint,
                 sidereal:  app.localSiderealOffset
@@ -136,13 +149,13 @@ struct SkyLabView: View {
                 SkyLabConstellationLabelsOverlay(camera: camera,
                                                  pinch: effPinch,
                                                  scale: liveScale,
-                                                 rotation: sky.liveRotation,
+                                                 rotation: liveRot,
                                                  selectedID: selectedConsID)
                 SkyLabStarLabelsOverlay(camera: camera,
                                         stars: app.favouriteStars,
                                         pinch: effPinch,
                                         scale: liveScale,
-                                        rotation: sky.liveRotation,
+                                        rotation: liveRot,
                                         category: { .followedStar($0) },
                                         selectedID: selectedStarID)
                 // Favourite-star heart signal (always visible, except the
@@ -150,20 +163,20 @@ struct SkyLabView: View {
                 SkyLabFavouritesOverlay(camera: camera,
                                         stars: app.favouriteStars,
                                         pinch: effPinch,
-                                        rotation: sky.liveRotation,
+                                        rotation: liveRot,
                                         selectedID: selectedStarID)
                 SkyLabStarLabelsOverlay(camera: camera,
                                         stars: namedOnly,
                                         pinch: effPinch,
                                         scale: liveScale,
-                                        rotation: sky.liveRotation,
+                                        rotation: liveRot,
                                         category: { .namedStar($0) },
                                         selectedID: selectedStarID)
                 SkyLabBodiesOverlay(camera: camera,
                                     date:  app.renderedObservationDate,
                                     pinch: effPinch,
                                     scale: liveScale,
-                                    rotation: sky.liveRotation,
+                                    rotation: liveRot,
                                     selected: selection)
                 // Promoted label — the selected object, forced visible at
                 // any zoom (topmost so it reads above the passive labels).
@@ -171,7 +184,7 @@ struct SkyLabView: View {
                                            selection: selection,
                                            date:  app.renderedObservationDate,
                                            pinch: effPinch,
-                                           rotation: sky.liveRotation)
+                                           rotation: liveRot)
             }
             .frame(width: canvasSize.width, height: canvasSize.height)
             // THE shared parent transform — scale + rotation about centre,
@@ -179,7 +192,7 @@ struct SkyLabView: View {
             // camera; only the live deltas (frozen Canvases ride along)
             // are here. Order matters: scale, rotate, translate.
             .scaleEffect(effPinch, anchor: .center)
-            .rotationEffect(sky.liveRotation, anchor: .center)
+            .rotationEffect(liveRot, anchor: .center)
             .offset(x: applied.width, y: applied.height)
             // Constrain the layout back to the screen (centres the oversize
             // content; overflow renders off-screen, ready for the pan).
@@ -266,6 +279,36 @@ struct SkyLabView: View {
         .onChange(of: app.detailDestination) { _, obj in
             if let obj { panIntoComfortZone(obj) }
         }
+        // Leaving compass mode → freeze the live heading into the committed
+        // `sky.rotation`, so the camera (which now reads `sky.rotation`
+        // again) shows the same orientation the heading left — no jump.
+        // Declared BEFORE the reset observer so the freeze lands first when
+        // the exit IS the rose's reset-to-north (freeze heading, then spin).
+        .onChange(of: app.compassMode) { was, now in
+            if was, !now, let heading = app._compassRotCurrent {
+                sky.rotation = .radians(heading)
+            }
+        }
+        // The compass rose's reset-to-north (`resetRotationToNorth` →
+        // `animateRotation`, only ever targeting zero). Spring the committed
+        // rotation to north — from the just-frozen heading if we left
+        // compass, else from where a manual twist left it.
+        .onChange(of: app._rotationTransition?.to) { _, to in
+            guard let to, to == .zero else { return }
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                sky.rotation = .zero
+            }
+        }
+        // Toggling compass mode away from Here needs the observer back at
+        // the device location first (it orients from where you stand);
+        // confirm before snapping. Mirrors production MainView.
+        .alert("Return to your location?",
+               isPresented: Bindable(app)._compassReturnHomePrompt) {
+            Button("Cancel", role: .cancel) { }
+            Button("Switch to Here") { app.confirmReturnHomeAndEngageCompass() }
+        } message: {
+            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
+        }
       } //: TimelineView
     }
 
@@ -286,11 +329,14 @@ struct SkyLabView: View {
         )
     }
 
-    /// Clock gate — animate only while the observer is moving (Here) or the
-    /// date is rotating (Now); otherwise park so the freeze model holds.
+    /// Clock gate — tick while the observer is moving (Here), the date is
+    /// rotating (Now), OR compass mode is following the heading; otherwise
+    /// park so the freeze model holds.
     private var clockSchedule: ECanvasSchedule {
-        ECanvasSchedule(isAnimating: app._dateTransition   != nil
-                                  || app._originTransition != nil)
+        ECanvasSchedule(isAnimating: app._dateTransition     != nil
+                                  || app._originTransition   != nil
+                                  || app._rotationTransition != nil
+                                  || app.compassMode)
     }
 
     // MARK: - Tap → select + comfort-zone pan
