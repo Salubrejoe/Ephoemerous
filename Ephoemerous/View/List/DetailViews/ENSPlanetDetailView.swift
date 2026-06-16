@@ -36,7 +36,13 @@ struct ENSPlanetDetailView: View {
                 title:         planet.displayName,
                 subtitle:      planet.mythology,
                 accent:        accent,
-                icon:          { POIBadgeView(category: .planet(planet)) },
+                icon:          {
+                    POILabelView(
+                        category: .planet(planet),
+                        glyph: .unicode(planet.astronomicalGlyph),
+                        text: ""
+                    )
+                },
                 leadingSymbol: .share,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }

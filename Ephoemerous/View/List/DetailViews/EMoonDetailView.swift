@@ -57,7 +57,13 @@ struct EMoonDetailView: View {
                 title:         Strings.Bodies.moon,
                 subtitle:      String(format: "%.0f%% illuminated", moonData.fraction * 100),
                 accent:        accent,
-                icon:          { POIBadgeView(category: .moon) },
+                icon:          {
+                    POILabelView(
+                        category: .moon,
+                        glyph: .sfSymbol(phaseSymbol(for: phaseName)),
+                        text: ""
+                    )
+                },
                 leadingSymbol: .share,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }

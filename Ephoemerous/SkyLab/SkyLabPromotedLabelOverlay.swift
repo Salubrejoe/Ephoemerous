@@ -25,6 +25,23 @@ struct SkyLabPromotedLabelOverlay: View {
     /// while the sky spins (Apple-Maps), pivoting on its location dot.
     var rotation:  Angle = .zero
 
+    private var labelStyle: POILabelView.LabelStyle {
+        switch selection {
+        case .star(_):
+                .star
+        case .sun:
+                .star
+        case .moon:
+                .planetoids
+        case .planet(_):
+                .planetoids
+        case .constellation(_):
+                .planetoids
+        case nil:
+                .planetoids
+        }
+    }
+    
     var body: some View {
         ZStack {
             if let obj = selection,
@@ -32,7 +49,8 @@ struct SkyLabPromotedLabelOverlay: View {
                let sc  = SkyLabObjects.screen(obj, camera: camera, date: date) {
                 SkyLabPromotedPin(category: poi.category,
                                   glyph:    poi.glyph,
-                                  name:     poi.name)
+                                  name:     poi.name,
+                                  labelStyle: labelStyle)
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
@@ -47,9 +65,10 @@ struct SkyLabPromotedLabelOverlay: View {
 // MARK: - SkyLabPromotedPin
 private struct SkyLabPromotedPin: View {
 
-    let category: POICategory
-    let glyph:    POIGlyph
-    let name:     String
+    let category:   POICategory
+    let glyph:      POIGlyph
+    let name:       String
+    let labelStyle: POILabelView.LabelStyle
 
     /// 0 = flat (badge on the point), 1 = fully promoted pin. Springs up
     /// on appear — the underdamped overshoot is the Apple-Maps pop.
@@ -86,6 +105,7 @@ private struct SkyLabPromotedPin: View {
             POILabelView(category:    category,
                          glyph:       glyph,
                          text:        "",
+                         labelStyle: labelStyle,
                          badgeReveal: 1,
                          nameReveal:  0)
                 .scaleEffect(scale)
@@ -96,7 +116,7 @@ private struct SkyLabPromotedPin: View {
             OutlinedText(text:      name,
                          fill:      .primary,
                          stroke:    style.border,
-                         lineWidth: 2.5,
+                         lineWidth: 1.5,
                          font:      Self.nameFont)
                 .fixedSize()
                 .opacity(promo)
@@ -104,7 +124,7 @@ private struct SkyLabPromotedPin: View {
         }
         .frame(width: box.width, height: box.height)
         .onAppear {
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.58)) {
+            withAnimation(.bouncy) {
                 promo = 1
             }
         }
@@ -113,7 +133,7 @@ private struct SkyLabPromotedPin: View {
     /// Footnote serif bold (CoreText needs a concrete UIFont) — matches the
     /// flat label's name font.
     private static let nameFont: UIFont = {
-        let base = UIFont.preferredFont(forTextStyle: .footnote)
+        let base = UIFont.preferredFont(forTextStyle: .headline)
         var desc = base.fontDescriptor
         desc = desc.withDesign(.serif) ?? desc
         desc = desc.withSymbolicTraits(.traitBold) ?? desc

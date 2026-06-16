@@ -31,6 +31,7 @@ struct SkyLabStarLabelsOverlay: View {
                 POILabelView(category:    category(mark.star),
                              glyph:       .sfSymbol("star.fill"),
                              text:        mark.star.displayName,
+                             labelStyle:    .star,
                              badgeReveal: mark.badgeReveal,
                              nameReveal:  mark.nameReveal)
                     .rotationEffect(-rotation, anchor: .center)

@@ -34,11 +34,20 @@ struct SkyLabBodiesOverlay: View {
 
     var body: some View {
         ZStack {
+            ForEach(planetMarks, id: \.id) { mark in
+                marker(for: .planet(mark.planet),
+                       at: mark.sc,
+                       category: .planet(mark.planet),
+                       glyph:    .unicode(artist.planetGlyph(mark.planet)),
+                       text:     mark.planet.displayName)
+            }
+            
             marker(for: .sun,
                    at: sunScreen,
                    category: .sun,
                    glyph:    .symbol(.sunMaxFill),
-                   text:     Strings.Bodies.sun)
+                   text:     Strings.Bodies.sun,
+                   labelStyle: .star)
 
             marker(for: .moon,
                    at: moonScreen,
@@ -47,13 +56,6 @@ struct SkyLabBodiesOverlay: View {
                                 fraction: EMoonPosition.illuminatedFraction(for: date))),
                    text:     Strings.Bodies.moon)
 
-            ForEach(planetMarks, id: \.id) { mark in
-                marker(for: .planet(mark.planet),
-                       at: mark.sc,
-                       category: .planet(mark.planet),
-                       glyph:    .unicode(artist.planetGlyph(mark.planet)),
-                       text:     mark.planet.displayName)
-            }
         }
     }
 
@@ -65,13 +67,15 @@ struct SkyLabBodiesOverlay: View {
                         at sc: CGPoint?,
                         category: POICategory,
                         glyph: POIGlyph,
-                        text: String) -> some View {
+                        text: String,
+                        labelStyle: POILabelView.LabelStyle = .planetoids) -> some View {
         if let sc, object != selected {
             let style = artist.poiStyle(for: category)
             if scale >= style.badgeIn {        // badge tier gate (Sun/Moon = 0)
                 POILabelView(category:    category,
                              glyph:       glyph,
                              text:        text,
+                             labelStyle: labelStyle,
                              badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
                              nameReveal:  POILabelView.tierReveal(scale: scale, threshold: style.textIn))
                     .rotationEffect(-rotation, anchor: .center)

@@ -36,7 +36,14 @@ struct ESunDetailView: View {
                 title:         Strings.Bodies.sun,
                 subtitle:      String(localized: "G-type star"),
                 accent:        accent,
-                icon:          { POIBadgeView(category: .sun) },
+                icon:          {
+                    POILabelView(
+                        category: .sun,
+                        glyph: .sfSymbol("sun.max"),
+                        text: "",
+                        labelStyle: .star
+                    )
+                },
                 leadingSymbol: .share,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }

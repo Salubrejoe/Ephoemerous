@@ -29,14 +29,16 @@ struct SkyLabCartographyLabels: View, Equatable {
 
     var body: some View {
         Canvas { ctx, _ in
+            let artist = EArtist.shared
             let zenith = camera.screen(.zero)
             let horizonFont   = Font.system(size: 10, weight: .regular)
             let twilightFont  = Font.system(size: 6,  weight: .regular)
             let merdianF      = Font.system(size: 6,  weight: .regular)
             // Match each label's weight to its line: horizon labels to the
             // bolder horizon ring, colure labels to the faint grid meridians.
-            let horizonColor  = Color.secondary.opacity(0.7)
-            let meridianColor = Color.secondary.opacity(0.4)
+            let horizonColor  = artist.horizonFillColor
+//            let horizonColor  = Color.secondary.opacity(0.7)
+            let meridianColor = artist.gridColor
 
             // Horizon rim (alt = 0). t: 0 = N, 0.25 = W, 0.5 = S, 0.75 = E.
             drawCurved(String(localized: "EASTERN HORIZON"), centre: 0.75, probe: 0.01,

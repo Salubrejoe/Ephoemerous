@@ -77,7 +77,7 @@ struct EConstellationDetailView: View {
                 title:         constellation.localizedName,
                 subtitle:      subtitleText,
                 accent:        accent,
-                icon:          { Image(symbol: iconSymbol) },
+                icon:          { EmptyView() },
                 leadingSymbol: .share,
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }

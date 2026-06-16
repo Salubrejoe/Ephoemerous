@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // MARK: - SkyLabStarsCanvas
 // The generic star field — plain filled dots, the layer that MUST stay
@@ -25,16 +26,22 @@ struct SkyLabStarsCanvas: View, Equatable {
     }
 
     var body: some View {
-        Canvas { ctx, size in
+        Canvas {
+            ctx,
+            size in
             for star in stars {
                 guard let sc = camera.screen(equatorial: star.equatorialVector) else { continue }
-                guard sc.x > -2, sc.x < size.width  + 2,
-                      sc.y > -2, sc.y < size.height + 2 else { continue }
+                guard sc.x > -2,
+                      sc.x < size.width  + 2,
+                      sc.y > -2,
+                      sc.y < size.height + 2 else { continue }
                 let r = Self.radius(forMagnitude: star.magnitude)
                 ctx.fill(
                     Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
                                            width: r * 2, height: r * 2)),
-                    with: .color(.primary.opacity(Self.opacity(forMagnitude: star.magnitude)))
+                    with: .color(
+                        EArtist.shared.horizonFillColor.opacity(Self.opacity(forMagnitude: star.magnitude))
+                    )
                 )
             }
         }

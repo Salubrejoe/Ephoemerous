@@ -49,7 +49,14 @@ struct EStarDetailView: View {
                 title:                  star.displayName,
                 subtitle:               subtitleText,
                 accent:                 accent,
-                icon:                   { POIBadgeView(category: .followedStar(star)) },
+                icon:                   {
+                    POILabelView(
+                        category: .followedStar(star),
+                        glyph: .sfSymbol("star.fill"),
+                        text: "",
+                        labelStyle: .star
+                    )
+                },
                 leadingSymbol:          showsBackChevron ? .chevronBackward : .share,
                 onLeading:              { showsBackChevron ? dismiss() : () },
                 secondaryLeadingSymbol: showsBackChevron ? .share : nil,

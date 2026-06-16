@@ -24,9 +24,15 @@ import LoreKit
 //   • the name, cased (8-way outline) in the gradient's OUTER colour
 struct POILabelView: View {
     
+    enum LabelStyle {
+        case star, planetoids
+    }
+    
     let category: POICategory
     let glyph:    POIGlyph
     let text:     String
+    
+    let labelStyle: LabelStyle
     /// Badge + name reveals, 0…1 — each fades + unblurs in as the zoom
     /// crosses its tier (`badgeIn` / `textIn`). Caller computes them via
     /// `tierReveal(scale:threshold:)`. 0 = absent, 1 = full crisp.
@@ -40,6 +46,22 @@ struct POILabelView: View {
     private static let badgeBlur: CGFloat = 3
 
     private var style: EArtist.POICategoryStyle { EArtist.shared.poiStyle(for: category) }
+    
+    init(
+        category: POICategory,
+        glyph: POIGlyph,
+        text: String,
+        labelStyle: LabelStyle = .planetoids,
+        badgeReveal: Double = 1,
+        nameReveal: Double = 1
+    ) {
+        self.category = category
+        self.glyph = glyph
+        self.text = text
+        self.labelStyle = labelStyle
+        self.badgeReveal = badgeReveal
+        self.nameReveal = nameReveal
+    }
 
     var body: some View {
         badge
@@ -88,13 +110,18 @@ struct POILabelView: View {
         return UIFont(descriptor: desc, size: base.pointSize)
     }()
     
+    
+    
     // MARK: Badge
     
     private var badge: some View {
         let d  = style.badgeSize
         let bw = EArtist.shared.poiTextBorderWidth
+        let bulge = labelStyle == .planetoids ? 2.0 : 5.0
+        
         return ZStack {
-            Circle()
+            
+            Squircle(corners: 5, bulge: bulge)
                 .fill(
                     
                     LinearGradient(colors: [
@@ -110,12 +137,17 @@ struct POILabelView: View {
                      )
                      */
                 )
-//            glyphView
+            if labelStyle == .planetoids {
+                glyphView
+            }
         }
-//        .glassEffect()
         .frame(width: d, height: d)
         // Casing ring — the light outline doing the legibility work.
-        .overlay(Circle().stroke(style.border, lineWidth: bw))
+        .overlay(
+//            Circle()
+            Squircle(corners: 5, bulge: bulge)
+                .stroke(style.border, lineWidth: bw)
+        )
         // Soft drop shadow for lift (one view → cheap, unlike the Canvas
         // per-glyph blur).
         .shadow(color: .black.opacity(0.35), radius: 2.5, y: 0.5)
