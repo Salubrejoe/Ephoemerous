@@ -42,10 +42,19 @@ struct SkyLabGestureView: UIViewRepresentable {
         hold.delegate             = c
         pan.require(toFail: hold)                              // tap-then-drag ≠ pan
 
+        // Single tap → select the object under the finger. Must yield to a
+        // double-tap-hold (that first tap is the start of a zoom, not a
+        // selection), so wait for `hold` to fail before firing.
+        let tap = UITapGestureRecognizer(target: c, action: #selector(Coordinator.handleTap))
+        tap.numberOfTapsRequired = 1
+        tap.delegate = c
+        tap.require(toFail: hold)
+
         view.addGestureRecognizer(pan)
         view.addGestureRecognizer(pinch)
         view.addGestureRecognizer(rotation)
         view.addGestureRecognizer(hold)
+        view.addGestureRecognizer(tap)
         c.trackedView = view
         return view
     }
@@ -99,6 +108,11 @@ struct SkyLabGestureView: UIViewRepresentable {
             case .ended, .cancelled, .failed: sky.rotationEnded()
             default: break
             }
+        }
+
+        @objc func handleTap(_ g: UITapGestureRecognizer) {
+            guard let v = trackedView, g.state == .ended else { return }
+            sky.tapped(at: g.location(in: v))
         }
 
         @objc func handleHold(_ g: UILongPressGestureRecognizer) {

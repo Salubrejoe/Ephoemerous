@@ -94,6 +94,11 @@ struct SkyLabView: View {
                     .equatable()
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
+                // Selection halo — tracks the tapped object as the camera
+                // moves (native, constant size). No label promotion yet.
+                SkyLabSelectionRing(camera: camera,
+                                    selection: sky.selection,
+                                    pinch: effPinch)
                 // Curved cartographic labels — horizon rim + colures.
                 // Canvas (per-glyph curve), frozen via .equatable().
                 SkyLabCartographyLabels(camera:   camera,
@@ -146,6 +151,7 @@ struct SkyLabView: View {
                 SkyLabGestureView(coordinator: sky)
                     .onAppear {
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+                        sky.onTap  = makeTapHandler()
                     }
                     .onChange(of: geo.size) {
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
@@ -160,6 +166,68 @@ struct SkyLabView: View {
         .background(EArtist.shared.canvasBackground)
 //        .preferredColorScheme(.dark)
         .ignoresSafeArea()
+    }
+
+    // MARK: - Tap → select + comfort-zone pan
+
+    /// Builds the tap handler stored on the coordinator. The closure
+    /// captures the live `app` (a reference) and rebuilds the camera from
+    /// the coordinator's CURRENT committed state at tap time, so it always
+    /// hit-tests against what's on screen.
+    private func makeTapHandler() -> (CGPoint) -> Void {
+        let overdraw = self.overdraw
+        let app      = self.app
+        return { [weak sky] loc in
+            guard let sky else { return }
+            // Only act at rest — otherwise interrupt the in-flight fling
+            // (so the tap stops the slide) and let the next tap select.
+            guard sky.isResting else { sky.settleNow(); return }
+
+            // Screen + canvas geometry, reconstructed from the coordinator.
+            let geoSize = CGSize(width: sky.center.x * 2, height: sky.center.y * 2)
+            guard geoSize.width > 0, geoSize.height > 0 else { return }
+            let canvasSize = CGSize(width:  geoSize.width  + overdraw * 2,
+                                    height: geoSize.height + overdraw * 2)
+            let camera = SkyLabCamera(scale:     sky.scale,
+                                      offset:    sky.offset,
+                                      rotation:  sky.rotation,
+                                      size:      canvasSize,
+                                      viewpoint: app.viewpoint,
+                                      sidereal:  app.localSiderealOffset)
+
+            // Nearest star to the tap, within the touch radius. Canvas
+            // points are oversized → subtract `overdraw` for screen space.
+            let tapRadius: CGFloat = 30
+            var best: (star: EStar, dist: CGFloat, screen: CGPoint)? = nil
+            for star in app.sortedStars {
+                guard let cp = camera.screen(equatorial: star.equatorialVector) else { continue }
+                let s = CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)
+                let d = hypot(s.x - loc.x, s.y - loc.y)
+                if d <= tapRadius, best == nil || d < best!.dist {
+                    best = (star, d, s)
+                }
+            }
+            guard let hit = best else { sky.selection = nil; return }   // tapped empty sky
+
+            sky.selection = SkyLabSelection(id:     hit.star.id,
+                                            vector: hit.star.equatorialVector,
+                                            tint:   hit.star.spectralClass.color)
+
+            // Comfort zone: upper-third focus, 100pt no-pan radius. Inside →
+            // stay put; outside → pan just to the circle's edge (minimal
+            // motion), mirroring production's `panFocus`.
+            let focus = CGPoint(x: geoSize.width / 2, y: geoSize.height / 3)
+            let dx = hit.screen.x - focus.x
+            let dy = hit.screen.y - focus.y
+            let dist = hypot(dx, dy)
+            let comfortRadius: CGFloat = 100
+            guard dist > comfortRadius else { return }
+
+            let k    = comfortRadius / dist
+            let edge = CGPoint(x: hit.screen.x - dx * k, y: hit.screen.y - dy * k)
+            sky.focusPan(dragTarget: CGSize(width:  edge.x - hit.screen.x,
+                                            height: edge.y - hit.screen.y))
+        }
     }
 }
 

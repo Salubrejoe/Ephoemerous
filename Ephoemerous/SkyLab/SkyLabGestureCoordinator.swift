@@ -25,6 +25,11 @@ final class SkyLabGestureCoordinator {
     var offset:   CGSize  = .zero
     var rotation: Angle   = .zero
 
+    // Current selection (set by the tap hit-test in the view). Drives the
+    // selection ring; the comfort-zone pan is a separate concern. No label
+    // promotion yet.
+    var selection: SkyLabSelection? = nil
+
     // Live deltas — drive the parent transform (gesture + release); the
     // release ANIMATES these, so the transform animates and all layers
     // stay in lockstep. Reset to identity on commit.
@@ -36,6 +41,9 @@ final class SkyLabGestureCoordinator {
 
     // Config, set by the view.
     @ObservationIgnored var center: CGPoint = .zero
+    /// Tap hit-test, supplied by the view (it owns the camera + catalogue).
+    /// Called with the tap location in screen points.
+    @ObservationIgnored var onTap: ((CGPoint) -> Void)?
 
     // Limits / feel — production values.
     @ObservationIgnored var minScale:     CGFloat = 90
@@ -158,6 +166,39 @@ final class SkyLabGestureCoordinator {
         if wasTap { stepZoom() } else { release() }
     }
 
+    func tapped(at p: CGPoint) { onTap?(p) }
+
+    // MARK: Selection / comfort-zone pan
+
+    /// True when nothing is animating or being touched — the committed
+    /// camera IS what's on screen, so a hit-test against it is valid.
+    var isResting: Bool {
+        active == 0 && pinch == 1 && drag == .zero
+            && liveRotation == .zero && homeBlend == 0
+    }
+
+    /// Cancel any in-flight release and fold what's on screen into the
+    /// committed camera (no jump). Used to interrupt a fling on tap.
+    func settleNow() {
+        releaseID += 1
+        if pinch != 1 || drag != .zero || liveRotation != .zero || homeBlend != 0 {
+            commitLive()
+        }
+    }
+
+    /// Comfort-zone pan: glide the LIVE drag to `target` (a screen-space
+    /// translation), then fold once on completion. Same synced primitive as
+    /// the fling — every layer rides the parent transform, so nothing
+    /// desyncs. Caller guarantees `isResting` (drag starts from identity).
+    func focusPan(dragTarget target: CGSize) {
+        guard target != .zero else { return }
+        releaseID += 1
+        let id = releaseID
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+            drag = target
+        } completion: { if self.releaseID == id { self.commitLive() } }
+    }
+
     // MARK: Lifecycle
 
     private func begin() {
@@ -244,4 +285,16 @@ final class SkyLabGestureCoordinator {
         rotation = rotation + liveRotation
         pinch = 1; drag = .zero; liveRotation = .zero; homeBlend = 0
     }
+}
+
+// MARK: - SkyLabSelection
+// A tapped sky object. `vector` is the un-rotated equatorial unit vector
+// (re-projected each frame so the ring tracks the object as the camera
+// moves); `tint` is the colour to draw the ring in (spectral class for a
+// star). No label promotion yet — selection just drives the ring + the
+// comfort-zone pan.
+struct SkyLabSelection: Equatable {
+    let id:     UUID
+    let vector: SIMD3<Double>
+    let tint:   Color
 }
