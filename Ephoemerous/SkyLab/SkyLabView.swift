@@ -70,6 +70,14 @@ struct SkyLabView: View {
             let liveScale = sky.liveScale
             let applied   = sky.applied
 
+            // Myth tint per favourite constellation (for its solid lines).
+            let favTints = Dictionary(uniqueKeysWithValues: app.favouriteConstellations.map { cons -> (EConstellation, Color) in
+                let dec  = ConstellationLines.shared.labelAnchors[cons]?.dec.degrees ?? 0
+                let kind = EArtist.shared.constellationKind(cons, decDegrees: dec,
+                                                            observerLatitude: app.origin.latitude.degrees)
+                return (cons, EArtist.shared.constellationGradient(kind: kind).top)
+            })
+
             ZStack {
                 // `.equatable()` → these Canvases redraw only when the
                 // committed camera changes (a settle / date / origin move),
@@ -80,6 +88,10 @@ struct SkyLabView: View {
                 // Horizon + twilight rings — native concentric circles
                 // about the zenith, riding the parent transform.
                 SkyLabHorizonCircles(camera: camera)
+                // Constellation stick-figures — frozen Canvas; favourites
+                // stroke solid in their myth tint.
+                SkyLabConstellationLinesCanvas(camera: camera, favouriteTints: favTints)
+                    .equatable()
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
                 // Curved cartographic labels — horizon rim + colures.
@@ -103,6 +115,10 @@ struct SkyLabView: View {
                                         pinch: effPinch,
                                         scale: liveScale,
                                         category: { .followedStar($0) })
+                // Favourite-star heart signal (always visible).
+                SkyLabFavouritesOverlay(camera: camera,
+                                        stars: app.favouriteStars,
+                                        pinch: effPinch)
                 SkyLabStarLabelsOverlay(camera: camera,
                                         stars: Self.properNamedStars,
                                         pinch: effPinch,
