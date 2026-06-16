@@ -11,11 +11,14 @@ import simd
 // scaled `1/pinch` to hold constant screen size.
 struct SkyLabStarLabelsOverlay: View {
 
-    let camera:   SkyLabCamera
-    let stars:    [EStar]
-    let pinch:    CGFloat
-    let scale:    CGFloat
-    let category: (EStar) -> POICategory
+    let camera:     SkyLabCamera
+    let stars:      [EStar]
+    let pinch:      CGFloat
+    let scale:      CGFloat
+    let category:   (EStar) -> POICategory
+    /// The selected star is drawn by the promoted overlay instead — skip it
+    /// here so its badge isn't drawn twice.
+    var selectedID: UUID? = nil
 
     var body: some View {
         ZStack {
@@ -42,6 +45,7 @@ struct SkyLabStarLabelsOverlay: View {
     private var marks: [Mark] {
         let w = camera.size.width, h = camera.size.height
         return stars.compactMap { star in
+            guard star.id != selectedID else { return nil }         // promoted elsewhere
             let style = EArtist.shared.poiStyle(for: category(star))
             guard scale >= style.badgeIn else { return nil }        // badge tier gate
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }

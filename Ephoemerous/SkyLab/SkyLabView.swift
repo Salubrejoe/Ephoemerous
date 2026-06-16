@@ -94,11 +94,6 @@ struct SkyLabView: View {
                     .equatable()
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
-                // Selection halo — tracks the tapped object as the camera
-                // moves (native, constant size). No label promotion yet.
-                SkyLabSelectionRing(camera: camera,
-                                    selection: sky.selection,
-                                    pinch: effPinch)
                 // Curved cartographic labels — horizon rim + colures.
                 // Canvas (per-glyph curve), frozen via .equatable().
                 SkyLabCartographyLabels(camera:   camera,
@@ -119,7 +114,8 @@ struct SkyLabView: View {
                                         stars: app.favouriteStars,
                                         pinch: effPinch,
                                         scale: liveScale,
-                                        category: { .followedStar($0) })
+                                        category: { .followedStar($0) },
+                                        selectedID: sky.selection?.star.id)
                 // Favourite-star heart signal (always visible).
                 SkyLabFavouritesOverlay(camera: camera,
                                         stars: app.favouriteStars,
@@ -128,11 +124,17 @@ struct SkyLabView: View {
                                         stars: Self.properNamedStars,
                                         pinch: effPinch,
                                         scale: liveScale,
-                                        category: { .namedStar($0) })
+                                        category: { .namedStar($0) },
+                                        selectedID: sky.selection?.star.id)
                 SkyLabBodiesOverlay(camera: camera,
                                     date:  app.renderedObservationDate,
                                     pinch: effPinch,
                                     scale: liveScale)
+                // Promoted label — the selected star, forced visible at any
+                // zoom (topmost so it reads above the passive labels).
+                SkyLabPromotedLabelOverlay(camera: camera,
+                                           selection: sky.selection,
+                                           pinch: effPinch)
             }
             .frame(width: canvasSize.width, height: canvasSize.height)
             // THE shared parent transform — scale + rotation about centre,
@@ -195,11 +197,26 @@ struct SkyLabView: View {
                                       viewpoint: app.viewpoint,
                                       sidereal:  app.localSiderealOffset)
 
-            // Nearest star to the tap, within the touch radius. Canvas
-            // points are oversized → subtract `overdraw` for screen space.
+            // Only LABELLED stars are tappable — respect the tiers, so the
+            // tap target set grows exactly as the labels reveal with zoom.
+            // Each star is gated by its OWN badge tier (the same gate the
+            // label overlay uses): favourites (.followedStar) at badgeIn 70,
+            // proper-named (.namedStar) deeper, per-star by magnitude. A
+            // favourite that's also proper-named is tested once, as followed.
+            let scale  = sky.scale
+            let favIDs = Set(app.favouriteStars.map(\.id))
+            let candidates: [(star: EStar, category: POICategory)] =
+                app.favouriteStars.map { ($0, .followedStar($0)) }
+                + Self.properNamedStars
+                    .filter { !favIDs.contains($0.id) }
+                    .map { ($0, .namedStar($0)) }
+
+            // Nearest labelled star whose badge tier is crossed, within the
+            // touch radius. Canvas points are oversized → subtract `overdraw`.
             let tapRadius: CGFloat = 30
             var best: (star: EStar, dist: CGFloat, screen: CGPoint)? = nil
-            for star in app.sortedStars {
+            for (star, category) in candidates {
+                guard scale >= EArtist.shared.poiStyle(for: category).badgeIn else { continue }
                 guard let cp = camera.screen(equatorial: star.equatorialVector) else { continue }
                 let s = CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)
                 let d = hypot(s.x - loc.x, s.y - loc.y)
@@ -207,11 +224,18 @@ struct SkyLabView: View {
                     best = (star, d, s)
                 }
             }
-            guard let hit = best else { sky.selection = nil; return }   // tapped empty sky
+            // Tapped empty sky → clear (animated demotion).
+            guard let hit = best else {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                    sky.selection = nil
+                }
+                return
+            }
 
-            sky.selection = SkyLabSelection(id:     hit.star.id,
-                                            vector: hit.star.equatorialVector,
-                                            tint:   hit.star.spectralClass.color)
+            // Promote: springs the label in (and cross-fades if switching).
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                sky.selection = SkyLabSelection(star: hit.star)
+            }
 
             // Comfort zone: upper-third focus, 100pt no-pan radius. Inside →
             // stay put; outside → pan just to the circle's edge (minimal

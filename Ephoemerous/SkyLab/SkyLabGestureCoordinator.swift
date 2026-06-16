@@ -288,13 +288,12 @@ final class SkyLabGestureCoordinator {
 }
 
 // MARK: - SkyLabSelection
-// A tapped sky object. `vector` is the un-rotated equatorial unit vector
-// (re-projected each frame so the ring tracks the object as the camera
-// moves); `tint` is the colour to draw the ring in (spectral class for a
-// star). No label promotion yet — selection just drives the ring + the
-// comfort-zone pan.
+// A tapped sky object. Holds the `EStar` itself — the promoted POI label
+// projects it each frame (`equatorialVector`), styles it (`.followedStar`,
+// spectral palette), and names it (`displayName`). Equatable by id so the
+// overlay only re-promotes on a genuinely new selection. Stars only for
+// now (bodies / constellations later).
 struct SkyLabSelection: Equatable {
-    let id:     UUID
-    let vector: SIMD3<Double>
-    let tint:   Color
+    let star: EStar
+    static func == (l: Self, r: Self) -> Bool { l.star.id == r.star.id }
 }
