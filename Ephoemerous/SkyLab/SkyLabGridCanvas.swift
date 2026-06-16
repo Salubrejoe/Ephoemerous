@@ -34,7 +34,7 @@ struct SkyLabGridCanvas: View, Equatable {
                 }
             }
 
-            ctx.stroke(path, with: .color(.secondary.opacity(0.45)), lineWidth: 0.6)
+            ctx.stroke(path, with: .color(.secondary.opacity(0.25)), lineWidth: 0.6)
         }
     }
 
