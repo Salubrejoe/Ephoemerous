@@ -248,7 +248,34 @@ struct SkyLabView: View {
                 .presentationDragIndicator(.visible)
                 .onAppear { detailDetent = .fraction(1.0 / 3.0) }
         }
+        // Persistent Apple-Maps search sheet — always up at its bar-only
+        // detent whenever nothing else owns the bottom slot. Selecting an
+        // object sets `detailDestination`, which flips `searchPresented`
+        // false → search yields to the detail sheet. Verbatim production.
+        .sheet(isPresented: searchPresented) { SearchSheet() }
+        // Any selection (canvas tap OR search pick) glides into the comfort
+        // zone — one place, so the two paths behave identically.
+        .onChange(of: app.detailDestination) { _, obj in
+            if let obj { panIntoComfortZone(obj) }
+        }
       } //: TimelineView
+    }
+
+    /// Search is up exactly when nothing else owns the bottom slot — no
+    /// selection, no myth, neither picker, and not mid sheet-swap. Read-only
+    /// (a no-op setter); `interactiveDismissDisabled` blocks manual dismiss,
+    /// so only a selection / editor hides it. Mirrors production MainView.
+    private var searchPresented: Binding<Bool> {
+        Binding(
+            get: {
+                app.detailDestination == nil
+                    && app.mythDestination == nil
+                    && !app.isShowingLocationPicker
+                    && !app.isShowingDatePicker
+                    && !app._sheetSwapping
+            },
+            set: { _ in }
+        )
     }
 
     /// Clock gate — animate only while the observer is moving (Here) or the
@@ -348,31 +375,76 @@ struct SkyLabView: View {
                 return
             }
 
-            // Promote: springs the label in (and cross-fades if switching) +
-            // raises the detail sheet. A picker owns the bottom slot first —
-            // close it so the sheet can take over (production's focus(on:)
-            // does the same swap).
+            // Promote: springs the label in + raises the detail sheet. A
+            // picker owns the bottom slot first — close it so the sheet can
+            // take over. The comfort-zone pan is driven by `onChange(of:
+            // detailDestination)` so a search pick pans too.
             app.isShowingLocationPicker = false
             app.isShowingDatePicker     = false
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                app.detailDestination = hit.obj
+
+            let promote = { (obj: ESkyObject) in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    app.detailDestination = obj
+                }
             }
-
-            // Comfort zone: upper-third focus, 100pt no-pan radius. Inside →
-            // stay put; outside → pan just to the circle's edge (minimal
-            // motion), mirroring production's `panFocus`.
-            let focus = CGPoint(x: geoSize.width / 2, y: geoSize.height / 3)
-            let dx = hit.screen.x - focus.x
-            let dy = hit.screen.y - focus.y
-            let dist = hypot(dx, dy)
-            let comfortRadius: CGFloat = 100
-            guard dist > comfortRadius else { return }
-
-            let k    = comfortRadius / dist
-            let edge = CGPoint(x: hit.screen.x - dx * k, y: hit.screen.y - dy * k)
-            sky.focusPan(dragTarget: CGSize(width:  edge.x - hit.screen.x,
-                                            height: edge.y - hit.screen.y))
+            // A DIFFERENT card is already up → tear it down and re-present
+            // after a beat (production's `sheetSwapDelay`). Swapping the
+            // sheet's item in place keeps the live presentation, and the new
+            // card lands at the wrong (large) detent instead of the third;
+            // `_sheetSwapping` hides search across the gap.
+            if let current = app.detailDestination, current.id != hit.obj.id {
+                app._sheetSwapping    = true
+                app.detailDestination = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    app._sheetSwapping = false
+                    promote(hit.obj)
+                }
+            } else {
+                promote(hit.obj)
+            }
         }
+    }
+
+    // MARK: - Comfort-zone pan (any selection)
+
+    /// Pan the selected object into the comfort zone — upper-third focus,
+    /// 100pt no-pan radius; outside it, glide just to the circle's edge
+    /// (minimal motion), mirroring production's `panFocus`. Driven off the
+    /// selection (not the tap) so a SEARCH pick pans the same as a canvas
+    /// tap. No-op if already comfy, mid-gesture, or the object is on the
+    /// back of the sphere (can't pan-only to it — a slew would be needed).
+    private func panIntoComfortZone(_ obj: ESkyObject) {
+        guard sky.isResting else { return }
+        let geoSize = CGSize(width: sky.center.x * 2, height: sky.center.y * 2)
+        guard geoSize.width > 0, geoSize.height > 0 else { return }
+        let canvasSize = CGSize(width:  geoSize.width  + overdraw * 2,
+                                height: geoSize.height + overdraw * 2)
+        let camera = SkyLabCamera(scale:     sky.scale,
+                                  offset:    sky.offset,
+                                  rotation:  sky.rotation,
+                                  size:      canvasSize,
+                                  viewpoint: app.viewpoint,
+                                  sidereal:  app.localSiderealOffset)
+        guard let cp = SkyLabObjects.screen(obj, camera: camera,
+                                            date: app.renderedObservationDate) else { return }
+        let objScreen = CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)
+        let focus = CGPoint(x: geoSize.width / 2, y: geoSize.height / 3)
+        let dx = objScreen.x - focus.x
+        let dy = objScreen.y - focus.y
+        let dist = hypot(dx, dy)
+        let comfortRadius: CGFloat = 100
+        guard dist > comfortRadius else { return }
+
+        // Land the object on the NEAREST point of the comfort circle —
+        // `focus + R·û` — so it moves by `dist - R`. (Production's panFocus
+        // instead nudges `R` toward the focus, which lands a near canvas-tap
+        // inside the zone but barely shifts a FAR list pick — the "not enough
+        // to move" bug.) Minimal motion for a near tap, as much as needed
+        // for a far one.
+        let k    = comfortRadius / dist
+        let edge = CGPoint(x: focus.x + dx * k, y: focus.y + dy * k)
+        sky.focusPan(dragTarget: CGSize(width:  edge.x - objScreen.x,
+                                        height: edge.y - objScreen.y))
     }
 }
 
