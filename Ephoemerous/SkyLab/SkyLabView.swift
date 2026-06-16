@@ -133,6 +133,9 @@ struct SkyLabView: View {
                     .equatable()
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
+                // "You are here" — aim cone + globe puck at the zenith,
+                // gated on being at the device location.
+                SkyLabUserLocationOverlay(camera: camera, pinch: effPinch)
                 // Curved cartographic labels — horizon rim + colures.
                 // Canvas (per-glyph curve), frozen via .equatable().
                 SkyLabCartographyLabels(camera:   camera,
