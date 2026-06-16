@@ -114,34 +114,40 @@ struct SkyLabView: View {
                 SkyLabConstellationLabelsOverlay(camera: camera,
                                                  pinch: effPinch,
                                                  scale: liveScale,
+                                                 rotation: sky.liveRotation,
                                                  selectedID: selectedConsID)
                 SkyLabStarLabelsOverlay(camera: camera,
                                         stars: app.favouriteStars,
                                         pinch: effPinch,
                                         scale: liveScale,
+                                        rotation: sky.liveRotation,
                                         category: { .followedStar($0) },
                                         selectedID: selectedStarID)
                 // Favourite-star heart signal (always visible).
                 SkyLabFavouritesOverlay(camera: camera,
                                         stars: app.favouriteStars,
-                                        pinch: effPinch)
+                                        pinch: effPinch,
+                                        rotation: sky.liveRotation)
                 SkyLabStarLabelsOverlay(camera: camera,
                                         stars: Self.properNamedStars,
                                         pinch: effPinch,
                                         scale: liveScale,
+                                        rotation: sky.liveRotation,
                                         category: { .namedStar($0) },
                                         selectedID: selectedStarID)
                 SkyLabBodiesOverlay(camera: camera,
                                     date:  app.renderedObservationDate,
                                     pinch: effPinch,
                                     scale: liveScale,
+                                    rotation: sky.liveRotation,
                                     selected: sky.selection)
                 // Promoted label — the selected object, forced visible at
                 // any zoom (topmost so it reads above the passive labels).
                 SkyLabPromotedLabelOverlay(camera: camera,
                                            selection: sky.selection,
                                            date:  app.renderedObservationDate,
-                                           pinch: effPinch)
+                                           pinch: effPinch,
+                                           rotation: sky.liveRotation)
             }
             .frame(width: canvasSize.width, height: canvasSize.height)
             // THE shared parent transform — scale + rotation about centre,

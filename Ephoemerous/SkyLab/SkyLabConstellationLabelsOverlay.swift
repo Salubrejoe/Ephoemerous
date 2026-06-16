@@ -18,6 +18,9 @@ struct SkyLabConstellationLabelsOverlay: View {
     let camera: SkyLabCamera
     let pinch:  CGFloat
     let scale:  CGFloat
+    /// Live map rotation — counter-rotated per name so it stays
+    /// screen-upright while the sky spins (Apple-Maps).
+    var rotation: Angle = .zero
     /// Selected constellation (rawValue) — emphasised in place (primary +
     /// crisp), the production `isSelected` treatment. No badge, no pin.
     var selectedID: String? = nil
@@ -52,6 +55,7 @@ struct SkyLabConstellationLabelsOverlay: View {
                     // A selected name stays crisp + full even mid-tier.
                     .opacity(mark.selected ? 1 : mark.reveal)
                     .blur(radius: mark.selected ? 0 : (1 - mark.reveal) * Self.blur)
+                    .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(mark.sc)
             }

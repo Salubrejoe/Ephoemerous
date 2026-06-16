@@ -23,6 +23,9 @@ struct SkyLabBodiesOverlay: View {
     /// Moon are `badgeIn 0` (always), planets `badgeIn 80`; names follow
     /// at each `textIn`.
     let scale:  CGFloat
+    /// Live map rotation — counter-rotated per label so the badge stays
+    /// screen-upright while the sky spins (Apple-Maps).
+    var rotation: Angle = .zero
     /// Selected body is drawn by the promoted overlay instead — skip it
     /// here so its badge isn't drawn twice.
     var selected: ESkyObject? = nil
@@ -71,6 +74,7 @@ struct SkyLabBodiesOverlay: View {
                              text:        text,
                              badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
                              nameReveal:  POILabelView.tierReveal(scale: scale, threshold: style.textIn))
+                    .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
             }

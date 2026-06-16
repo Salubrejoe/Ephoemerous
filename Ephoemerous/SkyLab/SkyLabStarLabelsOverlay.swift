@@ -15,6 +15,11 @@ struct SkyLabStarLabelsOverlay: View {
     let stars:      [EStar]
     let pinch:      CGFloat
     let scale:      CGFloat
+    /// Live map rotation — counter-rotated per label so the badge stays
+    /// screen-upright while the sky spins (Apple-Maps), pivoting on the
+    /// symbol centre. Committed rotation only moves positions, so the live
+    /// delta is all we cancel.
+    let rotation:   Angle
     let category:   (EStar) -> POICategory
     /// The selected star is drawn by the promoted overlay instead — skip it
     /// here so its badge isn't drawn twice.
@@ -28,6 +33,7 @@ struct SkyLabStarLabelsOverlay: View {
                              text:        mark.star.displayName,
                              badgeReveal: mark.badgeReveal,
                              nameReveal:  mark.nameReveal)
+                    .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(mark.sc)
             }

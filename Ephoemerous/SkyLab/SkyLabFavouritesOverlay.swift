@@ -12,6 +12,9 @@ struct SkyLabFavouritesOverlay: View {
     let camera: SkyLabCamera
     let stars:  [EStar]
     let pinch:  CGFloat
+    /// Live map rotation — counter-rotated so the heart stays upright while
+    /// the sky spins (Apple-Maps).
+    var rotation: Angle = .zero
 
     var body: some View {
         ZStack {
@@ -20,6 +23,7 @@ struct SkyLabFavouritesOverlay: View {
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(mark.color)
                     .shadow(color: .black.opacity(0.4), radius: 1.5)
+                    .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     // Top-leading of the star so it reads as a corner mark
                     // once the badge appears.

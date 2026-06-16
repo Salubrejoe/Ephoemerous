@@ -21,6 +21,9 @@ struct SkyLabPromotedLabelOverlay: View {
     let selection: ESkyObject?
     let date:      Date
     let pinch:     CGFloat
+    /// Live map rotation — counter-rotated so the pin stays screen-upright
+    /// while the sky spins (Apple-Maps), pivoting on its location dot.
+    var rotation:  Angle = .zero
 
     var body: some View {
         ZStack {
@@ -30,6 +33,7 @@ struct SkyLabPromotedLabelOverlay: View {
                 SkyLabPromotedPin(category: poi.category,
                                   glyph:    poi.glyph,
                                   name:     poi.name)
+                    .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
                     .id(obj.id)                      // re-spring on a new object
