@@ -44,6 +44,12 @@ struct SkyLabView: View {
     private let overdraw: CGFloat = 600
 
     var body: some View {
+      // One timeline, production's `ECanvasSchedule`: ticks at 60fps ONLY
+      // while an app origin/date transition is in flight (the Here / Now
+      // animations), and parks at `.distantFuture` when idle — so the
+      // freeze model is untouched at rest. Without it the Here slerp would
+      // never advance and a Now date-rotation would stick mid-interpolation.
+      TimelineView(clockSchedule) { timeline in
         GeometryReader { geo in
             // The canvas is rendered OVERSIZE — the screen plus an
             // `overdraw` margin on every edge — and centred. A SwiftUI
@@ -173,6 +179,16 @@ struct SkyLabView: View {
                     }
             }
         }
+        // Per-frame clock — drives the app's origin/date transitions (the
+        // Here / Now moves) while one is live; draws nothing. A `.background`
+        // so it sits behind everything and re-runs each timeline tick.
+        .background {
+            Canvas { _, size in
+                app.advanceCanvasClock(to: timeline.date.timeIntervalSinceReferenceDate,
+                                       canvasSize: size)
+            }
+            .allowsHitTesting(false)
+        }
         // The label's casing is `.systemBackground` — designed to knock
         // stars out from behind the glyphs on a DARK sky, not to be a
         // bright outline. Without a dark background (and dark scheme) the
@@ -180,7 +196,39 @@ struct SkyLabView: View {
         // the production night sky so labels render as intended.
         .background(EArtist.shared.canvasBackground)
 //        .preferredColorScheme(.dark)
+        // Production toolbar — Here / Now reset chips + location / date
+        // pills. It acts on the shared EAppState the SkyLab camera reads,
+        // so the sky follows; the clock above plays the transitions.
+        .overlay(alignment: .top) {
+            VStack {
+                MainToolbar()
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top,        64)
+        }
         .ignoresSafeArea()
+        // The pills raise these inline editors, same as production MainView.
+        .sheet(isPresented: Bindable(app).isShowingLocationPicker) {
+            LocationPickerPanel()
+                .presentationDetents([.height(300)])
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: Bindable(app).isShowingDatePicker) {
+            DatePickerPanel()
+                .presentationDetents([.height(250)])
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.hidden)
+        }
+      } //: TimelineView
+    }
+
+    /// Clock gate — animate only while the observer is moving (Here) or the
+    /// date is rotating (Now); otherwise park so the freeze model holds.
+    private var clockSchedule: ECanvasSchedule {
+        ECanvasSchedule(isAnimating: app._dateTransition   != nil
+                                  || app._originTransition != nil)
     }
 
     // MARK: - Tap → select + comfort-zone pan
