@@ -25,10 +25,10 @@ final class SkyLabGestureCoordinator {
     var offset:   CGSize  = .zero
     var rotation: Angle   = .zero
 
-    // Current selection (set by the tap hit-test in the view). Drives the
-    // selection ring; the comfort-zone pan is a separate concern. No label
-    // promotion yet.
-    var selection: SkyLabSelection? = nil
+    // Current selection (set by the tap hit-test in the view) — the
+    // production `ESkyObject` (star / sun / moon / planet / constellation).
+    // Drives the promoted label; the comfort-zone pan is a separate concern.
+    var selection: ESkyObject? = nil
 
     // Live deltas — drive the parent transform (gesture + release); the
     // release ANIMATES these, so the transform animates and all layers
@@ -285,15 +285,4 @@ final class SkyLabGestureCoordinator {
         rotation = rotation + liveRotation
         pinch = 1; drag = .zero; liveRotation = .zero; homeBlend = 0
     }
-}
-
-// MARK: - SkyLabSelection
-// A tapped sky object. Holds the `EStar` itself — the promoted POI label
-// projects it each frame (`equatorialVector`), styles it (`.followedStar`,
-// spectral palette), and names it (`displayName`). Equatable by id so the
-// overlay only re-promotes on a genuinely new selection. Stars only for
-// now (bodies / constellations later).
-struct SkyLabSelection: Equatable {
-    let star: EStar
-    static func == (l: Self, r: Self) -> Bool { l.star.id == r.star.id }
 }

@@ -23,24 +23,30 @@ struct SkyLabBodiesOverlay: View {
     /// Moon are `badgeIn 0` (always), planets `badgeIn 80`; names follow
     /// at each `textIn`.
     let scale:  CGFloat
+    /// Selected body is drawn by the promoted overlay instead — skip it
+    /// here so its badge isn't drawn twice.
+    var selected: ESkyObject? = nil
 
     private var artist: EArtist { .shared }
 
     var body: some View {
         ZStack {
-            marker(at: sunScreen,
+            marker(for: .sun,
+                   at: sunScreen,
                    category: .sun,
                    glyph:    .symbol(.sunMaxFill),
                    text:     Strings.Bodies.sun)
 
-            marker(at: moonScreen,
+            marker(for: .moon,
+                   at: moonScreen,
                    category: .moon,
                    glyph:    .symbol(artist.moonPhaseSymbol(
                                 fraction: EMoonPosition.illuminatedFraction(for: date))),
                    text:     Strings.Bodies.moon)
 
             ForEach(planetMarks, id: \.id) { mark in
-                marker(at: mark.sc,
+                marker(for: .planet(mark.planet),
+                       at: mark.sc,
                        category: .planet(mark.planet),
                        glyph:    .unicode(artist.planetGlyph(mark.planet)),
                        text:     mark.planet.displayName)
@@ -49,14 +55,15 @@ struct SkyLabBodiesOverlay: View {
     }
 
     /// One positioned, constant-size label (or nothing if it doesn't
-    /// project). The `1/pinch` counter-scale + `.position` is the shared
-    /// recipe for every native overlay — see SkyLabSunLabel's note.
+    /// project / is the promoted selection). The `1/pinch` counter-scale +
+    /// `.position` is the shared recipe for every native overlay.
     @ViewBuilder
-    private func marker(at sc: CGPoint?,
+    private func marker(for object: ESkyObject,
+                        at sc: CGPoint?,
                         category: POICategory,
                         glyph: POIGlyph,
                         text: String) -> some View {
-        if let sc {
+        if let sc, object != selected {
             let style = artist.poiStyle(for: category)
             if scale >= style.badgeIn {        // badge tier gate (Sun/Moon = 0)
                 POILabelView(category:    category,

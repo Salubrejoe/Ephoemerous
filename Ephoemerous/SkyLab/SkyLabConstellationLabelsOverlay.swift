@@ -18,6 +18,9 @@ struct SkyLabConstellationLabelsOverlay: View {
     let camera: SkyLabCamera
     let pinch:  CGFloat
     let scale:  CGFloat
+    /// Selected constellation (rawValue) — emphasised in place (primary +
+    /// crisp), the production `isSelected` treatment. No badge, no pin.
+    var selectedID: String? = nil
 
     /// Footnote serif bold, matching the POI label names.
     private static let font: UIFont = {
@@ -39,12 +42,16 @@ struct SkyLabConstellationLabelsOverlay: View {
         ZStack {
             ForEach(marks) { mark in
                 OutlinedText(text:      mark.name.uppercased(),
-                             fill:      .secondary,            // quiet cartographic name
+                             // Selected → primary ink (the production
+                             // `isSelected` emphasis); else the quiet
+                             // cartographic secondary.
+                             fill:      mark.selected ? .primary : .secondary,
                              stroke:    .systemBackground,   // dark knockout vs stars
                              lineWidth: 2.5,
                              font:      Self.font)
-                    .opacity(mark.reveal)
-                    .blur(radius: (1 - mark.reveal) * Self.blur)
+                    // A selected name stays crisp + full even mid-tier.
+                    .opacity(mark.selected ? 1 : mark.reveal)
+                    .blur(radius: mark.selected ? 0 : (1 - mark.reveal) * Self.blur)
                     .scaleEffect(1 / pinch)
                     .position(mark.sc)
             }
@@ -52,23 +59,28 @@ struct SkyLabConstellationLabelsOverlay: View {
     }
 
     private struct Mark: Identifiable {
-        let id:     String
-        let name:   String
-        let sc:     CGPoint
-        let reveal: Double
+        let id:       String
+        let name:     String
+        let sc:       CGPoint
+        let reveal:   Double
+        let selected: Bool
     }
 
     private var marks: [Mark] {
-        // One shared reveal; below the tier the whole layer is empty.
+        // One shared reveal; below the tier the whole layer is empty —
+        // EXCEPT the selected constellation, which stays visible (forced).
         let reveal = POILabelView.tierReveal(scale: scale, threshold: Self.textIn)
-        guard reveal > 0.01 else { return [] }
+        guard reveal > 0.01 || selectedID != nil else { return [] }
 
         let w = camera.size.width, h = camera.size.height
         return ConstellationLines.shared.labelAnchors.compactMap { cons, anchor in
+            let selected = cons.rawValue == selectedID
+            guard reveal > 0.01 || selected else { return nil }
             let q = EPrecession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: q) else { return nil }
             guard sc.x > -60, sc.x < w + 60, sc.y > -60, sc.y < h + 60 else { return nil }
-            return Mark(id: cons.rawValue, name: cons.localizedName, sc: sc, reveal: reveal)
+            return Mark(id: cons.rawValue, name: cons.localizedName,
+                        sc: sc, reveal: reveal, selected: selected)
         }
     }
 }
