@@ -43,6 +43,12 @@ struct SkyLabView: View {
     /// tune (and add `.clipped()`) when this graduates to production.
     private let overdraw: CGFloat = 600
 
+    /// Detail place-card detent — pinned so the sheet opens at the third
+    /// (not the smallest member of the set) and can fold to a header-only
+    /// stop, Apple-Maps style. Mirrors production MainView.
+    @State private var detailDetent: PresentationDetent = .fraction(1.0 / 3.0)
+    private let detailHeaderDetent: PresentationDetent = .height(70)
+
     var body: some View {
       // One timeline, production's `ECanvasSchedule`: ticks at 60fps ONLY
       // while an app origin/date transition is in flight (the Here / Now
@@ -76,9 +82,13 @@ struct SkyLabView: View {
             let liveScale = sky.liveScale
             let applied   = sky.applied
 
-            // Selection selectors — which passive label to suppress / emphasise.
-            let selectedStarID: UUID?  = { if case .star(let s) = sky.selection { return s.id };          return nil }()
-            let selectedConsID: String? = { if case .constellation(let c) = sky.selection { return c.rawValue }; return nil }()
+            // Selection selectors — which passive label to suppress /
+            // emphasise. Source of truth is the production `detailDestination`
+            // (also drives the detail sheet), so tap-select, the sheet's X,
+            // and a swipe-away all stay in lockstep.
+            let selection = app.detailDestination
+            let selectedStarID: UUID?  = { if case .star(let s) = selection { return s.id };          return nil }()
+            let selectedConsID: String? = { if case .constellation(let c) = selection { return c.rawValue }; return nil }()
 
             // Myth tint per favourite constellation (for its solid lines).
             let favTints = Dictionary(uniqueKeysWithValues: app.favouriteConstellations.map { cons -> (EConstellation, Color) in
@@ -146,11 +156,11 @@ struct SkyLabView: View {
                                     pinch: effPinch,
                                     scale: liveScale,
                                     rotation: sky.liveRotation,
-                                    selected: sky.selection)
+                                    selected: selection)
                 // Promoted label — the selected object, forced visible at
                 // any zoom (topmost so it reads above the passive labels).
                 SkyLabPromotedLabelOverlay(camera: camera,
-                                           selection: sky.selection,
+                                           selection: selection,
                                            date:  app.renderedObservationDate,
                                            pinch: effPinch,
                                            rotation: sky.liveRotation)
@@ -220,6 +230,23 @@ struct SkyLabView: View {
                 .presentationDetents([.height(250)])
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
+        }
+        // Detail place card — item-bound to the selection. The canvas
+        // stays interactive behind it (taps deselect / reselect); two
+        // Apple-Maps detents, header-only fold + the default third, plus
+        // `.large` for the constellation roster. Search / myth deliberately
+        // left out for now. Mirrors production MainView's detail host.
+        .sheet(item: Bindable(app).detailDestination) { obj in
+            DetailHost(obj: obj)
+                .id(obj.id)
+                .environment(\.detailCollapsed, detailDetent == detailHeaderDetent)
+                .animation(.snappy(duration: 0.28), value: detailDetent)
+                .presentationDetents([detailHeaderDetent, .fraction(1.0 / 3.0), .large],
+                                     selection: $detailDetent)
+                .interactiveDismissDisabled()
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.visible)
+                .onAppear { detailDetent = .fraction(1.0 / 3.0) }
         }
       } //: TimelineView
     }
@@ -309,17 +336,26 @@ struct SkyLabView: View {
                     best = (obj, d, s)
                 }
             }
-            // Tapped empty sky → clear (animated demotion).
+            // Tapped empty sky → deselect (animated demotion + sheet
+            // dismiss). Only act if something is selected, so an idle tap on
+            // empty sky doesn't thrash state.
             guard let hit = best else {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                    sky.selection = nil
+                if app.detailDestination != nil {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                        app.detailDestination = nil
+                    }
                 }
                 return
             }
 
-            // Promote: springs the label in (and cross-fades if switching).
+            // Promote: springs the label in (and cross-fades if switching) +
+            // raises the detail sheet. A picker owns the bottom slot first —
+            // close it so the sheet can take over (production's focus(on:)
+            // does the same swap).
+            app.isShowingLocationPicker = false
+            app.isShowingDatePicker     = false
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                sky.selection = hit.obj
+                app.detailDestination = hit.obj
             }
 
             // Comfort zone: upper-third focus, 100pt no-pan radius. Inside →

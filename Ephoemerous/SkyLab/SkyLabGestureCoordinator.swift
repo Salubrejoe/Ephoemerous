@@ -25,11 +25,6 @@ final class SkyLabGestureCoordinator {
     var offset:   CGSize  = .zero
     var rotation: Angle   = .zero
 
-    // Current selection (set by the tap hit-test in the view) — the
-    // production `ESkyObject` (star / sun / moon / planet / constellation).
-    // Drives the promoted label; the comfort-zone pan is a separate concern.
-    var selection: ESkyObject? = nil
-
     // Live deltas — drive the parent transform (gesture + release); the
     // release ANIMATES these, so the transform animates and all layers
     // stay in lockstep. Reset to identity on commit.
