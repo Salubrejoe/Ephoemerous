@@ -31,12 +31,15 @@ struct SkyLabCartographyLabels: View, Equatable {
         Canvas { ctx, _ in
             let artist = EArtist.shared
             let zenith = camera.screen(.zero)
-            let horizonFont   = Font.system(size: 10, weight: .regular)
-            let twilightFont  = Font.system(size: 6,  weight: .regular)
-            let merdianF      = Font.system(size: 6,  weight: .regular)
+            let horizonFont   = Font.caption2.weight(.light)
+//            let horizonFont   = Font.system(size: 10, weight: .regular)
+            let twilightFont  = Font.caption2.weight(.ultraLight)
+//            let twilightFont  = Font.system(size: 6,  weight: .regular)
+            let merdianF      = Font.caption2.weight(.ultraLight)
+//            let merdianF      = Font.system(size: 6,  weight: .regular)
             // Match each label's weight to its line: horizon labels to the
             // bolder horizon ring, colure labels to the faint grid meridians.
-            let horizonColor  = artist.horizonFillColor
+            let horizonColor  = artist.gridColor
 //            let horizonColor  = Color.secondary.opacity(0.7)
             let meridianColor = artist.gridColor
 
@@ -64,18 +67,18 @@ struct SkyLabCartographyLabels: View, Equatable {
             // the sun's RISE azimuth (east) and the mirror SET azimuth
             // (west), so they sit where the sun actually crosses that
             // altitude today (and clear of EASTERN/WESTERN HORIZON).
-            let twilightColor = Color.secondary.opacity(0.45)
+            let twilightColor = artist.gridColor
             let phi = latitude.radians
             let dec = sunDeclination
             let bands: [Band] = [
-                .init(altitude: .degrees(  0), rising: String(localized: "SUNRISE"),
-                                               setting: String(localized: "SUNSET")),
-                .init(altitude: .degrees( -6), rising: String(localized: "CIVIL"),
-                                               setting: String(localized: "CIVIL")),
-                .init(altitude: .degrees(-12), rising: String(localized: "NAUTICAL"),
-                                               setting: String(localized: "NAUTICAL")),
-                .init(altitude: .degrees(-18), rising: String(localized: "ASTRONOMICAL"),
-                                               setting: String(localized: "ASTRONOMICAL")),
+                .init(altitude: .degrees(  0), rising: String(localized: "sunrise"),
+                                               setting: String(localized: "sunset")),
+                .init(altitude: .degrees( -6), rising: String(localized: "civil"),
+                                               setting: String(localized: "civil")),
+                .init(altitude: .degrees(-12), rising: String(localized: "nautical"),
+                                               setting: String(localized: "nautical")),
+                .init(altitude: .degrees(-18), rising: String(localized: "astronomical"),
+                                               setting: String(localized: "astronomical")),
             ]
             for band in bands {
                 guard let riseAz = sunRiseAzimuth(altitude: band.altitude.radians,

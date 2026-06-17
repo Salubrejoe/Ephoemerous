@@ -128,18 +128,10 @@ struct POILabelView: View {
                         style.gradientTop,
                         style.gradientBottom
                     ], startPoint: .bottom, endPoint: .top)
-                    /*
-                     RadialGradient(
-                     colors:      [style.gradientTop, style.gradientBottom],
-                     center:      .center,
-                     startRadius: 0,
-                     endRadius:   d / 2
-                     )
-                     */
                 )
-            if labelStyle == .planetoids {
-                glyphView
-            }
+//            if labelStyle == .planetoids {
+//                glyphView
+//            }
         }
         .frame(width: d, height: d)
         // Casing ring — the light outline doing the legibility work.
@@ -161,7 +153,7 @@ struct POILabelView: View {
             case .unicode(let str):   Text(str)
             }
         }
-        .font(.system(size: style.symbolPointSize, weight: .semibold))
+        .font(.footnote.weight(.semibold))
         .foregroundStyle(style.symbolColor)
     }
 }

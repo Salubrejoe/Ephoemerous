@@ -40,6 +40,7 @@ struct CompassModeButton: View {
             }
 //            .buttonStyle(CompassModePressStyle())
             .buttonStyle(.plain)
+//            .frame(height: 47)
             .glassEffect(.regular.tint(
                 on ? .clear : .orange
             ).interactive(), in: .circle)

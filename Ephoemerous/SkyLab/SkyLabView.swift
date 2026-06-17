@@ -138,6 +138,13 @@ struct SkyLabView: View {
                     .equatable()
                 SkyLabStarsCanvas(camera: camera, stars: app.sortedStars)
                     .equatable()
+                // Tier-0 spectral pentagon dots for proper-named stars —
+                // appear past namedStarDotIn, crossfade into the badge.
+                SkyLabNamedStarDotsCanvas(camera: camera,
+                                          stars: namedOnly,
+                                          scale: liveScale,
+                                          selectedID: selectedStarID)
+                    .equatable()
                 // "You are here" — aim cone + globe puck at the zenith,
                 // gated on being at the device location.
                 SkyLabUserLocationOverlay(camera: camera, pinch: effPinch)

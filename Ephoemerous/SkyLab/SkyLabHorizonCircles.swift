@@ -25,10 +25,10 @@ struct SkyLabHorizonCircles: View {
     }
 
     private static let bands: [Band] = [
-        .init(altitude: .degrees(  0), lineWidth: 1.1, opacity: 0.85),  // horizon
-        .init(altitude: .degrees( -6), lineWidth: 0.7, opacity: 0.32),  // civil
-        .init(altitude: .degrees(-12), lineWidth: 0.7, opacity: 0.24),  // nautical
-        .init(altitude: .degrees(-18), lineWidth: 0.7, opacity: 0.18),  // astronomical
+        .init(altitude: .degrees(  0), lineWidth: 1.1, opacity: 0.55),  // horizon
+//        .init(altitude: .degrees( -6), lineWidth: 0.7, opacity: 0.1),  // civil
+//        .init(altitude: .degrees(-12), lineWidth: 0.7, opacity: 0.1),  // nautical
+//        .init(altitude: .degrees(-18), lineWidth: 0.7, opacity: 0.1),  // astronomical
     ]
 
     var body: some View {
@@ -40,7 +40,7 @@ struct SkyLabHorizonCircles: View {
                 let band = Self.bands[i]
                 let r    = Self.projectionRadius(band.altitude) * camera.scale
                 Circle()
-                    .stroke(artist.horizonFillColor
+                    .stroke(artist.gridColor
                         .opacity(band.opacity),
                             lineWidth: band.lineWidth)
                     .frame(width: r * 2, height: r * 2)

@@ -37,11 +37,8 @@ struct ENSPlanetDetailView: View {
                 subtitle:      planet.mythology,
                 accent:        accent,
                 icon:          {
-                    POILabelView(
-                        category: .planet(planet),
-                        glyph: .unicode(planet.astronomicalGlyph),
-                        text: ""
-                    )
+                    Text(planet.astronomicalGlyph)
+                        .font(.headline)
                 },
                 leadingSymbol: .share,
                 onLeading:     {},

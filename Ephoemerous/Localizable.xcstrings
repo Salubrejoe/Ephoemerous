@@ -23,39 +23,6 @@
         }
       }
     },
-    "ABSOLUTE MAGNITUDE" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MAGNITUDINE ASSOLUTA"
-          }
-        }
-      }
-    },
-    "ASTRONOMICAL" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ASTRONOMICO"
-          }
-        }
-      }
-    },
-    "AUTUMNAL EQUINOX" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EQUINOZIO D'AUTUNNO"
-          }
-        }
-      }
-    },
     "Abbreviation" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -63,6 +30,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abbreviazione"
+          }
+        }
+      }
+    },
+    "ABSOLUTE MAGNITUDE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MAGNITUDINE ASSOLUTA"
           }
         }
       }
@@ -256,6 +234,17 @@
         }
       }
     },
+    "astronomical" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "astronomico"
+          }
+        }
+      }
+    },
     "At your location" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -274,6 +263,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auriga"
+          }
+        }
+      }
+    },
+    "AUTUMNAL EQUINOX" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EQUINOZIO D'AUTUNNO"
           }
         }
       }
@@ -308,17 +308,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Più luminose di"
-          }
-        }
-      }
-    },
-    "CIVIL" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CIVILE"
           }
         }
       }
@@ -507,6 +496,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compasso"
+          }
+        }
+      }
+    },
+    "civil" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "civile"
           }
         }
       }
@@ -1028,17 +1028,6 @@
         }
       }
     },
-    "GIANTS" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GIGANTI"
-          }
-        }
-      }
-    },
     "Ganymede's Cup" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1057,6 +1046,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gemelli"
+          }
+        }
+      }
+    },
+    "GIANTS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GIGANTI"
           }
         }
       }
@@ -1272,6 +1272,17 @@
         }
       }
     },
+    "Jupiter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giove"
+          }
+        }
+      }
+    },
     "Lacerta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1382,17 +1393,6 @@
         }
       }
     },
-    "MAIN SEQUENCE" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SEQUENZA PRINCIPALE"
-          }
-        }
-      }
-    },
     "Magnitude" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1415,6 +1415,28 @@
         }
       }
     },
+    "MAIN SEQUENCE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SEQUENZA PRINCIPALE"
+          }
+        }
+      }
+    },
+    "Mars" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marte"
+          }
+        }
+      }
+    },
     "Mensa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1422,6 +1444,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mensa"
+          }
+        }
+      }
+    },
+    "Mercury" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mercurio"
           }
         }
       }
@@ -1466,39 +1499,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mese"
-          }
-        }
-      }
-    },
-    "Jupiter" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Giove"
-          }
-        }
-      }
-    },
-    "Mars" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marte"
-          }
-        }
-      }
-    },
-    "Mercury" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mercurio"
           }
         }
       }
@@ -1569,17 +1569,6 @@
         }
       }
     },
-    "NAUTICAL" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NAUTICO"
-          }
-        }
-      }
-    },
     "Name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1598,6 +1587,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nome, costellazione, classe.."
+          }
+        }
+      }
+    },
+    "nautical" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nautico"
+          }
+        }
+      }
+    },
+    "Neptune" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nettuno"
           }
         }
       }
@@ -2043,61 +2054,6 @@
         }
       }
     },
-    "SPECTRAL CLASS" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CLASSE SPETTRALE"
-          }
-        }
-      }
-    },
-    "SUMMER SOLSTICE" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SOLSTIZIO D'ESTATE"
-          }
-        }
-      }
-    },
-    "SUNRISE" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ALBA"
-          }
-        }
-      }
-    },
-    "SUNSET" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "TRAMONTO"
-          }
-        }
-      }
-    },
-    "SUPERGIANTS" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SUPERGIGANTI"
-          }
-        }
-      }
-    },
     "Sagitta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2116,6 +2072,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sagittario"
+          }
+        }
+      }
+    },
+    "Saturn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saturno"
           }
         }
       }
@@ -2241,17 +2208,6 @@
         }
       }
     },
-    "Solar System" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sistema Solare"
-          }
-        }
-      }
-    },
     "Solar system" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2259,6 +2215,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sistema solare"
+          }
+        }
+      }
+    },
+    "Solar System" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema Solare"
           }
         }
       }
@@ -2329,6 +2296,17 @@
         }
       }
     },
+    "SPECTRAL CLASS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CLASSE SPETTRALE"
+          }
+        }
+      }
+    },
     "Star · %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2373,24 +2351,13 @@
         }
       }
     },
-    "Neptune" : {
+    "SUMMER SOLSTICE" : {
       "extractionState" : "manual",
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nettuno"
-          }
-        }
-      }
-    },
-    "Saturn" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saturno"
+            "value" : "SOLSTIZIO D'ESTATE"
           }
         }
       }
@@ -2417,6 +2384,17 @@
         }
       }
     },
+    "sunrise" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "alba"
+          }
+        }
+      }
+    },
     "Sunrise" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2428,6 +2406,17 @@
         }
       }
     },
+    "sunset" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tramonto"
+          }
+        }
+      }
+    },
     "Sunset" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2435,6 +2424,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tramonto"
+          }
+        }
+      }
+    },
+    "SUPERGIANTS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SUPERGIGANTI"
           }
         }
       }
@@ -2457,39 +2457,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Toro"
-          }
-        }
-      }
-    },
-    "Uranus" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Urano"
-          }
-        }
-      }
-    },
-    "VERNAL EQUINOX" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EQUINOZIO DI PRIMAVERA"
-          }
-        }
-      }
-    },
-    "Venus" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Venere"
           }
         }
       }
@@ -2560,6 +2527,17 @@
         }
       }
     },
+    "The father-god's transformations" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le trasformazioni del padre degli dèi"
+          }
+        }
+      }
+    },
     "The Fleece Won" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2604,6 +2582,17 @@
         }
       }
     },
+    "The hunter and the scorpion" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il cacciatore e lo scorpione"
+          }
+        }
+      }
+    },
     "The Lyre" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2626,6 +2615,17 @@
         }
       }
     },
+    "The lyre that charmed Hades" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lira che incantò Ade"
+          }
+        }
+      }
+    },
     "The Nemean Lion" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2644,6 +2644,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La pietrificazione"
+          }
+        }
+      }
+    },
+    "The ram Chrysomallos — fleece of pure gold — carries the children Phrixus and Helle out of Boeotia and is sacrificed in Colchis." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L'ariete Crisomallo — dal vello d'oro puro — porta i fanciulli Frisso ed Elle fuori dalla Beozia ed è sacrificato in Colchide."
           }
         }
       }
@@ -2681,61 +2692,6 @@
         }
       }
     },
-    "The Twelve Labours" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le dodici fatiche"
-          }
-        }
-      }
-    },
-    "The father-god's transformations" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le trasformazioni del padre degli dèi"
-          }
-        }
-      }
-    },
-    "The hunter and the scorpion" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il cacciatore e lo scorpione"
-          }
-        }
-      }
-    },
-    "The lyre that charmed Hades" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La lira che incantò Ade"
-          }
-        }
-      }
-    },
-    "The ram Chrysomallos — fleece of pure gold — carries the children Phrixus and Helle out of Boeotia and is sacrificed in Colchis." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "L'ariete Crisomallo — dal vello d'oro puro — porta i fanciulli Frisso ed Elle fuori dalla Beozia ed è sacrificato in Colchide."
-          }
-        }
-      }
-    },
     "The twelve impossible labours" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2743,6 +2699,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le dodici fatiche impossibili"
+          }
+        }
+      }
+    },
+    "The Twelve Labours" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le dodici fatiche"
           }
         }
       }
@@ -2890,6 +2857,17 @@
         }
       }
     },
+    "Uranus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urano"
+          }
+        }
+      }
+    },
     "Ursa Major" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2919,6 +2897,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vele"
+          }
+        }
+      }
+    },
+    "Venus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venere"
+          }
+        }
+      }
+    },
+    "VERNAL EQUINOX" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EQUINOZIO DI PRIMAVERA"
           }
         }
       }

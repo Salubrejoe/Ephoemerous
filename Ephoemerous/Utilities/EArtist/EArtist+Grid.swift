@@ -7,7 +7,7 @@ import SwiftUI
 extension EArtist {
 
     var gridColor : Color  { palette.grid }
-    var gridWidth : Double { 0.55 }
+    var gridWidth : Double { 0.1 }
 
     /// Tiny on-canvas text drawn in the grid's voice — used by the
     /// pole-pole labels ("N" / "S") and the RA hour numerals

@@ -40,7 +40,7 @@ struct SkyLabStarsCanvas: View, Equatable {
                     Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
                                            width: r * 2, height: r * 2)),
                     with: .color(
-                        EArtist.shared.horizonFillColor.opacity(Self.opacity(forMagnitude: star.magnitude))
+                        EArtist.shared.gridColor.opacity(Self.opacity(forMagnitude: star.magnitude))
                     )
                 )
             }

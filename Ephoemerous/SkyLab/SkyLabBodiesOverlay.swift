@@ -35,6 +35,21 @@ struct SkyLabBodiesOverlay: View {
     var body: some View {
         ZStack {
             ForEach(planetMarks, id: \.id) { mark in
+                // Tier-0 dot — a planet reads as a small tinted dot until
+                // its badge tier, then crossfades into the badge. Skipped
+                // for the selected planet (the promoted pin stands in).
+                if selected != .planet(mark.planet) {
+                    let style = artist.poiStyle(for: .planet(mark.planet))
+                    let badge = POILabelView.tierReveal(scale: scale, threshold: style.badgeIn)
+                    if badge < 1 {
+                        Circle()
+                            .fill(style.gradientBottom)
+                            .frame(width: style.dotRadius * 2, height: style.dotRadius * 2)
+                            .opacity(1 - badge)
+                            .scaleEffect(1 / pinch)
+                            .position(mark.sc)
+                    }
+                }
                 marker(for: .planet(mark.planet),
                        at: mark.sc,
                        category: .planet(mark.planet),

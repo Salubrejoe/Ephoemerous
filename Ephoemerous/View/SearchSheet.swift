@@ -102,8 +102,6 @@ struct SearchSheet: View {
     private var hrButton: some View {
         Button { showHRDiagram = true } label: {
             Image(systemName: "chart.dots.scatter")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.secondary)
                 .frame(width: 44, height: 44)
                 .contentShape(.circle)
         }
@@ -119,7 +117,6 @@ struct SearchSheet: View {
         HStack(spacing: 8) {
             Image(symbol: .search)
             TextField("Search the sky…", text: $searchText)
-                .fontWeight(.semibold)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -136,9 +133,9 @@ struct SearchSheet: View {
             
             
         }
-        .font(.callout)
+//        .font(.callout)
         .padding(.horizontal, 18)
-        .padding(.vertical,   14)
+        .frame(height: 47)
         .glassEffect(.regular.interactive(), in: .containerRelative)
     }
 

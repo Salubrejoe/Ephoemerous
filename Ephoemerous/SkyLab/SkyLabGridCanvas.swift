@@ -12,13 +12,15 @@ struct SkyLabGridCanvas: View, Equatable {
     let camera: SkyLabCamera   // Equatable synthesised → `.equatable()` skips
                                // the redraw while the camera is frozen.
 
-    private static let parallelsDeg:  [Double] = [-60, -30, 0, 30, 60]
-    private static let meridianHours: [Double] = stride(from: 0, to: 24, by: 2).map { $0 }
+    private static let parallelsDeg:  [Double] = stride(from: -90, to: 90, by: 15).map { $0 }
+    private static let meridianHours: [Double] = stride(from: 0, to: 24, by: 1).map { $0 }
 
     var body: some View {
-        Canvas { ctx, _ in
+        Canvas {
+            ctx,
+            _ in
             var path = Path()
-
+            
             // Parallels — constant declination, RA sweeps 0…2π.
             for decDeg in Self.parallelsDeg {
                 appendCurve(to: &path) { t in
@@ -33,8 +35,13 @@ struct SkyLabGridCanvas: View, Equatable {
                                                  dec: .radians((t - 0.5) * .pi))
                 }
             }
-
-            ctx.stroke(path, with: .color(.secondary.opacity(0.25)), lineWidth: 0.6)
+            
+            ctx.stroke(
+                path,
+                with: .color(EArtist.shared.gridColor),
+//                with: .color(.secondary.opacity(0.25)),
+                lineWidth: EArtist.shared.gridWidth
+            )
         }
     }
 

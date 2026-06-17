@@ -54,7 +54,7 @@ extension EArtist {
                 dotShape:        .circle,
                 dotRadius:       2.5,
                 badgeIn:         0,    // always badge — top-priority bodies
-                textIn:          80
+                textIn:          50    // crisp name well below the zoom floor
             )
         }
 
@@ -71,7 +71,7 @@ extension EArtist {
                 dotShape:        .circle,
                 dotRadius:       2.5,
                 badgeIn:         0,    // always badge — top-priority bodies
-                textIn:          80
+                textIn:          50    // crisp name well below the zoom floor
             )
         }
 
@@ -87,8 +87,12 @@ extension EArtist {
                 badgeCorners:    4,    // heptagon
                 dotShape:        .circle,
                 dotRadius:       2.5,
-                badgeIn:         80,
-                textIn:          130
+                // Above the default scale (90) so a planet reads as a small
+                // tier-0 dot at rest and only blooms into its badge + name
+                // once the user zooms in — Sun/Moon (badgeIn 0) stay the only
+                // labelled bodies on the default view.
+                badgeIn:         160,
+                textIn:          220
             )
         }
 
