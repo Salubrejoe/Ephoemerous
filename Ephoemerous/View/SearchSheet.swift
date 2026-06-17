@@ -39,7 +39,7 @@ struct SearchSheet: View {
     /// Resting "search bar only" detent — the persistent always-present
     /// state, just tall enough for the field + grabber. Drag up (or focus
     /// the field) to reveal favourites, then results.
-    private static let barDetent: PresentationDetent = .height(69)
+    private static let barDetent: PresentationDetent = .height(72)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,12 +51,12 @@ struct SearchSheet: View {
                 CompassModeButton()
                 // Compass rose, trailing of the heading-up toggle — auto-
                 // hides (collapses) when the sky is already upright.
-                CompassButton()
+                
             }
-                .padding(.leading, 16)
-                .padding(.trailing, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 14)
+                .padding(.leading, 12)
+                .padding(.trailing, 14)
+                .padding(.top, 18)
+                .padding(.bottom, 18)
 
             if searchText.isEmpty && detent != Self.barDetent {
                 // Idle browse state: favourites scroll + recents list,
@@ -104,7 +104,7 @@ struct SearchSheet: View {
             Image(systemName: "chart.dots.scatter")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.secondary)
-                .frame(width: 42, height: 42)
+                .frame(width: 44, height: 44)
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
@@ -137,8 +137,8 @@ struct SearchSheet: View {
             
         }
         .font(.callout)
-        .padding(.horizontal, 14)
-        .padding(.vertical,   10)
+        .padding(.horizontal, 18)
+        .padding(.vertical,   14)
         .glassEffect(.regular.interactive(), in: .containerRelative)
     }
 

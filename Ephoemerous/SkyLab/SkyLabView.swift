@@ -76,7 +76,12 @@ struct SkyLabView: View {
             // frame; on exit the heading is frozen back into `sky.rotation`
             // (see `onChange`) so nothing jumps.
             let inCompass      = app.compassMode
-            let cameraRotation = inCompass ? app.renderedRotation : sky.rotation
+            // NEGATED: SkyLabCamera.screen rotates AFTER the y-flip, whereas
+            // production's toScreen (which `renderedRotation` is tuned for)
+            // rotates BEFORE it — a y-flip inverts rotation handedness. Without
+            // the negation, heading-up spins the wrong way (face east → west up).
+            let cameraRotation = inCompass ? .radians(-app.renderedRotation.radians)
+                                           : sky.rotation
             let liveRot        = inCompass ? .zero : sky.liveRotation
 
             // Centre = canvasSize/2, which (because the oversize content is
@@ -189,6 +194,7 @@ struct SkyLabView: View {
                                            pinch: effPinch,
                                            rotation: liveRot)
             }
+            
             .frame(width: canvasSize.width, height: canvasSize.height)
             // THE shared parent transform — scale + rotation about centre,
             // then the live translation. Committed values live in the
@@ -228,14 +234,36 @@ struct SkyLabView: View {
         // bright outline. Without a dark background (and dark scheme) the
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
-        .background(EArtist.shared.canvasBackground)
-//        .preferredColorScheme(.dark)
+        .background(
+            ZStack {
+                EArtist.shared.canvasBackground
+                
+                VStack {
+                    Rectangle()
+                        .fill(EArtist.shared.canvasBackground)
+                        .hueRotation(.degrees(5))
+                        .frame(height: 200)
+                    
+                    Spacer()
+                    
+                    Rectangle()
+                        .fill(EArtist.shared.canvasBackground)
+                        .hueRotation(.degrees(-5))
+                        .frame(height: 200)
+                }
+                .blur(radius: 2)
+            }
+        )
         // Production toolbar — Here / Now reset chips + location / date
         // pills. It acts on the shared EAppState the SkyLab camera reads,
         // so the sky follows; the clock above plays the transitions.
         .overlay(alignment: .top) {
             VStack {
                 MainToolbar()
+                HStack {
+                    Spacer()
+                    CompassButton()
+                }
                 Spacer()
             }
             .padding(.horizontal, 24)
@@ -288,8 +316,10 @@ struct SkyLabView: View {
         // Declared BEFORE the reset observer so the freeze lands first when
         // the exit IS the rose's reset-to-north (freeze heading, then spin).
         .onChange(of: app.compassMode) { was, now in
+            // Negated to match `cameraRotation`'s flip (see above) so the
+            // committed rotation picks up exactly where the heading left.
             if was, !now, let heading = app._compassRotCurrent {
-                sky.rotation = .radians(heading)
+                sky.rotation = .radians(-heading)
             }
         }
         // The compass rose's reset-to-north (`resetRotationToNorth` →

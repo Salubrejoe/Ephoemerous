@@ -32,12 +32,12 @@ struct CompassButton: View {
     // Circular face (matches the heading-up toggle's diameter) +
     // orbiting-dot geometry.
 //    private let faceSize:    CGFloat = 37
-    private let faceSize:    CGFloat = 42
+    private let faceSize:    CGFloat = 46
     private let roseCorners: Int     = 12
     private let roseBulge:   CGFloat = 2.5
-    private let orbitRadius: CGFloat = 13
+    private let orbitRadius: CGFloat = 17
 //    private let orbitRadius: CGFloat = 16
-    private let dotSize:     CGFloat = 7
+    private let dotSize:     CGFloat = 9
 //    private let dotSize:     CGFloat = 6
 
     private var roseShape: Squircle { Squircle(corners: roseCorners, bulge: roseBulge) }
@@ -69,7 +69,8 @@ struct CompassButton: View {
             }
             //        .buttonStyle(CompassPressStyle())
             .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: .circle)
+            .contentShape(roseShape)
+            .glassEffect(.regular.interactive(), in: roseShape)
             // Auto-hide when upright (Maps behaviour) — nothing to reset.
             .scaleEffect(aligned ? 0.6 : 1)
             .allowsHitTesting(!aligned)
