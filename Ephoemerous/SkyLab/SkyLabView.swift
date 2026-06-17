@@ -322,6 +322,13 @@ struct SkyLabView: View {
                 sky.rotation = .radians(-heading)
             }
         }
+        // Mirror the SkyLab's committed + live rotation into the app rotation
+        // the compass rose reads (`renderedRotation`), so the rose appears —
+        // and its dial tracks — whenever the user twists the canvas, not only
+        // in compass mode. Negated to match the camera's y-flip handedness so
+        // `-renderedRotation` equals the on-screen rotation in BOTH modes.
+        .onChange(of: sky.rotation)     { _, _ in mirrorRotationToRose() }
+        .onChange(of: sky.liveRotation) { _, _ in mirrorRotationToRose() }
         // The compass rose's reset-to-north (`resetRotationToNorth` →
         // `animateRotation`, only ever targeting zero). Spring the committed
         // rotation to north — from the just-frozen heading if we left
@@ -490,6 +497,15 @@ struct SkyLabView: View {
                 promote(hit.obj)
             }
         }
+    }
+
+    /// Reflect the SkyLab's rotation into `app.canvasRotation` so the rose
+    /// (which reads `renderedRotation`) shows up when the canvas is twisted.
+    /// Skipped in compass mode — there the heading owns `renderedRotation`.
+    private func mirrorRotationToRose() {
+        guard !app.compassMode else { return }
+        let mirrored = Angle.radians(-(sky.rotation.radians + sky.liveRotation.radians))
+        if app.canvasRotation != mirrored { app.canvasRotation = mirrored }
     }
 
     // MARK: - Comfort-zone pan (any selection)
