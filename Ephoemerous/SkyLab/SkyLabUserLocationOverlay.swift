@@ -121,15 +121,15 @@ struct SkyLabUserLocationOverlay: View {
         let symbol = EArtist.shared.userLocationGlobeSymbol(
             forLongitude: app.origin.longitude.degrees).rawValue
         return ZStack {
-            Circle().fill(EArtist.shared.userPuckDiscColor)
+            Circle().fill(EArtist.shared.gridColor)
             Image(systemName: symbol)
                 .resizable()
                 .scaledToFit()
-                .foregroundStyle(EArtist.shared.userPuckRingColor.opacity(0.85))
+                .foregroundStyle(EArtist.shared.canvasBackground)
                 .padding(size * 0.06)
                 .clipShape(Circle())
         }
         .frame(width: size, height: size)
-        .shadow(color: .black.opacity(0.35), radius: 1.5)
+//        .shadow(color: .black.opacity(0.35), radius: 1.5)
     }
 }

@@ -33,7 +33,7 @@ struct CompassModeButton: View {
                     // active; muted when off.
                     .frame(width: faceSize, height: faceSize)
                     .foregroundStyle(
-                        !on ? Color.primary : Color.orange
+                        !on ? Color.white : Color.orange
                     )
 //                    .clipShape(.circle)
 //                    .glassEffect(.regular.interactive(), in: .circle)

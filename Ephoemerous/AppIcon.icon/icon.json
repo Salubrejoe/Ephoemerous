@@ -348,7 +348,7 @@
             }
           ],
           "glass" : true,
-          "hidden" : false,
+          "hidden" : true,
           "image-name" : "horizon_squircle_negative.svg",
           "name" : "horizon_squircle_negative",
           "position" : {

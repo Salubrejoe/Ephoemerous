@@ -95,13 +95,13 @@ struct DetailActionRow: View {
     private var animatedRow: some View {
         HStack(spacing: 8) {
             if remembered {
-                learnMythExpanded
-                    .matchedGeometryEffect(id: "learnMyth", in: morphNS)
+//                learnMythExpanded
+//                    .matchedGeometryEffect(id: "learnMyth", in: morphNS)
                 rememberHeart
                     .matchedGeometryEffect(id: "remember",  in: morphNS)
             } else {
-                learnMythIcon
-                    .matchedGeometryEffect(id: "learnMyth", in: morphNS)
+//                learnMythIcon
+//                    .matchedGeometryEffect(id: "learnMyth", in: morphNS)
                 rememberPrimary
                     .matchedGeometryEffect(id: "remember",  in: morphNS)
             }

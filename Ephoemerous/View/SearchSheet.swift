@@ -47,7 +47,7 @@ struct SearchSheet: View {
                 searchHeader
 
                 // Hertzsprung–Russell diagram — full-screen star chart.
-                hrButton
+//                hrButton
                 CompassModeButton()
                 // Compass rose, trailing of the heading-up toggle — auto-
                 // hides (collapses) when the sky is already upright.
@@ -95,6 +95,13 @@ struct SearchSheet: View {
         }
         .fullScreenCover(isPresented: $showHRDiagram) {
             EHRDiagramView()
+        }
+        .alert("Return to your location?",
+               isPresented: Bindable(state)._compassReturnHomePrompt) {
+            Button("Cancel", role: .cancel) { }
+            Button("Switch to Here") { state.confirmReturnHomeAndEngageCompass() }
+        } message: {
+            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
         }
     }
 
@@ -319,13 +326,17 @@ struct SearchSheet: View {
     private func resultIcon(for obj: ESkyObject) -> some View {
         switch obj {
         case .star(let s):
-            POIBadgeView(category: .followedStar(s), size: 22)
+            POILabelView(category: .followedStar(s), glyph: .sfSymbol(""), text: "", labelStyle: .star)
+//            POIBadgeView(category: .followedStar(s), size: 22)
         case .sun:
-            POIBadgeView(category: .sun, size: 22)
+            POILabelView(category: .sun, glyph: .sfSymbol(""), text: "", labelStyle: .star)
+//            POIBadgeView(category: .sun, size: 22)
         case .moon:
-            POIBadgeView(category: .moon, size: 22)
+            POILabelView(category: .moon, glyph: .sfSymbol(""), text: "")
+//            POIBadgeView(category: .moon, size: 22)
         case .planet(let p):
-            POIBadgeView(category: .planet(p), size: 22)
+            POILabelView(category: .planet(p), glyph: .sfSymbol(""), text: "")
+//            POIBadgeView(category: .planet(p), size: 22)
         case .constellation(let c):
             Image(symbol: EArtist.shared.constellationEntitySymbol(
                 EArtist.shared.constellationEntity(of: c)

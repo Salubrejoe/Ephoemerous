@@ -19,7 +19,7 @@ struct EphoemerousApp: App {
                 
 //                MainView()
                 SkyLabView()
-                    .fontDesign(.rounded)
+                    
             }
             .ignoresSafeArea()
             

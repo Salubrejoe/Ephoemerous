@@ -76,13 +76,13 @@ struct MainView: View {
         // Tapping the heading-up toggle while the map is showing somewhere
         // other than the device location asks before snapping back — compass
         // mode only makes sense from where you actually stand.
-        .alert("Return to your location?",
-               isPresented: Bindable(state)._compassReturnHomePrompt) {
-            Button("Cancel", role: .cancel) { }
-            Button("Switch to Here") { state.confirmReturnHomeAndEngageCompass() }
-        } message: {
-            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
-        }
+//        .alert("Return to your location?",
+//               isPresented: Bindable(state)._compassReturnHomePrompt) {
+//            Button("Cancel", role: .cancel) { }
+//            Button("Switch to Here") { state.confirmReturnHomeAndEngageCompass() }
+//        } message: {
+//            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
+//        }
         
         
         

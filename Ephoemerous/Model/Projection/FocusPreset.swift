@@ -182,7 +182,7 @@ extension EAppState {
         compassMode = false
         _rotationTransition = nil
         canvasRotation = frozen
-        resetView()
+//        resetView()
     }
 
     /// Flip heading-up mode on or off (the toolbar toggle).

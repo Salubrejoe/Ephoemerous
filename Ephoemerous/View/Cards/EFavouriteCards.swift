@@ -21,7 +21,8 @@ struct StarCard: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            POIBadgeView(category: .followedStar(star), size: 24)
+            POILabelView(category: .followedStar(star), glyph: .sfSymbol(""), text: "", labelStyle: .star)
+//            POIBadgeView(category: .followedStar(star), size: 24)
                 .frame(height: 24)
             Text(star.displayName)
                 .font(.title3.weight(.semibold))

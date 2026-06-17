@@ -55,6 +55,7 @@ struct SkyLabView: View {
       // animations), and parks at `.distantFuture` when idle — so the
       // freeze model is untouched at rest. Without it the Here slerp would
       // never advance and a Now date-rotation would stick mid-interpolation.
+      ZStack {
       TimelineView(clockSchedule) { timeline in
         GeometryReader { geo in
             // The canvas is rendered OVERSIZE — the screen plus an
@@ -129,6 +130,10 @@ struct SkyLabView: View {
                 // whole point. The starfield is the stress test.
                 SkyLabGridCanvas(camera: camera)
                     .equatable()
+                
+                // "You are here" — aim cone + globe puck at the zenith,
+                // gated on being at the device location.
+                SkyLabUserLocationOverlay(camera: camera, pinch: effPinch)
                 // Horizon + twilight rings — native concentric circles
                 // about the zenith, riding the parent transform.
                 SkyLabHorizonCircles(camera: camera)
@@ -145,9 +150,7 @@ struct SkyLabView: View {
                                           scale: liveScale,
                                           selectedID: selectedStarID)
                     .equatable()
-                // "You are here" — aim cone + globe puck at the zenith,
-                // gated on being at the device location.
-                SkyLabUserLocationOverlay(camera: camera, pinch: effPinch)
+               
                 // Curved cartographic labels — horizon rim + colures.
                 // Canvas (per-glyph curve), frozen via .equatable().
                 SkyLabCartographyLabels(camera:   camera,
@@ -236,6 +239,11 @@ struct SkyLabView: View {
             }
             .allowsHitTesting(false)
         }
+        } //: TimelineView closure (only the clock Canvas needs `timeline`)
+        } //: ZStack — the sheets + alert attach HERE, a plain stable
+        //  container like production's root ZStack, NOT the TimelineView
+        //  (whose content churns on schedule/state changes and was
+        //  disrupting the alert ↔ persistent-search-sheet presentation).
         // The label's casing is `.systemBackground` — designed to knock
         // stars out from behind the glyphs on a DARK sky, not to be a
         // bright outline. Without a dark background (and dark scheme) the
@@ -276,7 +284,24 @@ struct SkyLabView: View {
             .padding(.horizontal, 24)
             .padding(.top,        64)
         }
+        
         .ignoresSafeArea()
+        
+//        .alert("Return to your location?",
+//               isPresented: Bindable(app)._compassReturnHomePrompt) {
+//            Button("Cancel", role: .cancel) { }
+//            Button("Switch to Here") { app.confirmReturnHomeAndEngageCompass() }
+//        } message: {
+//            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
+//        }
+        // Toggling compass mode away from Here needs the observer back at the
+        // device location first; confirm before snapping. Declared as the
+        // FIRST (innermost) presentation modifier — BEFORE the sheets — to
+        // mirror production MainView: an alert applied AFTER the sheets fights
+        // the persistent search sheet's presentation (the alert flashed and
+        // killed the search bar). Mirrors production MainView's order.
+        
+        .fontDesign(.rounded)
         // The pills raise these inline editors, same as production MainView.
         .sheet(isPresented: Bindable(app).isShowingLocationPicker) {
             LocationPickerPanel()
@@ -325,8 +350,8 @@ struct SkyLabView: View {
         .onChange(of: app.compassMode) { was, now in
             // Negated to match `cameraRotation`'s flip (see above) so the
             // committed rotation picks up exactly where the heading left.
-            if was, !now, let heading = app._compassRotCurrent {
-                sky.rotation = .radians(-heading)
+            if was, !now {
+                sky.rotation = .radians(-app.canvasRotation.radians)
             }
         }
         // Mirror the SkyLab's committed + live rotation into the app rotation
@@ -346,17 +371,6 @@ struct SkyLabView: View {
                 sky.rotation = .zero
             }
         }
-        // Toggling compass mode away from Here needs the observer back at
-        // the device location first (it orients from where you stand);
-        // confirm before snapping. Mirrors production MainView.
-        .alert("Return to your location?",
-               isPresented: Bindable(app)._compassReturnHomePrompt) {
-            Button("Cancel", role: .cancel) { }
-            Button("Switch to Here") { app.confirmReturnHomeAndEngageCompass() }
-        } message: {
-            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
-        }
-      } //: TimelineView
     }
 
     /// Search is up exactly when nothing else owns the bottom slot — no
