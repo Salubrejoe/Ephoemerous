@@ -14,8 +14,7 @@ extension EArtist {
     /// Same `.tertiary` as the wash today; routed through `palette`
     /// so it can be retuned in one place.
     var twilightBandColor  : Color  { palette.twilightBand }
-    var horizonBumpCorners : Int    { 12 }
-    var horizonBumpBulge   : CGFloat { 2.2 }
+    // (horizonBumpCorners / horizonBumpBulge moved to EArtist.swift)
 
     /// Push each sample radially outward from the curve's centroid
     /// by `Squircle.lameRadius(θ, corners: horizonBumpCorners,

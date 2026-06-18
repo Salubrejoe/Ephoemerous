@@ -2,7 +2,7 @@ import SwiftUI
 import simd
 import LoreKit
 
-// MARK: - SkyLabStarsCanvas
+// MARK: - StarsCanvas
 // The generic star field — plain filled dots, the layer that MUST stay
 // Canvas (thousands of fills is its whole reason to exist). The stress
 // test for the architecture: if it pans/zooms smoothly, it's *because*

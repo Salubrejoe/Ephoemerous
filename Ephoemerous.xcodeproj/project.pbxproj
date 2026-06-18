@@ -56,11 +56,6 @@
 			path = Ephoemerous;
 			sourceTree = "<group>";
 		};
-		7C5E79FC2FD17C0700F88416 /* EphoemerousTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = EphoemerousTests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,7 +81,6 @@
 			isa = PBXGroup;
 			children = (
 				7C51B0DF2F8F8C2600B39A8A /* Ephoemerous */,
-				7C5E79FC2FD17C0700F88416 /* EphoemerousTests */,
 				7C51B0DE2F8F8C2600B39A8A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -138,9 +132,6 @@
 			);
 			dependencies = (
 				7C5E7A002FD17C0700F88416 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				7C5E79FC2FD17C0700F88416 /* EphoemerousTests */,
 			);
 			name = EphoemerousTests;
 			packageProductDependencies = (

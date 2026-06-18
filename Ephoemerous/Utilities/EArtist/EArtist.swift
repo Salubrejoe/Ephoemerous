@@ -29,4 +29,42 @@ struct EArtist {
     var eclWidth : Double { 0.5 }
     
     var horizonFillColor   : Color  { palette.horizonFill }
+
+    // MARK: - User location (puck + aim cone)
+    // Live constants consolidated here from EArtist+UserLocation (the draw
+    // half of which is deprecated). Read by PuckAndConeOverlay.
+    var userPuckSize            : CGFloat { 22 }
+    var userPuckConeColor       : Color   { palette.userPuckCone }
+    var userPuckConeRadius      : CGFloat { 90 }
+    var userPuckConeOpacity     : Double  { 0.32 }
+    var userPuckConeMinHalfAngle: Double  { 8 }    // degrees
+    var userPuckConeMaxHalfAngle: Double  { 60 }   // degrees
+    /// Pitch→length honesty for the aim cone (1 = tip on the aimed point).
+    var aimConeLengthGain       : Double  { 1.0 }
+    /// Clamp display altitude off the zenith (where azimuth spins).
+    var aimConeMaxAltitudeDeg   : Double  { 86 }
+    /// Floor at the horizon so the tip doesn't shoot past the rim.
+    var aimConeMinAltitudeDeg   : Double  { 0 }
+
+    /// Apple hemisphere globe SF Symbol matched to the observer's longitude
+    /// so the puck wears the continent it sits on.
+    func userLocationGlobeSymbol(forLongitude lon: Double) -> ESymbol {
+        var l = lon
+        while l >  180 { l -= 360 }
+        while l < -180 { l += 360 }
+        if l >= -30 && l <  60  { return .globeEuropeAfrica  }
+        if l >=  60 && l < 110  { return .globeSouthAsia     }
+        if l >= 110 || l < -170 { return .globeAsiaAustralia }
+        return .globeAmericas
+    }
+
+    // MARK: - Squircle / horizon-rim Lamé params (LocationPickerPanel)
+    var horizonBumpCorners : Int     { 12 }
+    var horizonBumpBulge   : CGFloat { 2.2 }
+
+    /// Sky-disc clip radius in projection units (EAppState+Viewport).
+    var clipRadius : Double { 2 * sqrt(3) }
+
+    /// POI text casing border width (POILabelView).
+    var poiTextBorderWidth : CGFloat { 1.7 }
 }

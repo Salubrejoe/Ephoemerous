@@ -24,7 +24,7 @@ extension EArtist {
     /// stereographic; `2 · √3 ≈ 3.46` overshoots that so the
     /// rubber-band viewport bounds (which use this) leave some room
     /// outside the horizon proper.
-    var clipRadius: Double { 2 * sqrt(3) }
+    // (clipRadius moved to EArtist.swift)
 
     /// Bleed past the disc, in points. Survived the chrome
     /// retirement because the viewport-bounds math wants a tiny

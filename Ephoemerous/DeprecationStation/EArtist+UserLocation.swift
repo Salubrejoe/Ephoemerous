@@ -17,8 +17,7 @@ extension EArtist {
 
     // MARK: - Tunables  ▼ TWEAK HERE ▼
 
-    /// Total puck diameter in pt at the default (resting) zoom.
-    var userPuckSize       : CGFloat { 22 }
+    // (userPuckSize moved to EArtist.swift)
     /// Gentle zoom response: the puck eases between these multiples of
     /// `userPuckSize` — a touch smaller when zoomed out, a touch larger
     /// zoomed in — anchored at 1.0 for the default view so the resting
@@ -36,19 +35,7 @@ extension EArtist {
 
     var userPuckDiscColor  : Color { palette.userPuckDisc }
     var userPuckRingColor  : Color { palette.userPuckRing }
-    var userPuckConeColor  : Color { palette.userPuckCone }
-
-    /// Outer reach of the heading cone, in points. The cone fades
-    /// to transparent at this radius via a radial gradient.
-    var userPuckConeRadius : CGFloat { 90 }
-    /// Cone opacity at the apex; the gradient falls off to zero
-    /// at the outer edge.
-    var userPuckConeOpacity: Double  { 0.32 }
-    /// Clamp the cone half-angle so an uncalibrated compass
-    /// (huge `headingAccuracy`) doesn't blanket the whole canvas
-    /// in blue, and a flawless one doesn't shrink to a sliver.
-    var userPuckConeMinHalfAngle: Double { 8 }    // degrees
-    var userPuckConeMaxHalfAngle: Double { 60 }   // degrees
+    // (userPuckCone* cone color/radius/opacity/half-angles moved to EArtist.swift)
 
     // MARK: - Aim cone tunables  ▼ TWEAK HERE ▼
     // The device-motion direction cone — a translucent Apple-Maps-style
@@ -63,18 +50,8 @@ extension EArtist {
     // DIRECTION is the device azimuth. Colour/opacity/half-angle reuse the
     // heading-cone tunables above; only the pitch→length dials live here.
 
-    /// Pitch→length honesty. 1.0 = the cone tip sits exactly on the sky
-    /// point the phone aims at. <1 compresses (cone hugs the puck more);
-    /// >1 exaggerates (reaches the horizon while still tilted up).
-    var aimConeLengthGain    : Double { 1.0 }
-    /// Clamp display altitude off the zenith singularity, where azimuth is
-    /// undefined and the cone direction would spin. The cone can't fully
-    /// vanish — it bottoms out as a sliver tucked under the puck.
-    var aimConeMaxAltitudeDeg: Double { 86 }
-    /// Floor display altitude at the horizon: aiming at or below the ring
-    /// holds the cone at full (horizon) length instead of letting the tip
-    /// shoot past the rim toward the projection's below-horizon infinity.
-    var aimConeMinAltitudeDeg: Double { 0 }
+    // (aimConeLengthGain / aimConeMaxAltitudeDeg / aimConeMinAltitudeDeg
+    //  moved to EArtist.swift)
 
     // MARK: - Aim blob tunables  ▼ TWEAK HERE ▼
     // The aim blob is the device-motion successor to the heading cone:
@@ -181,28 +158,7 @@ extension EArtist {
         return userPuckSize * factor
     }
 
-    // MARK: - Symbol picker
-
-    /// Apple's four hemisphere globe SF Symbols, mapped to the
-    /// observer's longitude so the puck wears the continent it
-    /// actually sits on. Bands chosen to match the symbol's
-    /// rendered emphasis:
-    ///   • -170° .. -30°  →  `globe.americas.fill`
-    ///   • -30°  ..  60°  →  `globe.europe.africa.fill`
-    ///   •  60°  .. 110°  →  `globe.central.south.asia.fill`
-    ///   • 110°  .. 180°  →  `globe.asia.australia.fill`
-    ///   • -180° .. -170° →  `globe.asia.australia.fill`  (dateline wrap)
-    /// Input is wrapped into [-180, 180] before bucketing.
-    func userLocationGlobeSymbol(forLongitude lon: Double) -> ESymbol {
-        var l = lon
-        while l >  180 { l -= 360 }
-        while l < -180 { l += 360 }
-
-        if l >= -30 && l <  60  { return .globeEuropeAfrica  }
-        if l >=  60 && l < 110  { return .globeSouthAsia     }
-        if l >= 110 || l < -170 { return .globeAsiaAustralia }
-        return .globeAmericas  // -170° ≤ l < -30°
-    }
+    // (userLocationGlobeSymbol moved to EArtist.swift)
 
     // MARK: - Drawing
 

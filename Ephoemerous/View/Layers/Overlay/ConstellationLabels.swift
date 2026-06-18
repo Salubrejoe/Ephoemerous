@@ -50,15 +50,7 @@ struct ConstellationLabels: View {
                     .font(.footnote)
                     .fontDesign(.serif)
                     .contentShape(.capsule)
-//                OutlinedText(text:      mark.name.uppercased(),
-//                             // Selected → primary ink (the production
-//                             // `isSelected` emphasis); else the quiet
-//                             // cartographic secondary.
-//                             fill:      mark.selected ? .primary : .secondary,
-//                             stroke:    .systemBackground,   // dark knockout vs stars
-//                             lineWidth: 2.5,
-//                             font:      Self.font)
-                    // A selected name stays crisp + full even mid-tier.
+                
                     .opacity(mark.selected ? 1 : mark.reveal)
                     .blur(radius: mark.selected ? 0 : (1 - mark.reveal) * Self.blur)
                     .rotationEffect(-rotation, anchor: .center)
