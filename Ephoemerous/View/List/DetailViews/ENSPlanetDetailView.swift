@@ -57,9 +57,33 @@ struct ENSPlanetDetailView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                statsRow
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
+                HStack(spacing: 8) {
+                    VStack(spacing: 0) {
+                        DetailTile(icon:  "ruler",
+                                   value: facts?.distance ?? "—")
+                        DetailTile(icon:  "circle.dashed",
+                                   value: facts?.diameter ?? "-")
+                    }
+                    
+                    VStack(spacing: 0) {
+                        DetailTile(icon:  "eyes",
+                                   value: magnitudeText)
+                        
+                        DetailTile(icon:  "clock",
+                                   value: facts?.period ?? "—")
+                    }
+                }
+                .overlay {
+                    Rectangle()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 1)
+                    
+                    Rectangle()
+                        .frame(maxHeight: .infinity)
+                        .frame(width: 1)
+                }
+                .padding(.top, 16)
+                .padding(.horizontal, 16)
             }
             Spacer(minLength: 0)
         }

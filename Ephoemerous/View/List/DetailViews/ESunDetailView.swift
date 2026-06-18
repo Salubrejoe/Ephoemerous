@@ -65,6 +65,7 @@ struct ESunDetailView: View {
                 .padding(.top, 12)
                 roster
                     .padding(.top, 16)
+                    .padding(.horizontal, 16)
             }
             Spacer(minLength: 0)
         }
@@ -77,14 +78,31 @@ struct ESunDetailView: View {
     private var rosterHeight: CGFloat { 100 }
 
     private var roster: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                physicalCards
-                coordCards
+        HStack(spacing: 8) {
+            VStack(spacing: 0) {
+                DetailTile(icon:  "ruler",
+                           value: "1 AU")
+                DetailTile(icon:  "eyes",
+                           value: "-26.7")
             }
-            .padding(.horizontal, 16)
+            
+            VStack(spacing: 0) {
+                DetailTile(icon:  "arrow.left.arrow.right",
+                           value: raString)
+                
+                DetailTile(icon:  "arrow.up.arrow.down",
+                           value: decString)
+            }
         }
-        .frame(height: rosterHeight)
+        .overlay {
+            Rectangle()
+                .frame(maxWidth: .infinity)
+                .frame(height: 1)
+            
+            Rectangle()
+                .frame(maxHeight: .infinity)
+                .frame(width: 1)
+        }
     }
 
     // MARK: Card groups

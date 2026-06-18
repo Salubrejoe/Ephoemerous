@@ -383,6 +383,8 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Ephoemerous/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephy;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "So we can display the true horizon";
 				INFOPLIST_KEY_NSMotionUsageDescription = "For a cute parallax effect";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -445,6 +447,8 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Ephoemerous/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephy;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "So we can display the true horizon";
 				INFOPLIST_KEY_NSMotionUsageDescription = "For a cute parallax effect";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;

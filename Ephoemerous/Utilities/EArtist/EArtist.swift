@@ -19,4 +19,14 @@ struct EArtist {
     /// Single source of truth for every colour on the canvas. The
     /// per-feature extensions read from here.
     let palette = EPalette()
+    
+    var canvasBackground : Color { palette.canvasBackground }
+    
+    var gridColor : Color  { palette.grid }
+    var gridWidth : Double { 0.1 }
+    
+    var eclColor : Color  { palette.ecliptic }
+    var eclWidth : Double { 0.5 }
+    
+    var horizonFillColor   : Color  { palette.horizonFill }
 }

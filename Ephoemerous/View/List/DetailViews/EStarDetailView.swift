@@ -69,14 +69,11 @@ struct EStarDetailView: View {
                 // myth is inherited from its parent constellation, and
                 // tapping the book / tagline routes through
                 // `state.openMyth(_:)` for the half-detent myth sheet.
-                DetailActionRow(
-                    obj:         .star(star),
-                    myth:        myth,
-                    onLearnMyth: { state.openMyth(myth) }
-                )
+                RememberButton(obj: .star(star))
                 .padding(.horizontal, 16)
                 .padding(.bottom,     12)
                 statsRow
+                    .padding(.top, 16)
                     .padding(.horizontal, 16)
             }
             Spacer(minLength: 0)
@@ -102,65 +99,35 @@ struct EStarDetailView: View {
         }
     }
 
-    // MARK: Stats row
-
-    /// Fixed row height — every tile fills this exactly, guaranteeing
-    /// the three backgrounds line up regardless of which SF Symbol
-    /// happens to render slightly shorter than the others. Bump if
-    /// the content needs more breathing room.
-    private var statsRowHeight: CGFloat { 100 }
-
-    /// Three equal-width SF-Symbol tiles. The Class tile picks up
-    /// the spectral accent so the star's colour shows up exactly
-    /// once on the canvas-of-the-detail; the other two tiles stay
-    /// neutral so the eye doesn't get pulled three ways at once.
+   
     private var statsRow: some View {
         HStack(spacing: 8) {
-            tile(icon:     "thermometer.medium",
-                 iconTint: accent,
-                 value:    star.spectralClass.rawValue,
-                 label:    String(localized: "Class"))
-            tile(icon:     "ruler",
-                 iconTint: .secondary,
-                 value:    distanceText,
-                 label:    Strings.BodyDetail.distance)
-            tile(icon:     "sparkles",
-                 iconTint: .secondary,
-                 value:    magnitudeText,
-                 label:    Strings.BodyDetail.magnitude)
+            VStack(spacing: 0) {
+                DetailTile(icon:  "thermometer.medium",
+                     value: star.spectralClass.rawValue)
+                DetailTile(icon:  "ruler",
+                     value: distanceText)
+            }
+            
+            VStack(spacing: 0) {
+                DetailTile(icon:  "eyes",
+                     value: magnitudeText)
+
+                DetailTile(icon:  "clock",
+                     value: raText)
+            }
         }
-        .frame(height: statsRowHeight)
+        .overlay {
+            Rectangle()
+                .frame(maxWidth: .infinity)
+                .frame(height: 1)
+            
+            Rectangle()
+                .frame(maxHeight: .infinity)
+                .frame(width: 1)
+        }
     }
 
-    private func tile(icon: String, iconTint: Color, value: String, label: String) -> some View {
-        VStack(spacing: 6) {
-            // Fixed-height slot for the icon so the value + label
-            // rows below land at the same baseline across all three
-            // tiles regardless of the SF Symbol's intrinsic height
-            // (thermometer tall, ruler short, sparkles medium).
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(iconTint)
-                .frame(height: 24)
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .monospacedDigit()
-                .frame(height: 22)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(0.5)
-                .frame(height: 14)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, 14)
-        .background(Color(.tertiarySystemFill),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
 
     // MARK: Value formatting
 
@@ -173,6 +140,10 @@ struct EStarDetailView: View {
 
     private var magnitudeText: String {
         String(format: "%.1f", star.magnitude)
+    }
+    
+    private var raText: String {
+        String(format: "%.1f", star.rightAscension.degrees)
     }
 
     // MARK: Glow
@@ -198,4 +169,28 @@ struct EStarDetailView: View {
         EStarDetailView(star: EStar.mockStars[0])
     }
     .environment(EAppState())
+}
+
+
+struct DetailTile: View {
+    let icon: String
+    let value: String
+    var body: some View {
+        HStack(spacing: 6) {
+            // Fixed-height slot for the icon so the value + label
+            // rows below land at the same baseline across all three
+            // tiles regardless of the SF Symbol's intrinsic height
+            // (thermometer tall, ruler short, sparkles medium).
+            Image(systemName: icon)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 44)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+    }
 }

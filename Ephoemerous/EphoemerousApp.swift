@@ -16,10 +16,7 @@ struct EphoemerousApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                
-//                MainView()
-                SkyLabView()
-                    
+                MainView()
             }
             .ignoresSafeArea()
             

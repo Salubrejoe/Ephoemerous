@@ -2,10 +2,7 @@
   "fill-specializations" : [
     {
       "value" : {
-        "linear-gradient" : [
-          "display-p3:0.85479,0.83771,0.77863,1.00000",
-          "srgb:0.95000,0.93000,0.87000,1.00000"
-        ],
+        "automatic-gradient" : "srgb:0.99216,0.96471,0.88627,1.00000",
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -21,10 +18,7 @@
     {
       "appearance" : "dark",
       "value" : {
-        "linear-gradient" : [
-          "display-p3:0.04544,0.02418,0.07452,1.00000",
-          "display-p3:0.23845,0.21804,0.26637,1.00000"
-        ],
+        "automatic-gradient" : "display-p3:0.27843,0.27451,0.34902,1.00000",
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -39,6 +33,42 @@
     }
   ],
   "groups" : [
+    {
+      "layers" : [
+        {
+          "fill-specializations" : [
+            {
+              "value" : {
+                "automatic-gradient" : "srgb:0.40000,0.35000,0.30000,1.00000"
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "display-p3:1.00000,0.90000,0.78600,1.00000"
+              }
+            }
+          ],
+          "image-name" : "phi-sl.png",
+          "name" : "phi-sl",
+          "position" : {
+            "scale" : 2.5,
+            "translation-in-points" : [
+              7.885774999999967,
+              42
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.6
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.2
+      }
+    },
     {
       "layers" : [
         {

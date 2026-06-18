@@ -100,7 +100,7 @@ struct EConstellationDetailView: View {
                             onLearnMyth: { state.openMyth(myth) }
                         )
                         .padding(.horizontal, 16)
-                        .padding(.bottom,     12)
+                        .padding(.vertical, 12)
                         roster
                         storySection
                             .padding(.horizontal, 16)
@@ -130,10 +130,6 @@ struct EConstellationDetailView: View {
 
     // MARK: Roster
 
-    /// Same 100-pt fixed-height row + tile padding as the star
-    /// detail's stats grid so the two surfaces share a rhythm.
-    private var rosterHeight: CGFloat { 100 }
-
     private var roster: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -145,8 +141,8 @@ struct EConstellationDetailView: View {
                 }
             }
             .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .frame(height: rosterHeight)
     }
 
     // MARK: Origin story
@@ -160,14 +156,13 @@ struct EConstellationDetailView: View {
     private var storySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
-                Image(systemName: "sparkles")
+                Image(systemName: "book")
                     .font(.footnote)
                     .foregroundStyle(accent)
                 Text("How it reached the sky")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
-                    .tracking(0.6)
                 Spacer(minLength: 0)
             }
 
@@ -191,7 +186,7 @@ struct EConstellationDetailView: View {
         case .idle, .generating:
             HStack(spacing: 10) {
                 ProgressView()
-                Text("Weaving the story…")
+                Text("Just a sec...")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -220,3 +215,9 @@ struct EConstellationDetailView: View {
 
 // `StarCard` lives in View/Cards/EFavouriteCards.swift and is
 // shared with the SearchSheet's favourites scroll.
+
+
+#Preview {
+    EConstellationDetailView(constellation: .And)
+        .environment(EAppState())
+}

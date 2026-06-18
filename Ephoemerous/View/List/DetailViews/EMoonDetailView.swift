@@ -82,8 +82,33 @@ struct EMoonDetailView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                roster
-                    .padding(.top, 16)
+                HStack(spacing: 8) {
+                    VStack(spacing: 0) {
+                        DetailTile(icon:  "ruler",
+                                   value: "~390 Mm")
+                        DetailTile(icon:  "circle.dashed",
+                                   value: "3,474 km")
+                    }
+                    
+                    VStack(spacing: 0) {
+                        DetailTile(icon:  phaseSymbol(for: phaseName),
+                                   value: phaseName)
+                        
+                        DetailTile(icon:  "clock",
+                                   value: "27.3 d")
+                    }
+                }
+                .overlay {
+                    Rectangle()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 1)
+                    
+                    Rectangle()
+                        .frame(maxHeight: .infinity)
+                        .frame(width: 1)
+                }
+                .padding(.top, 16)
+                .padding(.horizontal, 16)
             }
             Spacer(minLength: 0)
         }
