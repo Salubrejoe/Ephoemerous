@@ -147,41 +147,8 @@ struct CelestialCanva: View {
 // true via observation → view body re-evaluates → a fresh
 // `ECanvasSchedule(isAnimating: true)` is handed to TimelineView,
 // which resumes ticking at 120 Hz.
-struct ECanvasSchedule: TimelineSchedule {
-    let isAnimating: Bool
-
-    func entries(from start: Date, mode: Mode) -> Entries {
-        Entries(isAnimating: isAnimating, start: start)
-    }
-
-    struct Entries: Sequence, IteratorProtocol {
-        let isAnimating: Bool
-        var next_date: Date
-        init(isAnimating: Bool, start: Date) {
-            self.isAnimating = isAnimating
-            self.next_date   = start
-        }
-        mutating func next() -> Date? {
-            let current = next_date
-            if isAnimating {
-                next_date = current.addingTimeInterval(1.0 / 60)
-                return current
-            }
-            // Idle: emit one tick at start so the canvas paints once,
-            // then stay parked at `.distantFuture` forever. TimelineView
-            // schedules a fire for that date and effectively stops
-            // doing work. When `isAnimating` flips back to true via
-            // observation, the view body re-evaluates and TimelineView
-            // gets a new `ECanvasSchedule(isAnimating: true)` —
-            // discarding this iterator and starting the 120 Hz loop.
-            if current == .distantFuture {
-                return .distantFuture
-            }
-            next_date = .distantFuture
-            return current
-        }
-    }
-}
+// ECanvasSchedule moved to live (View/ECanvasSchedule.swift) — the SkyLab
+// clock uses it, so it must outlive this deprecated file.
 
 extension CelestialCanva {
     private var isAnimating: Bool {

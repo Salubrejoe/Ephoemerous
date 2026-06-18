@@ -20,7 +20,7 @@ import SwiftUI
 //
 // To run it as the app root, swap `MainView()` for `SkyLabView()` in
 // `EphoemerousApp` (kept out of production by default).
-struct MainView: View {
+struct MainView😇: View {
 
     @Environment(EAppState.self) private var app
 
