@@ -57,33 +57,15 @@ struct ENSPlanetDetailView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                HStack(spacing: 8) {
-                    VStack(spacing: 0) {
-                        DetailTile(icon:  "ruler",
-                                   value: facts?.distance ?? "—")
-                        DetailTile(icon:  "circle.dashed",
-                                   value: facts?.diameter ?? "-")
-                    }
-                    
-                    VStack(spacing: 0) {
-                        DetailTile(icon:  "eyes",
-                                   value: magnitudeText)
-                        
-                        DetailTile(icon:  "clock",
-                                   value: facts?.period ?? "—")
-                    }
-                }
-                .overlay {
-                    Rectangle()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 1)
-                    
-                    Rectangle()
-                        .frame(maxHeight: .infinity)
-                        .frame(width: 1)
-                }
+                
+                
+                DetailHScrollView(stats: [
+                    .init(value: facts?.distance ?? "—", statType: .distance),
+                    .init(value: facts?.diameter ?? "—", statType: .diameter),
+                    .init(value: magnitudeText,          statType: .magnitude),
+                    .init(value: facts?.period ?? "—",   statType: .period),
+                ])
                 .padding(.top, 16)
-                .padding(.horizontal, 16)
             }
             Spacer(minLength: 0)
         }

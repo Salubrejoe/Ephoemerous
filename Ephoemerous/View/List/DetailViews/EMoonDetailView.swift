@@ -20,9 +20,6 @@ struct EMoonDetailView: View {
         return (ra, dec, fraction)
     }
 
-    /// Cool moonlight tint — same colour the old detail view used.
-    private let accent = Color(red: 0.75, green: 0.82, blue: 1.0)
-
     /// Civil-twilight anchors for the current observation date +
     /// observer latitude. Moon visibility is the inverse of sun
     /// visibility, so the moon gradient uses the SAME anchors — peak
@@ -55,14 +52,10 @@ struct EMoonDetailView: View {
         VStack(spacing: 0) {
             DetailHeader(
                 title:         Strings.Bodies.moon,
-                subtitle:      String(format: "%.0f%% illuminated", moonData.fraction * 100),
-                accent:        accent,
+                subtitle:      phaseName,
+                accent:        .gray,
                 icon:          {
-                    POILabelView(
-                        category: .moon,
-                        glyph: .sfSymbol(phaseSymbol(for: phaseName)),
-                        text: ""
-                    )
+                    Image(systemName: phaseSymbol(for: phaseName))
                 },
                 leadingSymbol: .share,
                 onLeading:     {},
@@ -76,128 +69,24 @@ struct EMoonDetailView: View {
             // compute date-accurate moonrise / moonset ourselves.
             if !collapsed {
                 DayCapsule(
-                    tint:      accent,
+                    tint:      .gray,
                     knobGlyph: .symbol(.moonFill),
                     knobDate:  Bindable(state).observationDate
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                HStack(spacing: 8) {
-                    VStack(spacing: 0) {
-                        DetailTile(icon:  "ruler",
-                                   value: "~390 Mm")
-                        DetailTile(icon:  "circle.dashed",
-                                   value: "3,474 km")
-                    }
-                    
-                    VStack(spacing: 0) {
-                        DetailTile(icon:  phaseSymbol(for: phaseName),
-                                   value: phaseName)
-                        
-                        DetailTile(icon:  "clock",
-                                   value: "27.3 d")
-                    }
-                }
-                .overlay {
-                    Rectangle()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 1)
-                    
-                    Rectangle()
-                        .frame(maxHeight: .infinity)
-                        .frame(width: 1)
-                }
+                
+                DetailHScrollView(stats: [
+                    .init(value: "~390 Mm", statType: .distance),
+                    .init(value: "3474 km", statType: .diameter),
+                    .init(value: "27.3 d",  statType: .period),
+                ])
                 .padding(.top, 16)
-                .padding(.horizontal, 16)
+                
             }
             Spacer(minLength: 0)
         }
     }
-
-    // MARK: Roster
-
-    private var rosterHeight: CGFloat { 100 }
-
-    private var roster: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                eventCards
-                physicalCards
-                coordCards
-            }
-            .padding(.horizontal, 16)
-        }
-        .frame(height: rosterHeight)
-    }
-
-    // MARK: Card groups
-
-    /// Moonrise + moonset have moved onto the DayCapsule. Phase +
-    /// illumination remain as cards because they're not points in
-    /// time — phase is a state of being and illumination is a
-    /// percentage, neither maps onto a 24h timeline.
-    @ViewBuilder
-    private var eventCards: some View {
-        card(icon: phaseSymbol(for: phaseName), accentTinted: true,
-             value: phaseName, label: Strings.BodyDetail.moonPhase)
-        card(icon: "circle.lefthalf.filled",    accentTinted: true,
-             value: String(format: "%.0f%%", moonData.fraction * 100),
-             label: Strings.BodyDetail.illumination)
-    }
-
-    private var physicalCards: some View {
-        Group {
-            card(icon: "ruler",         accentTinted: false, value: "~384k km", label: Strings.BodyDetail.distance)
-            card(icon: "circle.dashed", accentTinted: false, value: "3,474 km", label: Strings.BodyDetail.diameter)
-            card(icon: "clock",         accentTinted: false, value: "27.3 d",   label: Strings.BodyDetail.period)
-        }
-    }
-
-    private var coordCards: some View {
-        Group {
-            card(icon: "arrow.left.arrow.right", accentTinted: false,
-                 value: raString,  label: String(localized: "RA"))
-            card(icon: "arrow.up.arrow.down", accentTinted: false,
-                 value: decString, label: String(localized: "Dec"))
-        }
-    }
-
-    // MARK: Card
-
-    /// Same fixed-slot card shape as the sun detail / constellation
-    /// roster — 110pt wide, 100pt tall row, icon 24 / value 22 /
-    /// label 14 slot heights. Kept private here rather than shared
-    /// because each detail view has slightly different layout
-    /// concerns and a generic Card<View> ends up trickier than two
-    /// inline copies.
-    private func card(icon: String, accentTinted: Bool, value: String, label: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(accentTinted ? accent : .secondary)
-                .frame(height: 24)
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .monospacedDigit()
-                .frame(height: 22)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(0.5)
-                .lineLimit(1)
-                .frame(height: 14)
-        }
-        .frame(width: 110)
-        .frame(maxHeight: .infinity)
-        .padding(.vertical, 14)
-        .background(Color(.tertiarySystemFill),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-
     // MARK: Helpers
 
     /// SF Symbol for the eight Moon phases — the canonical

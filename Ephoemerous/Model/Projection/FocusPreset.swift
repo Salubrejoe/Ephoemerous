@@ -169,10 +169,11 @@ extension EAppState {
     /// up). Assumes the observer is already at the device location — the
     /// toggle / auto-engage callers gate that (and prompt) themselves.
     func engageCompassMode() {
+        // SkyLab owns the camera; just flip the flag — the heading drives
+        // the rotation. The old AR framing (compassFraming + animateTo)
+        // moved the production camera the SkyLab ignores, so it's dropped.
         _rotationTransition = nil
         compassMode = true
-        let f = compassFraming
-        animateTo(scale: f.scale, offset: f.offset)
     }
 
     /// Leave heading-up mode: freeze the live heading into `canvasRotation`
@@ -217,12 +218,12 @@ extension EAppState {
     /// `canvasRotation`) — otherwise it would snap. Also zooms back to the
     /// default view when it was a heading-up exit.
     func resetRotationToNorth() {
-        let current    = renderedRotation
-        let wasCompass = compassMode
+        let current = renderedRotation
         compassMode = false
         canvasRotation = current
         animateRotation(to: .zero)
-        if wasCompass { resetView() }
+        // (resetView dropped — it zoomed the production camera the SkyLab
+        //  ignores; the rose's job here is purely the spin to north.)
     }
 }
 

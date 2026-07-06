@@ -28,7 +28,7 @@ struct CompassModeButton: View {
                 state.toggleCompassMode()
             } label: {
                 Image(systemName: on ? "location.north.line.fill" : "location.north.line")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline.weight(.semibold))
                     // Lit orange (matching the rose's north tip) while
                     // active; muted when off.
                     .frame(width: faceSize, height: faceSize)

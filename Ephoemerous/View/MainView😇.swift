@@ -46,7 +46,7 @@ struct MainView😇: View {
     /// Detail place-card detent — pinned so the sheet opens at the third
     /// (not the smallest member of the set) and can fold to a header-only
     /// stop, Apple-Maps style. Mirrors production MainView.
-    @State private var detailDetent: PresentationDetent = .fraction(1.0 / 3.5)
+    @State private var detailDetent: PresentationDetent = .fraction(1.0 / 4.0)
     private let detailHeaderDetent: PresentationDetent = .height(70)
 
     var body: some View {

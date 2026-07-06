@@ -79,7 +79,7 @@ struct DayCapsule: View {
     /// One bar per hour.
     private var hourCount: Int     { 24 }
     private var barWidth:  CGFloat { 3 }
-    private var barHeight: CGFloat { 22 }
+    private var barHeight: CGFloat { 18 }
 
     /// A numeral under every Nth hour bar — a ruler scale so the knob's
     /// position reads as a clock time at a glance.
@@ -145,7 +145,7 @@ struct DayCapsule: View {
                 if let glyph = knobGlyph {
                     knobView(for: glyph)
                         .frame(width: knobDiameter, height: knobDiameter)
-                        .glassEffect(.clear.interactive(), in: .circle)
+                        .glassEffect(.regular.interactive(), in: .circle)
                         .position(
                             x: knobX(width: geo.size.width),
                             y: trackY

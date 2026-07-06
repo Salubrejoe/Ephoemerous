@@ -81,7 +81,7 @@ extension EArtist {
                 gradientBottom:  bottom,
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
-                textColor:       .primary,
+                textColor:       top,
                 badgeSize:       11,
                 symbolPointSize: 6,
                 badgeCorners:    4,    // heptagon
@@ -125,11 +125,11 @@ extension EArtist {
             // gives us a natural light → deep ramp for the gradient.
             let g = star.spectralClass.badgeGradient
             return POICategoryStyle(
-                gradientTop:     g.bottom,
-                gradientBottom:  g.top,
+                gradientTop:     .bodySunBottom,
+                gradientBottom:  .bodySunTop,
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
-                textColor:       .primary,
+                textColor:       g.top,
                 badgeSize:       12,
                 symbolPointSize: 6,
                 badgeCorners:    5,    // pentagon — star
@@ -156,11 +156,11 @@ extension EArtist {
             let tier = namedStarTier(magnitude: star.magnitude)
             let bump = Double(tier) * namedStarTierStep
             return POICategoryStyle(
-                gradientTop:     g.bottom,
-                gradientBottom:  g.top,
+                gradientTop:     .bodySunBottom,
+                gradientBottom:  .bodySunTop,
                 border:          .systemBackground,
                 symbolColor:     .systemBackground,
-                textColor:       .primary,
+                textColor:       g.top,
                 badgeSize:       12,
                 symbolPointSize: 6,
                 badgeCorners:    5,    // pentagon — star

@@ -71,8 +71,8 @@ struct CartographyLabels: View, Equatable {
             let phi = latitude.radians
             let dec = sunDeclination
             let bands: [Band] = [
-                .init(altitude: .degrees(  0), rising: String(localized: "sunrise"),
-                                               setting: String(localized: "sunset")),
+//                .init(altitude: .degrees(  0), rising: String(localized: "sunrise"),
+//                                               setting: String(localized: "sunset")),
                 .init(altitude: .degrees( -6), rising: String(localized: "civil"),
                                                setting: String(localized: "civil")),
                 .init(altitude: .degrees(-12), rising: String(localized: "nautical"),

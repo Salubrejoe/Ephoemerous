@@ -48,13 +48,7 @@ struct ESunDetailView: View {
                 onLeading:     {},
                 onDismiss:     { state.dismissDetail() }
             )
-            // No event dots — `WeatherKit` only returns a ~10-day
-            // daily forecast, so out-of-range observation dates would
-            // either return nothing (dots disappear) or hold the last
-            // fetched day's events (dots stuck on "today"). The
-            // gradient alone is the time-of-day cue; the knob is the
-            // actual scrubber. Re-add `events: dayEvents` here when
-            // we compute date-accurate sun events ourselves.
+            
             if !collapsed {
                 DayCapsule(
                     tint:      accent,
@@ -63,104 +57,17 @@ struct ESunDetailView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                roster
+                
+                DetailHScrollView(stats: [
+                    .init(value: raString,  statType: .rightAscenscion),
+                    .init(value: decString, statType: .declination),
+                    .init(value: "1 AU",    statType: .distance),
+                    .init(value: "-26.7",   statType: .magnitude),
+                ])
                     .padding(.top, 16)
-                    .padding(.horizontal, 16)
             }
             Spacer(minLength: 0)
         }
-    }
-
-    // MARK: Roster
-
-    /// Same 100-pt fixed row height as the constellation roster +
-    /// star detail's stats grid — keeps the detail family in rhythm.
-    private var rosterHeight: CGFloat { 100 }
-
-    private var roster: some View {
-        HStack(spacing: 8) {
-            VStack(spacing: 0) {
-                DetailTile(icon:  "ruler",
-                           value: "1 AU")
-                DetailTile(icon:  "eyes",
-                           value: "-26.7")
-            }
-            
-            VStack(spacing: 0) {
-                DetailTile(icon:  "arrow.left.arrow.right",
-                           value: raString)
-                
-                DetailTile(icon:  "arrow.up.arrow.down",
-                           value: decString)
-            }
-        }
-        .overlay {
-            Rectangle()
-                .frame(maxWidth: .infinity)
-                .frame(height: 1)
-            
-            Rectangle()
-                .frame(maxHeight: .infinity)
-                .frame(width: 1)
-        }
-    }
-
-    // MARK: Card groups
-
-    // Event cards are gone — the day's events are now on the
-    // DayCapsule's gradient. Only physical + coordinate cards
-    // remain in the horizontal roster.
-
-    private var physicalCards: some View {
-        Group {
-            card(icon: "sparkles", accentTinted: false, value: "-26.7",   label: Strings.BodyDetail.magnitude)
-            card(icon: "ruler",    accentTinted: false, value: "1.0 AU",  label: Strings.BodyDetail.distance)
-        }
-    }
-
-    private var coordCards: some View {
-        Group {
-            card(icon: "arrow.left.arrow.right", accentTinted: false,
-                 value: raString,  label: String(localized: "RA"))
-            card(icon: "arrow.up.arrow.down", accentTinted: false,
-                 value: decString, label: String(localized: "Dec"))
-        }
-    }
-
-    // MARK: Card
-
-    /// Same card shape as `EConstellationDetailView.StarCard` —
-    /// fixed slot heights (icon 24, value 22, label 14), 110pt
-    /// width, tertiary-fill rounded rect. Inlined here rather than
-    /// shared because the moon detail will want a different default
-    /// icon size for its phase glyph and it's simpler to keep two
-    /// near-identical structs than fight a generic over it.
-    private func card(icon: String, accentTinted: Bool, value: String, label: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(accentTinted ? accent : .secondary)
-                .frame(height: 24)
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .monospacedDigit()
-                .frame(height: 22)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(0.5)
-                .lineLimit(1)
-                .frame(height: 14)
-        }
-        .frame(width: 110)
-        .frame(maxHeight: .infinity)
-        .padding(.vertical, 14)
-        .background(Color(.tertiarySystemFill),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     // MARK: Coord formatting
@@ -189,3 +96,5 @@ struct ESunDetailView: View {
     }
     .environment(EAppState())
 }
+
+

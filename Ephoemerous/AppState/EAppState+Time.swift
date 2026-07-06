@@ -88,7 +88,8 @@ extension EAppState {
         // cross-fade otherwise.
         presentSceneEditor {
             withAnimation(.easeInOut(duration: 0.25)) {
-                self.resetView()
+                // (resetView dropped — it reframed the production camera the
+                //  SkyLab ignores.)
                 self.isShowingLocationPicker = false
                 self.isShowingDatePicker     = true
             }

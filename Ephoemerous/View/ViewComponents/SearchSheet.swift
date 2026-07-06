@@ -66,7 +66,7 @@ struct SearchSheet: View {
                 HStack {
                     Image(symbol: .heartFill)
                         .foregroundStyle(.pink)
-                    Text("REMEMBERED")
+                    Text(String(localized: "REMEMBERED"))
                 }
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -78,7 +78,7 @@ struct SearchSheet: View {
                 HStack {
                     Image(symbol: .clockFill)
                         .foregroundStyle(.blue)
-                    Text("RECENTS")
+                    Text(String(localized: "RECENTS"))
                 }
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -125,7 +125,7 @@ struct SearchSheet: View {
             Button("Cancel", role: .cancel) { }
             Button("Switch to Here") { state.confirmReturnHomeAndEngageCompass() }
         } message: {
-            Text("Compass mode orients the sky from where you're standing. Move the map back to your location?")
+            Text(String(localized: "Compass mode orients the sky from where you're standing. Move the map back to your location?"))
         }
     }
 
@@ -136,7 +136,7 @@ struct SearchSheet: View {
     private var searchHeader: some View {
         HStack(spacing: 8) {
             Image(symbol: .search)
-            TextField("Search the sky…", text: $searchText)
+            TextField(String(localized: "Search, remember..."), text: $searchText)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)

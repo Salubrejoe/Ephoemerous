@@ -122,12 +122,9 @@ struct LocationPickerPanel: View {
                 .lineLimit(1)
             Spacer()
             
-            Button { state.isShowingLocationPicker = false } label: {
-                Image(symbol: .xmark)
-                    .padding(8)
-            }
-            .buttonStyle(.plain)
-            .glassEffect(.clear.interactive(), in: .circle)
+            CircleIconButton(symbol: .xmark, action: {
+                state.isShowingLocationPicker = false
+            })
             .frame(width: 100, alignment: .trailing)
         }
     }

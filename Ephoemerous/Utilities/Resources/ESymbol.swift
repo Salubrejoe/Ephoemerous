@@ -39,10 +39,20 @@ enum ESymbol: String, CaseIterable {
     case entityFallback   = "sparkles"
 
     // Longitude-bucketed globes — see EArtist+UserLocation
-    case globeEuropeAfrica = "globe.europe.africa.fill"
-    case globeSouthAsia    = "globe.central.south.asia.fill"
+    case globeEuropeAfrica  = "globe.europe.africa.fill"
+    case globeSouthAsia     = "globe.central.south.asia.fill"
     case globeAsiaAustralia = "globe.asia.australia.fill"
-    case globeAmericas     = "globe.americas.fill"
+    case globeAmericas      = "globe.americas.fill"
+    
+    
+    // Stats
+    case rightAscension = "arrow.left.arrow.right"
+    case declination    = "arrow.up.arrow.down"
+    case distance       = "ruler"
+    case magnitude      = "sparkle"
+    case hrClass        = "thermometer.medium"
+    case diameter       = "circle.dashed"
+    case period         = "calendar"
 }
 
 // MARK: - Image(symbol: ESymbol)

@@ -63,7 +63,8 @@ extension EAppState {
         // single coherent curve to every state change in the closure.
         presentSceneEditor {
             withAnimation(.easeInOut(duration: 0.25)) {
-                self.resetView()
+                // (resetView dropped — it reframed the production camera the
+                //  SkyLab ignores.)
                 self.isShowingDatePicker     = false
                 self.isShowingLocationPicker = true
             }

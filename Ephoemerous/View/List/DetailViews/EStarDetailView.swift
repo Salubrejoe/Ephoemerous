@@ -69,12 +69,19 @@ struct EStarDetailView: View {
                 // myth is inherited from its parent constellation, and
                 // tapping the book / tagline routes through
                 // `state.openMyth(_:)` for the half-detent myth sheet.
-                RememberButton(obj: .star(star))
+                DetailActionRow(obj: .star(star))
                 .padding(.horizontal, 16)
                 .padding(.bottom,     12)
-                statsRow
-                    .padding(.top, 16)
-                    .padding(.horizontal, 16)
+                
+                
+                DetailHScrollView(stats: [
+                    .init(value: distanceText,                statType: .distance),
+                    .init(value: star.spectralClass.rawValue, statType: .hrClass),
+                    .init(value: magnitudeText,               statType: .magnitude),
+                    .init(value: raText,                      statType: .rightAscenscion),
+                    .init(value: decText,                     statType: .declination),
+                ])
+                .padding(.top, 16)
             }
             Spacer(minLength: 0)
         }
@@ -85,14 +92,6 @@ struct EStarDetailView: View {
         // own bar back unless they suppress it themselves.
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
-            // Pan the canvas to this star whether we arrived here via
-            // canvas-tap (focus already panned — this is a harmless
-            // re-pan to the same point) or via a push from a
-            // constellation card (only trigger). Also captures the
-            // star as a recently-viewed item regardless of entry path
-            // (the navigationDestination wrapper used to do this for
-            // the constellation-push case only).
-            state.panTo(.star(star))
             // Universal Recents entry — covers the push-from-constellation
             // path that doesn't go through `focus(on:)`.
             state.recordViewed(.star(star))
@@ -145,6 +144,10 @@ struct EStarDetailView: View {
     private var raText: String {
         String(format: "%.1f", star.rightAscension.degrees)
     }
+    
+    private var decText: String {
+        String(format: "%.1f", star.declination.degrees)
+    }
 
     // MARK: Glow
 
@@ -169,28 +172,4 @@ struct EStarDetailView: View {
         EStarDetailView(star: EStar.mockStars[0])
     }
     .environment(EAppState())
-}
-
-
-struct DetailTile: View {
-    let icon: String
-    let value: String
-    var body: some View {
-        HStack(spacing: 6) {
-            // Fixed-height slot for the icon so the value + label
-            // rows below land at the same baseline across all three
-            // tiles regardless of the SF Symbol's intrinsic height
-            // (thermometer tall, ruler short, sparkles medium).
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 44)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-    }
 }

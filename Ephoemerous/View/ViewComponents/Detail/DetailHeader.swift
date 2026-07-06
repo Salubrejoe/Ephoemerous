@@ -70,7 +70,6 @@ struct DetailHeader<Icon: View>: View {
             VStack(spacing: 4) {
                 Text(title)
                     .font(.title3.weight(.semibold))
-                    .fontDesign(.serif)            // sky-object name → serif
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .foregroundStyle(.primary)
@@ -78,7 +77,7 @@ struct DetailHeader<Icon: View>: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                if !collapsed {
+                if !collapsed && title == Strings.Bodies.moon {
                     icon
                         .font(.subheadline)
                         .foregroundStyle(accent)
@@ -114,7 +113,7 @@ struct DetailHeader<Icon: View>: View {
 // centred SF Symbol. Matches the canvas-toolbar buttons (Image-
 // magnitudeIcon, etc.) so the header reads as part of the same
 // chrome system.
-private struct CircleIconButton: View {
+struct CircleIconButton: View {
     let symbol: LoreSymbol
     let action: () -> Void
 
@@ -123,7 +122,7 @@ private struct CircleIconButton: View {
             Image(symbol: symbol)
                 .offset(y: symbol == .share ? -2 : 0)
         }
-        .frame(width: 36, height: 36)
+        .frame(width: 44, height: 44)
         .contentShape(.circle)
         .buttonStyle(.plain)
         .glassEffect(.clear.interactive(), in: .circle)

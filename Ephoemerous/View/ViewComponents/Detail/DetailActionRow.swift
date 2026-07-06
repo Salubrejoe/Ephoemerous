@@ -39,8 +39,6 @@ import LoreKit
 
 struct DetailActionRow: View {
     let obj:         ESkyObject
-    let myth:        POIConstellationMyth
-    let onLearnMyth: () -> Void
 
     @Environment(EAppState.self) var state
 
@@ -72,7 +70,7 @@ struct DetailActionRow: View {
     @Namespace private var morphNS
 
     private var remembered: Bool { state.isFavourite(obj) }
-    private var accent:     Color { EArtist.shared.constellationMythGradient(myth).top }
+//    private var accent:     Color { EArtist.shared.constellationMythGradient(myth).top }
 
     /// Fixed row height for every pill in every state. Widths morph
     /// between circular (== height) and "fills the rest of the row";
@@ -83,25 +81,11 @@ struct DetailActionRow: View {
     // MARK: Body
 
     var body: some View {
-        Group {
-            if myth == .none {
-                RememberButton(obj: obj)
-            } else {
-                animatedRow
-            }
-        }
-    }
-
-    private var animatedRow: some View {
         HStack(spacing: 8) {
             if remembered {
-//                learnMythExpanded
-//                    .matchedGeometryEffect(id: "learnMyth", in: morphNS)
                 rememberHeart
                     .matchedGeometryEffect(id: "remember",  in: morphNS)
             } else {
-//                learnMythIcon
-//                    .matchedGeometryEffect(id: "learnMyth", in: morphNS)
                 rememberPrimary
                     .matchedGeometryEffect(id: "remember",  in: morphNS)
             }
@@ -133,49 +117,7 @@ struct DetailActionRow: View {
         }
     }
 
-    // MARK: Learn the Myth — State A (small icon)
-
-    private var learnMythIcon: some View {
-        Button(action: onLearnMyth) {
-            Image(symbol: .book)
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(accent)
-                .frame(width: pillHeight, height: pillHeight)
-                .background(.regularMaterial,
-                            in: Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .transition(.blurReplace.combined(with: .opacity))
-    }
-
-    // MARK: Learn the Myth — State B (expanded with tagline)
-
-    private var learnMythExpanded: some View {
-        Button(action: onLearnMyth) {
-            HStack(spacing: 8) {
-                Image(symbol: .bookFill)
-                    .font(.callout.weight(.semibold))
-                // The cycle's tagline doubles as the LearnMyth
-                // label — pulled from `POIConstellationMyth.tagline`
-                // so it can never drift from the EMythDetailView
-                // subtitle. Tight `minimumScaleFactor` so the
-                // longest taglines still fit a one-line row
-                // alongside the heart on small phones.
-                Text(myth.tagline)
-                    .font(.callout.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .transition(.move(edge: .leading))
-            }
-            .foregroundStyle(accent)
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.regularMaterial,
-                        in: Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .transition(.blurReplace.combined(with: .opacity))
-    }
+    
 
     // MARK: Remember — State A (prominent capsule, primary)
 
@@ -184,11 +126,12 @@ struct DetailActionRow: View {
             state.toggleFavourite(obj)
         } label: {
             Text(String(localized: "Remember"))
+                .foregroundStyle(.white)
                 .font(.callout.weight(.semibold))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(.capsule)
+                .glassEffect(.clear.tint(.accentColor).interactive(), in: .capsule)
         }
-        .buttonStyle(.glassProminent)
-        .tint(.accentColor)
         .transition(.blurReplace.combined(with: .opacity))
     }
 
@@ -209,8 +152,7 @@ struct DetailActionRow: View {
                               options: .nonRepeating,
                               value:   wiggleTrigger)
                 .frame(width: pillHeight, height: pillHeight)
-                .background(.regularMaterial,
-                            in: Capsule(style: .continuous))
+                .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .transition(.blurReplace.combined(with: .opacity))
@@ -220,11 +162,7 @@ struct DetailActionRow: View {
 // MARK: - Preview
 
 #Preview("Orion star") {
-    DetailActionRow(
-        obj:         .star(EStar.mockStars[0]),
-        myth:        .orion,
-        onLearnMyth: {}
-    )
+    DetailActionRow(obj: .star(EStar.mockStars[0]))
     .padding()
     .environment(EAppState())
 }

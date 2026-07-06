@@ -566,6 +566,17 @@
         }
       }
     },
+    "Compass mode orients the sky from where you're standing. Move the map back to your location?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La bussola si riferisce alla tua posizione per orientare la mappa. Vuoi tornare alla tua posizione?"
+          }
+        }
+      }
+    },
     "Confirm" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1282,6 +1293,9 @@
           }
         }
       }
+    },
+    "Key 1" : {
+      "extractionState" : "manual"
     },
     "Lacerta" : {
       "extractionState" : "manual",
@@ -2159,7 +2173,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ephoemerous"
+            "value" : "Cerca, ricorda,.."
           }
         }
       }

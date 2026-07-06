@@ -124,12 +124,10 @@ struct DatePickerPanel: View {
                 
             Spacer()
             
-            Button { state.isShowingDatePicker = false } label: {
-                Image(symbol: .xmark)
-                    .padding(8)
+            
+            CircleIconButton(symbol: .xmark) {
+                state.isShowingDatePicker = false
             }
-            .buttonStyle(.plain)
-            .glassEffect(.clear.interactive(), in: .circle)
             .frame(width: 100, alignment: .trailing)
         }
     }

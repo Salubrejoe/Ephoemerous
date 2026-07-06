@@ -63,14 +63,14 @@ extension EAppState {
                 guard let self, self._focusEpoch == epoch else { return }
                 self._sheetSwapping    = false
                 self.detailDestination = obj
-                self.panTo(obj)
             }
             return
         }
 
         detailDestination = obj
-        panTo(obj)
     }
+    // (panTo dropped — the SkyLab comfort-pans off `detailDestination` via
+    //  onChange; panTo drove the production camera the SkyLab ignores.)
 
     /// Pan the camera to `obj` WITHOUT changing the detail
     /// destination — used when an inner navigation (e.g. pushing

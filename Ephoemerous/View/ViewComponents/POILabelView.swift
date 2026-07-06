@@ -76,7 +76,7 @@ struct POILabelView: View {
                     // flat label. Blooms in with opacity + blur as the
                     // zoom crosses the tier — cheap on a few native labels.
                     OutlinedText(text:      text,
-                                 fill:      style.gradientTop,
+                                 fill:      style.textColor,
                                  stroke:    style.border,
                                  lineWidth: 2.5,
                                  font:      Self.nameFont)
@@ -142,7 +142,7 @@ struct POILabelView: View {
         )
         // Soft drop shadow for lift (one view → cheap, unlike the Canvas
         // per-glyph blur).
-        .shadow(color: .black.opacity(0.35), radius: 2.5, y: 0.5)
+        .shadow(color: style.gradientTop.opacity(0.35), radius: 2.5, y: 0.5)
     }
     
     @ViewBuilder

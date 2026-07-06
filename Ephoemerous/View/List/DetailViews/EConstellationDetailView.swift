@@ -88,17 +88,8 @@ struct EConstellationDetailView: View {
                 // fold, the origin story flows below it.
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Morphing action row — see `DetailActionRow.swift`.
-                        // Default: small "book" circle + wide "Remember" pill.
-                        // Remembered: wide tagline pill + small heart circle.
-                        // Tapping the book / tagline routes through
-                        // `state.openMyth(_:)`, which dismisses this detail
-                        // sheet and presents the half-detent myth sheet.
-                        DetailActionRow(
-                            obj:         .constellation(constellation),
-                            myth:        myth,
-                            onLearnMyth: { state.openMyth(myth) }
-                        )
+                        
+                        DetailActionRow(obj: .constellation(constellation))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         roster
@@ -112,14 +103,6 @@ struct EConstellationDetailView: View {
                 Spacer(minLength: 0)
             }
         }
-        // The constellation is the *underlying* detail when a star
-        // card is pushed onto the stack. When the user pops back,
-        // this view reappears — `.onAppear` re-pans the canvas to
-        // the constellation centroid so the underlying map matches
-        // the active card again. Fires once on initial open too,
-        // harmlessly re-panning to where `focus(on:)` already put
-        // the camera.
-        .onAppear { state.panTo(.constellation(constellation)) }
         .navigationDestination(for: EStar.self) { s in
             // Pushed from the constellation roster — there IS a
             // sensible parent (this constellation) to pop back to,
