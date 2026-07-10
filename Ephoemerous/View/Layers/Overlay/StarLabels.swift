@@ -29,7 +29,6 @@ struct StarLabels: View {
         ZStack {
             ForEach(marks) { mark in
                 POILabelView(category:    category(mark.star),
-                             glyph:       .sfSymbol("star.fill"),
                              text:        mark.star.displayName,
                              labelStyle:    .star,
                              badgeReveal: mark.badgeReveal,

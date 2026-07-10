@@ -53,22 +53,18 @@ struct SolarSystemLabels: View {
                 marker(for: .planet(mark.planet),
                        at: mark.sc,
                        category: .planet(mark.planet),
-                       glyph:    .unicode(artist.planetGlyph(mark.planet)),
                        text:     mark.planet.displayName)
             }
-            
+
             marker(for: .sun,
                    at: sunScreen,
                    category: .sun,
-                   glyph:    .symbol(.sunMaxFill),
                    text:     Strings.Bodies.sun,
                    labelStyle: .star)
 
             marker(for: .moon,
                    at: moonScreen,
                    category: .moon,
-                   glyph:    .symbol(artist.moonPhaseSymbol(
-                                fraction: EMoonPosition.illuminatedFraction(for: date))),
                    text:     Strings.Bodies.moon)
 
         }
@@ -81,14 +77,12 @@ struct SolarSystemLabels: View {
     private func marker(for object: ESkyObject,
                         at sc: CGPoint?,
                         category: POICategory,
-                        glyph: POIGlyph,
                         text: String,
                         labelStyle: POILabelView.LabelStyle = .planetoids) -> some View {
         if let sc, object != selected {
             let style = artist.poiStyle(for: category)
             if scale >= style.badgeIn {        // badge tier gate (Sun/Moon = 0)
                 POILabelView(category:    category,
-                             glyph:       glyph,
                              text:        text,
                              labelStyle: labelStyle,
                              badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),

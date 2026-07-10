@@ -20,16 +20,14 @@ import LoreKit
 //     `gradientBottom` rim (a little glowing orb)
 //   • casing ring in `border` (the light outline that reads against a
 //     busy sky) + a soft drop shadow for lift
-//   • the symbol glyph
 //   • the name, cased (8-way outline) in the gradient's OUTER colour
 struct POILabelView: View {
-    
+
     enum LabelStyle {
         case star, planetoids
     }
-    
+
     let category: POICategory
-    let glyph:    POIGlyph
     let text:     String
     
     let labelStyle: LabelStyle
@@ -49,14 +47,12 @@ struct POILabelView: View {
     
     init(
         category: POICategory,
-        glyph: POIGlyph,
         text: String,
         labelStyle: LabelStyle = .planetoids,
         badgeReveal: Double = 1,
         nameReveal: Double = 1
     ) {
         self.category = category
-        self.glyph = glyph
         self.text = text
         self.labelStyle = labelStyle
         self.badgeReveal = badgeReveal
@@ -129,9 +125,6 @@ struct POILabelView: View {
                         style.gradientBottom
                     ], startPoint: .bottom, endPoint: .top)
                 )
-//            if labelStyle == .planetoids {
-//                glyphView
-//            }
         }
         .frame(width: d, height: d)
         // Casing ring — the light outline doing the legibility work.
@@ -143,18 +136,6 @@ struct POILabelView: View {
         // Soft drop shadow for lift (one view → cheap, unlike the Canvas
         // per-glyph blur).
         .shadow(color: style.gradientTop.opacity(0.35), radius: 2.5, y: 0.5)
-    }
-    
-    @ViewBuilder
-    private var glyphView: some View {
-        Group {
-            switch glyph {
-            case .sfSymbol(let name): Image(systemName: name)
-            case .unicode(let str):   Text(str)
-            }
-        }
-        .font(.footnote.weight(.semibold))
-        .foregroundStyle(style.symbolColor)
     }
 }
 
@@ -235,7 +216,6 @@ struct OutlinedText: View {
     ZStack {
         Color.black
         POILabelView(category: .sun,
-                     glyph:    .sfSymbol("sun.max.fill"),
                      text:     "Sun")
     }
     .ignoresSafeArea()

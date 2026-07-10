@@ -202,37 +202,9 @@ extension EArtist {
             )
         )
 
-        // Glyph inside the badge — drawn through a scaled context so it
-        // grows with the badge (it carries no shadow/border, so scaling
-        // the context here is harmless). Wrapping `Image(systemName:)`
-        // in `Text` routes both branches through the same
-        // `ctx.draw(Text, at:, anchor:)` overload (Image alone doesn't
-        // accept `.font` / `.foregroundStyle`).
-        var glyphCtx = dc.ctx
-        glyphCtx.opacity *= reveal
-        glyphCtx.translateBy(x: badgeCenter.x, y: badgeCenter.y)
-        glyphCtx.scaleBy(x: badgeScale, y: badgeScale)
-        glyphCtx.translateBy(x: -badgeCenter.x, y: -badgeCenter.y)
-
-        let glyphText: Text
-        let glyphSize: CGFloat
-        switch glyph {
-        case .sfSymbol(let name):
-            glyphText = Text(Image(systemName: name))
-            glyphSize = style.symbolPointSize
-        case .unicode(let str):
-            // Astronomical glyphs render a touch smaller than SF
-            // Symbols at the same point size, so bump them slightly.
-            glyphText = Text(str)
-            glyphSize = style.symbolPointSize + 2
-        }
-//        glyphCtx.draw(
-//            glyphText
-//                .font(.system(size: glyphSize, weight: .semibold))
-//                .foregroundStyle(style.symbolColor),
-//            at:     badgeCenter,
-//            anchor: .center
-//        )
+        // Glyph rendering retired — badges are glyph-free now, so the
+        // inner symbol draw (and its `symbolPointSize` / `symbolColor`
+        // style knobs) is gone. The badge is just the gradient squircle.
 
         // Precise-location dot left under a promoted pin — the tail
         // points at it, and it marks the exact spot the badge lifted

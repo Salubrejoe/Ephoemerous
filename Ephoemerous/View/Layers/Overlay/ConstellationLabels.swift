@@ -34,10 +34,9 @@ struct ConstellationLabels: View {
         return UIFont(descriptor: d, size: base.pointSize)
     }()
 
-    /// Constellation text tier (shared by all kinds — kind only changes
-    /// the gradient, not the thresholds).
+    /// Constellation text tier.
     private static let textIn: Double =
-        EArtist.shared.poiStyle(for: .constellation(.myth(.none))).textIn
+        EArtist.shared.poiStyle(for: .constellation).textIn
 
     private static let blur: CGFloat = 4
 

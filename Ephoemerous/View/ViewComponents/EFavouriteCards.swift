@@ -6,7 +6,7 @@ struct StarCard: View {
 
     var body: some View {
         HStack {
-            POILabelView(category: .followedStar(star), glyph: .sfSymbol(""), text: "", labelStyle: .star)
+            POILabelView(category: .followedStar(star), text: "", labelStyle: .star)
             Text(star.displayName)
                 .fontWeight(.semibold)
                 .minimumScaleFactor(0.4)

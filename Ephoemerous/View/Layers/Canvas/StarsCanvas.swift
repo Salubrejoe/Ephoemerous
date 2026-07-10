@@ -17,12 +17,21 @@ import LoreKit
 struct StarsCanvas: View, Equatable {
     let camera: SkyCamera
     let stars:  [EStar]
+    /// Favourites are represented by their `.followedStar` badge + heart, so
+    /// they're skipped here — otherwise a bright favourite's white field dot,
+    /// riding the parent zoom transform, balloons out from behind its
+    /// constant-size badge mid-pinch. Checked in the (frozen) draw loop, so
+    /// it costs nothing per gesture frame.
+    let favouriteIDs: Set<UUID>
 
     // Skip the redraw unless the committed camera changed. `stars` is a
     // fixed catalogue, so its count is a sufficient (cheap) tiebreak — no
-    // O(n) array compare per gesture frame.
+    // O(n) array compare per gesture frame. `favouriteIDs` is a handful, so
+    // comparing it keeps the field in sync when a star is (un)favourited.
     static func == (l: Self, r: Self) -> Bool {
-        l.camera == r.camera && l.stars.count == r.stars.count
+        l.camera == r.camera
+            && l.stars.count == r.stars.count
+            && l.favouriteIDs == r.favouriteIDs
     }
 
     var body: some View {
@@ -30,6 +39,7 @@ struct StarsCanvas: View, Equatable {
             ctx,
             size in
             for star in stars {
+                guard !favouriteIDs.contains(star.id) else { continue }   // drawn as a badge
                 guard let sc = camera.screen(equatorial: star.equatorialVector) else { continue }
                 guard sc.x > -2,
                       sc.x < size.width  + 2,

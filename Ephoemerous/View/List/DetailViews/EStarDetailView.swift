@@ -34,15 +34,6 @@ struct EStarDetailView: View {
             : "\(letter) · \(star.constellation.localizedName)"
     }
 
-    /// A star inherits its myth from its parent constellation —
-    /// Betelgeuse is "in" the Orion cycle because Orion is. `.none`
-    /// for stars in modern (Lacaille / Bayer / Hevelius)
-    /// constellations; DetailActionRow's `.none` path then renders
-    /// the bare RememberButton instead of the morphing pair.
-    private var myth: POIConstellationMyth {
-        EArtist.shared.constellationMyth(of: star.constellation)
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             DetailHeader(
@@ -52,7 +43,6 @@ struct EStarDetailView: View {
                 icon:                   {
                     POILabelView(
                         category: .followedStar(star),
-                        glyph: .sfSymbol("star.fill"),
                         text: "",
                         labelStyle: .star
                     )
@@ -64,24 +54,21 @@ struct EStarDetailView: View {
                 onDismiss:              { state.dismissDetail() }
             )
             if !collapsed {
-                // Morphing action row — see `DetailActionRow.swift`.
-                // Same pair as the constellation detail; the star's
-                // myth is inherited from its parent constellation, and
-                // tapping the book / tagline routes through
-                // `state.openMyth(_:)` for the half-detent myth sheet.
+                // Morphing Remember row — see `DetailActionRow.swift`.
                 DetailActionRow(obj: .star(star))
                 .padding(.horizontal, 16)
                 .padding(.bottom,     12)
-                
-                
-                DetailHScrollView(stats: [
-                    .init(value: distanceText,                statType: .distance),
-                    .init(value: star.spectralClass.rawValue, statType: .hrClass),
-                    .init(value: magnitudeText,               statType: .magnitude),
-                    .init(value: raText,                      statType: .rightAscenscion),
-                    .init(value: decText,                     statType: .declination),
+
+                DetailStatList(stats: [
+                    .init(label: String(localized: "Designation"),    value: star.name),
+                    .init(label: String(localized: "Constellation"),  value: star.constellation.localizedName),
+                    .init(label: String(localized: "Spectral class"), value: star.spectralClass.rawValue),
+                    .init(label: String(localized: "Magnitude"),      value: magnitudeText),
+                    .init(label: String(localized: "Distance"),       value: distanceText),
+                    .init(label: String(localized: "Right ascension"), value: raText),
+                    .init(label: String(localized: "Declination"),    value: decText),
+                    .init(label: String(localized: "Proper motion"),  value: pmText),
                 ])
-                .padding(.top, 16)
             }
             Spacer(minLength: 0)
         }
@@ -142,11 +129,19 @@ struct EStarDetailView: View {
     }
     
     private var raText: String {
-        String(format: "%.1f", star.rightAscension.degrees)
+        let hours = star.rightAscension.degrees / 15
+        let h = Int(hours)
+        let m = Int((hours - Double(h)) * 60)
+        return String(format: "%dh %02dm", h, m)
     }
-    
+
     private var decText: String {
-        String(format: "%.1f", star.declination.degrees)
+        String(format: "%+.1f°", star.declination.degrees)
+    }
+
+    /// Proper motion in RA / Dec (mas/yr — see `Strings.starDataDetail`).
+    private var pmText: String {
+        String(format: "%+.1f, %+.1f mas/yr", star.pmRA, star.pmDE)
     }
 
     // MARK: Glow

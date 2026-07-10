@@ -59,11 +59,11 @@ struct ENSPlanetDetailView: View {
                 .padding(.top, 12)
                 
                 
-                DetailHScrollView(stats: [
-                    .init(value: facts?.distance ?? "—", statType: .distance),
-                    .init(value: facts?.diameter ?? "—", statType: .diameter),
-                    .init(value: magnitudeText,          statType: .magnitude),
-                    .init(value: facts?.period ?? "—",   statType: .period),
+                DetailStatList(stats: [
+                    .init(label: String(localized: "Distance from Sun"), value: facts?.distance ?? "—"),
+                    .init(label: String(localized: "Diameter"),          value: facts?.diameter ?? "—"),
+                    .init(label: String(localized: "Orbital period"),    value: facts?.period ?? "—"),
+                    .init(label: String(localized: "Apparent magnitude"), value: magnitudeText),
                 ])
                 .padding(.top, 16)
             }

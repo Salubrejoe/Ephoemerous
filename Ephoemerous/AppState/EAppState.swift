@@ -291,15 +291,10 @@ class EAppState {
     /// the pan settles (in advanceCanvasClock). A genuinely different
     /// object (constellation→star push, pop-back) still pans.
     @ObservationIgnored var _panningToID: String? = nil
-    /// Sibling destination for the *myth* sheet — fired by tapping
-    /// "Learn the Myth" on a constellation / star detail. Lives at
-    /// half-detent (vs detailDestination's third) and is mutually
-    /// exclusive with detailDestination — `openMyth(_:)` clears the
-    /// detail before presenting the myth, so only one root sheet
-    /// is on screen at a time.
-    var mythDestination: POIConstellationMyth? = nil
-    /// Monotonic counter bumped on every `focus(on:)` / `openMyth(_:)`
-    /// / `dismissDetail()` / `dismissMyth()` call. The deferred
+    // (mythDestination removed — the myth cycle sheet is retired; each
+    //  constellation shows its own story in EConstellationDetailView.)
+    /// Monotonic counter bumped on every `focus(on:)`
+    /// / `dismissDetail()` call. The deferred
     /// re-presentation in each opener captures the epoch it scheduled
     /// with and aborts if anything else has happened since — so rapid
     /// taps can't race a pending destination assignment back on top

@@ -2,206 +2,156 @@ import SwiftUI
 import LoreKit
 
 // MARK: - POI styling
-// Maps a `POICategory` to its visual `POICategoryStyle` (palette,
-// sizing, zoom thresholds) and holds the badge-level tuning knobs
-// shared across every POI label. Drawing lives in
-// `EArtist+POILabel.swift`.
+// Maps a `POICategory` to its visual `POICategoryStyle` (palette, sizing,
+// dot shape) and holds the badge-level tuning knobs shared across every
+// POI label. The zoom thresholds live in `EArtist+POITierThresholds.swift`;
+// drawing lives in `EArtist+POILabel.swift`.
 extension EArtist {
 
-    /// Visual style for one POI category. Centralised so palette
-    /// tweaks land in one file.
+    /// Visual style for one POI category. Centralised so palette tweaks
+    /// land in one file. Only the fields that vary per category are
+    /// required — `border`, `dotShape` and `dotRadius` carry shared
+    /// defaults.
     struct POICategoryStyle {
-        let gradientTop:     Color
-        let gradientBottom:  Color
-        let border:          Color
-        let symbolColor:     Color
-        let textColor:       Color
-        let badgeSize:       CGFloat
-        let symbolPointSize: CGFloat
-        /// Number of squircle corners — each category carries its
-        /// own polygon so you can tell tracked-object classes apart
-        /// at a glance (constellations square, stars pentagonal,
-        /// sun hex, moon triangular, planets heptagonal).
-        let badgeCorners:    Int
-        /// Shape used for the tier-0 dot marker.
-        let dotShape:        POIDotShape
-        /// Radius of the tier-0 marker (circle radius / squircle
-        /// half-extent).
-        let dotRadius:       CGFloat
-        /// Renderered-scale at which the badge appears (tier 0 → 1).
-        let badgeIn:         Double
-        /// Renderered-scale at which the text appears (tier 1 → 2).
-        let textIn:          Double
+        /// Badge fill — a bright centre (`gradientTop`) fading to a deep
+        /// rim (`gradientBottom`), so the pill reads as a little orb.
+        let gradientTop:    Color
+        let gradientBottom: Color
+        /// Colour of the name label below the badge.
+        let textColor:      Color
+        /// Badge diameter (pt).
+        let badgeSize:      CGFloat
+        /// Squircle corner count — each category carries its own polygon
+        /// so you can tell tracked-object classes apart at a glance
+        /// (stars pentagonal, moon triangular, sun near-circular…).
+        let badgeCorners:   Int
+        /// Tier-0 dot marker — the shape + radius the POI collapses to
+        /// below `badgeIn`. Default is a plain 2.5-pt circle.
+        let dotShape:       POIDotShape
+        let dotRadius:      CGFloat
+        /// Zoom thresholds — see `poiTier(for:)` in
+        /// `EArtist+POITierThresholds.swift`, the one place to tune them.
+        let tier:           POITier
+
+        /// Casing colour shared by every badge — the light outline that
+        /// reads against a busy sky. One source of truth for all categories.
+        var border: Color { .systemBackground }
+        /// Rendered-scale at which the badge appears (tier 0 → 1).
+        var badgeIn: Double { tier.badgeIn }
+        /// Rendered-scale at which the name appears (tier 1 → 2).
+        var textIn:  Double { tier.textIn }
+
+        init(gradientTop:    Color,
+             gradientBottom: Color,
+             textColor:      Color,
+             badgeSize:      CGFloat,
+             badgeCorners:   Int,
+             tier:           POITier,
+             dotShape:       POIDotShape = .circle,
+             dotRadius:      CGFloat     = 2.5) {
+            self.gradientTop    = gradientTop
+            self.gradientBottom = gradientBottom
+            self.textColor      = textColor
+            self.badgeSize      = badgeSize
+            self.badgeCorners   = badgeCorners
+            self.tier           = tier
+            self.dotShape       = dotShape
+            self.dotRadius      = dotRadius
+        }
     }
 
-    /// Apple-Maps-faithful palette. Constellations get purple
-    /// (cultural / info), followed stars get warm gold, every
-    /// solar-system body carries its own tint — sun warm, moon
-    /// cool, each planet matched to its canonical colour.
+    /// Apple-Maps-faithful palette. Constellations get purple (cultural /
+    /// info), followed stars get their spectral tint, every solar-system
+    /// body carries its own colour — sun warm, moon cool, each planet
+    /// matched to its canonical hue.
     func poiStyle(for category: POICategory) -> POICategoryStyle {
-        // Solar-system bodies share thresholds; corners + gradient
-        // vary per body (sun = hex, moon = triangle).
-        func solarStyle(top: Color, bottom: Color, corners: Int) -> POICategoryStyle {
-            POICategoryStyle(
-                gradientTop:     top,
-                gradientBottom:  bottom,
-                border:          .systemBackground,
-                symbolColor:     .systemBackground,
-                textColor:       .primary,
-                badgeSize:       22,
-                symbolPointSize: 11,
-                badgeCorners:    corners,
-                dotShape:        .circle,
-                dotRadius:       2.5,
-                badgeIn:         0,    // always badge — top-priority bodies
-                textIn:          50    // crisp name well below the zoom floor
-            )
-        }
-
-        func moonStyle(top: Color, bottom: Color, corners: Int) -> POICategoryStyle {
-            POICategoryStyle(
-                gradientTop:     top,
-                gradientBottom:  bottom,
-                border:          .systemBackground,
-                symbolColor:     .white,
-                textColor:       .primary,
-                badgeSize:       18,
-                symbolPointSize: 9,
-                badgeCorners:    corners,
-                dotShape:        .circle,
-                dotRadius:       2.5,
-                badgeIn:         0,    // always badge — top-priority bodies
-                textIn:          50    // crisp name well below the zoom floor
-            )
-        }
-
-        func planetStyle(top: Color, bottom: Color) -> POICategoryStyle {
-            POICategoryStyle(
-                gradientTop:     top,
-                gradientBottom:  bottom,
-                border:          .systemBackground,
-                symbolColor:     .systemBackground,
-                textColor:       top,
-                badgeSize:       11,
-                symbolPointSize: 6,
-                badgeCorners:    4,    // heptagon
-                dotShape:        .circle,
-                dotRadius:       2.5,
-                // Above the default scale (90) so a planet reads as a small
-                // tier-0 dot at rest and only blooms into its badge + name
-                // once the user zooms in — Sun/Moon (badgeIn 0) stay the only
-                // labelled bodies on the default view.
-                badgeIn:         160,
-                textIn:          220
-            )
-        }
-
-        // Shared knobs for every constellation kind — only the
-        // gradient differs by kind, and within a kind by dec.
-        func constellationStyle(top: Color, bottom: Color) -> POICategoryStyle {
-            POICategoryStyle(
-                gradientTop:     top,
-                gradientBottom:  bottom,
-                border:          .systemBackground,
-                symbolColor:     .systemBackground,
-                textColor:       .primary,
-                badgeSize:       10,
-                symbolPointSize: 6,
-                badgeCorners:    4,    // rounded square
-                dotShape:        .circle,
-                dotRadius:       1.0,  // smaller — constellations recede at low zoom
-                badgeIn:         130,
-                textIn:          190
-            )
-        }
+        let tier = poiTier(for: category)
 
         switch category {
-        case .constellation(let kind):
-            let g = constellationGradient(kind: kind)
-            return constellationStyle(top: g.top, bottom: g.bottom)
+        case .constellation:
+            // One neutral indigo→purple tint for every constellation (the
+            // myth-colour taxonomy is retired). Recedes fast at low zoom,
+            // so a tiny 1-pt dot.
+            let g = constellationGradient
+            return POICategoryStyle(
+                gradientTop:    g.top,
+                gradientBottom: g.bottom,
+                textColor:      .primary,
+                badgeSize:      10,
+                badgeCorners:   4,          // rounded square
+                tier:           tier,
+                dotRadius:      1.0)
+
         case .followedStar(let star):
-            // Tint the badge to the star's spectral class — O blue,
-            // M red, etc. The two-mode colour pair on EHRClass
-            // gives us a natural light → deep ramp for the gradient.
+            // Tinted to the star's spectral class (O blue … M red) — the
+            // two-mode pair on `EHRClass` gives a light→deep ramp. Dot is a
+            // tiny pentagon so the silhouette already reads as a star.
             let g = star.spectralClass.badgeGradient
             return POICategoryStyle(
-                gradientTop:     .bodySunBottom,
-                gradientBottom:  .bodySunTop,
-                border:          .systemBackground,
-                symbolColor:     .systemBackground,
-                textColor:       g.top,
-                badgeSize:       12,
-                symbolPointSize: 6,
-                badgeCorners:    5,    // pentagon — star
-                dotShape:        .squircle(corners: 5, bulge: poiBadgeBulge),
-                dotRadius:       2.5,
-                badgeIn:         70,
-                textIn:          120
-            )
+                gradientTop:    g.top,
+                gradientBottom: g.bottom,
+                textColor:      g.bottom,
+                badgeSize:      12,
+                badgeCorners:   5,          // pentagon — star
+                tier:           tier,
+                dotShape:       .squircle(corners: 5, bulge: poiBadgeBulge))
+
         case .namedStar(let star):
-            // Same pentagon silhouette + spectral palette as the
-            // followed-star badge so a named star reads as the same
-            // visual species — but the thresholds land much later in
-            // the zoom range, so the dot/badge/text only kick in when
-            // the user is clearly past constellation-name territory.
-            // Selecting one promotes it to `.followedStar` (which has
-            // the early thresholds + favourite heart).
-            //
-            // Brightness cascade: the badge + text reveal scales are
-            // pushed later for dimmer stars (3 tiers), so the brightest
-            // named stars label themselves first. The dot threshold
-            // (`namedStarDotIn`) stays shared, so dimmer stars hold their
-            // dot until their badge catches up — see `EArtist+NamedStars`.
-            let g    = star.spectralClass.badgeGradient
-            let tier = namedStarTier(magnitude: star.magnitude)
-            let bump = Double(tier) * namedStarTierStep
+            // Same pentagon + spectral palette as a followed star (reads as
+            // the same species), just a slightly smaller dot. Its late
+            // thresholds live in the tier map. Selecting one promotes it to
+            // `.followedStar`.
+            let g = star.spectralClass.badgeGradient
             return POICategoryStyle(
-                gradientTop:     .bodySunBottom,
-                gradientBottom:  .bodySunTop,
-                border:          .systemBackground,
-                symbolColor:     .systemBackground,
-                textColor:       g.top,
-                badgeSize:       12,
-                symbolPointSize: 6,
-                badgeCorners:    5,    // pentagon — star
-                dotShape:        .squircle(corners: 5, bulge: poiBadgeBulge),
-                dotRadius:       2.0,  // slightly smaller than followedStar
-                badgeIn:         namedStarBadgeIn + bump,   // tier 0 = 280
-                textIn:          namedStarTextIn  + bump    // tier 0 = 360
-            )
+                gradientTop:    g.top,
+                gradientBottom: g.bottom,
+                textColor:      g.bottom,
+                badgeSize:      12,
+                badgeCorners:   5,          // pentagon — star
+                tier:           tier,
+                dotShape:       .squircle(corners: 5, bulge: poiBadgeBulge),
+                dotRadius:      2.0)
+
         case .sun:
-            return solarStyle(
-                top:     palette.sun.bottom,
-                bottom:  palette.sun.top,
-                corners: 12     // hexagon
-            )
+            // Warm palette, near-circular badge; gradient runs deep→bright
+            // (top/bottom swapped) so the centre glows.
+            return POICategoryStyle(
+                gradientTop:    palette.sun.bottom,
+                gradientBottom: palette.sun.top,
+                textColor:      .primary,
+                badgeSize:      22,
+                badgeCorners:   12,         // near-circle
+                tier:           tier)
+
         case .moon:
-            return moonStyle(
-                top:     palette.moon.bottom,
-                bottom:  palette.moon.top,
-                corners: 3     // triangle
-            )
+            return POICategoryStyle(
+                gradientTop:    palette.moon.bottom,
+                gradientBottom: palette.moon.top,
+                textColor:      .primary,
+                badgeSize:      18,
+                badgeCorners:   3,          // triangle
+                tier:           tier)
+
         case .planet(let p):
+            // Each planet matched to its canonical tint; the name inherits
+            // the badge's rim colour.
             let g = planetGradient(p)
-            return planetStyle(
-                top: g.bottom,
-                bottom: g.top
-            )
+            return POICategoryStyle(
+                gradientTop:    g.bottom,
+                gradientBottom: g.top,
+                textColor:      g.bottom,
+                badgeSize:      11,
+                badgeCorners:   4,
+                tier:           tier)
         }
     }
 
-    /// Resolve the (top, bottom) badge gradient for a constellation
-    /// kind. `foreverInvisible` overrides with a recessive gray;
-    /// everything else dispatches to the myth palette defined in
-    /// `EArtist+ConstellationMyth.swift` — that's where to tweak
-    /// colours per myth cycle.
-    func constellationGradient(kind: POIConstellationKind) -> (top: Color, bottom: Color) {
-        switch kind {
-        case .foreverInvisible:
-            return constellationForeverInvisibleGradient
-        case .myth(let myth):
-            return constellationMythGradient(myth)
-        }
+    /// Single neutral tint for every constellation badge. The myth-colour
+    /// taxonomy is retired (hemisphere-neutral — southern constellations
+    /// have no Greek cycle), so all constellations read as one "cultural /
+    /// info" species. ▼ TWEAK the constellation colour here ▼
+    var constellationGradient: (top: Color, bottom: Color) {
+        (Color(.systemIndigo), Color(.systemPurple))
     }
 
     /// Squircle bulge shared by every badge — corner count is

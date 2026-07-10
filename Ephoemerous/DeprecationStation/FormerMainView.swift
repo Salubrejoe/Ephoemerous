@@ -133,28 +133,11 @@ struct FormerMainView: View {
         
         
         // MARK: - MYTH
-        
-        // Myth sheet — sibling root sheet, item-bound to
-        // `state.mythDestination`. Adaptive: `.medium` adapts to
-        // device class / dynamic type so on small phones it lands
-        // around half and on larger devices it lands at the
-        // platform-natural medium, and `.large` lets the user drag
-        // up to read the full story without the beats being
-        // cropped. Drag indicator visible (vs the detail sheet's
-        // hidden) because the user CAN drag between detents here.
-        // Fired by tapping "Learn the Myth" on a constellation /
-        // star detail; `state.openMyth(_:)` dismisses
-        // detailDestination first so only one root sheet is on
-        // screen at a time.
-        .sheet(item: Bindable(state).mythDestination) { myth in
-            EMythDetailView(myth: myth)
-                .presentationDetents([.medium])
-                .presentationBackgroundInteraction(.enabled)
-                .presentationDragIndicator(.hidden)
-        }
-        
-        
-        
+        // (Myth sheet removed — the myth cycle taxonomy is retired;
+        //  `mythDestination` / `openMyth` no longer exist on EAppState.)
+
+
+
         // MARK: SEARCH
         
         // Persistent search sheet — Apple-Maps-style. It's ALWAYS up
@@ -209,7 +192,6 @@ struct FormerMainView: View {
         Binding(
             get: {
                 state.detailDestination == nil
-                    && state.mythDestination == nil
                     && !state.isShowingLocationPicker
                     && !state.isShowingDatePicker
                     // Suppress search during any bottom-slot sheet swap

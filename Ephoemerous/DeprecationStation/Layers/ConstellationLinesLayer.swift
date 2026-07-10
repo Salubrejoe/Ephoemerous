@@ -102,7 +102,7 @@ struct ConstellationLinesLayer: EGridLayer {
         let kind      = artist.constellationKind(cons,
                                                   decDegrees:       anchorDec,
                                                   observerLatitude: observerLatitude)
-        return artist.constellationGradient(kind: kind).top
+        return artist.deprecatedConstellationGradient(kind: kind).top
     }
 
     /// Full projection pass over every constellation's segments, in

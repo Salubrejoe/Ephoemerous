@@ -120,14 +120,15 @@ struct EPalette {
     /// its top — a mix toward black. Replaces the old "dark colour on
     /// top, light colour on bottom" trick with a single hue that ramps
     /// pale→deep, so the badge reads as one species in either appearance.
-    var spectralGradientDarken: Double { 0.32 }
+    var spectralGradientDarken: Double { 0.92 }
 
     /// Spectral class → followed-star badge gradient. Top is the
     /// adaptive class colour; bottom is the same colour mixed toward
     /// black so it reads as a lit sphere rather than two stacked tints.
     func spectralGradient(_ cls: EHRClass) -> Gradient {
-        let top = spectral(cls)
-        return (top, top.mix(with: .black, by: spectralGradientDarken))
+        let bottom = spectral(cls)
+        let top    = Color.bodySunTop
+        return (top, bottom)
     }
 
     // MARK: Spectral back-compat accessors
@@ -144,19 +145,8 @@ struct EPalette {
     func spectralLight(_ cls: EHRClass) -> Color { spectral(cls) }
 
     // MARK: - Enum-driven accessors
-
-    /// Constellation myth → badge gradient.
-    func myth(_ kind: POIConstellationMyth) -> Gradient {
-        switch kind {
-        case .perseus:  return perseus
-        case .hercules: return hercules
-        case .argo:     return argo
-        case .zeus:     return zeus
-        case .orion:    return orion
-        case .orpheus:  return orpheus
-        case .none:     return mythNone
-        }
-    }
+    // (Constellation `myth(_:)` accessor moved to DeprecationStation with
+    //  the retired myth taxonomy; the per-cycle colour data stays here.)
 
     /// Planet → badge gradient. Matches on `EPlanet.name` against
     /// `Strings.Planets.*`, with a grey fallback for an unrecognised

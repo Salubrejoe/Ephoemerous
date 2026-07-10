@@ -36,67 +36,6 @@ enum POIDotShape {
     case squircle(corners: Int, bulge: CGFloat)
 }
 
-/// Mythological cycle a constellation belongs to — pulled from
-/// `constellation_categories.json` via
-/// `EArtist.constellationMyth(of:)`. Drives the badge GRADIENT so
-/// a Hercules constellation reads in the same hue as every other
-/// Hercules one, an Orion one in the hunter hue, etc.
-///
-/// Raw values match the strings in the JSON `myths` array — keep
-/// in sync if you add a new myth there.
-///
-/// Note: the former `.zodiac` case is gone. The zodiac is a *band
-/// of sky*, not a myth cycle — each of its 12+1 constellations has
-/// its own narrative home (e.g. Aries → Argo / Golden Fleece;
-/// Aquarius → Zeus / Ganymede; Scorpius → Orion).
-enum POIConstellationMyth: String, CaseIterable, Identifiable {
-    case perseus
-    case hercules
-    case argo
-    case zeus
-    case orion
-    case orpheus
-    /// Constellations with no myth in the JSON (Lacaille / Bayer /
-    /// Hevelius modern additions, plus Virgo and Libra whose
-    /// classical identifications are too fragmented for a single
-    /// cycle).
-    case none
-
-    /// Identity is the JSON key. `Identifiable` so the enum can
-    /// drive a `.sheet(item:)` binding for `EMythDetailView`.
-    var id: String { rawValue }
-
-    /// One-line tagline per cycle — used as the subtitle in
-    /// `EMythDetailView` and as the expanded label on the
-    /// LearnMyth pill in `DetailActionRow`. Single source of truth
-    /// so the two surfaces can never drift out of sync.
-    var tagline: String {
-        switch self {
-        case .perseus:  return String(localized: "Andromeda and the sea-monster")
-        case .hercules: return String(localized: "The twelve impossible labours")
-        case .argo:     return String(localized: "The voyage for the Golden Fleece")
-        case .zeus:     return String(localized: "The father-god's transformations")
-        case .orion:    return String(localized: "The hunter and the scorpion")
-        case .orpheus:  return String(localized: "The lyre that charmed Hades")
-        case .none:     return String(localized: "Constellation cycle")
-        }
-    }
-
-    /// Localised display title for the cycle (the myth's name). The
-    /// `rawValue` stays the canonical JSON key; this is the on-screen name.
-    var localizedTitle: String {
-        switch self {
-        case .perseus:  return String(localized: "Perseus")
-        case .hercules: return String(localized: "Hercules")
-        case .argo:     return String(localized: "Argo")
-        case .zeus:     return String(localized: "Zeus")
-        case .orion:    return String(localized: "Orion")
-        case .orpheus:  return String(localized: "Orpheus")
-        case .none:     return String(localized: "Other constellations")
-        }
-    }
-}
-
 /// What the constellation *depicts* — the JSON `types` axis.
 /// Drives the badge SYMBOL (a hero gets `figure.stand`, an animal
 /// gets `pawprint.fill`, an instrument gets `ruler.fill`, …), so
@@ -130,16 +69,10 @@ enum POIConstellationEntity: String, CaseIterable {
     }
 }
 
-/// Top-level kind for a constellation badge. Either it's never
-/// visible to this observer (forever-invisible override → gray),
-/// or it carries its myth colour.
-enum POIConstellationKind {
-    case foreverInvisible
-    case myth(POIConstellationMyth)
-}
-
 enum POICategory {
-    case constellation(POIConstellationKind)
+    /// Constellations wear a single neutral tint now — the myth colour
+    /// taxonomy is retired (see DeprecationStation), so no payload.
+    case constellation
     case followedStar(EStar)
     /// Proper-named star surfaced as a POI at high zoom. Visually a
     /// quieter sibling of `.followedStar` — same pentagon silhouette

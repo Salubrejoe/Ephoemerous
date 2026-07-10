@@ -39,7 +39,6 @@ struct ESunDetailView: View {
                 icon:          {
                     POILabelView(
                         category: .sun,
-                        glyph: .sfSymbol("sun.max"),
                         text: "",
                         labelStyle: .star
                     )
@@ -58,11 +57,13 @@ struct ESunDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 
-                DetailHScrollView(stats: [
-                    .init(value: raString,  statType: .rightAscenscion),
-                    .init(value: decString, statType: .declination),
-                    .init(value: "1 AU",    statType: .distance),
-                    .init(value: "-26.7",   statType: .magnitude),
+                DetailStatList(stats: [
+                    .init(label: String(localized: "Type"),            value: String(localized: "G-type star (G2V)")),
+                    .init(label: String(localized: "Right ascension"), value: raString),
+                    .init(label: String(localized: "Declination"),     value: decString),
+                    .init(label: String(localized: "Distance"),        value: "1 AU (149.6M km)"),
+                    .init(label: String(localized: "Diameter"),        value: "1,391,000 km"),
+                    .init(label: String(localized: "Apparent magnitude"), value: "−26.7"),
                 ])
                     .padding(.top, 16)
             }

@@ -69,7 +69,7 @@ struct EMythDetailView: View {
                 icon:          { EmptyView() },
                 leadingSymbol: .share,
                 onLeading:     {},
-                onDismiss:     { state.dismissMyth() }
+                onDismiss:     { state.dismissDetail() }
             )
 
             constellationsSection

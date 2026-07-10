@@ -47,7 +47,7 @@ struct ConstellationNamesLayer: EGridLayer {
             // Heart tint mirrors the favourite line colour for the
             // same constellation, so the inline ♥ reads as part of
             // the same coloured shape as the stick-figure.
-            let heartColor  = artist.constellationGradient(kind: kind).top
+            let heartColor  = artist.deprecatedConstellationGradient(kind: kind).top
 
             guard let textRect = artist.drawConstellationLabel(
                 at:          sc,

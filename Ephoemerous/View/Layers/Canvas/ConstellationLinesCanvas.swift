@@ -29,7 +29,7 @@ struct ConstellationLinesCanvas: View, Equatable {
                 append(segs, to: &neutral)
             }
             ctx.stroke(neutral,
-                       with: .color(.secondary.opacity(0.35)),
+                       with: .color(.tertiary),
                        style: StrokeStyle(lineWidth: 0.7, lineCap: .round, dash: [1.5, 3]))
 
             // Favourites — solid, in their tint.

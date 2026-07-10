@@ -298,16 +298,16 @@ struct SearchSheet: View {
     private func resultIcon(for obj: ESkyObject) -> some View {
         switch obj {
         case .star(let s):
-            POILabelView(category: .followedStar(s), glyph: .sfSymbol(""), text: "", labelStyle: .star)
+            POILabelView(category: .followedStar(s), text: "", labelStyle: .star)
 //            POIBadgeView(category: .followedStar(s), size: 22)
         case .sun:
-            POILabelView(category: .sun, glyph: .sfSymbol(""), text: "", labelStyle: .star)
+            POILabelView(category: .sun, text: "", labelStyle: .star)
 //            POIBadgeView(category: .sun, size: 22)
         case .moon:
-            POILabelView(category: .moon, glyph: .sfSymbol(""), text: "")
+            POILabelView(category: .moon, text: "")
 //            POIBadgeView(category: .moon, size: 22)
         case .planet(let p):
-            POILabelView(category: .planet(p), glyph: .sfSymbol(""), text: "")
+            POILabelView(category: .planet(p), text: "")
 //            POIBadgeView(category: .planet(p), size: 22)
         case .constellation(let c):
             Image(symbol: EArtist.shared.constellationEntitySymbol(

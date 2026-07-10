@@ -48,7 +48,6 @@ struct PromotedLabel: View {
                let poi = SkyLabObjects.poiMark(obj, date: date),
                let sc  = SkyLabObjects.screen(obj, camera: camera, date: date) {
                 SkyLabPromotedPin(category: poi.category,
-                                  glyph:    poi.glyph,
                                   name:     poi.name,
                                   labelStyle: labelStyle)
                     .rotationEffect(-rotation, anchor: .center)
@@ -66,7 +65,6 @@ struct PromotedLabel: View {
 private struct SkyLabPromotedPin: View {
 
     let category:   POICategory
-    let glyph:      POIGlyph
     let name:       String
     let labelStyle: POILabelView.LabelStyle
 
@@ -103,7 +101,6 @@ private struct SkyLabPromotedPin: View {
             // enlarged. scaleEffect anchors on its own centre, so it grows
             // in place at the lifted point.
             POILabelView(category:    category,
-                         glyph:       glyph,
                          text:        "",
                          labelStyle: labelStyle,
                          badgeReveal: 1,

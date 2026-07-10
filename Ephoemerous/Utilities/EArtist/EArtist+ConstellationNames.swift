@@ -29,17 +29,6 @@ extension EArtist {
             return decDegrees <= -(90 + observerLatitude)
         }
     }
-
-    /// Resolve a constellation's POI kind: `.foreverInvisible` when the
-    /// centroid never rises here, else `.myth(_)` (used to colour-code the
-    /// favourite stick-figure lines).
-    func constellationKind(_ cons: EConstellation,
-                           decDegrees: Double,
-                           observerLatitude: Double) -> POIConstellationKind {
-        if !constellationEverVisible(decDegrees:       decDegrees,
-                                     observerLatitude: observerLatitude) {
-            return .foreverInvisible
-        }
-        return .myth(constellationMyth(of: cons))
-    }
+    // (constellationKind moved to DeprecationStation with the myth taxonomy;
+    //  live constellations wear one neutral tint now.)
 }

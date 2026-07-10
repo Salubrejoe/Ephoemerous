@@ -101,43 +101,8 @@ extension EAppState {
         detailDestination = nil
     }
 
-    // MARK: Myth sheet
-
-    /// Open the half-detent myth sheet for `myth`, dismissing the
-    /// detail sheet first if one is up. Same epoch / asyncAfter
-    /// dance as `focus(on:)`: SwiftUI's `.sheet(item:)` doesn't
-    /// like swapping the *other* sheet in the same frame as
-    /// dismissing the current one — the new presentation often
-    /// inherits the old detents. Clearing detail, waiting for it
-    /// to tear down, then assigning mythDestination forces a clean
-    /// re-presentation with `.fraction(0.5)` correctly applied.
-    ///
-    /// `.none` is a no-op — there's nothing to present.
-    func openMyth(_ myth: POIConstellationMyth) {
-        guard myth != .none else { return }
-        _focusEpoch &+= 1
-        let epoch = _focusEpoch
-
-        if detailDestination != nil {
-            _sheetSwapping    = true
-            detailDestination = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
-                guard let self, self._focusEpoch == epoch else { return }
-                self._sheetSwapping  = false
-                self.mythDestination = myth
-            }
-            return
-        }
-
-        mythDestination = myth
-    }
-
-    /// Close the myth sheet. Bumps the focus epoch so any in-flight
-    /// deferred opener can't bring a stale destination back.
-    func dismissMyth() {
-        _focusEpoch &+= 1
-        mythDestination = nil
-    }
+    // (Myth sheet retired — openMyth / dismissMyth removed with the myth
+    //  cycle taxonomy. Constellation stories live in EConstellationDetailView.)
 
     /// Roughly the iOS sheet dismiss-animation duration — long
     /// enough that the existing sheet has fully torn down before
@@ -165,12 +130,11 @@ extension EAppState {
     /// destination after we've cleared it.
     func presentSceneEditor(_ open: @escaping () -> Void) {
         _focusEpoch &+= 1
-        let hadRootSheet = detailDestination != nil || mythDestination != nil
+        let hadRootSheet = detailDestination != nil
         guard hadRootSheet else { open(); return }
 
         _sheetSwapping    = true
         detailDestination = nil
-        mythDestination   = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + sheetSwapDelay) { [weak self] in
             guard let self else { return }
             self._sheetSwapping = false

@@ -76,10 +76,13 @@ struct EMoonDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 
-                DetailHScrollView(stats: [
-                    .init(value: "~390 Mm", statType: .distance),
-                    .init(value: "3474 km", statType: .diameter),
-                    .init(value: "27.3 d",  statType: .period),
+                DetailStatList(stats: [
+                    .init(label: String(localized: "Phase"),           value: phaseName),
+                    .init(label: String(localized: "Right ascension"), value: raString),
+                    .init(label: String(localized: "Declination"),     value: decString),
+                    .init(label: String(localized: "Distance"),        value: "~384,400 km"),
+                    .init(label: String(localized: "Diameter"),        value: "3,474 km"),
+                    .init(label: String(localized: "Orbital period"),  value: "27.3 days"),
                 ])
                 .padding(.top, 16)
                 

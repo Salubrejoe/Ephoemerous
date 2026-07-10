@@ -133,7 +133,7 @@ private let betelgeusePreviewStar: EStar = EStar(
             title:    "Ursa Minor",
             glyph:    .sfSymbol("sparkles"),
             text:     "Ursa Minor",
-            category: .constellation(.myth(.zeus))
+            category: .constellation
         )
     }
     .padding()
@@ -152,7 +152,7 @@ private struct POITierSweepPreview: View {
         ("Moon",       .sfSymbol("moonphase.first.quarter"), "Moon",       .moon),
         ("Mars",       .unicode("♂"),                        "Mars",       .planet(.mars)),
         ("Betelgeuse", .sfSymbol("star.fill"),               "Betelgeuse", .followedStar(betelgeusePreviewStar)),
-        ("Ursa Minor", .sfSymbol("sparkles"),                "Ursa Minor", .constellation(.myth(.zeus)))
+        ("Ursa Minor", .sfSymbol("sparkles"),                "Ursa Minor", .constellation)
     ]
 
     var body: some View {
@@ -215,7 +215,7 @@ private struct POITierSweepPreview: View {
             title:    "Ursa Minor",
             glyph:    .sfSymbol("sparkles"),
             text:     "Ursa Minor",
-            category: .constellation(.myth(.zeus)),
+            category: .constellation,
             scale:    100   // ≥ badgeIn (80), < textIn (130)
         )
     }

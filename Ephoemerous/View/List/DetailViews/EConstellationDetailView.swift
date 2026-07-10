@@ -37,21 +37,14 @@ struct EConstellationDetailView: View {
     /// fall back to a sensible plain string so post-Hevelius modern
     /// constellations still get a usable subtitle.
     private var subtitleText: String {
-        let artist = EArtist.shared
-        let entity = artist.constellationEntity(of: constellation)
-        let myth   = artist.constellationMyth(of: constellation)
-        let entityStr = entity.localizedName
-        if myth == .none { return entityStr }
-        return String(localized: "\(entityStr) in the \(myth.localizedTitle) Myth")
+        // Just what it depicts now (hero / animal / …) — the myth cycle
+        // taxonomy is retired, so no "in the X Myth" suffix.
+        EArtist.shared.constellationEntity(of: constellation).localizedName
     }
 
-    /// Top of the myth gradient — same accent used for the canvas badge.
+    /// Neutral constellation accent — one tint for every constellation now.
     private var accent: Color {
-        let artist = EArtist.shared
-        let kind   = artist.constellationKind(constellation,
-                                              decDegrees:       0,
-                                              observerLatitude: state.origin.latitude.degrees)
-        return artist.constellationGradient(kind: kind).top
+        EArtist.shared.constellationGradient.top
     }
 
     /// Entity symbol from the existing POI palette — same SF Symbol
@@ -61,14 +54,6 @@ struct EConstellationDetailView: View {
         EArtist.shared.constellationEntitySymbol(
             EArtist.shared.constellationEntity(of: constellation)
         )
-    }
-
-    /// Primary mythological cycle this constellation belongs to.
-    /// Drives the secondary "Learn the Myth" button leading the
-    /// Remember row. `.none` hides the button; the row then
-    /// collapses to Remember-only.
-    private var myth: POIConstellationMyth {
-        EArtist.shared.constellationMyth(of: constellation)
     }
 
     var body: some View {

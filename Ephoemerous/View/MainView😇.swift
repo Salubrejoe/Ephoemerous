@@ -115,13 +115,11 @@ struct MainView😇: View {
             let favIDs = Set(app.favouriteStars.map(\.id))
             let namedOnly = Self.properNamedStars.filter { !favIDs.contains($0.id) }
 
-            // Myth tint per favourite constellation (for its solid lines).
-            let favTints = Dictionary(uniqueKeysWithValues: app.favouriteConstellations.map { cons -> (EConstellation, Color) in
-                let dec  = ConstellationLines.shared.labelAnchors[cons]?.dec.degrees ?? 0
-                let kind = EArtist.shared.constellationKind(cons, decDegrees: dec,
-                                                            observerLatitude: app.origin.latitude.degrees)
-                return (cons, EArtist.shared.constellationGradient(kind: kind).top)
-            })
+            // Tint for each favourite constellation's solid lines — one
+            // neutral constellation colour now (myth taxonomy retired).
+            let favTint  = EArtist.shared.constellationGradient.top
+            let favTints = Dictionary(uniqueKeysWithValues:
+                app.favouriteConstellations.map { ($0, favTint) })
 
             ZStack {
                 // `.equatable()` → these Canvases redraw only when the
@@ -144,7 +142,7 @@ struct MainView😇: View {
                 ConstellationLinesCanvas(camera: camera, favouriteTints: favTints)
                     .equatable()
                 
-                StarsCanvas(camera: camera, stars: app.sortedStars)
+                StarsCanvas(camera: camera, stars: app.sortedStars, favouriteIDs: favIDs)
                     .equatable()
                 
                 // Tier-0 spectral pentagon dots for proper-named stars —
@@ -253,36 +251,14 @@ struct MainView😇: View {
         // bright outline. Without a dark background (and dark scheme) the
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
-        .background(
-            ZStack {
-                EArtist.shared.canvasBackground
-                
-                VStack {
-                    Rectangle()
-                        .fill(EArtist.shared.canvasBackground)
-                        .hueRotation(.degrees(5))
-                        .frame(height: 200)
-                    
-                    Spacer()
-                    
-                    Rectangle()
-                        .fill(EArtist.shared.canvasBackground)
-                        .hueRotation(.degrees(-5))
-                        .frame(height: 200)
-                }
-                .blur(radius: 2)
-            }
-        )
+        .background(EArtist.shared.canvasBackground)
         // Production toolbar — Here / Now reset chips + location / date
         // pills. It acts on the shared EAppState the SkyLab camera reads,
         // so the sky follows; the clock above plays the transitions.
         .overlay(alignment: .top) {
             VStack {
                 MainToolbar()
-                HStack {
-                    Spacer()
-                    CompassButton()
-                }
+                CompassButton()
                 Spacer()
             }
             .padding(.horizontal, 24)
@@ -385,7 +361,6 @@ struct MainView😇: View {
         Binding(
             get: {
                 app.detailDestination == nil
-                    && app.mythDestination == nil
                     && !app.isShowingLocationPicker
                     && !app.isShowingDatePicker
                     && !app._sheetSwapping
@@ -467,7 +442,7 @@ struct MainView😇: View {
             }
 
             // Constellation names — tappable once the name tier reveals.
-            let consTextIn = a.poiStyle(for: .constellation(.myth(.none))).textIn
+            let consTextIn = a.poiStyle(for: .constellation).textIn
             if scale >= consTextIn {
                 for (cons, _) in ConstellationLines.shared.labelAnchors {
                     consider(.constellation(cons), gate: true)

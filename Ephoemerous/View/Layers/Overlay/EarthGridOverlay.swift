@@ -74,45 +74,41 @@ struct EarthGridOverlay: View {
             ForEach(0 ..< Self.bands.count, id: \.self) { i in
                 let band = Self.bands[i]
                 let r    = Self.projectionRadius(band.altitude) * camera.scale
-                // A rectangle covering the whole (oversized) canvas with a
-                // circular hole of radius `r` punched at the zenith. The
-                // even-odd fill is what turns the inner circle into a HOLE:
-                // rect winding + circle winding cancel inside the circle.
-                // Stacked per band, the wash accumulates OUTSIDE each ring,
-                // so the sky reads clear inside the horizon and thickens
-                // toward / below it.
-                HoledRect(hole: zenith, radius: r)
-                    .fill(Color.tertiary, style: FillStyle(eoFill: true))
+                // A dashed almucantar ring drawn ABSOLUTELY at the zenith,
+                // not via `Circle().frame(...)`. A framed Circle centres on
+                // its layout box (the ZStack centre), so it drifts off the
+                // horizon the instant there's a committed pan; drawing the
+                // ellipse at `zenith` in the layer's own coordinate space
+                // pins it to the projection origin under any pan / zoom.
+                Ring(center: zenith, radius: r)
+                    .stroke(
+                        style: .init(
+                            lineWidth: 0.8,
+                            lineCap: .round,
+                            lineJoin: .round,
+                            dash: [10, 10]
+                        )
+                    )
+                    .foregroundStyle(.grid)
                     .opacity(band.opacity)
-                
-//                Circle()
-//                    .stroke(
-//                        style: .init(
-//                            lineWidth: 0.8,
-//                            lineCap: .round,
-//                            lineJoin: .round,
-//                            dash: [10, 10]
-//                        )
-//                    )
-//                    .frame(width: r*2, height: r*2)
-//                    .foregroundStyle(.tertiary)
             }
         }
     }
 
-    /// A canvas-filling rectangle with a circular hole. Fill it with
-    /// `FillStyle(eoFill: true)` so the circle punches through.
-    private struct HoledRect: Shape {
-        var hole:   CGPoint
+    /// A circle of `radius` centred at an ABSOLUTE point (`center`) in the
+    /// layer's own coordinate space — not at the view's frame centre. This
+    /// is what pins each ring to the zenith: `camera.screen(.zero)` moves
+    /// with the committed pan, and drawing the ellipse there directly keeps
+    /// the almucantars on the horizon under any pan / zoom, riding the
+    /// parent transform for its stroke width and dashing.
+    private struct Ring: Shape {
+        var center: CGPoint
         var radius: CGFloat
         func path(in rect: CGRect) -> Path {
-            var p = Path()
-            p.addRect(rect)                                   // whole-canvas cover
-            p.addEllipse(in: CGRect(x: hole.x - radius,       // the hole
-                                    y: hole.y - radius,
-                                    width:  radius * 2,
-                                    height: radius * 2))
-            return p
+            Path(ellipseIn: CGRect(x: center.x - radius,
+                                   y: center.y - radius,
+                                   width:  radius * 2,
+                                   height: radius * 2))
         }
     }
 
