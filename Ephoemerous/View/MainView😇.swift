@@ -49,6 +49,18 @@ struct MainView😇: View {
     @State private var detailDetent: PresentationDetent = .fraction(1.0 / 4.0)
     private let detailHeaderDetent: PresentationDetent = .height(70)
 
+    /// Compass-mode framing progress, eased 0→1 on toggle (see the
+    /// `compassMode` onChange). 0 = the committed `sky` view; 1 = the full
+    /// heading-up framing (puck low, horizon high). Interpolating the camera
+    /// by this — rather than flipping it — turns the entry / exit into a
+    /// smooth zoom instead of a snap.
+    @State private var compassEngage: Double = 0
+
+    /// Visible screen size (NOT the oversized canvas). Kept in sync with the
+    /// `GeometryReader` so the `compassMode` exit handler can recompute the
+    /// framing to freeze it into the committed camera.
+    @State private var viewSize: CGSize = .zero
+
     var body: some View {
       // One timeline, production's `ECanvasSchedule`: ticks at 60fps ONLY
       // while an app origin/date transition is in flight (the Here / Now
@@ -85,21 +97,39 @@ struct MainView😇: View {
                                            : sky.rotation
             let liveRot        = inCompass ? .zero : sky.liveRotation
 
+            // Compass mode also FRAMES the sky: the zenith puck drops just
+            // above the bottom sheet and the facing horizon rises just below
+            // the Here/Now capsules (see `compassCameraFraming`). `compassEngage`
+            // eases 0→1 on toggle, so the camera GLIDES between the committed
+            // `sky` view and the framing rather than snapping. It's a pure
+            // view-time blend baked into the camera — the committed `sky` camera
+            // is never touched, so leaving compass restores the exact view you
+            // were on. (Compass mode already redraws per heading step, so the
+            // per-frame interpolation during the glide is free.)
+            let framing = app.compassCameraFraming(screenHeight: geo.size.height)
+            let t       = compassEngage
+            let engaging = t > 0.0001
+
             // Centre = canvasSize/2, which (because the oversize content is
             // centred in the screen below) lands on the screen centre.
             let camera = SkyCamera(
-                scale:     sky.scale,
-                offset:    sky.offset,        // committed pan baked in → Canvas
-                rotation:  cameraRotation,    //   draws centred + spun for the view
+                scale:     sky.scale + (framing.scale - sky.scale) * t,
+                offset:    CGSize(width:  sky.offset.width  + (framing.offset.width  - sky.offset.width)  * t,
+                                  height: sky.offset.height + (framing.offset.height - sky.offset.height) * t),
+                rotation:  cameraRotation,   // committed pan baked in → Canvas draws centred + spun
                 size:      canvasSize,
                 viewpoint: app.viewpoint,
                 sidereal:  app.localSiderealOffset
             )
 
-            // Live transform values from the coordinator (clamped).
-            let effPinch  = sky.effPinch
-            let liveScale = sky.liveScale
-            let applied   = sky.applied
+            // Live transform values from the coordinator (clamped). While the
+            // compass framing is in play the framing is baked into the camera
+            // and touch is off, so the live gesture transform is identity —
+            // labels take the camera scale for their zoom tiers and stay put
+            // (no counter-scale drift).
+            let effPinch  = engaging ? 1            : sky.effPinch
+            let liveScale = engaging ? camera.scale : sky.liveScale
+            let applied   = engaging ? .zero        : sky.applied
 
             // Selection selectors — which passive label to suppress /
             // emphasise. Source of truth is the production `detailDestination`
@@ -117,7 +147,7 @@ struct MainView😇: View {
 
             // Tint for each favourite constellation's solid lines — one
             // neutral constellation colour now (myth taxonomy retired).
-            let favTint  = EArtist.shared.constellationGradient.top
+            let favTint  = Color.tertiary
             let favTints = Dictionary(uniqueKeysWithValues:
                 app.favouriteConstellations.map { ($0, favTint) })
 
@@ -225,9 +255,19 @@ struct MainView😇: View {
                     .onAppear {
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                         sky.onTap  = makeTapHandler()
+                        viewSize   = geo.size
+                        // Grabbing the canvas drops compass mode (heading no
+                        // longer owns the view) — but the zoom/framing stays
+                        // put (frozen in the `compassMode` exit handler), so
+                        // the gesture just continues from where compass left
+                        // the sky.
+                        sky.onGestureStart = {
+                            if app.compassMode { app.disengageCompassMode() }
+                        }
                     }
                     .onChange(of: geo.size) {
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+                        viewSize   = geo.size
                     }
             }
         }
@@ -256,7 +296,7 @@ struct MainView😇: View {
         // pills. It acts on the shared EAppState the SkyLab camera reads,
         // so the sky follows; the clock above plays the transitions.
         .overlay(alignment: .top) {
-            VStack {
+            VStack(spacing: 16) {
                 MainToolbar()
                 CompassButton()
                 Spacer()
@@ -328,10 +368,27 @@ struct MainView😇: View {
         // Declared BEFORE the reset observer so the freeze lands first when
         // the exit IS the rose's reset-to-north (freeze heading, then spin).
         .onChange(of: app.compassMode) { was, now in
-            // Negated to match `cameraRotation`'s flip (see above) so the
-            // committed rotation picks up exactly where the heading left.
-            if was, !now {
+            if !was, now {
+                // Entering — glide the framing in (see `compassEngage`).
+                withAnimation(.easeInOut(duration: 0.6)) { compassEngage = 1 }
+            } else if was, !now {
+                // Leaving — FREEZE the framed view (rotation + zoom) into the
+                // committed `sky` camera so exiting KEEPS the preset you're on
+                // instead of springing back to the pre-compass zoom. No exit
+                // glide: the sky stays exactly where it is and touch resumes.
+                //
+                // Rotation: negated to match `cameraRotation`'s flip so the
+                // committed rotation picks up where the heading left.
                 sky.rotation = .radians(-app.canvasRotation.radians)
+                // Zoom/offset: bake the current blended framing into `sky`
+                // (handles a mid-glide exit too), then zero the blend so the
+                // camera — now reading `sky` — shows the identical view.
+                let framing = app.compassCameraFraming(screenHeight: viewSize.height)
+                let t       = compassEngage
+                sky.scale  = sky.scale  + (framing.scale  - sky.scale)  * t
+                sky.offset = CGSize(width:  sky.offset.width  + (framing.offset.width  - sky.offset.width)  * t,
+                                    height: sky.offset.height + (framing.offset.height - sky.offset.height) * t)
+                compassEngage = 0
             }
         }
         // Mirror the SkyLab's committed + live rotation into the app rotation

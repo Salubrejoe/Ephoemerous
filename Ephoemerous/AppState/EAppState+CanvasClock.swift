@@ -75,7 +75,14 @@ extension EAppState {
                 if delta < -.pi { delta += 2 * .pi }
                 _compassRotCurrent = cur + delta * k
             } else {
-                _compassRotCurrent = target      // first frame: snap to heading
+                // First compass frame: seed from the CURRENT on-screen
+                // rotation, NOT the heading, so the low-pass EASES the sky
+                // round to the phone's heading instead of snapping — pairing
+                // with the zoom-in framing for one smooth entry. `canvasRotation`
+                // is `-sky.rotation` (see `mirrorRotationToRose`) and compass
+                // `renderedRotation` returns `.radians(_compassRotCurrent)`, so
+                // this keeps the camera rotation continuous across the toggle.
+                _compassRotCurrent = canvasRotation.radians
             }
             _compassRotTime = time
         } else {

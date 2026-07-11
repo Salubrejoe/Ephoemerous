@@ -47,8 +47,14 @@ final class EMotionService {
     /// the phone's TOP edge (reading / pointing pose); above `hi` it's the
     /// BACK-camera normal (held up to the sky); smoothstepped between, so
     /// the cone glides from one axis to the other as the phone lays back.
-    private static let aimBlendLo = 0.25
-    private static let aimBlendHi = 0.75
+    ///
+    /// Band centred on `screenDown = 0.5` — the face-down/face-up boundary —
+    /// and kept TIGHT so the axis actually toggles around that crossover
+    /// (only once the phone is more face-down than face-up) rather than
+    /// drifting the whole tilt range. Widen [lo, hi] for a softer glide,
+    /// narrow it toward 0.5 for a crisper switch. ▼ TWEAK band width here ▼
+    private static let aimBlendLo = 0.40
+    private static let aimBlendHi = 0.60
 
     /// Raise-to-sky thresholds (also on screen-down-ness) for the
     /// auto-compass trigger. Separate on/off values = hysteresis: it flips

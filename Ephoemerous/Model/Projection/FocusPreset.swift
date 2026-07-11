@@ -165,6 +165,28 @@ extension EAppState {
         return (scale, CGPoint(x: puckY - h / 2, y: 0))
     }
 
+    /// Framing for compass mode on the SkyLab `SkyCamera` (the live main
+    /// view). Same AR pose as `compassFraming`, expressed in that camera's
+    /// terms: `SkyCamera.screen(.zero)` puts the zenith at
+    /// `screenCentre + offset`, and the horizon is a circle of radius 2
+    /// projection-units about the zenith — so on screen the zenith→horizon
+    /// span is `2·scale`.
+    ///
+    /// The puck (zenith) drops to `compassPuckYFraction` of the SCREEN
+    /// height (just above the bottom sheet); the facing horizon rises to
+    /// `compassHorizonYFraction` (just below the Here/Now capsules). Pass the
+    /// visible screen height (`geo.size.height`), NOT the oversized canvas —
+    /// the fractions are screen-relative.
+    func compassCameraFraming(screenHeight h: CGFloat) -> (scale: CGFloat, offset: CGSize) {
+        guard h > 0 else { return (defaultScale, .zero) }
+        let puckY    = compassPuckYFraction    * h
+        let horizonY = compassHorizonYFraction * h
+        let scale    = Swift.max(defaultScale, (puckY - horizonY) / 2)
+        // offset.height positions the zenith below screen centre; offset.width
+        // stays 0 to keep the puck horizontally centred.
+        return (scale, CGSize(width: 0, height: puckY - h / 2))
+    }
+
     /// Engage heading-up mode and frame the sky for it (puck low, horizon
     /// up). Assumes the observer is already at the device location — the
     /// toggle / auto-engage callers gate that (and prompt) themselves.

@@ -39,6 +39,11 @@ final class MainGestureCoordinator {
     /// Tap hit-test, supplied by the view (it owns the camera + catalogue).
     /// Called with the tap location in screen points.
     @ObservationIgnored var onTap: ((CGPoint) -> Void)?
+    /// Fired when a camera-manipulation gesture (pan / pinch / rotation /
+    /// hold) begins — the view uses it to drop compass mode so grabbing the
+    /// canvas hands control back to touch. Runs before the gesture's own
+    /// begin bookkeeping.
+    @ObservationIgnored var onGestureStart: (() -> Void)?
 
     // Limits / feel — production values.
     @ObservationIgnored var minScale:     CGFloat = 90
@@ -197,6 +202,9 @@ final class MainGestureCoordinator {
     // MARK: Lifecycle
 
     private func begin() {
+        // A touch is taking over — let the view drop compass mode first, so
+        // the committed camera it freezes is the one this gesture builds on.
+        if active == 0 { onGestureStart?() }
         if active == 0 {
             // Interrupt any in-flight release: fold what's on screen now,
             // invalidate its pending completion, start clean.
