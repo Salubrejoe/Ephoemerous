@@ -23,8 +23,27 @@ extension EAppState {
     /// origin / plane state. See `EProjection.Viewpoint`.
     var viewpoint: EProjection.Viewpoint {
         EProjection.Viewpoint(originVector: originVector,
-                              planeVector:  planeVector)
+                              planeVector:  planeVector,
+                              centre:       projectionCentre)
     }
+
+    /// Effective projection centre. Compass mode is intrinsically zenith/AR,
+    /// so it forces `.zenith` regardless of the flip toggle (they're mutually
+    /// exclusive — engaging compass also clears `flippedProjection`).
+    var projectionCentre: ProjectionCentre {
+        (flippedProjection && !compassMode) ? .nadir : .zenith
+    }
+
+    /// Flip the inside-out projection on/off. The view observes
+    /// `flippedProjection` to reframe the camera for the new perspective.
+    func toggleProjectionFlip() { flippedProjection.toggle() }
+
+    /// Launch/home scale for the FLIPPED (nadir-centred) view. The visible
+    /// sky is now an annulus from the horizon (radius 2) outward, so we zoom
+    /// out from `defaultScale` — which frames the radius-2 disc to the whole
+    /// short side — to leave room for the sky beyond the horizon ring.
+    /// ▼ TWEAK the flipped zoom-out here ▼
+    var nadirDefaultScale: Double { defaultScale * 0.45 }
 
     /// The direction of the zenith in equatorial coordinates at the rendered observation time.
     /// The Local Sidereal Time rotates the sky so that the meridian lines up with the observer.

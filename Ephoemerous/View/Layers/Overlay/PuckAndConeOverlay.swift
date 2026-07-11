@@ -24,7 +24,10 @@ struct PuckAndConeOverlay: View {
     @Environment(EAppState.self) private var app
 
     var body: some View {
-        if app.isAtDeviceLocation {
+        // The puck + cone are anchored to the zenith (projection origin). In
+        // the flipped view the origin is the NADIR and the zenith is at
+        // infinity, so the "you are here" mark is meaningless — hide it.
+        if app.isAtDeviceLocation, app.projectionCentre == .zenith {
             let zenith = camera.screen(.zero)
             ZStack {
                 // Aim cone wash — redraws as the device aim changes.
@@ -121,13 +124,12 @@ struct PuckAndConeOverlay: View {
         let symbol = EArtist.shared.userLocationGlobeSymbol(
             forLongitude: app.origin.longitude.degrees).rawValue
         return ZStack {
-            Circle().fill(EArtist.shared.gridColor)
-            Image(systemName: symbol)
+//            Circle().fill(EArtist.shared.gridColor)
+            Image(systemName: "binoculars.circle")
                 .resizable()
                 .scaledToFit()
-                .foregroundStyle(EArtist.shared.canvasBackground)
+                .foregroundStyle(EArtist.shared.gridColor)
                 .padding(size * 0.06)
-                .clipShape(Circle())
         }
         .frame(width: size, height: size)
 //        .shadow(color: .black.opacity(0.35), radius: 1.5)

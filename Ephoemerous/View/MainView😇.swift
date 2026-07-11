@@ -299,6 +299,11 @@ struct MainView😇: View {
             VStack(spacing: 16) {
                 MainToolbar()
                 CompassButton()
+                // Inside-out projection toggle — hidden in compass mode
+                // (mutually exclusive perspectives).
+                if !app.compassMode {
+                    ProjectionFlipButton()
+                }
                 Spacer()
             }
             .padding(.horizontal, 24)
@@ -389,6 +394,22 @@ struct MainView😇: View {
                 sky.offset = CGSize(width:  sky.offset.width  + (framing.offset.width  - sky.offset.width)  * t,
                                     height: sky.offset.height + (framing.offset.height - sky.offset.height) * t)
                 compassEngage = 0
+            }
+        }
+        // Flipping the projection reframes the camera: the nadir-centred view
+        // puts the visible sky OUTSIDE the horizon, so it wants a wider
+        // (zoomed-out) default AND a lower zoom floor than the observer view.
+        // Retune the coordinator's bounds so the wide scale actually holds
+        // (otherwise the rubber-band snaps it back to the observer floor),
+        // then ease scale + recentre. The projection inverts instantly at the
+        // flag flip; the zoom settles around it.
+        .onChange(of: app.flippedProjection) { _, flipped in
+            let target = flipped ? app.nadirDefaultScale : app.defaultScale
+            sky.minScale     = target
+            sky.defaultScale = target
+            withAnimation(.easeInOut(duration: 0.5)) {
+                sky.scale  = target
+                sky.offset = .zero
             }
         }
         // Mirror the SkyLab's committed + live rotation into the app rotation

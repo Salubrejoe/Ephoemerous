@@ -2,6 +2,25 @@ import SwiftUI
 import simd
 import LoreKit
 
+/// Which pole of the observer axis the stereographic projection is centred
+/// on — i.e. where the light-source "eye" sits.
+///
+/// The two are related by a circle inversion through the horizon circle
+/// (radius 2): every screen point at radius `r` maps to `4/r`, angle
+/// unchanged, the horizon fixed. So flipping between them turns the sky
+/// inside-out about the horizon.
+enum ProjectionCentre: Equatable {
+    /// Eye at the NADIR → the zenith lands at screen centre and the visible
+    /// sky (alt > 0) maps INSIDE the radius-2 horizon circle. The observer
+    /// standing under their sky (default / AR pose).
+    case zenith
+    /// Eye at the ZENITH → the nadir lands at screen centre and the visible
+    /// sky maps OUTSIDE the horizon circle. The celestial sphere seen "from
+    /// the far side" — at northern latitudes the celestial south pole sits
+    /// near centre, the north pole races off to infinity.
+    case nadir
+}
+
 
 enum EProjection {
 
@@ -18,6 +37,9 @@ enum EProjection {
     struct Viewpoint {
         let originVector: SIMD3<Double>
         let planeVector:  SIMD3<Double>
+        /// Which pole to centre on — see `ProjectionCentre`. Defaults to the
+        /// observer-centred (`.zenith`) view.
+        var centre: ProjectionCentre = .zenith
 
         /// Returns a 3-D point on the observer's local sky at the given
         /// altitude above the horizon, parametrised by `t ∈ 0...1`
@@ -103,11 +125,24 @@ enum EProjection {
     /// horizon onto the celestial equator. No separate code path.
     static func project(_ Q     : SIMD3<Double>,
                         viewpoint: Viewpoint) -> CGPoint? {
-        project(
-            Q,
-            origin: viewpoint.planeVector,    // observer's nadir
-            plane:  viewpoint.originVector    // observer's zenith
-        )
+        switch viewpoint.centre {
+        case .zenith:
+            // Eye at the nadir, tangent plane at the zenith → zenith centred,
+            // visible sky inside the horizon circle (the default view).
+            return project(
+                Q,
+                origin: viewpoint.planeVector,    // observer's nadir
+                plane:  viewpoint.originVector    // observer's zenith
+            )
+        case .nadir:
+            // Eye and plane SWAPPED → nadir centred, visible sky outside the
+            // horizon circle. Exactly the circle-inversion flip (r → 4/r).
+            return project(
+                Q,
+                origin: viewpoint.originVector,   // observer's zenith
+                plane:  viewpoint.planeVector     // observer's nadir
+            )
+        }
     }
  
     

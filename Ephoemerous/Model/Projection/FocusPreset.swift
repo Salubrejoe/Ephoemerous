@@ -195,6 +195,9 @@ extension EAppState {
         // the rotation. The old AR framing (compassFraming + animateTo)
         // moved the production camera the SkyLab ignores, so it's dropped.
         _rotationTransition = nil
+        // Compass is intrinsically zenith/AR — drop the inside-out flip so
+        // the two never fight over the projection centre.
+        flippedProjection = false
         compassMode = true
     }
 

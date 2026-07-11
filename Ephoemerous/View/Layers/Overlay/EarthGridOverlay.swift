@@ -41,6 +41,17 @@ struct EarthGridOverlay: View {
         .init(altitude: .degrees(-36), lineWidth: 0.7, opacity: 0.1),
         .init(altitude: .degrees(-42), lineWidth: 0.7, opacity: 0.1),
         .init(altitude: .degrees(-48), lineWidth: 0.7, opacity: 0.1),
+    ]
+
+    /// Flipped (nadir-centred) view: the visible sky is OUTSIDE the horizon,
+    /// so the useful almucantars are the POSITIVE altitudes, fanning outward
+    /// from the horizon ring toward the (infinite) zenith.
+    private static let bandsNadir: [Band] = [
+        .init(altitude: .degrees( 0), lineWidth: 1.1, opacity: 0.55),
+        .init(altitude: .degrees(15), lineWidth: 0.7, opacity: 0.1),
+        .init(altitude: .degrees(30), lineWidth: 0.7, opacity: 0.1),
+        .init(altitude: .degrees(45), lineWidth: 0.7, opacity: 0.1),
+        .init(altitude: .degrees(60), lineWidth: 0.7, opacity: 0.1),
 //        .init(altitude: .degrees(-54), lineWidth: 0.7, opacity: 0.1),
 //        .init(altitude: .degrees(-60), lineWidth: 0.7, opacity: 0.1),
 //        .init(altitude: .degrees(-66), lineWidth: 0.7, opacity: 0.1),
@@ -67,13 +78,16 @@ struct EarthGridOverlay: View {
     ]
 
     var body: some View {
-        // Zenith = projection origin = canvas centre.
+        // Projection origin = canvas centre (the zenith in the default view,
+        // the nadir when flipped). Almucantars stay concentric about it.
         let zenith = camera.screen(.zero)
+        let centre = camera.viewpoint.centre
+        let bands  = centre == .nadir ? Self.bandsNadir : Self.bands
 
         ZStack {
-            ForEach(0 ..< Self.bands.count, id: \.self) { i in
-                let band = Self.bands[i]
-                let r    = Self.projectionRadius(band.altitude) * camera.scale
+            ForEach(0 ..< bands.count, id: \.self) { i in
+                let band = bands[i]
+                let r    = Self.projectionRadius(band.altitude, centre: centre) * camera.scale
                 // A dashed almucantar ring drawn ABSOLUTELY at the zenith,
                 // not via `Circle().frame(...)`. A framed Circle centres on
                 // its layout box (the ZStack centre), so it drifts off the
@@ -113,9 +127,15 @@ struct EarthGridOverlay: View {
     }
 
     /// Stereographic screen radius (projection units) of the
-    /// constant-`altitude` circle.
-    private static func projectionRadius(_ altitude: Angle) -> CGFloat {
+    /// constant-`altitude` circle. The two centres are circle-inverses about
+    /// the horizon: `.zenith` gives `2cos a/(1+sin a)` (horizon 2, zenith 0),
+    /// `.nadir` the reciprocal `2cos a/(1−sin a) = 4/ρ` (horizon 2, zenith ∞).
+    private static func projectionRadius(_ altitude: Angle,
+                                         centre: ProjectionCentre) -> CGFloat {
         let a = altitude.radians
-        return CGFloat(2 * cos(a) / (1 + sin(a)))
+        switch centre {
+        case .zenith: return CGFloat(2 * cos(a) / (1 + sin(a)))
+        case .nadir:  return CGFloat(2 * cos(a) / (1 - sin(a)))
+        }
     }
 }

@@ -69,6 +69,12 @@ class EAppState {
     /// spins under a fixed-up aim cone — the phone becomes the dial. Driven
     /// by `EMotionService.aim`; toggled via `toggleCompassMode()`.
     var compassMode: Bool = false
+    /// Inside-out projection toggle. While true (and NOT in compass mode) the
+    /// stereographic projection centres on the NADIR: the celestial sphere
+    /// turns inside-out about the horizon, the visible sky landing OUTSIDE
+    /// the horizon circle. See `projectionCentre` / `ProjectionCentre`.
+    /// Mutually exclusive with compass mode (engaging compass clears it).
+    var flippedProjection: Bool = false
     /// Smoothed heading rotation (radians) while in compass mode — the
     /// low-pass `renderedRotation` eases toward `−aim.azimuth` each frame.
     /// `nil` when not in compass mode (re-entry snaps fresh to the live
