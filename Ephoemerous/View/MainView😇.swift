@@ -61,6 +61,13 @@ struct MainView😇: View {
     /// framing to freeze it into the committed camera.
     @State private var viewSize: CGSize = .zero
 
+    /// Camera scale/offset captured at the start of a NorthIN↔NorthOUT morph.
+    /// The camera glides from these to the committed `sky` target across the
+    /// morph (see `perspectiveMorphProgress`), so the reframe animates on the
+    /// Canvas in lockstep with the projection instead of snapping.
+    @State private var morphScaleFrom:  CGFloat = 0
+    @State private var morphOffsetFrom: CGSize  = .zero
+
     var body: some View {
       // One timeline, production's `ECanvasSchedule`: ticks at 60fps ONLY
       // while an app origin/date transition is in flight (the Here / Now
@@ -110,12 +117,23 @@ struct MainView😇: View {
             let t       = compassEngage
             let engaging = t > 0.0001
 
+            // NorthIN↔NorthOUT reframe: glide scale/offset from where the morph
+            // started to the committed `sky` target, by the SAME clock-driven
+            // progress the projection morph rides — so the zoom animates on the
+            // Canvas in lockstep with the eye slerp. At rest progress = 1, so
+            // this collapses to the plain (gesture-controlled) `sky` values.
+            let mp        = app.perspectiveMorphProgress
+            let baseScale = morphScaleFrom       + (sky.scale        - morphScaleFrom)       * mp
+            let baseOffW  = morphOffsetFrom.width  + (sky.offset.width  - morphOffsetFrom.width)  * mp
+            let baseOffH  = morphOffsetFrom.height + (sky.offset.height - morphOffsetFrom.height) * mp
+
             // Centre = canvasSize/2, which (because the oversize content is
-            // centred in the screen below) lands on the screen centre.
+            // centred in the screen below) lands on the screen centre. Compass
+            // framing (if engaged) blends on top of the morph base.
             let camera = SkyCamera(
-                scale:     sky.scale + (framing.scale - sky.scale) * t,
-                offset:    CGSize(width:  sky.offset.width  + (framing.offset.width  - sky.offset.width)  * t,
-                                  height: sky.offset.height + (framing.offset.height - sky.offset.height) * t),
+                scale:     baseScale + (framing.scale - baseScale) * t,
+                offset:    CGSize(width:  baseOffW + (framing.offset.width  - baseOffW) * t,
+                                  height: baseOffH + (framing.offset.height - baseOffH) * t),
                 rotation:  cameraRotation,   // committed pan baked in → Canvas draws centred + spun
                 size:      canvasSize,
                 viewpoint: app.viewpoint,
@@ -311,7 +329,7 @@ struct MainView😇: View {
         }
         
         .ignoresSafeArea()
-        
+
 //        .alert("Return to your location?",
 //               isPresented: Bindable(app)._compassReturnHomePrompt) {
 //            Button("Cancel", role: .cancel) { }
@@ -403,17 +421,19 @@ struct MainView😇: View {
         // the observer floor), then ease scale + recentre. The projection
         // switches instantly at the flag flip; the zoom settles around it.
         .onChange(of: app.isNorthOut) { _, northOut in
+            // Capture where the camera is NOW, commit the destination framing
+            // to `sky`, then hand the transition to the canvas clock. The
+            // camera glides `morphScaleFrom → sky.scale` by the morph progress
+            // (see the camera build) while the eye slerps — grid, labels and
+            // horizon all reproject each tick and move together.
+            morphScaleFrom  = sky.scale
+            morphOffsetFrom = sky.offset
             let target = northOut ? app.northOutDefaultScale : app.defaultScale
             sky.minScale     = target
             sky.defaultScale = target
-            // Morph the projection (eye slerp, reprojecting each frame) and
-            // reframe the zoom together. The eye sweeps ~142°, so give it room
-            // to read as an unfold rather than a snap. ▼ TWEAK duration ▼
-            withAnimation(.easeInOut(duration: 1.0)) {
-                app.perspectiveMorph = northOut ? 1 : 0
-                sky.scale  = target
-                sky.offset = .zero
-            }
+            sky.scale        = target
+            sky.offset       = .zero
+            app.animatePerspectiveMorph(to: northOut ? 1 : 0)
         }
         // Mirror the SkyLab's committed + live rotation into the app rotation
         // the compass rose reads (`renderedRotation`), so the rose appears —
@@ -454,9 +474,10 @@ struct MainView😇: View {
     /// rotating (Now), OR compass mode is following the heading; otherwise
     /// park so the freeze model holds.
     private var clockSchedule: ECanvasSchedule {
-        ECanvasSchedule(isAnimating: app._dateTransition     != nil
-                                  || app._originTransition   != nil
-                                  || app._rotationTransition != nil
+        ECanvasSchedule(isAnimating: app._dateTransition             != nil
+                                  || app._originTransition           != nil
+                                  || app._rotationTransition         != nil
+                                  || app._perspectiveMorphTransition != nil
                                   || app.compassMode)
     }
 

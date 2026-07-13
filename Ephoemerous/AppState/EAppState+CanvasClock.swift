@@ -99,9 +99,10 @@ extension EAppState {
         // getter that nils mid-read turns the body into an AttributeGraph
         // cycle → main-thread abort. Cleaning up once per frame in the draw
         // phase (like `_promotionActive` above) keeps the getters pure.
-        if let t = _activeTransition,   t.isFinished(at: time) { _activeTransition   = nil }
-        if let t = _rotationTransition, t.isFinished(at: time) { _rotationTransition = nil }
-        if let t = _dateTransition,     t.isFinished(at: time) { _dateTransition     = nil }
+        if let t = _activeTransition,           t.isFinished(at: time) { _activeTransition           = nil }
+        if let t = _rotationTransition,         t.isFinished(at: time) { _rotationTransition         = nil }
+        if let t = _dateTransition,             t.isFinished(at: time) { _dateTransition             = nil }
+        if let t = _perspectiveMorphTransition, t.isFinished(at: time) { _perspectiveMorphTransition = nil }
 
         advanceInertiaTransition(at: time)
         advanceOriginTransition(at:  time)

@@ -85,6 +85,35 @@ struct ERotationTransition {
     }
 }
 
+// MARK: - Perspective morph animation state
+// Drives the NorthIN↔NorthOUT transition from the per-frame canvas clock (like
+// the rotation / origin / date transitions) rather than `withAnimation`, so the
+// frozen Canvas layers — grid, stars, constellation lines — reproject every
+// tick and morph WITH the native labels instead of snapping while the labels
+// slide. `easedProgress` (0→1) also drives the camera reframe, so the zoom and
+// the projection morph stay in lockstep.
+struct EMorphTransition {
+    let from:      Double
+    let to:        Double
+    let startTime: Double
+    let duration:  Double
+
+    /// Smoothstep 0→1 across the transition (no overshoot — the sky shouldn't
+    /// bounce past its perspective).
+    func easedProgress(at time: Double) -> Double {
+        let x = Swift.max(0, Swift.min(1, (time - startTime) / duration))
+        return x * x * (3 - 2 * x)
+    }
+
+    func value(at time: Double) -> Double {
+        from + (to - from) * easedProgress(at: time)
+    }
+
+    func isFinished(at time: Double) -> Bool {
+        time >= startTime + duration
+    }
+}
+
 // MARK: - EAppState: rendered scale / offset
 extension EAppState {
 
@@ -249,6 +278,44 @@ extension EAppState {
         animateRotation(to: .zero)
         // (resetView dropped — it zoomed the production camera the SkyLab
         //  ignores; the rose's job here is purely the spin to north.)
+    }
+
+    // MARK: - Perspective morph (NorthIN ↔ NorthOUT)
+
+    /// Morph value feeding `viewpoint.morph` — the interpolated transition
+    /// while one is in flight, else the resting perspective. PURE read (the
+    /// finished transition is retired in `advanceCanvasClock`, not here, so a
+    /// body that reads this and `_perspectiveMorphTransition` can't trip an
+    /// AttributeGraph cycle).
+    var perspectiveMorph: Double {
+        if let t = _perspectiveMorphTransition, !t.isFinished(at: animationTime) {
+            return t.value(at: animationTime)
+        }
+        return isNorthOut ? 1 : 0
+    }
+
+    /// 0→1 progress of the morph (drives the camera reframe in lockstep with
+    /// the projection). 1 at rest, so the camera reads the committed scale.
+    var perspectiveMorphProgress: Double {
+        if let t = _perspectiveMorphTransition, !t.isFinished(at: animationTime) {
+            return t.easedProgress(at: animationTime)
+        }
+        return 1
+    }
+
+    /// Start (or retarget mid-flight) the morph toward `target` (0 = NorthIN,
+    /// 1 = NorthOUT). Seeds from the currently displayed value so a reversal
+    /// glides from where it is. Wall-clock `startTime` (the canvas may be
+    /// parked when the toggle fires — mirror `animateRotation`).
+    /// ▼ TWEAK the morph duration here ▼
+    func animatePerspectiveMorph(to target: Double, duration: Double = 1.0) {
+        let current = _perspectiveMorphTransition?.value(at: animationTime) ?? (1 - target)
+        _perspectiveMorphTransition = EMorphTransition(
+            from:      current,
+            to:        target,
+            startTime: Date.now.timeIntervalSinceReferenceDate,
+            duration:  duration
+        )
     }
 }
 
