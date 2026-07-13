@@ -166,7 +166,21 @@ struct CartographyLabels: View, Equatable {
         let tangent = atan2(pn.y - pp.y, pn.x - pp.x)
         let upX = -sin(tangent), upY = cos(tangent)
         let inX = zenith.x - pc.x, inY = zenith.y - pc.y
-        let flip = (upX * inX + upY * inY) < 0
+        let inMag = hypot(inX, inY)
+        let dot   = upX * inX + upY * inY
+        // Normally flip so the word's "up" faces the projection centre (dome
+        // readability). But when the line runs (near-)radially THROUGH the
+        // centre — every colure meridian in NorthOUT — "up" is perpendicular
+        // to "toward-centre", so this dot product sits on zero and the whole
+        // word chatters end-for-end on any sub-pixel change. In that
+        // degenerate zone fall back to a stable screen rule: read
+        // left-to-right (baseline advancing rightward).
+        let flip: Bool
+        if inMag > 0.5, abs(dot) > inMag * 0.2 {
+            flip = dot < 0
+        } else {
+            flip = cos(tangent) < 0
+        }
         let ordered = flip ? Array(chars.reversed()) : chars
 
         // Push the whole word to ONE side of the line — along each glyph's
