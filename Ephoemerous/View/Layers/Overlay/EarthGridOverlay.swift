@@ -18,6 +18,7 @@ import LoreKit
 struct EarthGridOverlay: View {
 
     let camera: SkyCamera
+    @Environment(EAppState.self) private var app
 
     private struct Band {
         let altitude:  Angle
@@ -43,51 +44,23 @@ struct EarthGridOverlay: View {
         .init(altitude: .degrees(-48), lineWidth: 0.7, opacity: 0.1),
     ]
 
-    /// Flipped (nadir-centred) view: the visible sky is OUTSIDE the horizon,
-    /// so the useful almucantars are the POSITIVE altitudes, fanning outward
-    /// from the horizon ring toward the (infinite) zenith.
-    private static let bandsNadir: [Band] = [
-        .init(altitude: .degrees( 0), lineWidth: 1.1, opacity: 0.55),
-        .init(altitude: .degrees(15), lineWidth: 0.7, opacity: 0.1),
-        .init(altitude: .degrees(30), lineWidth: 0.7, opacity: 0.1),
-        .init(altitude: .degrees(45), lineWidth: 0.7, opacity: 0.1),
-        .init(altitude: .degrees(60), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(-54), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(-60), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(-66), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(-72), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(-78), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(-84), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(-90), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(  0), lineWidth: 1.1, opacity: 0.55),
-//        .init(altitude: .degrees( 6), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(12), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(18), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(24), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(30), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(36), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(42), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(48), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(54), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(60), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(66), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(72), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(78), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(84), lineWidth: 0.7, opacity: 0.1),
-//        .init(altitude: .degrees(90), lineWidth: 0.7, opacity: 0.1),
-    ]
-
     var body: some View {
-        // Projection origin = canvas centre (the zenith in the default view,
-        // the nadir when flipped). Almucantars stay concentric about it.
-        let zenith = camera.screen(.zero)
-        let centre = camera.viewpoint.centre
-        let bands  = centre == .nadir ? Self.bandsNadir : Self.bands
+        switch camera.viewpoint.perspective {
+        case .northIn:  northInAlmucantars
+        case .northOut: northOutHorizon
+        }
+    }
 
-        ZStack {
-            ForEach(0 ..< bands.count, id: \.self) { i in
-                let band = bands[i]
-                let r    = Self.projectionRadius(band.altitude, centre: centre) * camera.scale
+    // MARK: NorthIN — concentric almucantars about the zenith
+
+    // Every constant-altitude circle maps to a true circle centred on the
+    // zenith = the projection origin = `camera.screen(.zero)`.
+    private var northInAlmucantars: some View {
+        let zenith = camera.screen(.zero)
+        return ZStack {
+            ForEach(0 ..< Self.bands.count, id: \.self) { i in
+                let band = Self.bands[i]
+                let r    = Self.projectionRadius(band.altitude) * camera.scale
                 // A dashed almucantar ring drawn ABSOLUTELY at the zenith,
                 // not via `Circle().frame(...)`. A framed Circle centres on
                 // its layout box (the ZStack centre), so it drifts off the
@@ -109,6 +82,18 @@ struct EarthGridOverlay: View {
         }
     }
 
+    // MARK: NorthOUT — the horizon as a projected great circle
+
+    // In the pole-centred view the horizon is no longer concentric — it's the
+    // observer's horizon great circle projected onto the celestial map, which
+    // slides with latitude (a circle at the poles, a straight line at the
+    // equator). Bare for now.
+    private var northOutHorizon: some View {
+        HorizonCurve(camera: camera, latitude: app.origin.latitude)
+            .stroke(.grid, style: .init(lineWidth: 1.1, lineCap: .round, lineJoin: .round))
+            .opacity(0.55)
+    }
+
     /// A circle of `radius` centred at an ABSOLUTE point (`center`) in the
     /// layer's own coordinate space — not at the view's frame centre. This
     /// is what pins each ring to the zenith: `camera.screen(.zero)` moves
@@ -127,15 +112,50 @@ struct EarthGridOverlay: View {
     }
 
     /// Stereographic screen radius (projection units) of the
-    /// constant-`altitude` circle. The two centres are circle-inverses about
-    /// the horizon: `.zenith` gives `2cos a/(1+sin a)` (horizon 2, zenith 0),
-    /// `.nadir` the reciprocal `2cos a/(1−sin a) = 4/ρ` (horizon 2, zenith ∞).
-    private static func projectionRadius(_ altitude: Angle,
-                                         centre: ProjectionCentre) -> CGFloat {
+    /// constant-`altitude` circle in the NorthIN (zenith-centred) view:
+    /// `2cos a/(1+sin a)` — horizon (0°) → 2, zenith (90°) → 0.
+    private static func projectionRadius(_ altitude: Angle) -> CGFloat {
         let a = altitude.radians
-        switch centre {
-        case .zenith: return CGFloat(2 * cos(a) / (1 + sin(a)))
-        case .nadir:  return CGFloat(2 * cos(a) / (1 - sin(a)))
+        return CGFloat(2 * cos(a) / (1 + sin(a)))
+    }
+}
+
+// MARK: - HorizonCurve
+// The observer's horizon (the great circle 90° from the zenith) projected
+// into the NorthOUT pole-centred view. We sample the circle and project each
+// point, so the shape self-forms: a full circle at high latitude, opening to
+// a straight line at the equator (where the horizon runs through both poles).
+//
+// The zenith is taken in the MERIDIAN-UP frame — RA' = 0, dec = latitude —
+// because `screen(rotatedEquatorial:)` projects in that same sidereally-
+// rotated frame the stars ride. LST cancels there, so this horizon is fixed
+// in time (only latitude moves it) while the stars wheel around the pole.
+private struct HorizonCurve: Shape {
+    let camera:   SkyCamera
+    let latitude: Angle
+
+    func path(in rect: CGRect) -> Path {
+        // Meridian-up zenith, and the orthonormal basis of its horizon plane.
+        let zr       = Angle.spherePoint(latitude: latitude, longitude: .zero)
+        let (e1, e2) = zr.baseVectors()
+        // "Infinity" cutoff: points streaking off toward the celestial north
+        // pole break the path (so the closing circle becomes an open line).
+        let origin   = camera.screen(.zero)
+        let bound    = Swift.max(rect.width, rect.height) * 4 + 4000
+
+        var path    = Path()
+        var started = false
+        let steps   = 360
+        for i in 0 ... steps {
+            let phi = Double(i) / Double(steps) * 2 * .pi
+            let p   = cos(phi) * e1 + sin(phi) * e2      // unit vector on the horizon
+            guard let sc = camera.screen(rotatedEquatorial: p),
+                  hypot(sc.x - origin.x, sc.y - origin.y) < bound else {
+                started = false                           // ran to infinity → break
+                continue
+            }
+            if started { path.addLine(to: sc) } else { path.move(to: sc); started = true }
         }
+        return path
     }
 }

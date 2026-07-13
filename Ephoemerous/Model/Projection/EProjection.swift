@@ -2,23 +2,20 @@ import SwiftUI
 import simd
 import LoreKit
 
-/// Which pole of the observer axis the stereographic projection is centred
-/// on — i.e. where the light-source "eye" sits.
+/// The two sky perspectives. They differ in what's ANCHORED and what MOVES:
 ///
-/// The two are related by a circle inversion through the horizon circle
-/// (radius 2): every screen point at radius `r` maps to `4/r`, angle
-/// unchanged, the horizon fixed. So flipping between them turns the sky
-/// inside-out about the horizon.
-enum ProjectionCentre: Equatable {
-    /// Eye at the NADIR → the zenith lands at screen centre and the visible
-    /// sky (alt > 0) maps INSIDE the radius-2 horizon circle. The observer
-    /// standing under their sky (default / AR pose).
-    case zenith
-    /// Eye at the ZENITH → the nadir lands at screen centre and the visible
-    /// sky maps OUTSIDE the horizon circle. The celestial sphere seen "from
-    /// the far side" — at northern latitudes the celestial south pole sits
-    /// near centre, the north pole races off to infinity.
-    case nadir
+/// - `northIn`  — the observer's frame: the HORIZON is a fixed circle at
+///   screen centre and the sky slides under it as location/time change.
+///   Celestial north sits IN (near centre, inside the horizon, for a
+///   northern observer).
+/// - `northOut` — the celestial frame: the SKY is fixed (centred on the
+///   South celestial pole, RA as radial spokes, Dec as concentric rings)
+///   and the HORIZON is the thing that moves — latitude slides it (a circle
+///   at the poles, a straight line at the equator). Celestial north is flung
+///   OUT to infinity, the visible sky OUTSIDE the horizon.
+enum SkyPerspective: Equatable {
+    case northIn
+    case northOut
 }
 
 
@@ -37,9 +34,9 @@ enum EProjection {
     struct Viewpoint {
         let originVector: SIMD3<Double>
         let planeVector:  SIMD3<Double>
-        /// Which pole to centre on — see `ProjectionCentre`. Defaults to the
-        /// observer-centred (`.zenith`) view.
-        var centre: ProjectionCentre = .zenith
+        /// Which perspective to project in — see `SkyPerspective`. Defaults
+        /// to the observer-centred (`.northIn`) view.
+        var perspective: SkyPerspective = .northIn
 
         /// Returns a 3-D point on the observer's local sky at the given
         /// altitude above the horizon, parametrised by `t ∈ 0...1`
@@ -125,22 +122,27 @@ enum EProjection {
     /// horizon onto the celestial equator. No separate code path.
     static func project(_ Q     : SIMD3<Double>,
                         viewpoint: Viewpoint) -> CGPoint? {
-        switch viewpoint.centre {
-        case .zenith:
-            // Eye at the nadir, tangent plane at the zenith → zenith centred,
-            // visible sky inside the horizon circle (the default view).
+        switch viewpoint.perspective {
+        case .northIn:
+            // Observer frame: eye at the nadir, tangent plane at the zenith →
+            // zenith centred, the horizon a fixed radius-2 circle, the sky
+            // moving under it.
             return project(
                 Q,
                 origin: viewpoint.planeVector,    // observer's nadir
                 plane:  viewpoint.originVector    // observer's zenith
             )
-        case .nadir:
-            // Eye and plane SWAPPED → nadir centred, visible sky outside the
-            // horizon circle. Exactly the circle-inversion flip (r → 4/r).
+        case .northOut:
+            // Celestial frame: eye at the celestial NORTH pole, tangent at
+            // the SOUTH pole. These are FIXED — the polar axis is invariant
+            // under the sidereal rotation the callers bake into `Q` — so the
+            // sky wheels around the SCP with time while location leaves the
+            // stars untouched (only the separately-drawn horizon moves). SCP
+            // at centre, north to infinity, visible sky outside the horizon.
             return project(
                 Q,
-                origin: viewpoint.originVector,   // observer's zenith
-                plane:  viewpoint.planeVector     // observer's nadir
+                origin: SIMD3(0, 0,  1),          // celestial north pole
+                plane:  SIMD3(0, 0, -1)           // celestial south pole
             )
         }
     }

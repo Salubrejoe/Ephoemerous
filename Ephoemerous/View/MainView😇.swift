@@ -396,15 +396,14 @@ struct MainView😇: View {
                 compassEngage = 0
             }
         }
-        // Flipping the projection reframes the camera: the nadir-centred view
-        // puts the visible sky OUTSIDE the horizon, so it wants a wider
-        // (zoomed-out) default AND a lower zoom floor than the observer view.
-        // Retune the coordinator's bounds so the wide scale actually holds
-        // (otherwise the rubber-band snaps it back to the observer floor),
-        // then ease scale + recentre. The projection inverts instantly at the
-        // flag flip; the zoom settles around it.
-        .onChange(of: app.flippedProjection) { _, flipped in
-            let target = flipped ? app.nadirDefaultScale : app.defaultScale
+        // Toggling NorthOUT reframes the camera: the pole-centred view is
+        // framed to the tropics, so it wants a wider default AND a lower zoom
+        // floor than the observer view. Retune the coordinator's bounds so the
+        // wide scale actually holds (otherwise the rubber-band snaps it back to
+        // the observer floor), then ease scale + recentre. The projection
+        // switches instantly at the flag flip; the zoom settles around it.
+        .onChange(of: app.isNorthOut) { _, northOut in
+            let target = northOut ? app.northOutDefaultScale : app.defaultScale
             sky.minScale     = target
             sky.defaultScale = target
             withAnimation(.easeInOut(duration: 0.5)) {

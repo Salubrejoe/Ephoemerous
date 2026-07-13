@@ -40,7 +40,7 @@ struct SkyCamera: Equatable {
             && l.sidereal == r.sidereal
             && l.viewpoint.originVector == r.viewpoint.originVector
             && l.viewpoint.planeVector == r.viewpoint.planeVector
-            && l.viewpoint.centre == r.viewpoint.centre
+            && l.viewpoint.perspective == r.viewpoint.perspective
     }
 
     /// Projection-unit point → screen pixel: scale about centre + the

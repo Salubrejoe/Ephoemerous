@@ -25,9 +25,9 @@ struct PuckAndConeOverlay: View {
 
     var body: some View {
         // The puck + cone are anchored to the zenith (projection origin). In
-        // the flipped view the origin is the NADIR and the zenith is at
-        // infinity, so the "you are here" mark is meaningless — hide it.
-        if app.isAtDeviceLocation, app.projectionCentre == .zenith {
+        // NorthOUT the origin is the celestial south pole and the zenith is
+        // off elsewhere, so the "you are here" mark is meaningless — hide it.
+        if app.isAtDeviceLocation, app.skyPerspective == .northIn {
             let zenith = camera.screen(.zero)
             ZStack {
                 // Aim cone wash — redraws as the device aim changes.

@@ -24,26 +24,31 @@ extension EAppState {
     var viewpoint: EProjection.Viewpoint {
         EProjection.Viewpoint(originVector: originVector,
                               planeVector:  planeVector,
-                              centre:       projectionCentre)
+                              perspective:  skyPerspective)
     }
 
-    /// Effective projection centre. Compass mode is intrinsically zenith/AR,
-    /// so it forces `.zenith` regardless of the flip toggle (they're mutually
-    /// exclusive — engaging compass also clears `flippedProjection`).
-    var projectionCentre: ProjectionCentre {
-        (flippedProjection && !compassMode) ? .nadir : .zenith
+    /// Effective sky perspective. Compass mode is intrinsically observer/AR,
+    /// so it forces `.northIn` regardless of the toggle (they're mutually
+    /// exclusive — engaging compass also clears `isNorthOut`).
+    var skyPerspective: SkyPerspective {
+        (isNorthOut && !compassMode) ? .northOut : .northIn
     }
 
-    /// Flip the inside-out projection on/off. The view observes
-    /// `flippedProjection` to reframe the camera for the new perspective.
-    func toggleProjectionFlip() { flippedProjection.toggle() }
+    /// Toggle NorthOUT on/off. The view observes `isNorthOut` to reframe the
+    /// camera for the new perspective.
+    func toggleSkyPerspective() { isNorthOut.toggle() }
 
-    /// Launch/home scale for the FLIPPED (nadir-centred) view. The visible
-    /// sky is now an annulus from the horizon (radius 2) outward, so we zoom
-    /// out from `defaultScale` — which frames the radius-2 disc to the whole
-    /// short side — to leave room for the sky beyond the horizon ring.
-    /// ▼ TWEAK the flipped zoom-out here ▼
-    var nadirDefaultScale: Double { defaultScale * 0.45 }
+    /// Launch/home scale for NorthOUT (the pole-centred view). Framed so the
+    /// tropic of Cancer matches the on-screen size of the NorthIN horizon:
+    /// NorthIN frames its horizon (ρ = 2) at `defaultScale`, and in the
+    /// pole-centred projection a Dec circle δ sits at ρ = 2·tan((δ+90°)/2),
+    /// so the tropic (δ = +ε) is at ρ_tropic — scale down by 2/ρ_tropic.
+    /// ▼ TWEAK the NorthOUT framing here ▼
+    var northOutDefaultScale: Double {
+        let eps       = EProjection.obliquity.radians
+        let tropicRho = 2 * tan((eps + .pi / 2) / 2)
+        return defaultScale * 2 / tropicRho
+    }
 
     /// The direction of the zenith in equatorial coordinates at the rendered observation time.
     /// The Local Sidereal Time rotates the sky so that the meridian lines up with the observer.

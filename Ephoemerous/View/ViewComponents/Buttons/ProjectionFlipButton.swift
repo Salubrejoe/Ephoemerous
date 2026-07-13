@@ -1,11 +1,11 @@
 import SwiftUI
 
 // MARK: - ProjectionFlipButton
-// Toggles the inside-out (nadir-centred) projection: the sky turns inside
-// out about the horizon — the visible sky moves OUTSIDE the horizon circle
-// and the view centres on the far celestial pole. Hidden in compass mode
-// (the two perspectives are mutually exclusive). Glass circle mirrors
-// `CompassModeButton` so the top control cluster reads as one family.
+// Toggles NorthOUT — the celestial-pole-centred perspective: the sky becomes
+// a fixed map centred on the South celestial pole with the visible sky
+// OUTSIDE the horizon, and the horizon becomes the moving element. Hidden in
+// compass mode (the two perspectives are mutually exclusive). Glass circle
+// mirrors `CompassModeButton` so the top control cluster reads as one family.
 struct ProjectionFlipButton: View {
 
     @Environment(EAppState.self) private var state
@@ -14,11 +14,11 @@ struct ProjectionFlipButton: View {
     private let faceSize: CGFloat = 44
 
     var body: some View {
-        let on = state.flippedProjection
+        let on = state.isNorthOut
 
         Button {
             haptic.impactOccurred()
-            state.toggleProjectionFlip()
+            state.toggleSkyPerspective()
         } label: {
             // A dot inside a ring reads as "sky inside the horizon"; the
             // hollow ring as the flipped "sky outside" perspective.
