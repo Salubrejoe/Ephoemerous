@@ -34,9 +34,11 @@ enum EProjection {
     struct Viewpoint {
         let originVector: SIMD3<Double>
         let planeVector:  SIMD3<Double>
-        /// Which perspective to project in — see `SkyPerspective`. Defaults
-        /// to the observer-centred (`.northIn`) view.
-        var perspective: SkyPerspective = .northIn
+        /// Perspective morph, 0…1: 0 = NorthIN (eye at the observer's nadir),
+        /// 1 = NorthOUT (eye at the celestial north pole). In between, the eye
+        /// slerps between them — a smooth, always-conformal transition that
+        /// rolls the view from the observer dome to the pole-centred sky.
+        var morph: Double = 0
 
         /// Returns a 3-D point on the observer's local sky at the given
         /// altitude above the horizon, parametrised by `t ∈ 0...1`
@@ -122,29 +124,27 @@ enum EProjection {
     /// horizon onto the celestial equator. No separate code path.
     static func project(_ Q     : SIMD3<Double>,
                         viewpoint: Viewpoint) -> CGPoint? {
-        switch viewpoint.perspective {
-        case .northIn:
-            // Observer frame: eye at the nadir, tangent plane at the zenith →
-            // zenith centred, the horizon a fixed radius-2 circle, the sky
-            // moving under it.
-            return project(
-                Q,
-                origin: viewpoint.planeVector,    // observer's nadir
-                plane:  viewpoint.originVector    // observer's zenith
-            )
-        case .northOut:
-            // Celestial frame: eye at the celestial NORTH pole, tangent at
-            // the SOUTH pole. These are FIXED — the polar axis is invariant
-            // under the sidereal rotation the callers bake into `Q` — so the
-            // sky wheels around the SCP with time while location leaves the
-            // stars untouched (only the separately-drawn horizon moves). SCP
-            // at centre, north to infinity, visible sky outside the horizon.
-            return project(
-                Q,
-                origin: SIMD3(0, 0,  1),          // celestial north pole
-                plane:  SIMD3(0, 0, -1)           // celestial south pole
-            )
-        }
+        // The projection light-source "eye". NorthIN = the observer's nadir
+        // (moves with location); NorthOUT = the celestial NORTH pole (fixed,
+        // invariant under the sidereal rotation baked into `Q`). The tangent
+        // plane is the antipode, `-eye`, so the screen centre glides from the
+        // zenith to the celestial SOUTH pole as the morph runs.
+        let m = viewpoint.morph
+        let eye: SIMD3<Double>
+        if m <= 0        { eye = viewpoint.planeVector }               // nadir
+        else if m >= 1   { eye = SIMD3(0, 0, 1) }                      // NCP
+        else             { eye = slerp(viewpoint.planeVector, SIMD3(0, 0, 1), m) }
+        return project(Q, origin: eye, plane: -eye)
+    }
+
+    /// Spherical linear interpolation of two unit vectors — the constant-speed
+    /// great-circle path from `a` (t = 0) to `b` (t = 1).
+    private static func slerp(_ a: SIMD3<Double>, _ b: SIMD3<Double>, _ t: Double) -> SIMD3<Double> {
+        let d = Swift.max(-1, Swift.min(1, simd_dot(a, b)))
+        let o = acos(d)
+        guard o > 1e-6 else { return a }
+        let s = sin(o)
+        return (sin((1 - t) * o) / s) * a + (sin(t * o) / s) * b
     }
  
     

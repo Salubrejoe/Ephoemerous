@@ -75,6 +75,10 @@ class EAppState {
     /// `skyPerspective` / `SkyPerspective`. Mutually exclusive with compass
     /// mode (engaging compass clears it).
     var isNorthOut: Bool = false
+    /// Eased NorthIN↔NorthOUT transition, 0…1 (0 = NorthIN, 1 = NorthOUT).
+    /// Driven by the view's `isNorthOut` onChange so the projection morph and
+    /// the camera reframe glide together; feeds `viewpoint.morph`.
+    var perspectiveMorph: Double = 0
     /// Smoothed heading rotation (radians) while in compass mode — the
     /// low-pass `renderedRotation` eases toward `−aim.azimuth` each frame.
     /// `nil` when not in compass mode (re-entry snaps fresh to the live

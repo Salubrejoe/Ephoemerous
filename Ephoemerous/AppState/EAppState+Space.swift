@@ -22,9 +22,11 @@ extension EAppState {
     /// per-point `EProjection.project` calls never re-read observable
     /// origin / plane state. See `EProjection.Viewpoint`.
     var viewpoint: EProjection.Viewpoint {
+        // Compass forces NorthIN; otherwise the eased `perspectiveMorph`
+        // drives the projection (0 = NorthIN, 1 = NorthOUT).
         EProjection.Viewpoint(originVector: originVector,
                               planeVector:  planeVector,
-                              perspective:  skyPerspective)
+                              morph:        compassMode ? 0 : perspectiveMorph)
     }
 
     /// Effective sky perspective. Compass mode is intrinsically observer/AR,

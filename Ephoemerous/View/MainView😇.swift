@@ -406,7 +406,11 @@ struct MainView😇: View {
             let target = northOut ? app.northOutDefaultScale : app.defaultScale
             sky.minScale     = target
             sky.defaultScale = target
-            withAnimation(.easeInOut(duration: 0.5)) {
+            // Morph the projection (eye slerp, reprojecting each frame) and
+            // reframe the zoom together. The eye sweeps ~142°, so give it room
+            // to read as an unfold rather than a snap. ▼ TWEAK duration ▼
+            withAnimation(.easeInOut(duration: 1.0)) {
+                app.perspectiveMorph = northOut ? 1 : 0
                 sky.scale  = target
                 sky.offset = .zero
             }

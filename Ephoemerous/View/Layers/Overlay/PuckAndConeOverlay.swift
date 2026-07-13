@@ -24,10 +24,11 @@ struct PuckAndConeOverlay: View {
     @Environment(EAppState.self) private var app
 
     var body: some View {
-        // The puck + cone are anchored to the zenith (projection origin). In
-        // NorthOUT the origin is the celestial south pole and the zenith is
-        // off elsewhere, so the "you are here" mark is meaningless — hide it.
-        if app.isAtDeviceLocation, app.skyPerspective == .northIn {
+        // The puck + cone are anchored to the zenith (projection origin). As
+        // the morph runs toward NorthOUT the origin drifts to the celestial
+        // south pole and the "you are here" mark stops meaning anything — so
+        // fade it out with the morph (fully gone in NorthOUT).
+        if app.isAtDeviceLocation, app.perspectiveMorph < 1 {
             let zenith = camera.screen(.zero)
             ZStack {
                 // Aim cone wash — redraws as the device aim changes.
@@ -39,6 +40,7 @@ struct PuckAndConeOverlay: View {
                     .position(zenith)
                     .allowsHitTesting(false)
             }
+            .opacity(1 - app.perspectiveMorph)
         }
     }
 
