@@ -111,7 +111,21 @@ struct DateCrown: View {
     private let flingMin:  Double  = 0.8   // rad/s to trigger a coast
     private let flingCap:  Double  = 12    // rad/s max spin
 
-    private let detentTick = UIImpactFeedbackGenerator(style: .light)
+    private var labelText: String {
+        let date = state.observationDate
+        let components = Calendar.current.dateComponents([.hour, .day, .month, .year], from: date)
+        
+        switch gear {
+        case .hours:
+            return components.hour?.description ?? ""
+        case .days:
+            return components.day?.description ?? ""
+        case .months:
+            return components.month?.description ?? ""
+        case .years:
+            return components.year?.description ?? ""
+        }
+    }
 
     // MARK: Body
 
@@ -121,22 +135,7 @@ struct DateCrown: View {
             let ringRadius = 2*radius + ringWidth/2
             
             ZStack {
-                // The glass band — a frosted annulus resting on the horizon
-                // line, hairline-edged so it reads as a physical bezel. The
-                // sky shows through the hole (and stays touchable there —
-                // see the donut contentShape).
-//                Circle()
-//                    .stroke(.ultraThinMaterial, lineWidth: ringWidth)
-//                    .frame(width: radius * 2, height: radius * 2)
-//                Circle()
-//                    .stroke(.primary.opacity(0.18), lineWidth: 0.7)
-//                    .frame(width: (radius + ringWidth / 2) * 2,
-//                           height: (radius + ringWidth / 2) * 2)
-//                Circle()
-//                    .stroke(.primary.opacity(0.18), lineWidth: 0.7)
-//                    .frame(width: (radius - ringWidth / 2) * 2,
-//                           height: (radius - ringWidth / 2) * 2)
-
+                
                 GlassRing(thickness: ringWidth)
                     .frame(
                         width : ringRadius,
@@ -148,8 +147,14 @@ struct DateCrown: View {
 
                 // Fixed 12-o'clock index the ticks sweep past.
                 Capsule()
-                    .fill(Color.accentColor)
-                    .frame(width: 3, height: 12)
+                    .fill(.ultraThickMaterial)
+                    .frame(width: 34
+                           , height: 34)
+                    .overlay {
+                        Text(labelText)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                    }
                     .offset(y: -radius + ringWidth/4)
             }
             .position(c)
@@ -176,8 +181,8 @@ struct DateCrown: View {
         return ZStack {
             ForEach(0 ..< n, id: \.self) { i in
                 Capsule()
-                    .fill(.tertiary)
-                    .frame(width: 4, height: 8)
+                    .fill(.secondary)
+                    .frame(width: 4, height: 16)
                     .offset(y: -radius + ringWidth/4)
                     .rotationEffect(.radians(Double(i) / Double(n) * 2 * .pi))
             }
@@ -224,7 +229,7 @@ struct DateCrown: View {
                 let dt  = now.timeIntervalSince(lastDragTime)
                 if dt > 0 { angularVelocity = d / dt }
                 lastDragTime = now
-                apply(delta: d)
+                apply(delta: d, over: max(dt, 0.008))
             }
             .onEnded { _ in
                 lastAngle = nil
@@ -236,7 +241,12 @@ struct DateCrown: View {
     /// `pendingUnits`), advance the observation date, and tick the detents.
     /// Steps are applied UN-animated — the per-step snap IS the wheel feel,
     /// and the sky redraw per step is the live preview.
-    private func apply(delta d: Double) {
+    ///
+    /// Haptics: count EVERY detent this frame crossed (the old code fired at
+    /// most one per frame and swallowed the rest — why fast spins went
+    /// silent) and hand the batch to `CrownHaptics`, which schedules them as
+    /// CoreHaptics transients spread across the frame — the iPod ratchet.
+    private func apply(delta d: Double, over window: TimeInterval) {
         wheelAngle   += d
         pendingUnits += d / (2 * .pi) * Double(gear.unitsPerLap)
         let whole = Int(pendingUnits)
@@ -247,10 +257,12 @@ struct DateCrown: View {
                                  animated: false)
 
         detentAccum += Double(whole)
-        let per = Double(gear.unitsPerDetent)
-        if abs(detentAccum) >= per {
-            detentTick.impactOccurred(intensity: 0.6)
+        let per     = Double(gear.unitsPerDetent)
+        let crossed = Int(abs(detentAccum) / per)
+        if crossed > 0 {
             detentAccum.formTruncatingRemainder(dividingBy: per)
+            let rate = window > 0 ? Double(crossed) / window : 0
+            CrownHaptics.shared.tick(count: crossed, window: window, rate: rate)
         }
     }
 
@@ -268,7 +280,7 @@ struct DateCrown: View {
                 let now = Date.now
                 let dt  = now.timeIntervalSince(last)
                 last = now
-                apply(delta: v * dt)
+                apply(delta: v * dt, over: dt)
                 v *= exp(-dt / flingTau)
             }
         }
