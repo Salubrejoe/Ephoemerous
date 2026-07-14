@@ -203,9 +203,14 @@ struct MainView😇: View {
                
                 // Curved cartographic labels — horizon rim + colures.
                 // Canvas (per-glyph curve), frozen via .equatable().
+                // `visibleRect` = the geo window centred in the overdraw
+                // margin, for the edge fade on curved words.
                 CartographyLabels(camera:   camera,
                                         latitude: app.origin.latitude,
-                                        date:     app.renderedObservationDate)
+                                        date:     app.renderedObservationDate,
+                                        visibleRect: CGRect(x: overdraw, y: overdraw,
+                                                            width:  geo.size.width,
+                                                            height: geo.size.height))
                     .equatable()
                 // Tiered native labels — each object reveals at its
                 // production zoom tier (see each overlay's gate):

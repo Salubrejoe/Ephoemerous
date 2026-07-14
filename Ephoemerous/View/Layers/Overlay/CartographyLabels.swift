@@ -17,11 +17,16 @@ struct CartographyLabels: View, Equatable {
     let camera:   SkyCamera
     let latitude: Angle   // observer latitude → sun rise/set azimuths
     let date:     Date    // → sun declination today
+    /// The on-screen window in this (oversized) canvas's coordinates — the
+    /// geo rect centred inside the overdraw margin. Words whose centre sits
+    /// near/off its edge fade out instead of clipping mid-word ("TUNNO").
+    let visibleRect: CGRect
 
     // Camera already folds in observer (viewpoint) + time (sidereal); add
     // latitude+date so the twilight roster redraws when they move.
     static func == (l: Self, r: Self) -> Bool {
         l.camera == r.camera && l.latitude == r.latitude && l.date == r.date
+            && l.visibleRect == r.visibleRect
     }
 
     private struct Colure { let ra: Angle; let centreDec: Double; let text: String }
@@ -186,6 +191,16 @@ struct CartographyLabels: View, Equatable {
         guard let pc = point(centre),
               let pp = point(centre - delta),
               let pn = point(centre + delta) else { return }
+
+        // Edge fade — a curved word half off the visible screen clips
+        // mid-word and reads as broken; fade it across the last ~48 pt
+        // instead. (Computed at the committed camera; the word reappears
+        // on the settle redraw, consistent with the freeze model.)
+        let edgeD = min(pc.x - visibleRect.minX, visibleRect.maxX - pc.x,
+                        pc.y - visibleRect.minY, visibleRect.maxY - pc.y)
+        let edgeFade = max(0, min(1, (edgeD - 8) / 40))
+        let alpha = opacity * Double(edgeFade)
+        guard alpha > 0.01 else { return }
         let tangent = atan2(pn.y - pp.y, pn.x - pp.x)
         let upX = -sin(tangent), upY = cos(tangent)
         let inX = zenith.x - pc.x, inY = zenith.y - pc.y
@@ -224,7 +239,7 @@ struct CartographyLabels: View, Equatable {
             let pos = CGPoint(x: here.x - CGFloat(sin(rotation)) * sideInset,
                               y: here.y + CGFloat(cos(rotation)) * sideInset)
             var g = ctx
-            g.opacity *= opacity
+            g.opacity *= alpha
             g.translateBy(x: pos.x, y: pos.y)
             g.rotate(by: .radians(rotation))
             g.draw(Text(String(ch)).font(font).foregroundStyle(color),

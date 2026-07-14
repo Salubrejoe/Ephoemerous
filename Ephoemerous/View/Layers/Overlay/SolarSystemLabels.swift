@@ -33,8 +33,17 @@ struct SolarSystemLabels: View {
     private var artist: EArtist { .shared }
 
     var body: some View {
+        // Declutter: labels never overlap. Priority runs Sun > Moon >
+        // planets (catalogue order among planets) — a lower body whose
+        // label would collide with a higher one drops to badge-only
+        // (conjunctions are exactly when people look; "cLuna" stamped over
+        // "Sole" is the #1 amateur tell on a map).
+        let sun   = sunScreen
+        let moon  = moonScreen
+        let marks = planetMarks
+
         ZStack {
-            ForEach(planetMarks, id: \.id) { mark in
+            ForEach(Array(marks.enumerated()), id: \.element.id) { i, mark in
                 // Tier-0 dot — a planet reads as a small tinted dot until
                 // its badge tier, then crossfades into the badge. Skipped
                 // for the selected planet (the promoted pin stands in).
@@ -53,7 +62,9 @@ struct SolarSystemLabels: View {
                 marker(for: .planet(mark.planet),
                        at: mark.sc,
                        category: .planet(mark.planet),
-                       text:     mark.planet.displayName)
+                       text:     mark.planet.displayName,
+                       suppressName: nameCollides(mark.sc,
+                                                  with: [sun, moon] + marks.prefix(i).map(\.sc)))
             }
 
             marker(for: .sun,
@@ -65,20 +76,33 @@ struct SolarSystemLabels: View {
             marker(for: .moon,
                    at: moonScreen,
                    category: .moon,
-                   text:     Strings.Bodies.moon)
+                   text:     Strings.Bodies.moon,
+                   suppressName: nameCollides(moon, with: [sun]))
 
+        }
+    }
+
+    /// True when a body's label box would overlap a higher-priority
+    /// body's. Labels extend trailing of the badge, so the box is generous
+    /// horizontally, tight vertically. ▼ TWEAK the collision box here ▼
+    private func nameCollides(_ sc: CGPoint?, with higher: [CGPoint?]) -> Bool {
+        guard let sc else { return false }
+        return higher.compactMap { $0 }.contains {
+            abs(sc.x - $0.x) < 110 && abs(sc.y - $0.y) < 22
         }
     }
 
     /// One positioned, constant-size label (or nothing if it doesn't
     /// project / is the promoted selection). The `1/pinch` counter-scale +
     /// `.position` is the shared recipe for every native overlay.
+    /// `suppressName` drops the label to badge-only (collision declutter).
     @ViewBuilder
     private func marker(for object: ESkyObject,
                         at sc: CGPoint?,
                         category: POICategory,
                         text: String,
-                        labelStyle: POILabelView.LabelStyle = .planetoids) -> some View {
+                        labelStyle: POILabelView.LabelStyle = .planetoids,
+                        suppressName: Bool = false) -> some View {
         if let sc, object != selected {
             let style = artist.poiStyle(for: category)
             if scale >= style.badgeIn {        // badge tier gate (Sun/Moon = 0)
@@ -86,7 +110,8 @@ struct SolarSystemLabels: View {
                              text:        text,
                              labelStyle: labelStyle,
                              badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
-                             nameReveal:  POILabelView.tierReveal(scale: scale, threshold: style.textIn))
+                             nameReveal:  suppressName ? 0
+                                 : POILabelView.tierReveal(scale: scale, threshold: style.textIn))
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
