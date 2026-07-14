@@ -2,20 +2,22 @@ import SwiftUI
 import LoreKit
 
 // MARK: - DatePickerPanel
-// Inline panel that springs up above MainToolbar when the user taps
-// the date pill. Five wheel `Picker`s — day / month / year / hour /
-// minute — each bound to a single calendar component of
-// `state.observationDate`. Writes route through
-// `commitPickedObservationDate(_:)` so same-day edits animate the sky
-// and day jumps cut cleanly (see EAppState+Time.swift for the
-// routing rationale).
+// The time-travel sheet. The INSTRUMENT leads: a glass watch-crown
+// (`DateCrown`) scrubs the observation date with the live sky above the
+// sheet as its preview — same "domain is the control" recipe as the
+// location picker's map. The FORM is buried where a form belongs: tap the
+// date readout and the five precise wheels unfold for surgical absolute
+// jumps (eclipse day, a birthday sky), then fold away again.
 //
-// Each wheel updates its component in isolation; when the user
-// changes month or year we clamp `day` to the new month's max so we
-// never construct an illegal date (e.g. 31 February).
+// Wheel mechanics (kept from the original panel): each wheel updates one
+// calendar component in isolation; month/year changes clamp `day` to the
+// new month's max so we never construct an illegal date (e.g. 31 Feb).
 struct DatePickerPanel: View {
 
     @Environment(EAppState.self) private var state
+
+    /// Precise-wheels disclosure — folded by default; the readout toggles.
+    @State private var showWheels = false
 
     /// 200-year span centred on the current year. Covers stargazing
     /// scenarios from historical (e.g. "sky over Paris during the
@@ -23,77 +25,115 @@ struct DatePickerPanel: View {
     private static let yearSpan: Int = 100
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 14) {
             sheetHeader
-            
-            HStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    Picker("Day", selection: dayBinding) {
-                        ForEach(1...daysInCurrentMonth, id: \.self) { d in
-                            Text("\(d)").tag(d)
-//                                .font(.footnote)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .frame(width: 55)
-                    .clipped()
-                    
-                    Picker("Month", selection: monthBinding) {
-                        ForEach(1...12, id: \.self) { m in
-                            Text(Self.monthName(m)).tag(m)
-//                                .font(.footnote)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .frame(width: 76)
-                    .clipped()
-                    
-                    Picker("Year", selection: yearBinding) {
-                        ForEach(yearRange, id: \.self) { y in
-                            Text(String(y)).tag(y)
-//                                .font(.footnote)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .clipped()
-                    
-                }
-                
-                Text(",")
-                
-                HStack(spacing: 0) {
-                    
-                    
-                    Picker("Hour", selection: hourBinding) {
-                        ForEach(0...23, id: \.self) { h in
-                            Text(String(format: "%02d", h)).tag(h)
-//                                .font(.footnote)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .frame(width: 55)
-                    .clipped()
-                    
-                    Text(":")
-                    
-                    Picker("Minute", selection: minuteBinding) {
-                        ForEach(0...59, id: \.self) { m in
-                            Text(String(format: "%02d", m)).tag(m)
-//                                .font(.footnote)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .frame(width: 55)
-                    .clipped()
-                }
+
+            // Readout — the current pick, and the door to the precise
+            // wheels underneath.
+            readout
+
+            if showWheels {
+                preciseWheels
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            } else {
+                DateCrown()
+                    .transition(.opacity)
             }
-            .labelsHidden()
-            .frame(height: 160)
-            
-        Spacer()
+
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .frame(height: 215)
+        .animation(.snappy(duration: 0.25), value: showWheels)
+    }
+
+    // MARK: - Readout
+
+    /// The picked date, big and current — scrubbing the crown updates it
+    /// live. Tapping unfolds the precise wheels (chevron flips).
+    private var readout: some View {
+        Button {
+            showWheels.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                Text(readoutText)
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(.snappy(duration: 0.2), value: readoutText)
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(showWheels ? 180 : 0))
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var readoutText: String {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM yyyy, HH:mm"
+        return f.string(from: state.observationDate)
+    }
+
+    // MARK: - Precise wheels (the buried form)
+
+    private var preciseWheels: some View {
+        HStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Picker("Day", selection: dayBinding) {
+                    ForEach(1...daysInCurrentMonth, id: \.self) { d in
+                        Text("\(d)").tag(d)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 55)
+                .clipped()
+
+                Picker("Month", selection: monthBinding) {
+                    ForEach(1...12, id: \.self) { m in
+                        Text(Self.monthName(m)).tag(m)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 76)
+                .clipped()
+
+                Picker("Year", selection: yearBinding) {
+                    ForEach(yearRange, id: \.self) { y in
+                        Text(String(y)).tag(y)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .clipped()
+            }
+
+            Text(",")
+
+            HStack(spacing: 0) {
+                Picker("Hour", selection: hourBinding) {
+                    ForEach(0...23, id: \.self) { h in
+                        Text(String(format: "%02d", h)).tag(h)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 55)
+                .clipped()
+
+                Text(":")
+
+                Picker("Minute", selection: minuteBinding) {
+                    ForEach(0...59, id: \.self) { m in
+                        Text(String(format: "%02d", m)).tag(m)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .frame(width: 55)
+                .clipped()
+            }
+        }
+        .labelsHidden()
+        .frame(height: 160)
     }
 
     // MARK: - Sheet header

@@ -371,7 +371,7 @@ struct MainView😇: View {
         }
         .sheet(isPresented: Bindable(app).isShowingDatePicker) {
             DatePickerPanel()
-                .presentationDetents([.height(250)])
+                .presentationDetents([.height(400)])
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
