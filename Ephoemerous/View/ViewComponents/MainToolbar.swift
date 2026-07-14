@@ -42,7 +42,8 @@ struct MainToolbar: View {
             HStack(spacing: 6) {
                 if notHere {
                     ToolbarResetButton(
-                        size: barHeight,
+                        size:   barHeight,
+                        symbol: "location.fill",             // back to HERE
                         action: state.goToDeviceLocation
                     )
                     .glassEffectID("resetHere", in: glassNS)
@@ -66,9 +67,10 @@ struct MainToolbar: View {
                 .glassEffectID("bar", in: glassNS)
 
                 if notNow {
-                    
+
                     ToolbarResetButton(
-                        size: barHeight,
+                        size:   barHeight,
+                        symbol: "clock.arrow.circlepath",    // back to NOW
                         action: { state.commitPickedObservationDate(.now, ) }
                     )
                     .glassEffectID("resetNow", in: glassNS)

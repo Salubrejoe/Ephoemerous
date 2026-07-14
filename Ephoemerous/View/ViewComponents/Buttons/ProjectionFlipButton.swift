@@ -20,17 +20,19 @@ struct ProjectionFlipButton: View {
             haptic.impactOccurred()
             state.toggleSkyPerspective()
         } label: {
-            // A dot inside a ring reads as "sky inside the horizon"; the
-            // hollow ring as the flipped "sky outside" perspective.
-            Image(systemName: on ? "circle.circle" : "smallcircle.filled.circle")
+            // A sphere with orbit arrows — "turn the celestial sphere
+            // around" — honest about what the toggle does, unlike the old
+            // abstract dot-in-ring.
+            Image(systemName: "rotate.3d")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
                 .frame(width: faceSize, height: faceSize)
-                .foregroundStyle(on ? Color.orange : Color.white)
+                .foregroundStyle(on ? Color.white : Color.primary)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.tint(on ? .orange : .clear).interactive(), in: .circle)
+        // Accent = "live/engaged", nothing is accent-filled at rest.
+        .glassEffect(.regular.tint(on ? Color.accentColor : .clear).interactive(), in: .circle)
         .animation(.snappy(duration: 0.25), value: on)
     }
 }

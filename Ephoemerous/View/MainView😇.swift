@@ -314,17 +314,27 @@ struct MainView😇: View {
         // pills. It acts on the shared EAppState the SkyLab camera reads,
         // so the sky follows; the clock above plays the transitions.
         .overlay(alignment: .top) {
-            VStack(spacing: 16) {
+            // Chrome grammar: context capsule alone at top-centre; every
+            // camera/lens control in ONE cluster on the trailing edge
+            // (corners anchor, edges shelve, the centre of the sky is
+            // sacred). 16-pt screen margin, 12-pt between stacked controls.
+            VStack(spacing: 12) {
                 MainToolbar()
-                CompassButton()
-                // Inside-out projection toggle — hidden in compass mode
-                // (mutually exclusive perspectives).
-                if !app.compassMode {
-                    ProjectionFlipButton()
+                HStack {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        // Compass rose — self-hides when the sky is upright.
+                        CompassButton()
+                        // Perspective toggle — hidden in compass mode
+                        // (mutually exclusive lenses).
+                        if !app.compassMode {
+                            ProjectionFlipButton()
+                        }
+                    }
                 }
                 Spacer()
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 16)
             .padding(.top,        64)
         }
         

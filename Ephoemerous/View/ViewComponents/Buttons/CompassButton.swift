@@ -29,16 +29,14 @@ struct CompassButton: View {
     /// Below this the sky reads as aligned: hide the compass.
     private let alignedEpsilon: Double = 0.5
 
-    // Circular face (matches the heading-up toggle's diameter) +
-    // orbiting-dot geometry.
-//    private let faceSize:    CGFloat = 37
-    private let faceSize:    CGFloat = 46
+    // Circular face + orbiting-dot geometry. ONE face size across every
+    // round control (44 pt) — the 46/44 mismatch was invisible to name and
+    // visible to feel.
+    private let faceSize:    CGFloat = 44
     private let roseCorners: Int     = 12
     private let roseBulge:   CGFloat = 2.5
-    private let orbitRadius: CGFloat = 17
-//    private let orbitRadius: CGFloat = 16
+    private let orbitRadius: CGFloat = 16
     private let dotSize:     CGFloat = 9
-//    private let dotSize:     CGFloat = 6
 
     private var roseShape: Squircle { Squircle(corners: roseCorners, bulge: roseBulge) }
 

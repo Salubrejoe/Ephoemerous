@@ -31,20 +31,15 @@ struct CompassModeButton: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 24, height: 24)
-                    // Lit orange (matching the rose's north tip) while
-                    // active; muted when off.
                     .frame(width: faceSize, height: faceSize)
-                    .foregroundStyle(
-                        !on ? Color.white : Color.accentColor
-                    )
-//                    .clipShape(.circle)
-//                    .glassEffect(.regular.interactive(), in: .circle)
+                    .foregroundStyle(on ? Color.white : Color.primary)
             }
-//            .buttonStyle(CompassModePressStyle())
             .buttonStyle(.plain)
-//            .frame(height: 47)
+            // Accent = "live/engaged". At rest this is quiet glass like every
+            // other control — the rarest mode toggle must not be the loudest
+            // pixel on screen; it EARNS its accent fill while compassing.
             .glassEffect(.regular.tint(
-                on ? .clear : .accentColor
+                on ? Color.accentColor : .clear
             ).interactive(), in: .circle)
             .animation(.snappy(duration: 0.25), value: on)
         }
