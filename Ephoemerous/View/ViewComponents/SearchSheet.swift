@@ -44,14 +44,13 @@ struct SearchSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
+                // Pure search — the camera controls moved to the
+                // bottom-trailing capsule (CameraClusterCapsule), so the
+                // bar has exactly one job.
                 searchHeader
 
                 // Hertzsprung–Russell diagram — full-screen star chart.
 //                hrButton
-                CompassModeButton()
-                // Compass rose, trailing of the heading-up toggle — auto-
-                // hides (collapses) when the sky is already upright.
-                
             }
                 .padding(.leading, 12)
                 .padding(.trailing, 14)

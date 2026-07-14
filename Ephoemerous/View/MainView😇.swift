@@ -319,29 +319,30 @@ struct MainView😇: View {
         // Production toolbar — Here / Now reset chips + location / date
         // pills. It acts on the shared EAppState the SkyLab camera reads,
         // so the sky follows; the clock above plays the transitions.
+        // Chrome grammar (current-Maps layout): context capsule ALONE at
+        // top-centre; the camera-family capsule (flip + compass mode)
+        // bottom-trailing just above the search bar — thumb territory; the
+        // transient compass rose on the OPPOSITE edge so it can appear /
+        // vanish without nudging the capsule. The sky's centre stays sacred.
         .overlay(alignment: .top) {
-            // Chrome grammar: context capsule alone at top-centre; every
-            // camera/lens control in ONE cluster on the trailing edge
-            // (corners anchor, edges shelve, the centre of the sky is
-            // sacred). 16-pt screen margin, 12-pt between stacked controls.
-            VStack(spacing: 12) {
-                MainToolbar()
-                HStack {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        // Compass rose — self-hides when the sky is upright.
-                        CompassButton()
-                        // Perspective toggle — hidden in compass mode
-                        // (mutually exclusive lenses).
-                        if !app.compassMode {
-                            ProjectionFlipButton()
-                        }
-                    }
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top,        64)
+            MainToolbar()
+                .padding(.horizontal, 16)
+                .padding(.top,        64)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            CameraClusterCapsule()
+                .padding(.trailing, 16)
+                // Clear the search sheet's resting bar (72-pt detent + home
+                // indicator); taller detents slide over, Maps-style.
+                // ▼ TWEAK the lift here ▼
+                .padding(.bottom,   124)
+        }
+        .overlay(alignment: .bottomLeading) {
+            // Compass rose — self-hides when the sky is upright; tap
+            // springs back to North.
+            CompassButton()
+                .padding(.leading, 16)
+                .padding(.bottom,  124)
         }
         
         .ignoresSafeArea()

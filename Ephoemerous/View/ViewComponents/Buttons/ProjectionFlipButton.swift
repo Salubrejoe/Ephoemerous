@@ -10,13 +10,18 @@ struct ProjectionFlipButton: View {
 
     @Environment(EAppState.self) private var state
 
+    /// `bare` = no glass of its own — for riding inside the shared camera
+    /// capsule, where the container carries the glass and the ENGAGED state
+    /// is spoken by the glyph tint (Maps' blue arrow), not a segment fill.
+    var bare: Bool = false
+
     private let haptic   = UIImpactFeedbackGenerator(style: .medium)
     private let faceSize: CGFloat = 44
 
     var body: some View {
         let on = state.isNorthOut
 
-        Button {
+        let button = Button {
             haptic.impactOccurred()
             state.toggleSkyPerspective()
         } label: {
@@ -28,12 +33,20 @@ struct ProjectionFlipButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
                 .frame(width: faceSize, height: faceSize)
-                .foregroundStyle(on ? Color.white : Color.primary)
+                .foregroundStyle(bare ? (on ? Color.accentColor : Color.primary)
+                                      : (on ? Color.white       : Color.primary))
         }
         .buttonStyle(.plain)
-        // Accent = "live/engaged", nothing is accent-filled at rest.
-        .glassEffect(.regular.tint(on ? Color.accentColor : .clear).interactive(), in: .circle)
         .animation(.snappy(duration: 0.25), value: on)
+
+        if bare {
+            button
+        } else {
+            // Standalone — carries its own glass. Accent = "live/engaged",
+            // nothing is accent-filled at rest.
+            button.glassEffect(.regular.tint(on ? Color.accentColor : .clear)
+                .interactive(), in: .circle)
+        }
     }
 }
 

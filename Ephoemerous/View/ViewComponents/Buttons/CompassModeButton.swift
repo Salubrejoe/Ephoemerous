@@ -15,6 +15,11 @@ struct CompassModeButton: View {
 
     @Environment(EAppState.self) private var state
 
+    /// `bare` = no glass of its own — for riding inside the shared camera
+    /// capsule; the engaged state is spoken by the glyph tint (Maps' blue
+    /// arrow), not a segment fill.
+    var bare: Bool = false
+
     private let haptic   = UIImpactFeedbackGenerator(style: .medium)
     private let faceSize: CGFloat = 44
 
@@ -23,7 +28,7 @@ struct CompassModeButton: View {
         if EMotionService.shared.isAvailable {
             let on = state.compassMode
 
-            Button {
+            let button = Button {
                 haptic.impactOccurred()
                 state.toggleCompassMode()
             } label: {
@@ -32,16 +37,21 @@ struct CompassModeButton: View {
                     .scaledToFit()
                     .frame(width: 24, height: 24)
                     .frame(width: faceSize, height: faceSize)
-                    .foregroundStyle(on ? Color.white : Color.primary)
+                    .foregroundStyle(bare ? (on ? Color.accentColor : Color.primary)
+                                          : (on ? Color.white       : Color.primary))
             }
             .buttonStyle(.plain)
-            // Accent = "live/engaged". At rest this is quiet glass like every
-            // other control — the rarest mode toggle must not be the loudest
-            // pixel on screen; it EARNS its accent fill while compassing.
-            .glassEffect(.regular.tint(
-                on ? Color.accentColor : .clear
-            ).interactive(), in: .circle)
             .animation(.snappy(duration: 0.25), value: on)
+
+            if bare {
+                button
+            } else {
+                // Standalone — carries its own glass. Accent = "live/engaged";
+                // it EARNS its fill while compassing, quiet glass at rest.
+                button.glassEffect(.regular.tint(
+                    on ? Color.accentColor : .clear
+                ).interactive(), in: .circle)
+            }
         }
     }
 }
