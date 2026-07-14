@@ -231,6 +231,7 @@ struct MainView😇: View {
                 FavouriteHeart(camera: camera,
                                         stars: app.favouriteStars,
                                         pinch: effPinch,
+                                        scale: liveScale,
                                         rotation: liveRot,
                                         selectedID: selectedStarID)
                 StarLabels(camera: camera,

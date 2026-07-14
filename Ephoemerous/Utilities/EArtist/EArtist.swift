@@ -36,7 +36,11 @@ struct EArtist {
     var userPuckSize            : CGFloat { 22 }
     var userPuckConeColor       : Color   { palette.userPuckCone }
     var userPuckConeRadius      : CGFloat { 90 }
-    var userPuckConeOpacity     : Double  { 0.32 }
+    /// Hushed — "you are here" is ambient whisper-tier, and the cone was the
+    /// loudest shape on the canvas (metadata louder than the stars it points
+    /// at). Length stays honest (tip on the aimed point); only the volume
+    /// drops. ▼ TWEAK ▼
+    var userPuckConeOpacity     : Double  { 0.16 }
     var userPuckConeMinHalfAngle: Double  { 8 }    // degrees
     var userPuckConeMaxHalfAngle: Double  { 60 }   // degrees
     /// Pitch→length honesty for the aim cone (1 = tip on the aimed point).

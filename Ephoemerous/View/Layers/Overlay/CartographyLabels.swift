@@ -27,6 +27,14 @@ struct CartographyLabels: View, Equatable {
     private struct Colure { let ra: Angle; let centreDec: Double; let text: String }
     private struct Band   { let altitude: Angle; let rising: String; let setting: String }
 
+    // Whisper-tier zoom gates. At the default view (~90) fourteen
+    // cartography labels all spoke at once — a choir, not a whisper. Only
+    // the horizon names greet the default view; the colures and twilight
+    // names reveal as the user zooms in, same tier machinery as the POI
+    // labels. ▼ TWEAK the reveal scales here ▼
+    private static let colureTextIn:   Double = 120
+    private static let twilightTextIn: Double = 150
+
     var body: some View {
         Canvas { ctx, _ in
             let artist = EArtist.shared
@@ -49,18 +57,24 @@ struct CartographyLabels: View, Equatable {
             drawCurved(String(localized: "WESTERN HORIZON"), centre: 0.25, probe: 0.01,
                        point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont, ctx)
 
-            // Colures — constant-RA meridians through the equinox/solstice points.
-            let eps = AstroConstants.obliquity.radians
-            let colures: [Colure] = [
-                .init(ra: Angle(hours: 0),  centreDec:  0,   text: String(localized: "VERNAL EQUINOX")),
-                .init(ra: Angle(hours: 6),  centreDec:  eps, text: String(localized: "SUMMER SOLSTICE")),
-                .init(ra: Angle(hours: 12), centreDec:  0,   text: String(localized: "AUTUMNAL EQUINOX")),
-                .init(ra: Angle(hours: 18), centreDec: -eps, text: String(localized: "WINTER SOLSTICE")),
-            ]
-            for c in colures {
-                drawCurved(c.text, centre: c.centreDec, probe: 0.0017,   // 0.5° in radians
-                           point: { meridianPoint(ra: c.ra, dec: $0) },
-                           zenith: zenith, color: meridianColor, font: merdianF, ctx)
+            // Colures — constant-RA meridians through the equinox/solstice
+            // points. Tiered: reveal past `colureTextIn`.
+            let colureReveal = POILabelView.tierReveal(scale: camera.scale,
+                                                       threshold: Self.colureTextIn)
+            if colureReveal > 0.01 {
+                let eps = AstroConstants.obliquity.radians
+                let colures: [Colure] = [
+                    .init(ra: Angle(hours: 0),  centreDec:  0,   text: String(localized: "VERNAL EQUINOX")),
+                    .init(ra: Angle(hours: 6),  centreDec:  eps, text: String(localized: "SUMMER SOLSTICE")),
+                    .init(ra: Angle(hours: 12), centreDec:  0,   text: String(localized: "AUTUMNAL EQUINOX")),
+                    .init(ra: Angle(hours: 18), centreDec: -eps, text: String(localized: "WINTER SOLSTICE")),
+                ]
+                for c in colures {
+                    drawCurved(c.text, centre: c.centreDec, probe: 0.0017,   // 0.5° in radians
+                               point: { meridianPoint(ra: c.ra, dec: $0) },
+                               zenith: zenith, color: meridianColor, font: merdianF,
+                               opacity: colureReveal, ctx)
+                }
             }
 
             // Twilight roster — each band rides its own almucantar ring at
@@ -68,6 +82,10 @@ struct CartographyLabels: View, Equatable {
             // (west), so they sit where the sun actually crosses that
             // altitude today (and clear of EASTERN/WESTERN HORIZON).
             let twilightColor = artist.gridColor
+            // Tiered: twilight names reveal past `twilightTextIn` — the
+            // default view keeps only the horizon names.
+            let twilightReveal = POILabelView.tierReveal(scale: camera.scale,
+                                                         threshold: Self.twilightTextIn)
             let phi = latitude.radians
             let dec = sunDeclination
             let bands: [Band] = [
@@ -80,19 +98,23 @@ struct CartographyLabels: View, Equatable {
                 .init(altitude: .degrees(-18), rising: String(localized: "astronomical"),
                                                setting: String(localized: "astronomical")),
             ]
-            for band in bands {
-                guard let riseAz = sunRiseAzimuth(altitude: band.altitude.radians,
-                                                  dec: dec, lat: phi) else { continue }
-                let point: (Double) -> CGPoint? = { t in
-                    camera.screen(rotatedEquatorial:
-                        camera.viewpoint.skyPoint(altitude: band.altitude, at: t))
+            if twilightReveal > 0.01 {
+                for band in bands {
+                    guard let riseAz = sunRiseAzimuth(altitude: band.altitude.radians,
+                                                      dec: dec, lat: phi) else { continue }
+                    let point: (Double) -> CGPoint? = { t in
+                        camera.screen(rotatedEquatorial:
+                            camera.viewpoint.skyPoint(altitude: band.altitude, at: t))
+                    }
+                    drawCurved(band.rising,  centre: azimuthToT(riseAz),
+                               probe: 0.01, point: point, zenith: zenith,
+                               color: twilightColor, font: twilightFont,
+                               opacity: twilightReveal, ctx)
+                    drawCurved(band.setting, centre: azimuthToT(2 * .pi - riseAz),
+                               probe: 0.01, point: point, zenith: zenith,
+                               color: twilightColor, font: twilightFont,
+                               opacity: twilightReveal, ctx)
                 }
-                drawCurved(band.rising,  centre: azimuthToT(riseAz),
-                           probe: 0.01, point: point, zenith: zenith,
-                           color: twilightColor, font: twilightFont, ctx)
-                drawCurved(band.setting, centre: azimuthToT(2 * .pi - riseAz),
-                           probe: 0.01, point: point, zenith: zenith,
-                           color: twilightColor, font: twilightFont, ctx)
             }
         }
     }
@@ -145,10 +167,11 @@ struct CartographyLabels: View, Equatable {
                             zenith: CGPoint,
                             color: Color,
                             font: Font,
+                            opacity: Double = 1,
                             _ ctx: GraphicsContext) {
         let chars = Array(text)
         let n = chars.count
-        guard n > 1 else { return }
+        guard n > 1, opacity > 0.01 else { return }
 
         // Param step for ~`spacing` screen-pt between glyphs, measured
         // locally (a meridian's projected scale varies along its length).
@@ -201,6 +224,7 @@ struct CartographyLabels: View, Equatable {
             let pos = CGPoint(x: here.x - CGFloat(sin(rotation)) * sideInset,
                               y: here.y + CGFloat(cos(rotation)) * sideInset)
             var g = ctx
+            g.opacity *= opacity
             g.translateBy(x: pos.x, y: pos.y)
             g.rotate(by: .radians(rotation))
             g.draw(Text(String(ch)).font(font).foregroundStyle(color),

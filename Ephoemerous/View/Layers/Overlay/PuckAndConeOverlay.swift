@@ -1,5 +1,6 @@
 import SwiftUI
 import simd
+import LoreKit
 
 // MARK: - SkyLabUserLocationOverlay
 // The "you are here" cluster — aim cone + globe puck — anchored at the
@@ -119,21 +120,20 @@ struct PuckAndConeOverlay: View {
         return path
     }
 
-    // MARK: Puck (circular — squircle border dropped)
+    // MARK: Puck — a mute mark, not a button
 
+    // A glyph inside a circle PROMISES a tap (it reads as a POI badge /
+    // control) but the puck isn't tappable — a broken affordance. Maps'
+    // blue dot works because it's mute: a dot, a ring, done. Ours is the
+    // signature scallop squircle (the same family as the compass rose face
+    // and the horizon bump), solid in the grid ink with a casing ring so it
+    // reads "marker", never "button".
     private var puck: some View {
-        let size   = EArtist.shared.userPuckSize
-        let symbol = EArtist.shared.userLocationGlobeSymbol(
-            forLongitude: app.origin.longitude.degrees).rawValue
-        return ZStack {
-//            Circle().fill(EArtist.shared.gridColor)
-            Image(systemName: "binoculars.circle")
-                .resizable()
-                .scaledToFit()
-                .foregroundStyle(EArtist.shared.gridColor)
-                .padding(size * 0.06)
-        }
-        .frame(width: size, height: size)
-//        .shadow(color: .black.opacity(0.35), radius: 1.5)
+        let size = EArtist.shared.userPuckSize * 0.7
+        let mark = Squircle(corners: 12, bulge: 2.5)
+        return mark
+            .fill(EArtist.shared.gridColor)
+            .overlay(mark.stroke(EArtist.shared.canvasBackground, lineWidth: 2))
+            .frame(width: size, height: size)
     }
 }
