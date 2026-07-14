@@ -1,27 +1,32 @@
 import SwiftUI
+import LoreKit
 
 // MARK: - DateCrown
-// The time-travel instrument: a glass watch-crown / iPod-wheel hybrid.
-// Drag around the disc and the observation date scrubs — the SKY above the
-// sheet is the live preview (the same "domain is the control" recipe as the
-// location picker's map). Flick it and it coasts; every detent ticks.
+// The time-travel instrument: a glass ring RESTING ON THE HORIZON. When the
+// date picker presents, the camera glides home to the default framing and
+// this annulus lands exactly on the horizon circle (NorthIN) — or the
+// tropic (NorthOUT): `northOutDefaultScale` is derived so the tropic sits
+// at the same screen radius (ρ_tropic · northOutScale ≡ 2 · defaultScale),
+// so the ring is ONE circle on screen and what changes is which celestial
+// line it embodies. You grab the boundary of your sky and turn time.
 //
-// A real watch crown has GEAR POSITIONS — pulled out one stop it sets the
-// date, two stops the time. Ours shifts gears with the chips in the centre:
+// Drag around the ring like an iPod wheel — the sky inside is the live
+// preview (and stays touchable through the hole; the hit area is the donut
+// only). Flick to coast; every detent ticks.
 //
-//   • Hours  — one lap = one day (one turn of the dial = one turn of the
+// Gear positions (shifted from the panel's segmented control):
+//
+//   • Hours  — one lap = one day (one turn of the ring = one turn of the
 //              sky, which is physically true). Scrubs by the minute,
 //              ticks by the hour.
 //   • Days   — one lap = 30 days; click per day, time-of-day held, so you
 //              compare "same hour, night after night" (moon phases roll).
-//   • Months — one lap = 12 months: the dial becomes the year-circle
+//   • Months — one lap = 12 months: the ring becomes the year-circle
 //              (the zodiac wheel). Click per month.
 //   • Years  — one lap = 12 years (≈ one Jupiter orbit). Click per year.
 //
 // Whole-unit stepping is deliberate — it keeps the wheel-picker's
-// comparability (click, click, watch the sky change) that the stock
-// UIDatePicker did well, while burying the form itself as the precise
-// fallback behind the readout.
+// comparability (click, click, watch the sky change).
 struct DateCrown: View {
 
     @Environment(EAppState.self) private var state
@@ -41,7 +46,7 @@ struct DateCrown: View {
             }
         }
 
-        /// Scrub units per full lap of the dial.
+        /// Scrub units per full lap of the ring.
         var unitsPerLap: Int {
             switch self {
             case .hours:  return 24 * 60   // unit = 1 minute → lap = 1 day
@@ -80,7 +85,13 @@ struct DateCrown: View {
 
     // MARK: State
 
-    @State private var gear: Gear = .hours
+    /// Centreline radius (screen pt) — the horizon circle: 2 · defaultScale.
+    /// The panel computes it so the ring rests on the cartography.
+    let radius: CGFloat
+    /// The active gear — owned by the panel (its segmented control shifts
+    /// it), bound in so the ring and the control stay one instrument.
+    @Binding var gear: Gear
+
     /// Visual spin of the tick ring (radians, unbounded).
     @State private var wheelAngle: Double = 0
     /// Last touch angle — nil between drags.
@@ -94,95 +105,114 @@ struct DateCrown: View {
     @State private var lastDragTime: Date = .distantPast
     @State private var inertiaTask: Task<Void, Never>? = nil
 
-    // ▼ TWEAK the crown feel here ▼
-    private let diameter:   CGFloat = 240
-    private let flingTau:   Double  = 0.7   // coast decay time constant
-    private let flingMin:   Double  = 0.8   // rad/s to trigger a coast
-    private let flingCap:   Double  = 12    // rad/s max spin
+    // ▼ TWEAK the ring feel here ▼
+    private let ringWidth: CGFloat = 36    // thumb-band width
+    private let flingTau:  Double  = 0.7   // coast decay time constant
+    private let flingMin:  Double  = 0.8   // rad/s to trigger a coast
+    private let flingCap:  Double  = 12    // rad/s max spin
 
     private let detentTick = UIImpactFeedbackGenerator(style: .light)
-    private let gearTick   = UIImpactFeedbackGenerator(style: .medium)
 
     // MARK: Body
 
     var body: some View {
-        ZStack {
-            // The glass disc — the crown face.
-            Color.clear
-                .frame(width: diameter, height: diameter)
-                .glassEffect(.regular.interactive(), in: .circle)
+        GeometryReader { geo in
+            let c = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+            let ringRadius = 2*radius + ringWidth/2
+            
+            ZStack {
+                // The glass band — a frosted annulus resting on the horizon
+                // line, hairline-edged so it reads as a physical bezel. The
+                // sky shows through the hole (and stays touchable there —
+                // see the donut contentShape).
+//                Circle()
+//                    .stroke(.ultraThinMaterial, lineWidth: ringWidth)
+//                    .frame(width: radius * 2, height: radius * 2)
+//                Circle()
+//                    .stroke(.primary.opacity(0.18), lineWidth: 0.7)
+//                    .frame(width: (radius + ringWidth / 2) * 2,
+//                           height: (radius + ringWidth / 2) * 2)
+//                Circle()
+//                    .stroke(.primary.opacity(0.18), lineWidth: 0.7)
+//                    .frame(width: (radius - ringWidth / 2) * 2,
+//                           height: (radius - ringWidth / 2) * 2)
 
-            // Tick ring, spinning under the finger.
-            tickRing
-                .rotationEffect(.radians(wheelAngle))
+                GlassRing(thickness: ringWidth)
+                    .frame(
+                        width : ringRadius,
+                        height: ringRadius
+                    )
+                // Ticks riding the band, spinning under the finger.
+                tickRing
+                    .rotationEffect(.radians(wheelAngle))
 
-            // Fixed 12-o'clock index the ticks sweep past.
-            Capsule()
-                .fill(Color.accentColor)
-                .frame(width: 3, height: 12)
-                .offset(y: -diameter / 2 + 17)
-
-            // Gear chips — the crown's pull-out positions, worn as a
-            // centre complication.
-            gearChips
+                // Fixed 12-o'clock index the ticks sweep past.
+                Capsule()
+                    .fill(Color.accentColor)
+                    .frame(width: 3, height: 12)
+                    .offset(y: -radius + ringWidth/4)
+            }
+            .position(c)
+            // Hit area = the band only. Taps and pans INSIDE the ring fall
+            // through to the sky; the map stays live while you scrub time.
+            .contentShape(Annulus(centre: c,
+                                  radius: radius,
+                                  width:  ringWidth + 12), eoFill: true)
+            .gesture(dragGesture(centre: c))
         }
-        .frame(width: diameter, height: diameter)
-        .contentShape(.circle)
-        .gesture(dragGesture)
+        // Gear shifted (externally, via the panel's segmented control) →
+        // drop banked fractions so the new ratio starts clean.
+        .onChange(of: gear) { _, _ in
+            pendingUnits = 0
+            detentAccum  = 0
+        }
         .onDisappear { inertiaTask?.cancel() }
     }
 
-    // MARK: Ring
+    // MARK: Ring ticks
 
     private var tickRing: some View {
         let n = gear.ticks
         return ZStack {
             ForEach(0 ..< n, id: \.self) { i in
                 Capsule()
-                    .fill(.primary.opacity(0.45))
-                    .frame(width: 2, height: 10)
-                    .offset(y: -diameter / 2 + 18)
+                    .fill(.tertiary)
+                    .frame(width: 4, height: 8)
+                    .offset(y: -radius + ringWidth/4)
                     .rotationEffect(.radians(Double(i) / Double(n) * 2 * .pi))
             }
         }
         .animation(.snappy(duration: 0.25), value: n)
     }
 
-    // MARK: Gear chips
+    // MARK: Donut hit shape
 
-    private var gearChips: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 10) { chip(.hours);  chip(.days)  }
-            HStack(spacing: 10) { chip(.months); chip(.years) }
+    /// Annulus path (even-odd) centred on `centre` — the ring band plus a
+    /// little grab margin, so the hole stays transparent to touches.
+    private struct Annulus: Shape {
+        let centre: CGPoint
+        let radius: CGFloat
+        let width:  CGFloat
+        func path(in rect: CGRect) -> Path {
+            var p = Path()
+            let ro = radius + width / 2
+            let ri = max(0, radius - width / 2)
+            p.addEllipse(in: CGRect(x: centre.x - ro, y: centre.y - ro,
+                                    width: ro * 2, height: ro * 2))
+            p.addEllipse(in: CGRect(x: centre.x - ri, y: centre.y - ri,
+                                    width: ri * 2, height: ri * 2))
+            return p
         }
-    }
-
-    private func chip(_ g: Gear) -> some View {
-        Button {
-            gearTick.impactOccurred()
-            withAnimation(.snappy(duration: 0.2)) { gear = g }
-            pendingUnits = 0
-            detentAccum  = 0
-        } label: {
-            Text(g.label)
-                .font(.caption.weight(gear == g ? .bold : .regular))
-                .foregroundStyle(gear == g ? Color.accentColor : Color.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical,   4)
-                .contentShape(.capsule)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Drag → time
 
-    private var dragGesture: some Gesture {
+    private func dragGesture(centre c: CGPoint) -> some Gesture {
         DragGesture(minimumDistance: 8)
             .onChanged { v in
                 inertiaTask?.cancel()
                 inertiaTask = nil
-                let c = diameter / 2
-                let a = atan2(v.location.y - c, v.location.x - c)
+                let a = atan2(v.location.y - c.y, v.location.x - c.x)
                 guard let last = lastAngle else {
                     lastAngle    = a
                     lastDragTime = .now
@@ -257,7 +287,7 @@ struct DateCrown: View {
         LinearGradient(colors: [.indigo, .black],
                        startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
-        DateCrown()
+        DateCrown(radius: 170, gear: .constant(.hours))
             .environment(EAppState())
     }
 }

@@ -2,12 +2,19 @@ import SwiftUI
 import LoreKit
 
 // MARK: - DatePickerPanel
-// The time-travel sheet. The INSTRUMENT leads: a glass watch-crown
-// (`DateCrown`) scrubs the observation date with the live sky above the
-// sheet as its preview — same "domain is the control" recipe as the
-// location picker's map. The FORM is buried where a form belongs: tap the
-// date readout and the five precise wheels unfold for surgical absolute
-// jumps (eclipse day, a birthday sky), then fold away again.
+// The time-travel instrument, FREE-FLOATING — no sheet. Sheets are for
+// content; instruments stand on the sky. The crown (`DateCrown`) floats
+// above one control row:
+//
+//     [ Now ]   [ Hours · Days · Months · Years ]   [ ✕ ]
+//
+// No title (a crown needs no nameplate) and no date readout — the toolbar
+// capsule at the top is already the live readout, counting as you scrub.
+// The sky all around stays touchable.
+//
+// The precise five-wheel form survives as the escape hatch behind the
+// crown's quiet centre glyph: it unfolds in place of the dial for surgical
+// absolute jumps (eclipse day), and the row's dial chip folds it away.
 //
 // Wheel mechanics (kept from the original panel): each wheel updates one
 // calendar component in isolation; month/year changes clamp `day` to the
@@ -16,8 +23,12 @@ struct DatePickerPanel: View {
 
     @Environment(EAppState.self) private var state
 
-    /// Precise-wheels disclosure — folded by default; the readout toggles.
+    @State private var gear: DateCrown.Gear = .hours
+    /// Precise-wheels disclosure — folded by default; the crown's centre
+    /// glyph opens it, the row's dial chip closes it.
     @State private var showWheels = false
+
+    private let gearTick = UIImpactFeedbackGenerator(style: .medium)
 
     /// 200-year span centred on the current year. Covers stargazing
     /// scenarios from historical (e.g. "sky over Paris during the
@@ -25,58 +36,93 @@ struct DatePickerPanel: View {
     private static let yearSpan: Int = 100
 
     var body: some View {
-        VStack(spacing: 14) {
-            sheetHeader
-
-            // Readout — the current pick, and the door to the precise
-            // wheels underneath.
-            readout
-
-            if showWheels {
-                preciseWheels
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            } else {
-                DateCrown()
+        ZStack {
+            // The ring rests ON the horizon circle (NorthIN) / the tropic
+            // (NorthOUT) — same screen radius by construction: the camera
+            // glides home on present (see MainView), where the horizon
+            // projects at exactly 2 · defaultScale about the screen centre.
+            if !showWheels {
+                DateCrown(radius: CGFloat(2 * state.defaultScale), gear: $gear)
                     .transition(.opacity)
             }
 
-            Spacer(minLength: 0)
+            VStack(spacing: 16) {
+                Spacer()
+                if showWheels {
+                    preciseWheels
+                        .transition(.opacity.combined(with: .scale(scale: 0.94)))
+                }
+                controlRow
+            }
+            .padding(.horizontal, 16)
+            // Clear the home indicator. ▼ TWEAK the float here ▼
+            .padding(.bottom, 48)
         }
-        .padding(.horizontal, 16)
         .animation(.snappy(duration: 0.25), value: showWheels)
     }
 
-    // MARK: - Readout
+    // MARK: - Control row
 
-    /// The picked date, big and current — scrubbing the crown updates it
-    /// live. Tapping unfolds the precise wheels (chevron flips).
-    private var readout: some View {
-        Button {
-            showWheels.toggle()
-        } label: {
-            HStack(spacing: 6) {
-                Text(readoutText)
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.snappy(duration: 0.2), value: readoutText)
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(showWheels ? 180 : 0))
+    private var controlRow: some View {
+        GlassEffectContainer {
+            HStack(spacing: 12) {
+                
+                if showWheels {
+                    // Wheels open → the gears are moot; offer the way back to
+                    // the ring instead.
+                    Button {
+                        gearTick.impactOccurred()
+                        showWheels = false
+                    } label: {
+                        Image(systemName: "dial.low")
+                            .font(.system(size: 17, weight: .medium))
+                            .frame(width: 44, height: 36)
+                            .contentShape(.capsule)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: .capsule)
+                } else {
+                    
+                    
+                    // Door to the precise wheels (the ring has no centre to
+                    // carry it any more).
+                    
+                    CircleIconButton(symbol: .calendar) {
+                        gearTick.impactOccurred()
+                        showWheels = true
+                    }
+                    
+                    gearSegments
+                    
+                    CircleIconButton(symbol: .xmark) {
+                        state.isShowingDatePicker = false
+                    }
+                }
+                
+                //            Spacer(minLength: 0)
+                //
+                //            CircleIconButton(symbol: .xmark) {
+                //                state.isShowingDatePicker = false
+                //            }
             }
-            .contentShape(.rect)
         }
-        .buttonStyle(.plain)
     }
 
-    private var readoutText: String {
-        let f = DateFormatter()
-        f.dateFormat = "d MMM yyyy, HH:mm"
-        return f.string(from: state.observationDate)
+    /// The crown's gear positions as one glass segmented capsule.
+    private var gearSegments: some View {
+        Picker("", selection: $gear) {
+            ForEach(DateCrown.Gear.allCases) { g in
+                Text(g.label)
+                    .tag(g)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(height: 44)
+        .padding(.horizontal, 6)
+        .glassEffect(.regular.interactive(), in: .capsule)
     }
 
-    // MARK: - Precise wheels (the buried form)
+    // MARK: - Precise wheels (the escape hatch)
 
     private var preciseWheels: some View {
         HStack(spacing: 0) {
@@ -133,43 +179,11 @@ struct DatePickerPanel: View {
             }
         }
         .labelsHidden()
-        .frame(height: 160)
-    }
-
-    // MARK: - Sheet header
-
-    /// Title + a "Now" shortcut + the close X. Shared shape with
-    /// `LocationPickerPanel.sheetHeader` so the two scene editors read
-    /// as one family. "Now" commits via `commitPickedObservationDate(_:)`
-    /// (same animate / jump rules as wheel edits); X just dismisses.
-    private var sheetHeader: some View {
-        HStack(spacing: 12) {
-            Button {
-                state.commitPickedObservationDate(.now)
-            } label: {
-                Text("Now")
-                    .font(.callout.weight(.semibold))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical,   2)
-            }
-            .buttonStyle(.glass)
-            .disabled(abs(state.observationDate.timeIntervalSinceNow) < 60)
-            .frame(width: 100, alignment: .leading)
-            Spacer()
-            
-            Text("Date & Time")
-                .font(.headline)
-            // Greyed-and-blocked when the observation is already at
-            // real-world now — same rule the other Now surfaces use.
-                
-            Spacer()
-            
-            
-            CircleIconButton(symbol: .xmark) {
-                state.isShowingDatePicker = false
-            }
-            .frame(width: 100, alignment: .trailing)
-        }
+        .frame(height: 170)
+        .padding(.horizontal, 8)
+        // Floating form needs its own backdrop — wheels on bare sky are
+        // unreadable.
+        .glassEffect(.regular, in: .rect(cornerRadius: 28))
     }
 
     // MARK: - Component bindings
@@ -206,8 +220,8 @@ struct DatePickerPanel: View {
     }
 
     /// Rebuild the observation date with one component replaced.
-    /// Clamps `day` to the new month's max so changes in month/year
-    /// can't construct an illegal date.
+    /// Clamps `day` to the range of the new month/year so changes in
+    /// month/year can't construct an illegal date.
     private func setComponent(_ unit: Calendar.Component, _ value: Int) {
         let cal = Calendar.current
         var dc  = cal.dateComponents([.year, .month, .day,
@@ -247,7 +261,14 @@ struct DatePickerPanel: View {
 }
 
 #Preview {
-    DatePickerPanel()
-        .environment(EAppState())
-        .padding()
+    ZStack {
+        LinearGradient(colors: [.indigo, .black],
+                       startPoint: .top, endPoint: .bottom)
+            .ignoresSafeArea()
+        VStack {
+            Spacer()
+            DatePickerPanel()
+        }
+    }
+    .environment(EAppState())
 }

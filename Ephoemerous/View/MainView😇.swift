@@ -330,12 +330,18 @@ struct MainView😇: View {
                 .padding(.top,        64)
         }
         .overlay(alignment: .bottomTrailing) {
-            CameraClusterCapsule()
-                .padding(.trailing, 16)
-                // Clear the search sheet's resting bar (72-pt detent + home
-                // indicator); taller detents slide over, Maps-style.
-                // ▼ TWEAK the lift here ▼
-                .padding(.bottom,   124)
+            // Hidden while a scene editor is up — camera-mode toggles are
+            // noise mid-picking, and the floating date crown owns the
+            // bottom stage.
+            if !app.isShowingDatePicker && !app.isShowingLocationPicker {
+                CameraClusterCapsule()
+                    .padding(.trailing, 16)
+                    // Clear the search sheet's resting bar (72-pt detent +
+                    // home indicator); taller detents slide over, Maps-style.
+                    // ▼ TWEAK the lift here ▼
+                    .padding(.bottom,   114)
+                    .transition(.opacity)
+            }
         }
         .overlay(alignment: .bottomLeading) {
             // Compass rose — self-hides when the sky is upright; tap
@@ -360,7 +366,16 @@ struct MainView😇: View {
         // mirror production MainView: an alert applied AFTER the sheets fights
         // the persistent search sheet's presentation (the alert flashed and
         // killed the search bar). Mirrors production MainView's order.
-        
+        .overlay {                                    // was .overlay(alignment: .bottom)
+            if app.isShowingDatePicker {
+                DatePickerPanel()
+                    .ignoresSafeArea()
+                    .transition(.opacity)             // was move-from-bottom
+            }
+        }
+        .onChange(of: app.isShowingDatePicker) { _, showing in
+            if showing { sky.glideHome() }            // camera home → ring on the horizon
+        }
         .fontDesign(.rounded)
         // The pills raise these inline editors, same as production MainView.
         .sheet(isPresented: Bindable(app).isShowingLocationPicker) {
@@ -369,12 +384,18 @@ struct MainView😇: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: Bindable(app).isShowingDatePicker) {
-            DatePickerPanel()
-                .presentationDetents([.height(400)])
-                .presentationBackgroundInteraction(.enabled)
-                .presentationDragIndicator(.hidden)
-        }
+        // The date crown floats FREE — no sheet. Sheets are for content
+        // (the location picker carries a map); the crown is a pure
+        // instrument standing on the sky, which stays touchable around it.
+        // The search sheet already yields while a picker is open
+        // (`searchPresented`), so the bottom slot is clear.
+//        .overlay(alignment: .bottom) {
+//            if app.isShowingDatePicker {
+//                DatePickerPanel()
+//                    // Clear the home indicator. ▼ TWEAK the float here ▼
+//                    .transition(.move(edge: .bottom).combined(with: .opacity))
+//            }
+//        }
         // Detail place card — item-bound to the selection. The canvas
         // stays interactive behind it (taps deselect / reselect); two
         // Apple-Maps detents, header-only fold + the default third, plus

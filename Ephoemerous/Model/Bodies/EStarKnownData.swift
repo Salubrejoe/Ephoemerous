@@ -3,6 +3,8 @@ extension EStar {
     var properName: String? { Self.properNames[name] }
     var distanceLY: Double?  { Self.distances[name]  }
     var displayName: String  { properName ?? name    }
+    
+    var distanceMeters: Double? { if let distanceLY { distanceLY * 9_460_730_472_580_800 } else { nil } }
 
     // IAU-approved proper names (Bayer designation -> IAU name)
     private static let properNames: [String: String] = [

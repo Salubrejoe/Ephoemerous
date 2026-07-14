@@ -58,7 +58,6 @@ struct ESunDetailView: View {
                 .padding(.top, 12)
                 
                 DetailStatList(stats: [
-                    .init(label: String(localized: "Type"),            value: String(localized: "G-type star (G2V)")),
                     .init(label: String(localized: "Right ascension"), value: raString),
                     .init(label: String(localized: "Declination"),     value: decString),
                     .init(label: String(localized: "Distance"),        value: "1 AU (149.6M km)"),

@@ -27,7 +27,6 @@ struct DetailStatList: View {
                     .foregroundStyle(.primary)
             }
         }
-        .listStyle(.plain)
         .scrollContentBackground(.hidden)
     }
 }

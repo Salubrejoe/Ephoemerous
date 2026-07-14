@@ -62,38 +62,30 @@ struct SearchSheet: View {
                 // Apple-Maps style. Scrolls as one when the sheet is
                 // dragged up to medium / large.
                 
-                HStack {
-                    Image(symbol: .heartFill)
-                        .foregroundStyle(.pink)
-                    Text(String(localized: "REMEMBERED"))
-                }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading)
+                
+//                Text(String(localized: "REMEMBERED"))
+//                    .font(.default.weight(.semibold))
+//                    .foregroundStyle(.gray)
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//                    .padding(.leading, 32)
+//                    .padding(.top, 24)
                 favouritesSection
                     .padding(.top, 4)
-                    .padding(.bottom, 32)
-                HStack {
-                    Image(symbol: .clockFill)
-                        .foregroundStyle(.blue)
-                    Text(String(localized: "RECENTS"))
-                }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading)
+                    .padding(.bottom, 8)
+                
                 List {
-                    if !state.recentObjects.isEmpty {
-                        ForEach(Array(state.recentObjects.enumerated()), id: \.element.id) { idx, obj in
-                            Button { open(obj) } label: {
-                                Text(obj.displayName)
+                    Section("RECENTS") {
+                        if !state.recentObjects.isEmpty {
+                            ForEach(Array(state.recentObjects.enumerated()), id: \.element.id) { idx, obj in
+                                Button { open(obj) } label: {
+                                    Text(obj.displayName)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
-                .listStyle(.plain)
+//                .listStyle(.plain)
             } else {
                 resultsList
             }

@@ -57,14 +57,12 @@ struct EStarDetailView: View {
                 // Morphing Remember row — see `DetailActionRow.swift`.
                 DetailActionRow(obj: .star(star))
                 .padding(.horizontal, 16)
-                .padding(.bottom,     12)
+                .padding(.top,        12)
 
                 DetailStatList(stats: [
-                    .init(label: String(localized: "Designation"),    value: star.name),
-                    .init(label: String(localized: "Constellation"),  value: star.constellation.localizedName),
+                    .init(label: String(localized: "Distance"),       value: distanceText),
                     .init(label: String(localized: "Spectral class"), value: star.spectralClass.rawValue),
                     .init(label: String(localized: "Magnitude"),      value: magnitudeText),
-                    .init(label: String(localized: "Distance"),       value: distanceText),
                     .init(label: String(localized: "Right ascension"), value: raText),
                     .init(label: String(localized: "Declination"),    value: decText),
                     .init(label: String(localized: "Proper motion"),  value: pmText),

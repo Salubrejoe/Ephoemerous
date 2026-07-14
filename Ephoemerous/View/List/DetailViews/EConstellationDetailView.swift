@@ -124,10 +124,7 @@ struct EConstellationDetailView: View {
     private var storySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
-                Image(systemName: "book")
-                    .font(.footnote)
-                    .foregroundStyle(accent)
-                Text("How it reached the sky")
+                Text("How did it get there?")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)

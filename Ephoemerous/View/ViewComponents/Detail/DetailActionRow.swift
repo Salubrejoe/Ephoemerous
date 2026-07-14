@@ -81,15 +81,16 @@ struct DetailActionRow: View {
     // MARK: Body
 
     var body: some View {
-        HStack(spacing: 8) {
-            if remembered {
-                rememberHeart
-                    .matchedGeometryEffect(id: "remember",  in: morphNS)
-            } else {
-                rememberPrimary
-                    .matchedGeometryEffect(id: "remember",  in: morphNS)
-            }
-        }
+//        HStack(spacing: 8) {
+//            if remembered {
+//                rememberHeart
+//                    .matchedGeometryEffect(id: "remember",  in: morphNS)
+//            } else {
+//                rememberPrimary
+//                    .matchedGeometryEffect(id: "remember",  in: morphNS)
+//            }
+//        }
+        rememberPrimary
         .frame(height: pillHeight)
         .animation(.bouncy,
                    value: remembered)
@@ -125,12 +126,15 @@ struct DetailActionRow: View {
         Button {
             state.toggleFavourite(obj)
         } label: {
-            Text(String(localized: "Remember"))
-                .foregroundStyle(.white)
+            HStack {
+                Image(symbol: remembered ? .heartFill : .heart)
+                Text(remembered ? String(localized: "Remembered") : String(localized: "Remember"))
+            }
+            .foregroundStyle(remembered ? .accent : .primary)
                 .font(.callout.weight(.semibold))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(.capsule)
-                .glassEffect(.clear.tint(.accentColor).interactive(), in: .capsule)
+                .glassEffect(.clear.tint(remembered ? .clear : .accent).interactive(), in: .capsule)
         }
         .transition(.blurReplace.combined(with: .opacity))
     }

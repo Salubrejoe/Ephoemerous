@@ -21,7 +21,7 @@ struct CameraClusterCapsule: View {
             ProjectionFlipButton(bare: true)
             CompassModeButton(bare: true)
         }
-        .padding(.vertical, 4)
+        .padding(.bottom, 4)
         .glassEffect(.regular.interactive(), in: .capsule)
     }
 }

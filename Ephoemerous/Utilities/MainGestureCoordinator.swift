@@ -186,6 +186,25 @@ final class MainGestureCoordinator {
         }
     }
 
+    /// Glide the camera home — default scale, centred — via the LIVE deltas
+    /// (animated pinch + full homeBlend), folding once on completion. Same
+    /// synced primitive as the release spring, so the frozen Canvases ride
+    /// the parent transform instead of snapping. Used when the date crown
+    /// presents: the time-ring must sit exactly on the horizon circle, which
+    /// only holds at the default centred framing.
+    func glideHome() {
+        releaseID += 1
+        let id = releaseID
+        let targetPinch = scale > 0 ? defaultScale / scale : 1
+        let still = abs(targetPinch - pinch) < 0.001
+            && offset == .zero && drag == .zero && homeBlend == 0
+        if still { return }
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+            pinch     = targetPinch
+            homeBlend = 1
+        } completion: { if self.releaseID == id { self.commitLive() } }
+    }
+
     /// Comfort-zone pan: glide the LIVE drag to `target` (a screen-space
     /// translation), then fold once on completion. Same synced primitive as
     /// the fling — every layer rides the parent transform, so nothing

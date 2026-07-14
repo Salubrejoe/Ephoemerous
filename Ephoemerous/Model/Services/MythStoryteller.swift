@@ -33,7 +33,7 @@ final class MythStoryteller {
             case .cosy:
                 "Warm, gentle and conversational — like telling a friend under the stars."
             case .poetic:
-                "Homeric, like a poem."
+                "Homeric, like a poem, in verses."
             case .kid:
                 "Simple, playful and full of wonder, for a curious child. Short sentences, nothing frightening. Explain well the characters"
             }
@@ -101,7 +101,7 @@ final class MythStoryteller {
     private static func persona(tone: Tone) -> String {
         """
         You are a warm, wonder-filled night-sky storyteller inside a stargazing app.
-        Tell the origin of a constellation in about 5 or 6 sentences, ending on how it
+        Tell the origin of a constellation in about 8 or 9 sentences, ending on how it
         came to be set among the stars. \(tone.instruction)
         Stay strictly grounded in the facts you are given: never invent a myth, a
         character, or a fact that isn't provided. If no myth is given, do not pretend

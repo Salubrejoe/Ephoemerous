@@ -2,7 +2,7 @@
   "fill-specializations" : [
     {
       "value" : {
-        "automatic-gradient" : "display-p3:0.27843,0.27451,0.34902,1.00000",
+        "automatic-gradient" : "display-p3:0.07574,0.19263,0.33398,1.00000",
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -22,6 +22,30 @@
   ],
   "groups" : [
     {
+      "layers" : [
+        {
+          "image-name" : "poi_sun.svg",
+          "name" : "poi_sun",
+          "position" : {
+            "scale" : 7,
+            "translation-in-points" : [
+              -6.98468749999995,
+              -5.625750000000039
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.6
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.2
+      }
+    },
+    {
+      "hidden" : true,
       "layers" : [
         {
           "fill-specializations" : [
