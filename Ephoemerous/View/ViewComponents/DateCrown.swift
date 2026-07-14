@@ -147,16 +147,11 @@ struct DateCrown: View {
                     .rotationEffect(.radians(wheelAngle))
 
                 // Fixed 12-o'clock index the ticks sweep past.
-                Capsule()
-                    .fill(.ultraThickMaterial)
-                    .frame(width: 34
-                           , height: 34)
+                
+                Text(labelText)
+                    .fontWeight(.semibold)
+                    .padding(6)
                     .glassEffect()
-                    .overlay {
-                        Text(labelText)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                    }
                     .offset(y: -radius + ringWidth/4)
             }
             .position(c)
