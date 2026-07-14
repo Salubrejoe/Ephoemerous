@@ -1,5 +1,6 @@
 import CoreHaptics
 import UIKit
+import AudioToolbox
 
 // MARK: - CrownHaptics
 // The iPod click-wheel ratchet for the date crown. `UIImpactFeedbackGenerator`
@@ -32,6 +33,13 @@ final class CrownHaptics {
     private let fastRate: Double = 100
     /// Click crispness (0 dull thud … 1 sharp tick).
     private let sharpness: Float = 0.6
+    /// The iPod CLICKER — the keyboard "tock" (system sound 1104) alongside
+    /// the taps. Rate-limited: audio clicks blur past ~25/s anyway, so one
+    /// tock per limited window carries the sound while the haptic carries
+    /// the count. Respects the ringer switch, like the original.
+    private let clickerEnabled = true
+    private let clickerMinGap: TimeInterval = 0.04
+    private var lastClick: Date = .distantPast
 
     private init() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
@@ -47,6 +55,13 @@ final class CrownHaptics {
     /// `rate` detents/second.
     func tick(count: Int, window: TimeInterval, rate: Double) {
         guard count > 0 else { return }
+
+        // The clicker rides every path (CoreHaptics or fallback).
+        if clickerEnabled, Date.now.timeIntervalSince(lastClick) > clickerMinGap {
+            AudioServicesPlaySystemSound(1104)      // keyboard tock
+            lastClick = .now
+        }
+
         guard let engine else {                      // no CoreHaptics → picker tick
             fallback.selectionChanged()
             fallback.prepare()

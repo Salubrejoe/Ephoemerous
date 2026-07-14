@@ -66,9 +66,10 @@ struct DateCrown: View {
             }
         }
 
-        /// Scrub units per haptic detent (hours gear ticks per hour, not
-        /// per minute).
-        var unitsPerDetent: Int { self == .hours ? 60 : 1 }
+        /// Scrub units per haptic detent. Hours clicks per QUARTER-hour —
+        /// 96 detents/lap, the dense iPod ratchet (the engine keeps up now;
+        /// see CrownHaptics). ▼ TWEAK: 60 = hourly, 15 = iPod-dense ▼
+        var unitsPerDetent: Int { self == .hours ? 15 : 1 }
 
         /// Calendar-aware advance — months/years clamp day-of-month
         /// legally via `Calendar`.
@@ -150,6 +151,7 @@ struct DateCrown: View {
                     .fill(.ultraThickMaterial)
                     .frame(width: 34
                            , height: 34)
+                    .glassEffect()
                     .overlay {
                         Text(labelText)
                             .fontWeight(.semibold)
