@@ -108,7 +108,7 @@ struct CompassButton: View {
         Text("N")
             .font(.system(size: dotSize))
             .fontWeight(.heavy)
-            .foregroundStyle(Color.orange)
+            .foregroundStyle(Color.accentColor)
             .offset(y: -orbitRadius)
     }
 
