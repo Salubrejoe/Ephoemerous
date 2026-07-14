@@ -27,12 +27,14 @@ struct ProjectionFlipButton: View {
         } label: {
             // A sphere with orbit arrows — "turn the celestial sphere
             // around" — honest about what the toggle does, unlike the old
-            // abstract dot-in-ring.
+            // abstract dot-in-ring. Font-sized (not .resizable-stretched)
+            // so its stroke weight matches the compass glyph below it.
+            // ▼ TWEAK size/weight here (pairs with compass-mode) ▼
             Image(systemName: "rotate.3d")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 24, height: 24)
+                .font(.system(size: 21, weight: .medium))
                 .frame(width: faceSize, height: faceSize)
+                // Full-face tap target — see CompassModeButton.
+                .contentShape(.rect)
                 .foregroundStyle(bare ? (on ? Color.accentColor : Color.primary)
                                       : (on ? Color.white       : Color.primary))
         }

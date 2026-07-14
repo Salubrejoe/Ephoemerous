@@ -32,11 +32,16 @@ struct CompassModeButton: View {
                 haptic.impactOccurred()
                 state.toggleCompassMode()
             } label: {
+                // Font-sized (not .resizable-stretched) so the stroke weight
+                // stays on the SF Symbols optical grid and matches the flip
+                // glyph. ▼ TWEAK size/weight here (pairs with the flip) ▼
                 Image(systemName: on ? "location.north.line.fill" : "location.north.line")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
+                    .font(.system(size: 21, weight: .medium))
                     .frame(width: faceSize, height: faceSize)
+                    // The full face is the tap target — in `bare` mode there's
+                    // no interactive glass of its own, and without this the
+                    // hit area collapses to the glyph's hairline strokes.
+                    .contentShape(.rect)
                     .foregroundStyle(bare ? (on ? Color.accentColor : Color.primary)
                                           : (on ? Color.white       : Color.primary))
             }
