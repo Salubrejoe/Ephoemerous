@@ -49,7 +49,11 @@ extension EAppState {
     var northOutDefaultScale: Double {
         let eps       = EProjection.obliquity.radians
         let tropicRho = 2 * tan((eps + .pi / 2) / 2)
-        return defaultScale * 2 / tropicRho
+        // Frame the tropic a touch INSIDE the horizon radius (1.65 vs 2) so
+        // the ecliptic bodies — Sun/Moon — clear the crown ring at rest
+        // instead of hiding behind it. This also lowers the NorthOUT zoom
+        // floor (min == default here). ▼ TWEAK: lower = more zoomed out ▼
+        return defaultScale * 1.65 / tropicRho
     }
 
     /// The direction of the zenith in equatorial coordinates at the rendered observation time.
