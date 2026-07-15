@@ -7,11 +7,21 @@
 
 import SwiftUI
 import CoreLocation
+import AppIntents
 
 @main
 struct EphoemerousApp: App {
-    @State private var state = EAppState()
+    @State private var state: EAppState
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        let state = EAppState()
+        _state    = State(initialValue: state)
+        // Hand the SAME instance the views observe to the App Intents
+        // runtime — `OpenSkyObjectIntent` resolves it via `@Dependency`
+        // so a Siri/widget launch drives the live scene, not a copy.
+        AppDependencyManager.shared.add(dependency: state)
+    }
 
     var body: some Scene {
         WindowGroup {

@@ -108,6 +108,11 @@ final class ECloudSync {
 
     // MARK: - Read
 
+    /// Favourites straight from the store — for callers that live outside
+    /// the `EAppState` observation graph (App Intents entity queries, and
+    /// later the widget process, where no app state exists at all).
+    func favourites() -> [ESkyObject] { resolveFavourites() }
+
     /// Read favourites from every case-specific iCloud key and wrap
     /// each back into its `ESkyObject` form. Cross-type ordering is
     /// not preserved (stars come back first, then constellations,
