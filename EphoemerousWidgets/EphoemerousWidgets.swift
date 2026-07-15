@@ -53,18 +53,43 @@ struct SkyObjectEntry: TimelineEntry {
     let origin: (latDeg: Double, lonDeg: Double)?
 }
 
+// MARK: - Pin geometry
+// One source of truth for the promoted-pin layout so the CAMERA (which
+// must land the object's projection on the dot) and the OVERLAY (ring,
+// cone, dot) agree to the pixel. Content margins are disabled on the
+// widget, so canvas and overlay share the full-bleed coordinate space.
+private enum Pin {
+    static let ringRadius:  CGFloat = 20   // badge ring (inner stroke)
+    static let haloRadius:  CGFloat = 24   // faint outer ring
+    static let coneHeight:  CGFloat = 8
+    static let coneHalf:    CGFloat = 5    // half-width of the cone base
+    static let dotGap:      CGFloat = 3    // cone tip → dot centre
+    static let inset:       CGFloat = 14   // ring centre inset from corner
+
+    /// Badge-ring centre, top-trailing.
+    static func ringCentre(in size: CGSize) -> CGPoint {
+        CGPoint(x: size.width - inset - haloRadius, y: inset + haloRadius)
+    }
+
+    /// The precise-location dot — under the ring, past the cone tail.
+    /// THIS is where the camera lands the object.
+    static func dot(in size: CGSize) -> CGPoint {
+        let c = ringCentre(in: size)
+        return CGPoint(x: c.x, y: c.y + ringRadius + coneHeight + dotGap + 3)
+    }
+}
+
 // MARK: - Sky snapshot
-// The REAL sky at `date` from the observer's origin, centred on the
-// object — the same stereographic pipeline the app renders with
-// (`SkyCamera` + `EProjection`, compiled into this target), drawn once
-// into a widget-sized Canvas. No ImageRenderer needed: WidgetKit
-// rasterises the view itself, once per timeline entry.
+// The REAL sky at `date` from the observer's origin — the same
+// stereographic pipeline the app renders with (`SkyCamera` +
+// `EProjection`, compiled into this target), drawn once into a
+// widget-sized Canvas. The camera is offset so the object's projection
+// lands exactly on the pin's precise-location dot.
 private struct SkySnapshot {
 
     let camera: SkyCamera
     let date:   Date
 
-    /// Widget-frame camera centred on the object's current sky position.
     @MainActor
     init(entity: SkyObjectEntity, date: Date,
          origin: (latDeg: Double, lonDeg: Double)?, size: CGSize) {
@@ -81,13 +106,16 @@ private struct SkySnapshot {
         // ▼ TWEAK the postcard zoom here — screen pt per projection unit ▼
         let scale: CGFloat = 110
 
-        // Offset the camera so the object's projection lands dead-centre
-        // (the "concentric" framing). Objects that fail to project
-        // (antipodal degeneracy) fall back to the zenith-centred view.
+        // Offset the camera so the object projects ONTO THE PIN DOT —
+        // screen() = size/2 + (p.x·s, −p.y·s) + offset, so solve for
+        // offset with the dot as the wanted screen point. Objects that
+        // fail to project (antipodal degeneracy) fall back to zenith-ish.
         var offset = CGSize.zero
         if let target = Self.vector(for: entity, date: date, sidereal: sidereal),
            let p = EProjection.project(target, viewpoint: viewpoint) {
-            offset = CGSize(width: -p.x * scale, height: p.y * scale)
+            let dot = Pin.dot(in: size)
+            offset = CGSize(width:  dot.x - size.width  / 2 - p.x * scale,
+                            height: dot.y - size.height / 2 + p.y * scale)
         }
 
         camera = SkyCamera(scale:     scale,
@@ -152,11 +180,12 @@ private struct SkySnapshot {
 }
 
 // MARK: - Entry view
-// The Find My postcard: the live sky map fills the tile, centred on the
-// object (a precise-location dot marks it); the object's REAL POI badge
-// rides top-trailing inside concentric rings — the promoted label; name
-// + freshness sit bottom-leading over a legibility scrim. Tapping
-// deep-links into the app focused on the object.
+// The Find My postcard: the live sky map fills the tile; the object's
+// REAL POI badge rides top-trailing inside concentric rings with a
+// little cone tail pointing at its precise-location dot — the map is
+// offset so the object genuinely sits there (a proper promoted label).
+// Name + freshness hug the bottom-leading corner. Tap deep-links into
+// the app focused on the object. Always dark — it's the night sky.
 struct SkyObjectWidgetView: View {
 
     var entry: SkyObjectProvider.Entry
@@ -174,6 +203,16 @@ struct SkyObjectWidgetView: View {
         }
     }
 
+    /// Stars — the Sun included — wear the pointy 5-corner squircle,
+    /// exactly like the app's labels; planetoids stay rounded.
+    @MainActor
+    private var labelStyle: POILabelView.LabelStyle {
+        switch entry.entity.skyObject {
+        case .star, .sun: .star
+        default:          .planetoids
+        }
+    }
+
     var body: some View {
         Group {
             if family == .accessoryCircular {
@@ -182,69 +221,101 @@ struct SkyObjectWidgetView: View {
                 postcard
             }
         }
+        .environment(\.colorScheme, .dark)     // the night sky is dark; so are we
         .widgetURL(URL(string: "ephoemerous://object/\(entry.entity.id)"))
     }
 
     // MARK: Postcard (system families)
 
     private var postcard: some View {
-        ZStack {
-            // Precise-location dot — dead centre by construction (the
-            // camera is offset so the object projects here).
-            if let category {
-                let style = EArtist.shared.poiStyle(for: category)
-                Circle()
-                    .fill(style.gradientBottom)
-                    .frame(width: 6, height: 6)
-                    .shadow(color: .black.opacity(0.5), radius: 1.5)
-            }
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                if let category {
+                    promotedPin(category, in: geo.size)
+                }
 
-            // Promoted label, top-trailing: the real badge in concentric
-            // rings — the widget's echo of the app's promoted pin.
-            if let category {
-                VStack { HStack { Spacer(); promotedBadge(category) }; Spacer() }
-                    .padding(10)
+                // Name + freshness, hugging the corner like Find My.
+                VStack(alignment: .leading, spacing: 0) {
+                    Spacer()
+                    Text(entry.entity.name)
+                        .font(.system(.subheadline, design: .serif, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    (Text(entry.entity.subtitle) + Text(" · ") +
+                     Text(entry.date, style: .relative) + Text(" ago"))
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+                .padding(.leading, 8)
+                .padding(.bottom, 6)
             }
-
-            // Name + freshness, bottom-leading, over a scrim.
-            VStack(alignment: .leading, spacing: 1) {
-                Spacer()
-                Text(entry.entity.name)
-                    .font(.system(.subheadline, design: .serif, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                (Text(entry.entity.subtitle) + Text(" · ") +
-                 Text(entry.date, style: .relative) + Text(" ago"))
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
         }
         .containerBackground(for: .widget) {
-            skyMap
+            skyMap.environment(\.colorScheme, .dark)
         }
     }
 
-    /// The badge inside concentric rings, Find My-pin style.
-    private func promotedBadge(_ category: POICategory) -> some View {
-        ZStack {
+    /// The full promoted pin: badge in concentric rings, cone tail,
+    /// precise-location dot — the object's projection lands ON the dot
+    /// (see SkySnapshot's offset), so this reads as the app's promoted
+    /// label planted in the live sky.
+    @MainActor
+    private func promotedPin(_ category: POICategory, in size: CGSize) -> some View {
+        let c     = Pin.ringCentre(in: size)
+        let dot   = Pin.dot(in: size)
+        let style = EArtist.shared.poiStyle(for: category)
+
+        return ZStack {
+            // Cone tail — ring bottom down to just above the dot.
+            ConeTail(base:  CGPoint(x: c.x, y: c.y + Pin.ringRadius - 1),
+                     tip:   CGPoint(x: c.x, y: dot.y - Pin.dotGap),
+                     half:  Pin.coneHalf)
+                .fill(.white.opacity(0.9))
+
+            // Concentric rings + badge.
             Circle()
                 .fill(.black.opacity(0.35))
-                .frame(width: 40, height: 40)
+                .frame(width: Pin.ringRadius * 2, height: Pin.ringRadius * 2)
+                .position(c)
             Circle()
                 .stroke(.white.opacity(0.9), lineWidth: 1.5)
-                .frame(width: 40, height: 40)
+                .frame(width: Pin.ringRadius * 2, height: Pin.ringRadius * 2)
+                .position(c)
             Circle()
                 .stroke(.white.opacity(0.3), lineWidth: 1)
-                .frame(width: 48, height: 48)
+                .frame(width: Pin.haloRadius * 2, height: Pin.haloRadius * 2)
+                .position(c)
             POILabelView(category:   category,
                          text:        "",
+                         labelStyle:  labelStyle,
                          nameReveal:  0,
                          borderScaleCompensation: 1 / 1.6)
                 .scaleEffect(1.6)
+                .position(c)
+
+            // Precise-location dot — the object itself.
+            Circle()
+                .fill(style.gradientBottom)
+                .frame(width: 6, height: 6)
+                .shadow(color: .black.opacity(0.5), radius: 1.5)
+                .position(dot)
+        }
+    }
+
+    /// Map-pin tail: a small triangle from the ring toward the dot.
+    private struct ConeTail: Shape {
+        let base: CGPoint
+        let tip:  CGPoint
+        let half: CGFloat
+        func path(in rect: CGRect) -> Path {
+            var p = Path()
+            p.move(to:    CGPoint(x: base.x - half, y: base.y))
+            p.addLine(to: CGPoint(x: base.x + half, y: base.y))
+            p.addLine(to: tip)
+            p.closeSubpath()
+            return p
         }
     }
 
@@ -276,6 +347,7 @@ struct SkyObjectWidgetView: View {
             if let category {
                 POILabelView(category:   category,
                              text:        "",
+                             labelStyle:  labelStyle,
                              nameReveal:  0)
             } else {
                 Image(systemName: "sparkles")
@@ -297,6 +369,9 @@ struct EphoemerousWidgets: Widget {
         .configurationDisplayName("Sky Object")
         .description("A star, planet, the Sun or the Moon — live on your sky map.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
+        // Canvas background and pin overlay must share one coordinate
+        // space — margins are managed by hand (see Pin).
+        .contentMarginsDisabled()
     }
 }
 
