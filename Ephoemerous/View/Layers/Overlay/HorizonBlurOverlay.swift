@@ -2,10 +2,10 @@ import SwiftUI
 import simd
 
 // MARK: - HorizonBlurOverlay
-// Frosted glass over the sky WITHIN the horizon — the visible dome reads
-// as a pane you look through, and during the NorthIN↔NorthOUT morph the
-// pane deforms with the horizon itself (circle → line → offset circle),
-// which is the whole show.
+// Frosted glass over the ground BELOW the horizon — the visible sky stays
+// sharp, the under-earth murk frosts over, and during the NorthIN↔NorthOUT
+// morph the pane deforms with the horizon itself (circle → line → offset
+// circle), which is the whole show.
 //
 // The trick that keeps it cheap: the stereographic image of the horizon
 // great circle is a TRUE circle (or line) at EVERY morph value — the
@@ -27,16 +27,18 @@ struct HorizonBlurOverlay: View {
             // ▼ TWEAK the frost here — material = blur strength,
             //   opacity fades the whole effect ▼
             .fill(.ultraThinMaterial, style: FillStyle(eoFill: true))
-            .opacity(0.45)
+            .opacity(0.25)
             .allowsHitTesting(false)
     }
 }
 
 // MARK: - HorizonRegion
-// The above-horizon region of the current projection, as an exact
-// circle / half-plane path. Even-odd fill: when the sky side is the
-// EXTERIOR of the projected circle (possible in NorthOUT), the path is
-// a huge rect + the circle and eoFill carves the hole.
+// The BELOW-horizon region of the current projection, as an exact
+// circle / half-plane path. The zenith is the reliable anchor (the nadir
+// IS the eye in NorthIN, so it can't be projected) — the ground is
+// whichever side the zenith is NOT on. Even-odd fill: when the ground is
+// the EXTERIOR of the projected circle (NorthIN — sky inside, murk out),
+// the path is a huge rect + the circle and eoFill carves the hole.
 private struct HorizonRegion: Shape {
 
     let camera: SkyCamera
@@ -87,8 +89,9 @@ private struct HorizonRegion: Shape {
 
         let circle = CGRect(x: ux - r, y: uy - r, width: r * 2, height: r * 2)
         var path = Path()
-        if hypot(sky.x - ux, sky.y - uy) > r {
-            // Sky is the circle's EXTERIOR — huge rect minus the circle.
+        if hypot(sky.x - ux, sky.y - uy) <= r {
+            // Sky fills the circle's interior — the ground is everything
+            // OUTSIDE it: huge rect minus the circle.
             path.addRect(rect.insetBy(dx: -8000, dy: -8000))
         }
         path.addEllipse(in: circle)
@@ -110,15 +113,15 @@ private struct HorizonRegion: Shape {
     }
 
     /// Horizon projects as a (near-)line through `a`–`c`: the region is
-    /// the half-plane on the sky side.
+    /// the half-plane OPPOSITE the sky side — the ground.
     private func halfPlane(_ a: CGPoint, _ c: CGPoint,
                            sky: CGPoint, in rect: CGRect) -> Path {
         let len = hypot(c.x - a.x, c.y - a.y)
         guard len > 1e-6 else { return Path() }
         let dir  = CGPoint(x: (c.x - a.x) / len, y: (c.y - a.y) / len)
         var n    = CGPoint(x: -dir.y, y: dir.x)
-        if (sky.x - a.x) * n.x + (sky.y - a.y) * n.y < 0 {
-            n = CGPoint(x: -n.x, y: -n.y)              // flip toward the sky
+        if (sky.x - a.x) * n.x + (sky.y - a.y) * n.y > 0 {
+            n = CGPoint(x: -n.x, y: -n.y)              // flip AWAY from the sky
         }
         let L: CGFloat = 20000
         var path = Path()

@@ -212,11 +212,11 @@ struct MainView😇: View {
                                           selectedID: selectedStarID)
                     .equatable()
 
-                // Frosted pane over the sky within the horizon — an exact
+                // Frosted pane over the ground below the horizon — an exact
                 // circle/line region recomputed from the morphing camera, so
                 // it deforms live through the NorthIN↔NorthOUT transition.
-                // Above the star canvases (they frost), below the labels
-                // (they stay sharp).
+                // Above the star canvases (the murk frosts), below the
+                // labels (they stay sharp).
                 HorizonBlurOverlay(camera: camera)
 
                 // Curved cartographic labels — horizon rim + colures.
