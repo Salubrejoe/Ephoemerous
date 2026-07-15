@@ -20,11 +20,23 @@ import UIKit
 public struct GlassRing: View {
 
     public var thickness : CGFloat
+    public var bulge     : CGFloat
     public var tint      : Color?
+    public var corners   : Int
+    public var rotation  : Angle
 
-    public init(thickness: CGFloat = 8, tint: Color? = nil) {
+    public init(
+        thickness: CGFloat = 8,
+        tint: Color? = nil,
+        corners: Int = 4,
+        bulge: CGFloat = 2.9,
+        rotation: Angle = .zero
+    ) {
         self.thickness = thickness
         self.tint      = tint
+        self.corners   = corners
+        self.bulge     = bulge
+        self.rotation  = rotation
     }
 
     public var body: some View {
@@ -36,8 +48,10 @@ public struct GlassRing: View {
         // masking with `Ring` is visually identical and sidesteps the
         // topology assumption.
         Color.clear
-            .glassEffect(glass, in: Circle())
-            .mask { Ring(thickness: thickness) }
+            .glassEffect(
+                glass,
+                in: sqRing())
+            .mask { sqRing() }
     }
 
     /// `.clear` base + optional `.tint(_:)`. No `.interactive()` — the
@@ -46,6 +60,16 @@ public struct GlassRing: View {
     private var glass: Glass {
         let base = Glass.clear
         return tint.map { base.tint($0) } ?? base
+    }
+    
+    @ViewBuilder
+    private func sqRing() -> some Shape {
+        SqRing(
+            thickness: thickness,
+            rotation: rotation,
+            corners: corners,
+            bulge: bulge
+        )
     }
 }
 

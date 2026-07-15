@@ -55,16 +55,24 @@ struct MainToolbar: View {
                         locationLabel,
                         action: state.toggleLocationPicker
                     )
+                    // Turning the crown pulls the eye to the date: the date
+                    // pill swells and the location half recedes, so the live
+                    // readout leads while you scrub. ▼ TWEAK the swell here ▼
+                    .opacity(state.isScrubbingDate ? 0.5 : 1)
                     Divider()
                         .padding(.vertical, 8)
+                        .opacity(state.isScrubbingDate ? 0.5 : 1)
                     ToolbarPill(
                         dateLabel,
                         action: state.toggleDatePicker
                     )
+                    .scaleEffect(state.isScrubbingDate ? 1.28 : 1)
                 }
                 .frame(height: barHeight)
                 .glassEffect(.regular.interactive(), in: .capsule)
                 .glassEffectID("bar", in: glassNS)
+                .animation(.spring(response: 0.32, dampingFraction: 0.6),
+                           value: state.isScrubbingDate)
 
                 if notNow {
 

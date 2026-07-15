@@ -319,6 +319,10 @@ class EAppState {
     // both handled by local `@State` in MainView now.
     var isShowingDatePicker:     Bool = false
     var isShowingLocationPicker: Bool = false
+    /// True while the date crown is actively being turned (drag or coast).
+    /// The toolbar's date pill swells on this so the eye follows the changing
+    /// date — the crown turns, the readout reads; no duplicate label needed.
+    var isScrubbingDate:         Bool = false
     /// True only during the brief window where one bottom-slot sheet is
     /// being torn down and another presented in its place (detail ⇄ scene
     /// editor, detail → detail, detail → myth). The persistent search

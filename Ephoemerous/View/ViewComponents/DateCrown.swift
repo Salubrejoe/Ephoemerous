@@ -107,7 +107,7 @@ struct DateCrown: View {
     @State private var inertiaTask: Task<Void, Never>? = nil
 
     // ▼ TWEAK the ring feel here ▼
-    private let ringWidth: CGFloat = 36    // thumb-band width
+    private let ringWidth: CGFloat = 24    // thumb-band width
     private let flingTau:  Double  = 0.7   // coast decay time constant
     private let flingMin:  Double  = 0.8   // rad/s to trigger a coast
     private let flingCap:  Double  = 12    // rad/s max spin
@@ -135,24 +135,21 @@ struct DateCrown: View {
             let c = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
             let ringRadius = 2*radius + ringWidth/2
             
+            GlassEffectContainer {
             ZStack {
                 
-                GlassRing(thickness: ringWidth)
+                    GlassRing(
+                        thickness: ringWidth,
+                        corners: gear.ticks,
+                        bulge: 2.3,
+                        rotation: .radians(wheelAngle)
+                    )
+                    .shadow(radius: 6)
                     .frame(
                         width : ringRadius,
                         height: ringRadius
                     )
-                // Ticks riding the band, spinning under the finger.
-                tickRing
-                    .rotationEffect(.radians(wheelAngle))
-
-                // Fixed 12-o'clock index the ticks sweep past.
-                
-                Text(labelText)
-                    .fontWeight(.semibold)
-                    .padding(6)
-                    .glassEffect()
-                    .offset(y: -radius + ringWidth/4)
+                }
             }
             .position(c)
             // Hit area = the band only. Taps and pans INSIDE the ring fall
@@ -168,7 +165,10 @@ struct DateCrown: View {
             pendingUnits = 0
             detentAccum  = 0
         }
-        .onDisappear { inertiaTask?.cancel() }
+        .onDisappear {
+            inertiaTask?.cancel()
+            state.isScrubbingDate = false
+        }
     }
 
     // MARK: Ring ticks
@@ -179,7 +179,7 @@ struct DateCrown: View {
             ForEach(0 ..< n, id: \.self) { i in
                 Capsule()
                     .fill(.secondary)
-                    .frame(width: 4, height: 16)
+                    .frame(width: 2, height: 16)
                     .offset(y: -radius + ringWidth/4)
                     .rotationEffect(.radians(Double(i) / Double(n) * 2 * .pi))
             }
@@ -214,6 +214,7 @@ struct DateCrown: View {
             .onChanged { v in
                 inertiaTask?.cancel()
                 inertiaTask = nil
+                if !state.isScrubbingDate { state.isScrubbingDate = true }  // eye → the pill
                 let a = atan2(v.location.y - c.y, v.location.x - c.x)
                 guard let last = lastAngle else {
                     lastAngle    = a
@@ -264,11 +265,16 @@ struct DateCrown: View {
     }
 
     /// iPod-wheel coast: keep spinning after release, decaying
-    /// exponentially, still stepping (and ticking) through `apply`.
+    /// exponentially, still stepping (and ticking) through `apply`. The
+    /// scrub emphasis (`isScrubbingDate`) rides the whole spin — it releases
+    /// only once the wheel actually stops, so the pill settles with it.
     private func startCoast() {
         let v0 = angularVelocity
         angularVelocity = 0
-        guard abs(v0) > flingMin else { return }
+        guard abs(v0) > flingMin else {
+            state.isScrubbingDate = false                // no coast → settle now
+            return
+        }
         inertiaTask = Task { @MainActor in
             var v    = min(max(v0, -flingCap), flingCap)
             var last = Date.now
@@ -280,6 +286,8 @@ struct DateCrown: View {
                 apply(delta: v * dt, over: dt)
                 v *= exp(-dt / flingTau)
             }
+            // Don't clear if a fresh drag interrupted us (it re-set the flag).
+            if !Task.isCancelled { state.isScrubbingDate = false }
         }
     }
 
