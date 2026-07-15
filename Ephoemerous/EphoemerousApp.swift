@@ -17,7 +17,6 @@ struct EphoemerousApp: App {
         WindowGroup {
             NavigationStack {
                 MainView😇()
-                    .preferredColorScheme(.dark)
             }
             .ignoresSafeArea()
             

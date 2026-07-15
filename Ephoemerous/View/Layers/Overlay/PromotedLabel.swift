@@ -129,11 +129,15 @@ private struct SkyLabPromotedPin: View {
             // enlarged. scaleEffect anchors on its own centre, so it grows
             // in place at the lifted point. The extra `popScale` is the
             // celebration squash — a quick swell that settles back.
+            // `borderScaleCompensation` pre-shrinks the casing stroke by the
+            // same factor `.scaleEffect` is about to enlarge it by, so the
+            // orb grows without the outline turning into a bold halo.
             POILabelView(category:    category,
                          text:        "",
                          labelStyle: labelStyle,
                          badgeReveal: 1,
-                         nameReveal:  0)
+                         nameReveal:  0,
+                         borderScaleCompensation: 1 / (scale * popScale))
                 .scaleEffect(scale * popScale)
                 .position(x: cx, y: badgeY)
 

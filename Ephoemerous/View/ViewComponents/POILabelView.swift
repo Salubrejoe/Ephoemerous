@@ -36,6 +36,15 @@ struct POILabelView: View {
     /// `tierReveal(scale:threshold:)`. 0 = absent, 1 = full crisp.
     var badgeReveal: Double = 1
     var nameReveal:  Double = 1
+    /// Inverse of any `.scaleEffect` a caller wraps this view in — e.g. the
+    /// promoted pin enlarges the whole badge up to ~1.9× (2.3× mid-pop).
+    /// `.scaleEffect` scales EVERY pixel uniformly, casing stroke included,
+    /// so left at 1 the 1.7pt border would render up to ~4pt: the orb grows
+    /// but the outline turns into a bold halo. Pass `1 / callerScale` here
+    /// and the stroke pre-shrinks so the two scalings cancel — only the
+    /// orb enlarges, the casing weight holds constant. Default 1 (no
+    /// caller scaling) leaves every other call site untouched.
+    var borderScaleCompensation: CGFloat = 1
 
     /// Gap (pt) between the badge's trailing edge and the name.
     private let nameGap: CGFloat = 6
@@ -50,13 +59,15 @@ struct POILabelView: View {
         text: String,
         labelStyle: LabelStyle = .planetoids,
         badgeReveal: Double = 1,
-        nameReveal: Double = 1
+        nameReveal: Double = 1,
+        borderScaleCompensation: CGFloat = 1
     ) {
         self.category = category
         self.text = text
         self.labelStyle = labelStyle
         self.badgeReveal = badgeReveal
         self.nameReveal = nameReveal
+        self.borderScaleCompensation = borderScaleCompensation
     }
 
     var body: some View {
@@ -112,7 +123,9 @@ struct POILabelView: View {
     
     private var badge: some View {
         let d  = style.badgeSize
-        let bw = EArtist.shared.poiTextBorderWidth
+        // Pre-shrunk so a caller's `.scaleEffect` renders it back at the
+        // true casing weight — see `borderScaleCompensation`.
+        let bw = EArtist.shared.poiTextBorderWidth * borderScaleCompensation
         let bulge = labelStyle == .planetoids ? 2.0 : 5.0
         
         return ZStack {

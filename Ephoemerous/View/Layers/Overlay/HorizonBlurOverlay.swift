@@ -27,7 +27,7 @@ struct HorizonBlurOverlay: View {
             // ▼ TWEAK the frost here — material = blur strength,
             //   opacity fades the whole effect ▼
             .fill(.ultraThinMaterial, style: FillStyle(eoFill: true))
-            .opacity(0.25)
+            .opacity(0.45)
             .allowsHitTesting(false)
     }
 }

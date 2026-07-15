@@ -335,6 +335,7 @@ struct MainView😇: View {
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
         .background(EArtist.shared.canvasBackground)
+        .preferredColorScheme(.dark)
         // Production toolbar — Here / Now reset chips + location / date
         // pills. It acts on the shared EAppState the SkyLab camera reads,
         // so the sky follows; the clock above plays the transitions.
