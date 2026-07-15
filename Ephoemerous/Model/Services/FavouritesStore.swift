@@ -20,6 +20,8 @@ struct FavouritesStore {
         static let favouritePlanets        = "favouritePlanetNames"
         static let favouriteSun            = "favouriteSun"
         static let favouriteMoon           = "favouriteMoon"
+        static let observerLatDeg          = "observerLatDeg"
+        static let observerLonDeg          = "observerLonDeg"
     }
 
     private let store = NSUbiquitousKeyValueStore.default
@@ -61,6 +63,17 @@ struct FavouritesStore {
             seen.insert(raw)
             return cons
         }
+    }
+
+    /// The observer origin the app last parked at (degrees), written by
+    /// `ECloudSync.saveObserverOrigin` when the app backgrounds. This is
+    /// how the widget knows WHERE the sky is being watched from — a
+    /// widget process has no location access. `nil` before the app has
+    /// ever backgrounded.
+    func observerOrigin() -> (latDeg: Double, lonDeg: Double)? {
+        guard store.object(forKey: Key.observerLatDeg) != nil else { return nil }
+        return (store.double(forKey: Key.observerLatDeg),
+                store.double(forKey: Key.observerLonDeg))
     }
 
     func planets() -> [EPlanet] {

@@ -8,6 +8,7 @@
 import SwiftUI
 import CoreLocation
 import AppIntents
+import WidgetKit
 
 @main
 struct EphoemerousApp: App {
@@ -53,6 +54,15 @@ struct EphoemerousApp: App {
                 // the background — stop with the app, resume on return.
                 if phase == .active { EMotionService.shared.start() }
                 else                { EMotionService.shared.stop()  }
+                // Leaving: park the observer origin for the widget process
+                // (it has no location access) and re-render the widgets so
+                // fresh favourites / origin land immediately.
+                if phase == .background {
+                    ECloudSync.shared.saveObserverOrigin(
+                        latDeg: state.origin.latitude.degrees,
+                        lonDeg: state.origin.longitude.degrees)
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
             }
             .environment(state)
         }

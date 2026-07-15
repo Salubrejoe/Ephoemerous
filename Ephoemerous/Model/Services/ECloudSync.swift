@@ -107,6 +107,15 @@ final class ECloudSync {
         store.synchronize()
     }
 
+    /// Park the observer origin for the widget process (see
+    /// `FavouritesStore.observerOrigin`). Called on scene-background —
+    /// NOT on every origin tween; KVS writes are quota'd.
+    func saveObserverOrigin(latDeg: Double, lonDeg: Double) {
+        store.set(latDeg, forKey: FavouritesStore.Key.observerLatDeg)
+        store.set(lonDeg, forKey: FavouritesStore.Key.observerLonDeg)
+        store.synchronize()
+    }
+
     // MARK: - Read
 
     /// Favourites straight from the store — for callers that live outside
