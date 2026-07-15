@@ -61,6 +61,17 @@ struct MainView😇: View {
     /// framing to freeze it into the committed camera.
     @State private var viewSize: CGSize = .zero
 
+    /// Bottom padding for a floating chrome element so it rides the frontmost
+    /// bottom sheet's top edge (published live in `app.bottomSheetTop`), a
+    /// `gap` above it. Clamped at `rest` so the chrome never dips below its
+    /// resting home — it sits above the sheet's bar detent and RISES only as
+    /// the sheet expands past it, exactly like Apple Maps' controls. Falls
+    /// back to `rest` before any sheet reports / while none is tracked.
+    private func sheetLift(gap: CGFloat, rest: CGFloat) -> CGFloat {
+        guard let top = app.bottomSheetTop, viewSize.height > 0 else { return rest }
+        return max(rest, viewSize.height - top + gap)
+    }
+
     /// Camera scale/offset captured at the start of a NorthIN↔NorthOUT morph.
     /// The camera glides from these to the committed `sky` target across the
     /// morph (see `perspectiveMorphProgress`), so the reframe animates on the
@@ -336,10 +347,10 @@ struct MainView😇: View {
             if !app.isShowingDatePicker && !app.isShowingLocationPicker {
                 CameraClusterCapsule()
                     .padding(.trailing, 16)
-                    // Clear the search sheet's resting bar (72-pt detent +
-                    // home indicator); taller detents slide over, Maps-style.
-                    // ▼ TWEAK the lift here ▼
-                    .padding(.bottom,   114)
+                    // Rides the frontmost sheet's top edge: rests above the
+                    // search bar (114) and rises 1:1 as the sheet expands.
+                    // ▼ TWEAK the rest / gap here ▼
+                    .padding(.bottom, sheetLift(gap: 12, rest: 114))
                     .transition(.opacity)
             }
         }
@@ -348,7 +359,7 @@ struct MainView😇: View {
             // springs back to North.
             CompassButton()
                 .padding(.leading, 16)
-                .padding(.bottom,  124)
+                .padding(.bottom, sheetLift(gap: 22, rest: 124))
         }
         
         .ignoresSafeArea()
@@ -411,6 +422,7 @@ struct MainView😇: View {
                 .interactiveDismissDisabled()
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.visible)
+                .tracksBottomSheet()
                 .onAppear { detailDetent = .fraction(1.0 / 3.0) }
         }
         // Persistent Apple-Maps search sheet — always up at its bar-only

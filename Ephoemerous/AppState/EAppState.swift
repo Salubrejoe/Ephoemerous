@@ -323,6 +323,13 @@ class EAppState {
     /// The toolbar's date pill swells on this so the eye follows the changing
     /// date — the crown turns, the readout reads; no duplicate label needed.
     var isScrubbingDate:         Bool = false
+    /// Live global-Y of the frontmost bottom sheet's top edge (search /
+    /// detail), updated EVERY frame of the drag via `.tracksBottomSheet()` —
+    /// the continuous height SwiftUI's discrete detent binding won't give us.
+    /// The floating camera cluster + compass rose ride this so they lift in
+    /// SYNC with the sheet instead of a fixed offset; the same signal drives
+    /// the sheet-title morph. `nil` when nothing is tracked.
+    var bottomSheetTop:          CGFloat? = nil
     /// True only during the brief window where one bottom-slot sheet is
     /// being torn down and another presented in its place (detail ⇄ scene
     /// editor, detail → detail, detail → myth). The persistent search
