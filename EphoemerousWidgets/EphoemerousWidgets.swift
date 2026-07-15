@@ -85,13 +85,13 @@ struct SkyObjectEntry: TimelineEntry {
 // so canvas and overlay share the full-bleed coordinate space.
 private enum Pin {
     /// Badge centre → dot centre drop, the promoted-pin lift.
-    static let lift: CGFloat = 44
+    static let lift: CGFloat = 34
 
     /// The precise-location dot — where the camera lands the object.
     /// Near the tile's midpoint (Find My plants its pin there), a touch
     /// trailing so the lifted badge reads top-trailing. ▼ TWEAK ▼
     static func dot(in size: CGSize) -> CGPoint {
-        CGPoint(x: size.width * 0.58, y: size.height * 0.50)
+        CGPoint(x: size.width * 0.73, y: size.height * 0.50)
     }
 
     /// Badge centre — lifted straight above the dot.
@@ -111,11 +111,19 @@ private struct SkySnapshot {
 
     let camera: SkyCamera
     let date:   Date
+    /// Set when the PINNED object is a constellation — it has no badge
+    /// or dot; instead its stick-figure is traced solid on the map.
+    let pinnedConstellation: EConstellation?
 
     @MainActor
     init(entity: SkyObjectEntity, date: Date,
          origin: (latDeg: Double, lonDeg: Double)?, size: CGSize) {
         self.date = date
+        if case .constellation(let c) = entity.skyObject {
+            pinnedConstellation = c
+        } else {
+            pinnedConstellation = nil
+        }
 
         let lat = Angle.degrees(origin?.latDeg ?? 51.48)   // Greenwich fallback
         let lon = Angle.degrees(origin?.lonDeg ?? 0)
@@ -164,7 +172,13 @@ private struct SkySnapshot {
         case .planet(let p):
             return EPlanetPosition.allVectors(for: date, siderealOffset: sidereal)
                 .first { $0.0 == p }?.1
-        case .constellation, nil:
+        case .constellation(let c):
+            // The figure-star centroid — the same anchor the app labels
+            // the constellation at — so the FIGURE parks on the pin spot.
+            guard let anchor = ConstellationLines.shared.labelAnchors[c] else { return nil }
+            return EPrecession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
+                .sidereallyRotated(by: sidereal)
+        case nil:
             return nil
         }
     }
@@ -223,9 +237,11 @@ private struct SkySnapshot {
                         star.magnitude < 2 ? 0.95 : 0.65)))
         }
 
-        // Constellation stick-figures — the app's quiet dotted grey.
+        // Constellation stick-figures — the app's quiet dotted grey; the
+        // PINNED constellation is the hero and gets traced separately.
         var sticks = Path()
-        for (_, segs) in ConstellationLines.shared.segments {
+        var hero   = Path()
+        for (cons, segs) in ConstellationLines.shared.segments {
             for seg in segs {
                 guard let a = camera.screen(equatorial: seg.a.equatorialVector),
                       let b = camera.screen(equatorial: seg.b.equatorialVector),
@@ -235,16 +251,29 @@ private struct SkySnapshot {
                     p.y > -20 && p.y < size.height + 20
                 }
                 guard onTile(a) || onTile(b) else { continue }
-                sticks.move(to: a)
-                sticks.addLine(to: b)
+                if cons == pinnedConstellation {
+                    hero.move(to: a)
+                    hero.addLine(to: b)
+                } else {
+                    sticks.move(to: a)
+                    sticks.addLine(to: b)
+                }
             }
         }
         ctx.stroke(sticks,
                    with: .color(.white.opacity(0.16)),
                    style: StrokeStyle(lineWidth: 0.7, dash: [2, 3]))
+        // The hero figure: a SOLID trace, like a selected constellation
+        // in the app — the line IS the promoted label here.
+        ctx.stroke(hero,
+                   with: .color(.white.opacity(0.75)),
+                   style: StrokeStyle(lineWidth: 1.2,
+                                      lineCap: .round, lineJoin: .round))
 
         // Constellation names at their figure centroids — faint map ink.
-        for (cons, anchor) in ConstellationLines.shared.labelAnchors {
+        // The pinned one is skipped: the bottom-leading block names it.
+        for (cons, anchor) in ConstellationLines.shared.labelAnchors
+        where cons != pinnedConstellation {
             let vec = EPrecession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: vec),
                   sc.x > 10, sc.x < size.width - 10,
@@ -343,7 +372,9 @@ struct SkyObjectWidgetView: View {
                                startPoint: .center, endPoint: .bottom)
                     .allowsHitTesting(false)
 
-                if let category {
+                // Constellations have no badge or dot — their solid-traced
+                // figure (see SkySnapshot.draw) IS the promoted label.
+                if let category, snapshot.pinnedConstellation == nil {
                     promotedPin(category, in: geo.size)
                 }
 
@@ -359,8 +390,8 @@ struct SkyObjectWidgetView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
-                .padding(.leading, 12)
-                .padding(.bottom, 10)
+                .padding(.leading, 16)
+                .padding(.bottom, 18)
             }
         }
         .containerBackground(for: .widget) {
@@ -394,14 +425,14 @@ struct SkyObjectWidgetView: View {
                          labelStyle:  labelStyle(for: category),
                          nameReveal:  0,
                          borderScaleCompensation: 1 / 3)
-                .scaleEffect(3)
+                .scaleEffect(2)
                 .position(Pin.badgeCentre(in: size))
 
             // Precise-location dot — the object itself.
             Circle()
                 .fill(style.gradientBottom)
                 .frame(width: 6, height: 6)
-                .shadow(color: .black.opacity(0.5), radius: 1.5)
+                .shadow(color: .black.opacity(0.7), radius: 1.5)
                 .position(Pin.dot(in: size))
         }
     }
@@ -448,5 +479,11 @@ struct EphoemerousWidgets: Widget {
     SkyObjectEntry(date: .now, captured: .now,
                    entity: SkyObjectEntity(.moon), origin: nil)
     SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.sun), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
                    entity: SkyObjectEntity(.planet(.mars)), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.planet(.jupiter)), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.star(.mockStars[0])), origin: nil)
 }
