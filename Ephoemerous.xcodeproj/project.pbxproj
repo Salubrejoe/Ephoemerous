@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		7C919C8E2FC56F9D008B2E1F /* LoreKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7C919C8D2FC56F9D008B2E1F /* LoreKit */; };
+		7CF48C2C3007AC620087F47F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CF48C2B3007AC620087F47F /* WidgetKit.framework */; };
+		7CF48C2E3007AC620087F47F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CF48C2D3007AC620087F47F /* SwiftUI.framework */; };
+		CAFE000000000000000000A1 /* EphoemerousWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7CF48C293007AC620087F47F /* EphoemerousWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CAFE000000000000000000A6 /* LoreKit in Frameworks */ = {isa = PBXBuildFile; productRef = CAFE000000000000000000A5 /* LoreKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -18,11 +22,35 @@
 			remoteGlobalIDString = 7C51B0DC2F8F8C2600B39A8A;
 			remoteInfo = Ephoemerous;
 		};
+		CAFE000000000000000000A3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7C51B0D52F8F8C2600B39A8A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7CF48C283007AC620087F47F;
+			remoteInfo = EphoemerousWidgetsExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CAFE000000000000000000A2 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				CAFE000000000000000000A1 /* EphoemerousWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7C51B0DD2F8F8C2600B39A8A /* Ephoemerous.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ephoemerous.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C5E79FB2FD17C0700F88416 /* EphoemerousTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EphoemerousTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CF48C293007AC620087F47F /* EphoemerousWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EphoemerousWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CF48C2B3007AC620087F47F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		7CF48C2D3007AC620087F47F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -33,6 +61,46 @@
 				Localizable.xcstrings,
 			);
 			target = 7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */;
+		};
+		7CF48C393007AC630087F47F /* Exceptions for "EphoemerousWidgets" folder in "EphoemerousWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */;
+		};
+		CAFE000000000000000000A7 /* Exceptions for "Ephoemerous" folder in "EphoemerousWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AppIntents/SkyObjectEntity.swift,
+				AppIntents/SkyObjectQuery.swift,
+				Assets.xcassets,
+				bsc5.json,
+				Model/Bodies/EHRClass.swift,
+				Model/Bodies/EPlanet.swift,
+				Model/Bodies/ESkyObject.swift,
+				Model/Bodies/EStar.swift,
+				Model/Bodies/EStarKnownData.swift,
+				Model/Constellations/EConstellation.swift,
+				Model/JSONModel/StarData.swift,
+				Model/JSONModel/StarDatabase.swift,
+				Model/Projection/EPrecession.swift,
+				Model/Services/FavouritesStore.swift,
+				Utilities/EArtist/EArtist.swift,
+				"Utilities/EArtist/EArtist+Planets.swift",
+				"Utilities/EArtist/EArtist+NamedStars.swift",
+				"Utilities/EArtist/EArtist+POIStyle.swift",
+				"Utilities/EArtist/EArtist+POITierThresholds.swift",
+				Utilities/EArtist/EPalette.swift,
+				Utilities/EArtist/POITypes.swift,
+				Utilities/Resources/AstroConstants.swift,
+				"Utilities/Extensions/Angle+Ext.swift",
+				Utilities/Resources/ELogger.swift,
+				Utilities/Resources/ESymbol.swift,
+				Utilities/Resources/Strings.swift,
+				View/ViewComponents/POILabelView.swift,
+			);
+			target = 7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -52,8 +120,17 @@
 			exceptions = (
 				7CCEB00F2FA34EBF00012354 /* Exceptions for "Ephoemerous" folder in "Ephoemerous" target */,
 				7C5E7B902FD184D400F88416 /* Exceptions for "Ephoemerous" folder in "Compile Sources" phase from "Ephoemerous" target */,
+				CAFE000000000000000000A7 /* Exceptions for "Ephoemerous" folder in "EphoemerousWidgetsExtension" target */,
 			);
 			path = Ephoemerous;
+			sourceTree = "<group>";
+		};
+		7CF48C2F3007AC620087F47F /* EphoemerousWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7CF48C393007AC630087F47F /* Exceptions for "EphoemerousWidgets" folder in "EphoemerousWidgetsExtension" target */,
+			);
+			path = EphoemerousWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -74,6 +151,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7CF48C263007AC620087F47F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7CF48C2E3007AC620087F47F /* SwiftUI.framework in Frameworks */,
+				7CF48C2C3007AC620087F47F /* WidgetKit.framework in Frameworks */,
+				CAFE000000000000000000A6 /* LoreKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -81,6 +168,8 @@
 			isa = PBXGroup;
 			children = (
 				7C51B0DF2F8F8C2600B39A8A /* Ephoemerous */,
+				7CF48C2F3007AC620087F47F /* EphoemerousWidgets */,
+				7CF48C2A3007AC620087F47F /* Frameworks */,
 				7C51B0DE2F8F8C2600B39A8A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,8 +179,18 @@
 			children = (
 				7C51B0DD2F8F8C2600B39A8A /* Ephoemerous.app */,
 				7C5E79FB2FD17C0700F88416 /* EphoemerousTests.xctest */,
+				7CF48C293007AC620087F47F /* EphoemerousWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		7CF48C2A3007AC620087F47F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7CF48C2B3007AC620087F47F /* WidgetKit.framework */,
+				7CF48C2D3007AC620087F47F /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -104,10 +203,12 @@
 				7C51B0D92F8F8C2600B39A8A /* Sources */,
 				7C51B0DA2F8F8C2600B39A8A /* Frameworks */,
 				7C51B0DB2F8F8C2600B39A8A /* Resources */,
+				CAFE000000000000000000A2 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				CAFE000000000000000000A4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7C51B0DF2F8F8C2600B39A8A /* Ephoemerous */,
@@ -140,6 +241,29 @@
 			productReference = 7C5E79FB2FD17C0700F88416 /* EphoemerousTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7CF48C3A3007AC630087F47F /* Build configuration list for PBXNativeTarget "EphoemerousWidgetsExtension" */;
+			buildPhases = (
+				7CF48C253007AC620087F47F /* Sources */,
+				7CF48C263007AC620087F47F /* Frameworks */,
+				7CF48C273007AC620087F47F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7CF48C2F3007AC620087F47F /* EphoemerousWidgets */,
+			);
+			name = EphoemerousWidgetsExtension;
+			packageProductDependencies = (
+				CAFE000000000000000000A5 /* LoreKit */,
+			);
+			productName = EphoemerousWidgetsExtension;
+			productReference = 7CF48C293007AC620087F47F /* EphoemerousWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -147,7 +271,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2640;
+				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					7C51B0DC2F8F8C2600B39A8A = {
@@ -156,6 +280,9 @@
 					7C5E79FA2FD17C0700F88416 = {
 						CreatedOnToolsVersion = 26.4;
 						TestTargetID = 7C51B0DC2F8F8C2600B39A8A;
+					};
+					7CF48C283007AC620087F47F = {
+						CreatedOnToolsVersion = 27.0;
 					};
 				};
 			};
@@ -179,6 +306,7 @@
 			targets = (
 				7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */,
 				7C5E79FA2FD17C0700F88416 /* EphoemerousTests */,
+				7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -192,6 +320,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		7C5E79F92FD17C0700F88416 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7CF48C273007AC620087F47F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -215,6 +350,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7CF48C253007AC620087F47F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -222,6 +364,11 @@
 			isa = PBXTargetDependency;
 			target = 7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */;
 			targetProxy = 7C5E79FF2FD17C0700F88416 /* PBXContainerItemProxy */;
+		};
+		CAFE000000000000000000A4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */;
+			targetProxy = CAFE000000000000000000A3 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -530,6 +677,73 @@
 			};
 			name = Release;
 		};
+		7CF48C373007AC630087F47F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = EphoemerousWidgets/EphoemerousWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CLM5L23Y57;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EphoemerousWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephoemerous;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lorep.uk.Ephoemerous.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7CF48C383007AC630087F47F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = EphoemerousWidgets/EphoemerousWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CLM5L23Y57;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EphoemerousWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephoemerous;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lorep.uk.Ephoemerous.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -560,6 +774,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		7CF48C3A3007AC630087F47F /* Build configuration list for PBXNativeTarget "EphoemerousWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7CF48C373007AC630087F47F /* Debug */,
+				7CF48C383007AC630087F47F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -571,6 +794,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		7C919C8D2FC56F9D008B2E1F /* LoreKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LoreKit;
+		};
+		CAFE000000000000000000A5 /* LoreKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LoreKit;
 		};

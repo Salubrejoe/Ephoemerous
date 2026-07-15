@@ -36,6 +36,17 @@ struct EphoemerousApp: App {
                 if let location { state.adoptInitialDeviceLocation(location) }
             }
 
+            // Widget tap-through: ephoemerous://object/<entity-id> lands on
+            // the same focus path as a canvas tap. The id is the durable
+            // SkyObjectEntity scheme (star_Sirius, planet_Mars, sun…).
+            .onOpenURL { url in
+                guard url.scheme == "ephoemerous", url.host() == "object",
+                      let id  = url.pathComponents.dropFirst().first,
+                      let obj = SkyObjectEntity(id: id)?.skyObject
+                else { return }
+                state.focus(on: obj)
+            }
+
             .onAppear(perform: EMotionService.shared.start)
             .onChange(of: scenePhase) { _, phase in
                 // Attitude streaming is battery-cheap but pointless in

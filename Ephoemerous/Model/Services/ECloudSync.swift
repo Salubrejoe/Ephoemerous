@@ -18,14 +18,15 @@ final class ECloudSync {
 
     static let shared = ECloudSync()
     private let store = NSUbiquitousKeyValueStore.default
-    private let db    = StarDatabase.shared
+    /// Read side — shared with the widget process (see `FavouritesStore`).
+    private let reads = FavouritesStore()
 
     private enum Key {
-        static let favouriteStars          = "selectedStarNames"            // legacy key, keep
-        static let favouriteConstellations = "favouriteConstellationRaws"
-        static let favouritePlanets        = "favouritePlanetNames"
-        static let favouriteSun            = "favouriteSun"
-        static let favouriteMoon           = "favouriteMoon"
+        static let favouriteStars          = FavouritesStore.Key.favouriteStars
+        static let favouriteConstellations = FavouritesStore.Key.favouriteConstellations
+        static let favouritePlanets        = FavouritesStore.Key.favouritePlanets
+        static let favouriteSun            = FavouritesStore.Key.favouriteSun
+        static let favouriteMoon           = FavouritesStore.Key.favouriteMoon
         static let recentStars             = "recentStarNames"
         static let recentObjects           = "recentObjectIDs"   // universal recents (ESkyObject.id)
         static let magnitudeFilter         = "magnitudeFilter"
@@ -110,23 +111,11 @@ final class ECloudSync {
 
     /// Favourites straight from the store — for callers that live outside
     /// the `EAppState` observation graph (App Intents entity queries, and
-    /// later the widget process, where no app state exists at all).
-    func favourites() -> [ESkyObject] { resolveFavourites() }
+    /// the widget process, where no app state exists at all). Delegates
+    /// to the shared `FavouritesStore` read side.
+    func favourites() -> [ESkyObject] { reads.favourites() }
 
-    /// Read favourites from every case-specific iCloud key and wrap
-    /// each back into its `ESkyObject` form. Cross-type ordering is
-    /// not preserved (stars come back first, then constellations,
-    /// then planets, then sun/moon) — within each type, insertion
-    /// order is preserved by the underlying array storage.
-    private func resolveFavourites() -> [ESkyObject] {
-        var result: [ESkyObject] = []
-        result.append(contentsOf: resolveStars(key: Key.favouriteStars).map(ESkyObject.star))
-        result.append(contentsOf: resolveConstellations().map(ESkyObject.constellation))
-        result.append(contentsOf: resolvePlanets().map(ESkyObject.planet))
-        if store.bool(forKey: Key.favouriteSun)  { result.append(.sun)  }
-        if store.bool(forKey: Key.favouriteMoon) { result.append(.moon) }
-        return result
-    }
+    private func resolveFavourites() -> [ESkyObject] { reads.favourites() }
 
     /// Rebuild the universal recents list from stored `ESkyObject.id`s.
     /// sun / moon / planet / constellation resolve directly from their
@@ -170,37 +159,7 @@ final class ECloudSync {
     }
 
     private func resolveStars(key: String) -> [EStar] {
-        guard let names = store.array(forKey: key) as? [String] else { return [] }
-        let all = db.workableStars
-        var seen = Set<String>()
-        return names.compactMap { name -> EStar? in
-            guard !seen.contains(name), let star = all.first(where: { $0.name == name })
-            else { return nil }
-            seen.insert(name)
-            return star
-        }
-    }
-
-    private func resolveConstellations() -> [EConstellation] {
-        guard let raws = store.array(forKey: Key.favouriteConstellations) as? [String] else { return [] }
-        var seen = Set<String>()
-        return raws.compactMap { raw -> EConstellation? in
-            guard !seen.contains(raw), let cons = EConstellation(rawValue: raw) else { return nil }
-            seen.insert(raw)
-            return cons
-        }
-    }
-
-    private func resolvePlanets() -> [EPlanet] {
-        guard let names = store.array(forKey: Key.favouritePlanets) as? [String] else { return [] }
-        var seen = Set<String>()
-        return names.compactMap { name -> EPlanet? in
-            guard !seen.contains(name),
-                  let planet = EPlanet.all.first(where: { $0.name == name })
-            else { return nil }
-            seen.insert(name)
-            return planet
-        }
+        reads.stars(key: key)
     }
 
     private func loadMagnitudeFilter(into state: EAppState) {

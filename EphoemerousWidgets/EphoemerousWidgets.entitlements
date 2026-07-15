@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Same iCloud KVS store as the APP (which uses the default
+	     $(TeamIdentifierPrefix)$(CFBundleIdentifier) — its own bundle id).
+	     The widget's bundle id differs, so the app's id is spelled out
+	     here; without this the widget would read an empty store and the
+	     favourites would never appear. -->
+	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
+	<string>$(TeamIdentifierPrefix)com.lorep.uk.Ephoemerous</string>
+</dict>
+</plist>
