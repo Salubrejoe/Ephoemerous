@@ -269,7 +269,8 @@ struct MainView😇: View {
                                            selection: selection,
                                            date:  app.renderedObservationDate,
                                            pinch: effPinch,
-                                           rotation: liveRot)
+                                           rotation: liveRot,
+                                           isFavourite: selection.map(app.isFavourite) ?? false)
             }
             
             .frame(width: canvasSize.width, height: canvasSize.height)
