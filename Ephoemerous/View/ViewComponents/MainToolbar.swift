@@ -51,13 +51,18 @@ struct MainToolbar: View {
                 }
 
                 HStack(spacing: 0) {
+                    // Turning the crown pulls the eye to the date. Rather than
+                    // scale the date text INSIDE the capsule (a render
+                    // transform the glass capsule clips — worst on long dates),
+                    // the whole capsule swells as ONE unit below, and the date
+                    // reads bigger by CONTRAST: the location half shrinks +
+                    // recedes so nothing ever spills past the capsule edge.
+                    // ▼ TWEAK the emphasis here ▼
                     ToolbarPill(
                         locationLabel,
                         action: state.toggleLocationPicker
                     )
-                    // Turning the crown pulls the eye to the date: the date
-                    // pill swells and the location half recedes, so the live
-                    // readout leads while you scrub. ▼ TWEAK the swell here ▼
+                    .scaleEffect(state.isScrubbingDate ? 0.82 : 1)
                     .opacity(state.isScrubbingDate ? 0.5 : 1)
                     Divider()
                         .padding(.vertical, 8)
@@ -66,13 +71,10 @@ struct MainToolbar: View {
                         dateLabel,
                         action: state.toggleDatePicker
                     )
-                    .scaleEffect(state.isScrubbingDate ? 1.28 : 1)
                 }
                 .frame(height: barHeight)
                 .glassEffect(.regular.interactive(), in: .capsule)
                 .glassEffectID("bar", in: glassNS)
-                .animation(.spring(response: 0.32, dampingFraction: 0.6),
-                           value: state.isScrubbingDate)
 
                 if notNow {
 
@@ -86,6 +88,11 @@ struct MainToolbar: View {
                 }
             }
         } //: GlassEffectContainer
+        // Whole readout swells as one unit — the capsule mask grows with its
+        // content, so the enlarged date can't clip at any length.
+        .scaleEffect(state.isScrubbingDate ? 1.16 : 1)
+        .animation(.spring(response: 0.32, dampingFraction: 0.6),
+                   value: state.isScrubbingDate)
         
        
         // MARK: - REFRESH HERE/NOW
