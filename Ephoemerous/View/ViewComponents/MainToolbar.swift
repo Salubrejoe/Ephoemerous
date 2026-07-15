@@ -51,22 +51,21 @@ struct MainToolbar: View {
                 }
 
                 HStack(spacing: 0) {
-                    // Turning the crown pulls the eye to the date. Rather than
-                    // scale the date text INSIDE the capsule (a render
-                    // transform the glass capsule clips — worst on long dates),
-                    // the whole capsule swells as ONE unit below, and the date
-                    // reads bigger by CONTRAST: the location half shrinks +
-                    // recedes so nothing ever spills past the capsule edge.
-                    // ▼ TWEAK the emphasis here ▼
-                    ToolbarPill(
-                        locationLabel,
-                        action: state.toggleLocationPicker
-                    )
-                    .scaleEffect(state.isScrubbingDate ? 0.82 : 1)
-                    .opacity(state.isScrubbingDate ? 0.5 : 1)
-                    Divider()
-                        .padding(.vertical, 8)
-                        .opacity(state.isScrubbingDate ? 0.5 : 1)
+                    // Turning the crown collapses the readout to the DATE
+                    // ALONE — the location isn't changing, and the shorter
+                    // capsule leaves room for the whole thing to swell (below)
+                    // without spilling past the screen edges. Location slides
+                    // back in when the wheel stops. ▼ TWEAK the emphasis here ▼
+                    if !state.isScrubbingDate {
+                        ToolbarPill(
+                            locationLabel,
+                            action: state.toggleLocationPicker
+                        )
+                        .transition(.opacity)
+                        Divider()
+                            .padding(.vertical, 8)
+                            .transition(.opacity)
+                    }
                     ToolbarPill(
                         dateLabel,
                         action: state.toggleDatePicker
