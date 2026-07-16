@@ -345,57 +345,71 @@ private struct OrlojFace {
 
     // MARK: Rete (rotates with the sky)
 
-    /// The ecliptic circle — the zodiac ring's centreline.
+    /// Zodiac band width — glyphs (11pt) sit between the edge lines.
+    /// ▼ TWEAK ▼
+    static let zodiacBandWidth: CGFloat = 16
+
+    /// The projected ecliptic as an exact circle — the projected image
+    /// of the ecliptic IS a true circle, so three points pin it. Every
+    /// rete element (band, edges, ticks, glyph orientation) derives
+    /// from this one centre + radius.
     @MainActor
-    func zodiacLinePath() -> Path {
-        var path = Path()
-        var started = false
-        for i in 0...160 {
-            let t = Double(i) / 160
-            let q = SIMD3<Double>.eclipticPoint(lambda: .radians(t * 2 * .pi))
-            if let sc = camera.screen(equatorial: q) {
-                if started { path.addLine(to: sc) } else { path.move(to: sc); started = true }
-            } else {
-                started = false
-            }
-        }
+    func eclipticCircle() -> (centre: CGPoint, radius: CGFloat)? {
+        guard let a = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(0))),
+              let b = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(120))),
+              let c = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(240)))
+        else { return nil }
+        return Self.circle(through: a, b, c)
+    }
+
+    /// The zodiac as a GLASS BAND — a true annulus about the projected
+    /// ecliptic circle, the ecliptic its centreline. Even-odd.
+    @MainActor
+    func zodiacBandPath() -> Path {
+        guard let ring = eclipticCircle() else { return Path() }
+        var path = circle(ring.centre, ring.radius + Self.zodiacBandWidth / 2)
+        path.addPath(circle(ring.centre, ring.radius - Self.zodiacBandWidth / 2))
         return path
     }
 
-    /// The zodiac as a GLASS BAND — the ecliptic line swollen into a
-    /// fillable region. `strokedPath` turns any centreline into a band,
-    /// which is exactly what the real rete is: a solid ring whose
-    /// centreline is the ecliptic. ▼ TWEAK the band width here ▼
+    /// The band's rim lines — outer and inner edge circles, exactly the
+    /// annulus's own boundaries.
     @MainActor
-    func zodiacBandPath(width: CGFloat = 14) -> Path {
-        zodiacLinePath().strokedPath(StrokeStyle(lineWidth: width,
-                                                 lineCap: .round, lineJoin: .round))
+    func zodiacEdgePaths() -> (outer: Path, inner: Path)? {
+        guard let ring = eclipticCircle() else { return nil }
+        return (circle(ring.centre, ring.radius + Self.zodiacBandWidth / 2),
+                circle(ring.centre, ring.radius - Self.zodiacBandWidth / 2))
     }
 
-    /// 12 sign-boundary ticks, pointing toward the pole centre.
+    /// 12 sign-boundary dividers, SPANNING the band rim to rim like the
+    /// original's compartment walls.
     @MainActor
     func zodiacTicksPath() -> Path {
+        guard let ring = eclipticCircle() else { return Path() }
         var merged = Path()
         for i in 0..<12 {
             guard let p = camera.screen(
                 equatorial: .eclipticPoint(lambda: .degrees(Double(i) * 30)))
             else { continue }
-            merged.addPath(tick(at: p, length: 8))
+            let dx  = p.x - ring.centre.x, dy = p.y - ring.centre.y
+            let len = max(hypot(dx, dy), 0.0001)
+            let ux  = dx / len, uy = dy / len
+            let rIn  = ring.radius - Self.zodiacBandWidth / 2
+            let rOut = ring.radius + Self.zodiacBandWidth / 2
+            merged.move(to:    CGPoint(x: ring.centre.x + ux * rIn,
+                                       y: ring.centre.y + uy * rIn))
+            merged.addLine(to: CGPoint(x: ring.centre.x + ux * rOut,
+                                       y: ring.centre.y + uy * rOut))
         }
         return merged
     }
 
     /// The 12 zodiac glyphs (EZodiacSign — Aries at λ 0°) at their sign
-    /// midpoints ON the band, feet toward the ecliptic ring's OWN centre
-    /// (recovered from three projected points — the projected ecliptic
-    /// is a true circle, so three points pin it exactly). That's the
-    /// original's orientation: glyphs standing on the rete ring.
+    /// midpoints on the band's CENTRELINE — between the rim lines — feet
+    /// toward the ring's own centre, the original's orientation.
     @MainActor
     func zodiacGlyphs() -> [(id: Int, symbol: String, position: CGPoint, rotation: Angle)] {
-        guard let a = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(0))),
-              let b = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(120))),
-              let c = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(240))),
-              let ring = Self.circle(through: a, b, c) else { return [] }
+        guard let ring = eclipticCircle() else { return [] }
         var out: [(Int, String, CGPoint, Angle)] = []
         for sign in EZodiacSign.zodiac {
             let mid = Angle.degrees(Double(sign.index - 1) * 30 + 15)
@@ -650,15 +664,20 @@ struct OrlojWidgetView: View {
                         .position(numeral.position)
                 }
                 // ── Rete: the zodiac band — smoky dark glass like the
-                // original's black ring, silver ecliptic line + sign
-                // ticks, and GOLD glyphs with a hard dark shadow so they
-                // pop off the band (Prague's gold-on-black, boom).
+                // original's black ring, its RIM LINES traced silver
+                // (outer leading, inner echoed), sign dividers spanning
+                // rim to rim, and GOLD glyphs between the rims with a
+                // hard dark shadow (Prague's gold-on-black, boom).
                 GlassBand(band: face.zodiacBandPath(),
-                          tint: .black, tintOpacity: 0.35)
-                OrlojPath(source: face.zodiacLinePath())
-                    .stroke(Self.silver.opacity(0.85), lineWidth: 1)
+                          tint: .black, tintOpacity: 0.35, eoFill: true)
+                if let edges = face.zodiacEdgePaths() {
+                    OrlojPath(source: edges.outer)
+                        .stroke(Self.silver.opacity(0.85), lineWidth: 1)
+                    OrlojPath(source: edges.inner)
+                        .stroke(Self.silver.opacity(0.65), lineWidth: 0.8)
+                }
                 OrlojPath(source: face.zodiacTicksPath())
-                    .stroke(Self.silver.opacity(0.6), lineWidth: 1)
+                    .stroke(Self.silver.opacity(0.6), lineWidth: 0.8)
                 ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
                     Text(glyph.symbol)
                         .font(.system(size: 11, weight: .bold))
