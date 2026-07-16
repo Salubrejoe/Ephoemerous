@@ -71,6 +71,11 @@ private struct OrlojFace {
     let lst:       Angle
     let latitude:  Angle
     let longitude: Angle
+    /// UI scale — 1 on the large tile, ~0.46 on the small one. The
+    /// PROJECTION scales itself (everything derives from `size`); this
+    /// factor shrinks the fixed-point dressing — fonts, band widths,
+    /// marks — so the whole instrument miniaturises coherently.
+    let ui:        CGFloat
 
     /// Declination the Roman dial sits at — outside the Tropic of
     /// Cancer plate. (The Old-Bohemian ring is retired — conductor's
@@ -87,6 +92,7 @@ private struct OrlojFace {
         latitude  = lat
         longitude = lon
         lst = EPrecession.lst(for: date, longitude: lon)
+        ui  = min(1, min(size.width, size.height) / 340)   // systemLarge ≈ 1
 
         let viewpoint = EProjection.Viewpoint(
             originVector: Angle.spherePoint(latitude: lat, longitude: lon),
@@ -134,11 +140,14 @@ private struct OrlojFace {
     /// geometry stays the thing you actually read.
     @MainActor
     func drawStars(in ctx: inout GraphicsContext, size: CGSize) {
-        for star in StarDatabase.shared.workableStars where star.magnitude <= 4.6 {
+        // The small tile takes a sparser field (mag 3.8) — the same dot
+        // count at a quarter the area would read as fog, not sky.
+        let magLimit = ui < 0.7 ? 3.8 : 4.6
+        for star in StarDatabase.shared.workableStars where star.magnitude <= magLimit {
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
-            let r = max(0.6, 1.8 - 0.35 * star.magnitude)
+            let r = max(0.5, (1.8 - 0.35 * star.magnitude) * ui)
             ctx.fill(circle(sc, r), with: .color(.white.opacity(0.4)))
         }
     }
@@ -204,7 +213,7 @@ private struct OrlojFace {
             ("NOX",           0, -24),
         ]
         // ▼ TWEAK per-character arc spacing (pt) ▼
-        let spacing: CGFloat = 8
+        let spacing: CGFloat = 8 * ui
         let clip = radiusForDeclination(AstroConstants.tropicCancer) * 0.97
 
         var out: [(String, String, CGPoint, Angle)] = []
@@ -278,12 +287,12 @@ private struct OrlojFace {
     @MainActor
     func dialBandPath() -> Path {
         let roman  = radiusForDeclination(Self.romanDialDec)
-        let outerR = roman + 19
+        let outerR = roman + 19 * ui
         let rect   = CGRect(x: center.x - outerR, y: center.y - outerR,
                             width: outerR * 2, height: outerR * 2)
         var path = Squircle(corners: EArtist.shared.horizonBumpCorners,
                             bulge:   EArtist.shared.horizonBumpBulge).path(in: rect)
-        path.addPath(circle(center, roman + 3))
+        path.addPath(circle(center, roman + 3 * ui))
         return path
     }
 
@@ -357,9 +366,9 @@ private struct OrlojFace {
     /// Roman numerals for the 24 CIVIL hours, positioned just outside
     /// the dial circle and rotated feet-to-centre, like the original.
     @MainActor
-    func dialNumerals(radiusPadding: CGFloat = 11)
+    func dialNumerals()
         -> [(id: Int, text: String, position: CGPoint, rotation: Angle)] {
-        let r = radiusForDeclination(Self.romanDialDec) + radiusPadding
+        let r = radiusForDeclination(Self.romanDialDec) + 11 * ui
         var out: [(Int, String, CGPoint, Angle)] = []
         for h in 0..<24 {
             let H = civilDialPhase + Double(h) / 24 * 2 * .pi
@@ -380,9 +389,9 @@ private struct OrlojFace {
 
     // MARK: Rete (rotates with the sky)
 
-    /// Zodiac band width — glyphs (11pt) sit between the edge lines.
-    /// ▼ TWEAK ▼
-    static let zodiacBandWidth: CGFloat = 16
+    /// Zodiac band width — glyphs sit between the edge lines. Scales
+    /// with the tile. ▼ TWEAK ▼
+    var zodiacBandWidth: CGFloat { 16 * ui }
 
     /// The projected ecliptic as an exact circle — the projected image
     /// of the ecliptic IS a true circle, so three points pin it. Every
@@ -402,8 +411,8 @@ private struct OrlojFace {
     @MainActor
     func zodiacBandPath() -> Path {
         guard let ring = eclipticCircle() else { return Path() }
-        var path = circle(ring.centre, ring.radius + Self.zodiacBandWidth / 2)
-        path.addPath(circle(ring.centre, ring.radius - Self.zodiacBandWidth / 2))
+        var path = circle(ring.centre, ring.radius + zodiacBandWidth / 2)
+        path.addPath(circle(ring.centre, ring.radius - zodiacBandWidth / 2))
         return path
     }
 
@@ -412,8 +421,8 @@ private struct OrlojFace {
     @MainActor
     func zodiacEdgePaths() -> (outer: Path, inner: Path)? {
         guard let ring = eclipticCircle() else { return nil }
-        return (circle(ring.centre, ring.radius + Self.zodiacBandWidth / 2),
-                circle(ring.centre, ring.radius - Self.zodiacBandWidth / 2))
+        return (circle(ring.centre, ring.radius + zodiacBandWidth / 2),
+                circle(ring.centre, ring.radius - zodiacBandWidth / 2))
     }
 
     /// 12 sign-boundary dividers, SPANNING the band rim to rim like the
@@ -429,8 +438,8 @@ private struct OrlojFace {
             let dx  = p.x - ring.centre.x, dy = p.y - ring.centre.y
             let len = max(hypot(dx, dy), 0.0001)
             let ux  = dx / len, uy = dy / len
-            let rIn  = ring.radius - Self.zodiacBandWidth / 2
-            let rOut = ring.radius + Self.zodiacBandWidth / 2
+            let rIn  = ring.radius - zodiacBandWidth / 2
+            let rOut = ring.radius + zodiacBandWidth / 2
             merged.move(to:    CGPoint(x: ring.centre.x + ux * rIn,
                                        y: ring.centre.y + uy * rIn))
             merged.addLine(to: CGPoint(x: ring.centre.x + ux * rOut,
@@ -639,16 +648,18 @@ struct OrlojWidgetView: View {
     private static let silver   = Color(red: 0.78, green: 0.82, blue: 0.88)
 
     /// The numerals' voice — the same serif-semibold the POI labels use,
-    /// as a concrete UIFont for OutlinedText's CoreText layout.
-    private static let numeralFont: UIFont = {
-        var desc = UIFont.systemFont(ofSize: 9, weight: .semibold).fontDescriptor
+    /// as a concrete UIFont for OutlinedText's CoreText layout. Sized per
+    /// tile (9pt large, ~5pt small — hard to read, adorable, as ordered).
+    private static func numeralFont(size: CGFloat) -> UIFont {
+        var desc = UIFont.systemFont(ofSize: size, weight: .semibold).fontDescriptor
         desc = desc.withDesign(.serif) ?? desc
-        return UIFont(descriptor: desc, size: 9)
-    }()
+        return UIFont(descriptor: desc, size: size)
+    }
 
     var body: some View {
         GeometryReader { geo in
             let face = OrlojFace(date: entry.date, origin: entry.origin, size: geo.size)
+            let u    = face.ui
 
             ZStack {
                 // The sky behind the instrument.
@@ -699,7 +710,7 @@ struct OrlojWidgetView: View {
                 // the app's dark casing so they hold up at a squint.
                 ForEach(face.tympanLabelChars(), id: \.id) { glyph in
                     Text(glyph.char)
-                        .font(.system(size: 6.5, weight: .medium, design: .serif))
+                        .font(.system(size: max(3.5, 6.5 * u), weight: .medium, design: .serif))
                         .foregroundStyle(Self.silver.opacity(0.8))
                         .shadow(color: EArtist.shared.canvasBackground.opacity(0.9),
                                 radius: 1)
@@ -716,8 +727,8 @@ struct OrlojWidgetView: View {
                     OutlinedText(text:      numeral.text,
                                  fill:      Self.brass,
                                  stroke:    EArtist.shared.canvasBackground,
-                                 lineWidth: 1.2,
-                                 font:      Self.numeralFont)
+                                 lineWidth: max(0.7, 1.2 * u),
+                                 font:      Self.numeralFont(size: 9 * u))
                         .rotationEffect(numeral.rotation)
                         .position(numeral.position)
                 }
@@ -739,7 +750,7 @@ struct OrlojWidgetView: View {
                     .stroke(Self.silver.opacity(0.6), lineWidth: 0.8)
                 ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
                     Text(glyph.symbol)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 11 * u, weight: .bold))
                         .foregroundStyle(Self.silver)
                         .shadow(color: .black.opacity(0.9), radius: 1, y: 0.5)
                         .rotationEffect(glyph.rotation)
@@ -761,7 +772,7 @@ struct OrlojWidgetView: View {
                                 .stroke(EArtist.shared.canvasBackground.opacity(0.9),
                                         lineWidth: 1.1)
                         )
-                        .frame(width: 9, height: 9)
+                        .frame(width: 9 * u, height: 9 * u)
                         .shadow(color: mark.top.opacity(0.5), radius: 1.5)
                         .position(mark.position)
                 }
@@ -774,7 +785,7 @@ struct OrlojWidgetView: View {
                                 .stroke(EArtist.shared.canvasBackground.opacity(0.9),
                                         lineWidth: 1)
                         )
-                        .frame(width: 7, height: 7)
+                        .frame(width: 7 * u, height: 7 * u)
                         .shadow(color: mark.top.opacity(0.45), radius: 1.2)
                         .position(mark.position)
                 }
@@ -783,23 +794,27 @@ struct OrlojWidgetView: View {
                 // badges (POILabelView, same species as everywhere).
                 if let sun = face.sunPoint {
                     OrlojPath(source: face.handPath(to: sun))
-                        .stroke(Self.sunGold.opacity(0.55), style: .init(lineWidth: 4.4, lineCap: .round))
+                        .stroke(Self.sunGold.opacity(0.55), style: .init(lineWidth: 4.4 * u, lineCap: .round))
 //                        .shadow(color: Self.sunGold.opacity(0.5), radius: 2)
                         .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .sun,
                                  text:       "",
                                  labelStyle: .star,
-                                 nameReveal: 0)
+                                 nameReveal: 0,
+                                 borderScaleCompensation: 1 / max(0.55, u))
+                        .scaleEffect(max(0.55, u))
                         .position(sun)
                 }
                 if let moon = face.moonPoint {
                     OrlojPath(source: face.handPath(to: moon))
-                        .stroke(Self.moonSilk.opacity(0.55), style: .init(lineWidth: 2.4, lineCap: .round))
+                        .stroke(Self.moonSilk.opacity(0.55), style: .init(lineWidth: 2.4 * u, lineCap: .round))
                         .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .moon,
                                  text:       "",
                                  labelStyle: .planetoids,
-                                 nameReveal: 0)
+                                 nameReveal: 0,
+                                 borderScaleCompensation: 1 / max(0.55, u))
+                        .scaleEffect(max(0.55, u))
                         .position(moon)
                 }
             }
@@ -823,12 +838,18 @@ struct OrlojWidget: Widget {
         }
         .configurationDisplayName("Orloj")
         .description("Your sky, in the geometry of the Prague astronomical clock.")
-        .supportedFamilies([.systemLarge])
+        .supportedFamilies([.systemSmall, .systemLarge])
         .contentMarginsDisabled()
     }
 }
 
 #Preview(as: .systemLarge) {
+    OrlojWidget()
+} timeline: {
+    OrlojEntry(date: .now, origin: nil)
+}
+
+#Preview(as: .systemSmall) {
     OrlojWidget()
 } timeline: {
     OrlojEntry(date: .now, origin: nil)
