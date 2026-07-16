@@ -78,6 +78,16 @@ struct MainView😇: View {
     /// Canvas in lockstep with the projection instead of snapping.
     @State private var morphScaleFrom:  CGFloat = 0
     @State private var morphOffsetFrom: CGSize  = .zero
+    
+    private var gradient: RadialGradient {
+        let backColor   = EArtist.shared.canvasBackground
+        let colorEdge   = app.isNorthOut ? backColor : .black.opacity(0.01)
+        
+        return RadialGradient(stops: [
+            .init(color: backColor, location: 0.0),
+            .init(color: colorEdge, location: 1.0),
+        ], center: .center, startRadius: app.scale*3, endRadius: app.canvasSize.height)
+    }
 
     var body: some View {
       // One timeline, production's `ECanvasSchedule`: ticks at 60fps ONLY
@@ -334,7 +344,9 @@ struct MainView😇: View {
         // bright outline. Without a dark background (and dark scheme) the
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
-        .background(EArtist.shared.canvasBackground)
+      .background(
+        gradient
+      )
         .preferredColorScheme(.dark)
         // Production toolbar — Here / Now reset chips + location / date
         // pills. It acts on the shared EAppState the SkyLab camera reads,

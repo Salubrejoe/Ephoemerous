@@ -409,9 +409,9 @@ struct SkyObjectWidgetView: View {
                 }
 
                 // Legibility scrim under the bottom-leading text.
-                LinearGradient(colors: [.clear, .black.opacity(0.75)],
-                               startPoint: .center, endPoint: .bottom)
-                    .allowsHitTesting(false)
+//                LinearGradient(colors: [.clear, .clear, .black.opacity(0.75)],
+//                               startPoint: .center, endPoint: .bottom)
+//                    .allowsHitTesting(false)
 
                 // Constellations have no badge or dot — their solid-traced
                 // figure (see SkySnapshot.draw) IS the promoted label.
@@ -424,23 +424,45 @@ struct SkyObjectWidgetView: View {
                 // line the taller tile actually has room to earn.
                 VStack(alignment: .leading, spacing: 0) {
                     Spacer()
-                    Text(entry.freshnessLabel)
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.6))
-                    Text(entry.entity.name)
-                        .font(.system(.subheadline, design: .serif, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                    if family == .systemLarge, let altAz = snapshot.altitudeAzimuthLabel {
-                        Text(altAz)
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.75))
-                            .padding(.top, 2)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(entry.freshnessLabel)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.6))
+                        Text(entry.entity.name)
+                            .font(.system(.headline, design: .serif, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        if family == .systemLarge, let altAz = snapshot.altitudeAzimuthLabel {
+                            Text(altAz)
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.75))
+                                .padding(.top, 2)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 18)
+                    .padding(.trailing, 36)
+                    .padding(.bottom, 16)
+                    .padding(.top, 8)
+//                    .border(.green)
+                    .background {
+                        ContainerRelativeShape()
+                            .fill (
+//                                .ultraThinMaterial.opacity(0.55)
+                        LinearGradient(colors: [.black.opacity(0.45), .clear],
+                                       startPoint: .bottom, endPoint: .top)
+//                                RadialGradient(stops: [
+//                                    .init(color: .clear              , location: 0.5),
+//                                    .init(color: .black.opacity(0.75), location: 0.0),
+//                                ], center: .bottomLeading, startRadius: 24, endRadius: 150)
+                        )
+//                            .padding(6)
+//                            .shadow(radius: 3.5)
+                    }
+                    .preferredColorScheme(.dark)
                 }
-                .padding(.leading, 18)
-                .padding(.bottom, 16)
+                
             }
         }
         .containerBackground(for: .widget) {

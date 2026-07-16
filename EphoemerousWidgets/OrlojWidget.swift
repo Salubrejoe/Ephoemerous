@@ -100,7 +100,7 @@ private struct OrlojFace {
         // factor 2: EProjection's stereographic puts a declination
         // circle at ρ = 2·tan(45°+δ/2) projection units — the same 2 as
         // northOutDefaultScale's derivation. ▼
-        let targetOuterRadius = min(size.width, size.height) * 0.42
+        let targetOuterRadius = min(size.width, size.height) * 0.52
         let romanRho = 2 * tan(.pi / 4 + Self.romanDialDec.radians / 2)
         let scale = targetOuterRadius / CGFloat(romanRho)
 
@@ -134,12 +134,12 @@ private struct OrlojFace {
     /// geometry stays the thing you actually read.
     @MainActor
     func drawStars(in ctx: inout GraphicsContext, size: CGSize) {
-        for star in StarDatabase.shared.workableStars where star.magnitude <= 3.6 {
+        for star in StarDatabase.shared.workableStars where star.magnitude <= 4.6 {
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
             let r = max(0.6, 1.8 - 0.35 * star.magnitude)
-            ctx.fill(circle(sc, r), with: .color(.white.opacity(0.5)))
+            ctx.fill(circle(sc, r), with: .color(.white.opacity(0.4)))
         }
     }
 
@@ -149,9 +149,9 @@ private struct OrlojFace {
     /// each with its stroke weight, the equator emphasised.
     @MainActor
     func platePaths() -> [(path: Path, width: CGFloat)] {
-        [(sampledParallel(declination: AstroConstants.tropicCapricorn), 1.0),
-         (sampledParallel(declination: .zero),                          1.6),
-         (sampledParallel(declination: AstroConstants.tropicCancer),    1.0)]
+        [(sampledParallel(declination: AstroConstants.tropicCapricorn), 0.5),
+         (sampledParallel(declination: .zero),                          0.9),
+         (sampledParallel(declination: AstroConstants.tropicCancer),    0.5)]
     }
 
     /// A constant-altitude circle around the OBSERVER's zenith (not the
@@ -160,7 +160,7 @@ private struct OrlojFace {
     /// that bounds the AVRORA / CREPVSCVLVM bands on the original.
     @MainActor
     func almucantarPath(altitude: Angle) -> Path {
-        let clip = radiusForDeclination(AstroConstants.tropicCancer) * 1.02
+        let clip = radiusForDeclination(AstroConstants.tropicCancer) * 1.26
         var path = Path()
         var started = false
         for i in 0...160 {
@@ -277,7 +277,7 @@ private struct OrlojFace {
     func dialBandPath() -> Path {
         let roman = radiusForDeclination(Self.romanDialDec)
         var path = circle(center, roman + 19)
-        path.addPath(circle(center, roman - 15))
+        path.addPath(circle(center, roman + 3))
         return path
     }
 
@@ -478,7 +478,7 @@ private struct OrlojFace {
     /// plain circle outlines), never for placing a specific point.
     /// ρ = 2·tan(45°+δ/2) — the 2 is EProjection's convention.
     private func radiusForDeclination(_ dec: Angle) -> CGFloat {
-        camera.scale * CGFloat(2 * tan(.pi / 4 + dec.radians / 2))
+        camera.scale * 0.81 * CGFloat(2 * tan(.pi / 4 + dec.radians / 2))
     }
 
     // MARK: Pure geometry (mirrors EOrlojGeometry / OrlojUnequalHoursLayer,
@@ -629,13 +629,23 @@ struct OrlojWidgetView: View {
                 // Sky-side lines read SILVER (horizon, twilight, unequal
                 // hours) — the heavens against the instrument's gold.
                 OrlojPath(source: face.horizonPath())
-                    .stroke(Self.silver.opacity(0.85), lineWidth: 1.3)
+//                    .stroke(Self.silver.opacity(0.85), lineWidth: 0.5)
+                    .stroke(
+                        Self.silver.opacity(0.55),
+                        style: .init(
+                            lineWidth: 0.8,
+                            lineCap: .round,
+                            lineJoin: .round,
+                            dash: [10,10],
+                            dashPhase: 20
+                        )
+                    )
                 // Astronomical-twilight line — the AVRORA/CREPVSCVLVM
                 // bands' inner boundary, the night's edge.
                 OrlojPath(source: face.almucantarPath(altitude: .degrees(-18)))
-                    .stroke(Self.silver.opacity(0.4), lineWidth: 0.8)
+                    .stroke(Self.silver.opacity(0.4), lineWidth: 0.5)
                 OrlojPath(source: face.unequalHoursPath())
-                    .stroke(Self.silver.opacity(0.5), lineWidth: 0.75)
+                    .stroke(Self.silver.opacity(0.5), lineWidth: 0.5)
 
                 // Tympan region labels — the original's Latin, laid out
                 // character by character ALONG their bands' curves.
@@ -650,12 +660,12 @@ struct OrlojWidgetView: View {
                 // ── Dial scales, riding the glass band. The Roman dial
                 // is phased to CIVIL time (device timezone, DST-aware) —
                 // hand against numeral reads the wall clock.
-                OrlojPath(source: face.ringCirclePath(declination: OrlojFace.romanDialDec))
-                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
-                OrlojPath(source: face.ringTicksPath(declination: OrlojFace.romanDialDec,
-                                                     hourOffset: face.civilDialPhase,
-                                                     tickLength: 8, longEvery: 6))
-                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
+//                OrlojPath(source: face.ringCirclePath(declination: OrlojFace.romanDialDec))
+//                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
+//                OrlojPath(source: face.ringTicksPath(declination: OrlojFace.romanDialDec,
+//                                                     hourOffset: face.civilDialPhase,
+//                                                     tickLength: 8, longEvery: 6))
+//                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
                 ForEach(face.dialNumerals(), id: \.id) { numeral in
                     Text(numeral.text)
                         .font(.system(size: 8, weight: .semibold, design: .serif))
@@ -681,7 +691,7 @@ struct OrlojWidgetView: View {
                 ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
                     Text(glyph.symbol)
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Self.sunGold)
+                        .foregroundStyle(Self.silver)
                         .shadow(color: .black.opacity(0.9), radius: 1, y: 0.5)
                         .rotationEffect(glyph.rotation)
                         .position(glyph.position)
