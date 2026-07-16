@@ -12,17 +12,20 @@ import simd
 // The Orloj and NorthOUT are the same stereographic projection from the
 // celestial north pole (eye = NCP, tangent plane = SCP) — one was built
 // for a 1410 astrolabe, the other for this app; they were always the
-// same math. So instead of reusing EOrlojGeometry's own simplified
-// circle-placement code (which assumes its own unrotated, uncentred
-// coordinate frame), everything here is SAMPLED through the real
-// `SkyCamera` — the codebase's established pattern (CelestialGridCanvas,
-// AlmucantarCurve) — so it's exact for the viewer's actual latitude and
-// inherits the camera's real scale/orientation with no separate
-// "which way does this rotate" reasoning required.
+// same math. Everything here is SAMPLED through the real `SkyCamera`
+// (the codebase's established pattern — CelestialGridCanvas,
+// AlmucantarCurve), so it's exact for the viewer's actual latitude with
+// no separate handedness reasoning.
 //
-// No per-instance configuration — this is "your sky, right now,
-// Orloj-style," large only (there's no room for the full plate + dial +
-// rete below systemLarge).
+// RENDERING: `OrlojFace` VENDS PATHS; the view composes them as SwiftUI
+// Shape layers (only the star field stays a Canvas). This is deliberate:
+// Shape views can carry materials, and the two elements with real BODY —
+// the outer dial band, the zodiac band — wear a hand-rolled glass look
+// (`.glassEffect` doesn't render in the widget process; the faux
+// gradient-sheen recipe rasterises anywhere). The hairline geometry
+// stays tinted strokes riding on top, exactly the real instrument's
+// construction: gold filigree on solid rings. When this face graduates
+// into the app, the same band shapes take a real `.glassEffect(in:)`.
 struct OrlojProvider: TimelineProvider {
 
     func placeholder(in context: Context) -> OrlojEntry {
@@ -58,13 +61,9 @@ struct OrlojEntry: TimelineEntry {
 }
 
 // MARK: - OrlojFace
-// Builds the NorthOUT camera and draws every layer of the astrolabe.
-// Z-order mirrors OrlojView: plate → horizon → unequal hours → Roman
-// dial → Bohemian ring → zodiac ring → Sun hand → Moon hand — with the
-// app's own faint star field underneath as the plate's "sky," and
-// constellation figures / planets omitted (the real instrument doesn't
-// show them either — only Sun, Moon, and the fixed stars implied by the
-// rete's zodiac).
+// Builds the NorthOUT camera and vends every layer of the astrolabe as
+// a `Path` in widget coordinates. Pure geometry — no drawing, no style;
+// the view decides what's glass, what's filigree.
 private struct OrlojFace {
 
     let camera:   SkyCamera
@@ -72,17 +71,10 @@ private struct OrlojFace {
     let lst:      Angle
     let latitude: Angle
 
-    private static let brass    = Color(red: 0.80, green: 0.66, blue: 0.38)
-    private static let sunGold  = Color(red: 1.00, green: 0.82, blue: 0.45)
-    private static let moonSilk = Color.white
-
     /// Declinations the decorative rings sit at — outside the Tropic of
-    /// Cancer plate, Roman dial the outermost. Not solved from a target
-    /// radius (a plain circle needs no rotation reasoning either way);
-    /// picked to roughly echo the original's 1.10× / 1.04× spacing.
-    /// ▼ TWEAK the ring spacing here ▼
-    private static let romanDialDec    = AstroConstants.tropicCancer + .degrees(12)
-    private static let bohemianRingDec = AstroConstants.tropicCancer + .degrees(6)
+    /// Cancer plate, Roman dial the outermost. ▼ TWEAK ring spacing ▼
+    static let romanDialDec    = AstroConstants.tropicCancer + .degrees(12)
+    static let bohemianRingDec = AstroConstants.tropicCancer + .degrees(6)
 
     @MainActor
     init(date: Date, origin: (latDeg: Double, lonDeg: Double)?, size: CGSize) {
@@ -131,56 +123,38 @@ private struct OrlojFace {
                           size: size, viewpoint: viewpoint, sidereal: sidereal)
     }
 
-    private var center: CGPoint { camera.screen(.zero) }
+    var center: CGPoint { camera.screen(.zero) }
 
-    // MARK: Draw
+    // MARK: Star field (stays Canvas-drawn — hundreds of dots, no glass)
 
-    @MainActor
-    func draw(in ctx: inout GraphicsContext, size: CGSize) {
-        drawStars(in: &ctx, size: size)
-        drawPlate(in: &ctx)
-        drawHorizon(in: &ctx)
-        drawUnequalHours(in: &ctx)
-        drawDecorativeRing(in: &ctx, declination: Self.romanDialDec,
-                           hourOffset: 0, tickLength: 8, longEvery: 6,
-                           opacity: 0.85, lineWidth: 1)
-        if let hSet = Self.sunsetHourAngle(declination: sunDec, latitude: latitude) {
-            drawDecorativeRing(in: &ctx, declination: Self.bohemianRingDec,
-                               hourOffset: hSet, tickLength: 5, longEvery: 24,
-                               opacity: 0.55, lineWidth: 0.75)
-        }
-        drawZodiac(in: &ctx)
-        drawSunHand(in: &ctx)
-        drawMoonHand(in: &ctx)
-    }
-
-    /// Faint naked-eye field — kept sparse (mag ≤ 3.6) so the brass
+    /// Faint naked-eye field — kept sparse (mag ≤ 3.6) so the dial
     /// geometry stays the thing you actually read.
-    private func drawStars(in ctx: inout GraphicsContext, size: CGSize) {
+    @MainActor
+    func drawStars(in ctx: inout GraphicsContext, size: CGSize) {
         for star in StarDatabase.shared.workableStars where star.magnitude <= 3.6 {
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
             let r = max(0.6, 1.8 - 0.35 * star.magnitude)
-            ctx.fill(orlojDot(sc, radius: r), with: .color(.white.opacity(0.5)))
+            ctx.fill(circle(sc, r), with: .color(.white.opacity(0.5)))
         }
     }
 
-    /// The fixed plate: Tropic of Capricorn (inner), equator, Tropic of
-    /// Cancer (outer) — the SAME declination-circle formula the app's
-    /// NorthOUT mode already uses, sampled through this camera.
-    private func drawPlate(in ctx: inout GraphicsContext) {
-        for (dec, width) in [(AstroConstants.tropicCapricorn, 1.0),
-                             (Angle.zero,                     1.6),
-                             (AstroConstants.tropicCancer,    1.0)] {
-            ctx.stroke(sampledParallel(declination: dec),
-                      with: .color(Self.brass.opacity(0.85)), lineWidth: width)
-        }
+    // MARK: Plate (fixed)
+
+    /// Tropic of Capricorn (inner), equator, Tropic of Cancer (outer) —
+    /// each with its stroke weight, the equator emphasised.
+    @MainActor
+    func platePaths() -> [(path: Path, width: CGFloat)] {
+        [(sampledParallel(declination: AstroConstants.tropicCapricorn), 1.0),
+         (sampledParallel(declination: .zero),                          1.6),
+         (sampledParallel(declination: AstroConstants.tropicCancer),    1.0)]
     }
 
     /// The horizon — altitude = 0 around the OBSERVER's zenith (not the
     /// pole), clipped to the Tropic of Cancer like the real tympan.
-    private func drawHorizon(in ctx: inout GraphicsContext) {
+    @MainActor
+    func horizonPath() -> Path {
         let clip = radiusForDeclination(AstroConstants.tropicCancer) * 1.02
         var path = Path()
         var started = false
@@ -194,14 +168,16 @@ private struct OrlojFace {
                 started = false
             }
         }
-        ctx.stroke(path, with: .color(Self.brass.opacity(0.9)), lineWidth: 1.3)
+        return path
     }
 
     /// Unequal (planetary) hours: the day arc between sunrise and sunset,
     /// split into 12, one curved line per hour fitted through its point
-    /// on all three plate circles.
-    private func drawUnequalHours(in ctx: inout GraphicsContext) {
+    /// on all three plate circles. Merged into one path — one stroke.
+    @MainActor
+    func unequalHoursPath() -> Path {
         let decs: [Angle] = [AstroConstants.tropicCancer, .zero, AstroConstants.tropicCapricorn]
+        var merged = Path()
         for k in 0...12 {
             let frac = Double(k) / 12
             var pts: [CGPoint] = []
@@ -212,47 +188,66 @@ private struct OrlojFace {
                 if let sc = ringPoint(hourAngle: H, declination: dec) { pts.append(sc) }
             }
             guard pts.count >= 2 else { continue }
-            var path = Path()
-            if pts.count == 3, let circle = Self.circle(through: pts[0], pts[1], pts[2]) {
-                path = Self.arcPolyline(centre: circle.centre, radius: circle.radius,
-                                       from: pts[0], through: pts[1], to: pts[2])
+            if pts.count == 3, let cir = Self.circle(through: pts[0], pts[1], pts[2]) {
+                merged.addPath(Self.arcPolyline(centre: cir.centre, radius: cir.radius,
+                                               from: pts[0], through: pts[1], to: pts[2]))
             } else {
-                path.move(to: pts.first!)
-                path.addLine(to: pts.last!)
+                merged.move(to: pts.first!)
+                merged.addLine(to: pts.last!)
             }
-            ctx.stroke(path, with: .color(Self.brass.opacity(0.55)), lineWidth: 0.75)
         }
+        return merged
     }
 
-    /// A generic hour-ticked ring at a fixed declination — the Roman
-    /// dial (offset 0) and the Old-Bohemian ring (offset by sunset hour
-    /// angle) are the same shape, just different phase and tick rhythm.
-    /// The outline is a plain circle (rotation-agnostic — a circle has
-    /// no "direction"); only the ticks need the real hour-angle
-    /// projection, since THEY carry meaning (they must land where the
-    /// Sun hand will actually cross at that hour).
-    private func drawDecorativeRing(in ctx: inout GraphicsContext,
-                                    declination dec: Angle,
-                                    hourOffset: Double,
-                                    tickLength: CGFloat,
-                                    longEvery: Int,
-                                    opacity: Double,
-                                    lineWidth: CGFloat) {
-        ctx.stroke(orlojCircle(center, radiusForDeclination(dec)),
-                  with: .color(Self.brass.opacity(opacity)), lineWidth: lineWidth)
+    // MARK: Dial rings (fixed)
+
+    /// The outer dial as a GLASS BAND: annulus from just inside the
+    /// Old-Bohemian ring to just outside the Roman dial — the real
+    /// clock's single black ring that carries both scales. Even-odd.
+    /// ▼ TWEAK the band edges here ▼
+    @MainActor
+    func dialBandPath() -> Path {
+        let outer = radiusForDeclination(Self.romanDialDec) + 5
+        let inner = radiusForDeclination(Self.bohemianRingDec) - 11
+        var path = circle(center, outer)
+        path.addPath(circle(center, inner))
+        return path
+    }
+
+    /// A plain circle outline at a ring's declination.
+    @MainActor
+    func ringCirclePath(declination dec: Angle) -> Path {
+        circle(center, radiusForDeclination(dec))
+    }
+
+    /// Hour ticks for a ring — Roman dial (offset 0, long tick every 6)
+    /// and Old-Bohemian ring (offset by sunset hour angle, one long tick
+    /// at 0/24) are the same construction, different phase and rhythm.
+    /// Ticks are PROJECTED (RA = LST − H, like a star) — they carry the
+    /// meaning, they must land where the Sun hand actually crosses.
+    @MainActor
+    func ringTicksPath(declination dec: Angle, hourOffset: Double,
+                       tickLength: CGFloat, longEvery: Int) -> Path {
+        var merged = Path()
         for h in 0..<24 {
             let H = hourOffset + Double(h) / 24 * 2 * .pi
             guard let p = ringPoint(hourAngle: H, declination: dec) else { continue }
             let long = (h % longEvery == 0) ? tickLength * 1.6 : tickLength
-            ctx.stroke(tick(at: p, toward: center, length: long),
-                      with: .color(Self.brass.opacity(opacity)), lineWidth: lineWidth)
+            merged.addPath(tick(at: p, length: long))
         }
+        return merged
     }
 
-    /// The rete's zodiac ring — an off-centre circle carrying the
-    /// ecliptic, ROTATING with sidereal time (unlike the plate above).
-    /// The Sun always sits on it by construction.
-    private func drawZodiac(in ctx: inout GraphicsContext) {
+    /// Sunset hour angle for TODAY's sun — the Old-Bohemian ring's phase.
+    var bohemianOffset: Double? {
+        Self.sunsetHourAngle(declination: sunDec, latitude: latitude)
+    }
+
+    // MARK: Rete (rotates with the sky)
+
+    /// The ecliptic circle — the zodiac ring's centreline.
+    @MainActor
+    func zodiacLinePath() -> Path {
         var path = Path()
         var started = false
         for i in 0...160 {
@@ -264,37 +259,52 @@ private struct OrlojFace {
                 started = false
             }
         }
-        ctx.stroke(path, with: .color(Self.brass.opacity(0.9)), lineWidth: 1.4)
+        return path
+    }
 
-        // 12 sign-boundary ticks, pointing toward the pole centre — a
-        // close stand-in for the real ring's own off-centre pivot,
-        // indistinguishable at this size.
+    /// The zodiac as a GLASS BAND — the ecliptic line swollen into a
+    /// fillable region. `strokedPath` turns any centreline into a band,
+    /// which is exactly what the real rete is: a solid ring whose
+    /// centreline is the ecliptic. ▼ TWEAK the band width here ▼
+    @MainActor
+    func zodiacBandPath(width: CGFloat = 14) -> Path {
+        zodiacLinePath().strokedPath(StrokeStyle(lineWidth: width,
+                                                 lineCap: .round, lineJoin: .round))
+    }
+
+    /// 12 sign-boundary ticks, pointing toward the pole centre.
+    @MainActor
+    func zodiacTicksPath() -> Path {
+        var merged = Path()
         for i in 0..<12 {
-            guard let p = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(Double(i) * 30)))
+            guard let p = camera.screen(
+                equatorial: .eclipticPoint(lambda: .degrees(Double(i) * 30)))
             else { continue }
-            ctx.stroke(tick(at: p, toward: center, length: 8),
-                      with: .color(Self.brass.opacity(0.7)), lineWidth: 1)
+            merged.addPath(tick(at: p, length: 8))
         }
+        return merged
     }
 
-    private func drawSunHand(in ctx: inout GraphicsContext) {
-        guard let p = camera.screen(equatorial: .eclipticPoint(lambda: sunLambda)) else { return }
-        var hand = Path()
-        hand.move(to: center)
-        hand.addLine(to: p)
-        ctx.stroke(hand, with: .color(Self.sunGold), lineWidth: 1.3)
-        ctx.stroke(orlojCircle(p, 6), with: .color(Self.sunGold), lineWidth: 1.6)
-        ctx.fill(orlojCircle(p, 6), with: .color(Self.sunGold.opacity(0.3)))
+    // MARK: Hands
+
+    @MainActor var sunPoint: CGPoint? {
+        camera.screen(equatorial: .eclipticPoint(lambda: sunLambda))
     }
 
-    private func drawMoonHand(in ctx: inout GraphicsContext) {
+    @MainActor var moonPoint: CGPoint? {
         let (vec, _, _) = EMoonPosition.vector(for: date, siderealOffset: camera.sidereal)
-        guard let p = camera.screen(rotatedEquatorial: vec) else { return }
+        return camera.screen(rotatedEquatorial: vec)
+    }
+
+    func handPath(to p: CGPoint) -> Path {
         var hand = Path()
         hand.move(to: center)
         hand.addLine(to: p)
-        ctx.stroke(hand, with: .color(Self.moonSilk.opacity(0.85)), lineWidth: 0.9)
-        ctx.stroke(orlojCircle(p, 4.5), with: .color(Self.moonSilk.opacity(0.9)), lineWidth: 1.4)
+        return hand
+    }
+
+    func markerPath(at p: CGPoint, radius: CGFloat) -> Path {
+        circle(p, radius)
     }
 
     // MARK: Sun helpers
@@ -304,9 +314,8 @@ private struct OrlojFace {
 
     // MARK: Sampling helpers
 
-    /// A full constant-declination circle, RA swept 0…2π — the plate's
-    /// tropic/equator circles and (reused for its outline) the decorative
-    /// rings.
+    /// A full constant-declination circle, RA swept 0…2π.
+    @MainActor
     private func sampledParallel(declination dec: Angle, steps: Int = 120) -> Path {
         var path = Path()
         var started = false
@@ -325,9 +334,8 @@ private struct OrlojFace {
     /// A point at hour angle H (from the CURRENT meridian) and
     /// declination dec — built exactly like a star (RA = LST − H, then
     /// the normal equatorial→screen pipeline), so it's internally
-    /// consistent with every other hour-angle element by construction:
-    /// no separate "which way does H increase on screen" derivation
-    /// needed, because it's never assumed — only ever projected.
+    /// consistent with every other hour-angle element by construction.
+    @MainActor
     private func ringPoint(hourAngle H: Double, declination dec: Angle) -> CGPoint? {
         let q = EPrecession.equatorialVector(ra: .radians(lst.radians - H), dec: dec)
         return camera.screen(equatorial: q)
@@ -335,11 +343,8 @@ private struct OrlojFace {
 
     /// Closed-form declination-circle radius — valid ONLY as a
     /// rotation-agnostic distance-from-centre (clipping thresholds,
-    /// plain circle outlines), never for placing a specific point
-    /// (that always goes through the real per-point projection above).
-    /// ρ = 2·tan(45°+δ/2) — the 2 is EProjection's convention (horizon
-    /// at ρ=2 in NorthIN); dropping it once made every ring render at
-    /// double size while these outlines sat at half their own ticks.
+    /// plain circle outlines), never for placing a specific point.
+    /// ρ = 2·tan(45°+δ/2) — the 2 is EProjection's convention.
     private func radiusForDeclination(_ dec: Angle) -> CGFloat {
         camera.scale * CGFloat(2 * tan(.pi / 4 + dec.radians / 2))
     }
@@ -394,8 +399,8 @@ private struct OrlojFace {
         return path
     }
 
-    /// Inward tick from `point` toward `center`, `length` points long.
-    private func tick(at point: CGPoint, toward center: CGPoint, length: CGFloat) -> Path {
+    /// Inward tick from `point` toward the plate centre.
+    private func tick(at point: CGPoint, length: CGFloat) -> Path {
         let dx = center.x - point.x, dy = center.y - point.y
         let len = max(hypot(dx, dy), 0.0001)
         let inner = CGPoint(x: point.x + dx / len * length, y: point.y + dy / len * length)
@@ -405,26 +410,132 @@ private struct OrlojFace {
         return p
     }
 
-    private func orlojCircle(_ centre: CGPoint, _ radius: CGFloat) -> Path {
+    private func circle(_ centre: CGPoint, _ radius: CGFloat) -> Path {
         Path(ellipseIn: CGRect(x: centre.x - radius, y: centre.y - radius,
                               width: radius * 2, height: radius * 2))
     }
+}
 
-    private func orlojDot(_ centre: CGPoint, radius: CGFloat) -> Path {
-        orlojCircle(centre, radius)
+// MARK: - Shape plumbing
+
+/// Lifts a pre-computed `Path` (already in view coordinates) into a
+/// SwiftUI `Shape`, so face layers can be styled as views — and can take
+/// a real `.glassEffect(in:)` when this face graduates into the app.
+private struct OrlojPath: Shape {
+    let source: Path
+    func path(in rect: CGRect) -> Path { source }
+}
+
+/// The faux-glass treatment — `.glassEffect` doesn't render in the
+/// widget process, so the look is hand-rolled from parts that rasterise
+/// anywhere: a tinted body, a top-lit sheen, a bright top rim, and a
+/// drop shadow for lift. ▼ TWEAK the glass recipe here ▼
+private struct GlassBand: View {
+    let band:   Path
+    var tint:   Color  = .white
+    var tintOpacity:   Double = 0.10
+    var eoFill: Bool   = false
+
+    var body: some View {
+        let shape = OrlojPath(source: band)
+        let style = FillStyle(eoFill: eoFill)
+        ZStack {
+            // Body — the tinted glass slab.
+            shape.fill(tint.opacity(tintOpacity), style: style)
+            // Sheen — light falling from the top.
+            shape.fill(LinearGradient(colors: [.white.opacity(0.14),
+                                               .white.opacity(0.02)],
+                                      startPoint: .top, endPoint: .bottom),
+                       style: style)
+            // Rim light — bright top edge, fading out below.
+            shape.stroke(LinearGradient(colors: [.white.opacity(0.45),
+                                                 .white.opacity(0.07)],
+                                        startPoint: .top, endPoint: .bottom),
+                         lineWidth: 0.8)
+        }
+        .compositingGroup()
+        .shadow(color: .black.opacity(0.35), radius: 3, y: 1.5)
     }
 }
 
 // MARK: - Entry view
-
+// Composes the face back → front: star field (Canvas), the glass dial
+// band, the plate/horizon/unequal-hour filigree, the dial scales, the
+// glass zodiac band with its ticks, then the hands. Brass hairlines on
+// glass slabs — the real instrument's construction.
 struct OrlojWidgetView: View {
     var entry: OrlojEntry
 
+    private static let brass    = Color(red: 0.80, green: 0.66, blue: 0.38)
+    private static let sunGold  = Color(red: 1.00, green: 0.82, blue: 0.45)
+    private static let moonSilk = Color.white
+
     var body: some View {
         GeometryReader { geo in
-            Canvas { ctx, size in
-                let face = OrlojFace(date: entry.date, origin: entry.origin, size: size)
-                face.draw(in: &ctx, size: size)
+            let face = OrlojFace(date: entry.date, origin: entry.origin, size: geo.size)
+
+            ZStack {
+                // The sky behind the instrument.
+                Canvas { ctx, size in
+                    face.drawStars(in: &ctx, size: size)
+                }
+
+                // ── Fixed dial band (glass) — the real clock's black
+                // outer ring, smoky so the sky reads through it.
+                GlassBand(band: face.dialBandPath(),
+                          tint: .black, tintOpacity: 0.30, eoFill: true)
+
+                // ── Plate filigree.
+                ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
+                    OrlojPath(source: plate.path)
+                        .stroke(Self.brass.opacity(0.85), lineWidth: plate.width)
+                }
+                OrlojPath(source: face.horizonPath())
+                    .stroke(Self.brass.opacity(0.9), lineWidth: 1.3)
+                OrlojPath(source: face.unequalHoursPath())
+                    .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
+
+                // ── Dial scales, riding the glass band.
+                OrlojPath(source: face.ringCirclePath(declination: OrlojFace.romanDialDec))
+                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
+                OrlojPath(source: face.ringTicksPath(declination: OrlojFace.romanDialDec,
+                                                     hourOffset: 0,
+                                                     tickLength: 8, longEvery: 6))
+                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
+                if let hSet = face.bohemianOffset {
+                    OrlojPath(source: face.ringCirclePath(declination: OrlojFace.bohemianRingDec))
+                        .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
+                    OrlojPath(source: face.ringTicksPath(declination: OrlojFace.bohemianRingDec,
+                                                         hourOffset: hSet,
+                                                         tickLength: 5, longEvery: 24))
+                        .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
+                }
+
+                // ── Rete: the zodiac band (glass, brass-tinted) + ticks.
+                GlassBand(band: face.zodiacBandPath(),
+                          tint: Self.brass, tintOpacity: 0.16)
+                OrlojPath(source: face.zodiacLinePath())
+                    .stroke(Self.brass.opacity(0.9), lineWidth: 1)
+                OrlojPath(source: face.zodiacTicksPath())
+                    .stroke(Self.brass.opacity(0.7), lineWidth: 1)
+
+                // ── Hands.
+                if let sun = face.sunPoint {
+                    OrlojPath(source: face.handPath(to: sun))
+                        .stroke(Self.sunGold, lineWidth: 1.3)
+                    GlassBand(band: face.markerPath(at: sun, radius: 6),
+                              tint: Self.sunGold, tintOpacity: 0.35)
+                    OrlojPath(source: face.markerPath(at: sun, radius: 6))
+                        .stroke(Self.sunGold, lineWidth: 1.6)
+                }
+                if let moon = face.moonPoint {
+                    OrlojPath(source: face.handPath(to: moon))
+                        .stroke(Self.moonSilk.opacity(0.85), lineWidth: 0.9)
+                    GlassBand(band: face.markerPath(at: moon, radius: 4.5),
+                              tint: Self.moonSilk, tintOpacity: 0.25)
+                    OrlojPath(source: face.markerPath(at: moon, radius: 4.5))
+                        .stroke(Self.moonSilk.opacity(0.9), lineWidth: 1.4)
+                }
             }
         }
         .containerBackground(for: .widget) {
