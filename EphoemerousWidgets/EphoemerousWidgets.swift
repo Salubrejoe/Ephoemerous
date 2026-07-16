@@ -343,7 +343,8 @@ struct SkyObjectWidgetView: View {
                 postcard
             }
         }
-        .environment(\.colorScheme, .dark)     // the night sky is dark; so are we
+        .preferredColorScheme(.dark)
+//        .environment(\.colorScheme, .dark)     // the night sky is dark; so are we
         .widgetURL(URL(string: "ephoemerous://object/\(entry.entity.id)"))
     }
 
@@ -368,7 +369,7 @@ struct SkyObjectWidgetView: View {
                 }
 
                 // Legibility scrim under the bottom-leading text.
-                LinearGradient(colors: [.clear, .black.opacity(0.45)],
+                LinearGradient(colors: [.clear, .black.opacity(0.75)],
                                startPoint: .center, endPoint: .bottom)
                     .allowsHitTesting(false)
 
@@ -390,8 +391,8 @@ struct SkyObjectWidgetView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
-                .padding(.leading, 16)
-                .padding(.bottom, 18)
+                .padding(.leading, 18)
+                .padding(.bottom, 16)
             }
         }
         .containerBackground(for: .widget) {
@@ -463,6 +464,7 @@ struct EphoemerousWidgets: Widget {
                                intent:   SkyObjectWidgetIntent.self,
                                provider: SkyObjectProvider()) { entry in
             SkyObjectWidgetView(entry: entry)
+                
         }
         .configurationDisplayName("Sky Object")
         .description("A star, planet, the Sun or the Moon — live on your sky map.")

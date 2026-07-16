@@ -29,6 +29,7 @@ struct EphoemerousApp: App {
             NavigationStack {
                 MainView😇()
             }
+            .preferredColorScheme(.dark)
             .ignoresSafeArea()
             
             .onAppear(perform: state.startCloudSync)
