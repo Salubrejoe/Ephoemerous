@@ -660,6 +660,7 @@ struct OrlojWidgetView: View {
                 // outer ring, smoky so the sky reads through it.
                 GlassBand(band: face.dialBandPath(),
                           tint: .black, tintOpacity: 0.30, eoFill: true)
+                .shadow(radius: 4, y: 2.5)
 
                 // ── Plate filigree.
                 ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
@@ -727,6 +728,7 @@ struct OrlojWidgetView: View {
                 // hard dark shadow (Prague's gold-on-black, boom).
                 GlassBand(band: face.zodiacBandPath(),
                           tint: .black, tintOpacity: 0.35, eoFill: true)
+                .shadow(radius: 4, y: 2.5)
                 if let edges = face.zodiacEdgePaths() {
                     OrlojPath(source: edges.outer)
                         .stroke(Self.silver.opacity(0.85), lineWidth: 1)
@@ -753,6 +755,7 @@ struct OrlojWidgetView: View {
                     Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
                         .fill(LinearGradient(colors: [mark.top, mark.bottom],
                                              startPoint: .bottom, endPoint: .top))
+                        
                         .overlay(
                             Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
                                 .stroke(EArtist.shared.canvasBackground.opacity(0.9),
@@ -780,8 +783,9 @@ struct OrlojWidgetView: View {
                 // badges (POILabelView, same species as everywhere).
                 if let sun = face.sunPoint {
                     OrlojPath(source: face.handPath(to: sun))
-                        .stroke(Self.sunGold, lineWidth: 1.3)
-                        .shadow(color: Self.sunGold.opacity(0.5), radius: 2)
+                        .stroke(Self.sunGold.opacity(0.55), style: .init(lineWidth: 4.4, lineCap: .round))
+//                        .shadow(color: Self.sunGold.opacity(0.5), radius: 2)
+                        .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .sun,
                                  text:       "",
                                  labelStyle: .star,
@@ -790,7 +794,8 @@ struct OrlojWidgetView: View {
                 }
                 if let moon = face.moonPoint {
                     OrlojPath(source: face.handPath(to: moon))
-                        .stroke(Self.moonSilk.opacity(0.85), lineWidth: 0.9)
+                        .stroke(Self.moonSilk.opacity(0.55), style: .init(lineWidth: 2.4, lineCap: .round))
+                        .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .moon,
                                  text:       "",
                                  labelStyle: .planetoids,
@@ -798,6 +803,7 @@ struct OrlojWidgetView: View {
                         .position(moon)
                 }
             }
+            .scaleEffect(0.95)
         }
         .containerBackground(for: .widget) {
             EArtist.shared.canvasBackground
