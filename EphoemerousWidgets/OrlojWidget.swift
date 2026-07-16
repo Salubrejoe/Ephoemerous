@@ -270,15 +270,74 @@ private struct OrlojFace {
 
     // MARK: Dial rings (fixed)
 
-    /// The crown: the outer dial as a GLASS BAND — a narrow annulus
-    /// hugging the Roman scale, tick tips to just past the numerals.
-    /// Even-odd. ▼ TWEAK the band edges here ▼
+    /// The crown: the outer dial as a GLASS BAND whose outer edge is the
+    /// app's SIGNATURE SCALLOPED SQUIRCLE — the same corner/bulge pair
+    /// as the horizon rim (EArtist.horizonBump*, the DateCrown language).
+    /// Inner edge stays a true circle (the dial side). Even-odd.
+    /// ▼ TWEAK the band edges here ▼
     @MainActor
     func dialBandPath() -> Path {
-        let roman = radiusForDeclination(Self.romanDialDec)
-        var path = circle(center, roman + 19)
+        let roman  = radiusForDeclination(Self.romanDialDec)
+        let outerR = roman + 19
+        let rect   = CGRect(x: center.x - outerR, y: center.y - outerR,
+                            width: outerR * 2, height: outerR * 2)
+        var path = Squircle(corners: EArtist.shared.horizonBumpCorners,
+                            bulge:   EArtist.shared.horizonBumpBulge).path(in: rect)
         path.addPath(circle(center, roman + 3))
         return path
+    }
+
+    // MARK: Favourites & planets (the app's own marks on the plate)
+
+    /// Remembered constellations, traced SOLID over the tympan — the
+    /// postcard widget's hero treatment, here for every favourite.
+    @MainActor
+    func favouriteConstellationsPath() -> Path {
+        let favs = Set(FavouritesStore().constellations())
+        guard !favs.isEmpty else { return Path() }
+        let clip = radiusForDeclination(Self.romanDialDec) + 3
+        var merged = Path()
+        for (cons, segs) in ConstellationLines.shared.segments where favs.contains(cons) {
+            for seg in segs {
+                guard let a = camera.screen(equatorial: seg.a.equatorialVector),
+                      let b = camera.screen(equatorial: seg.b.equatorialVector),
+                      hypot(a.x - b.x, a.y - b.y) < clip,
+                      hypot(a.x - center.x, a.y - center.y) < clip ||
+                      hypot(b.x - center.x, b.y - center.y) < clip else { continue }
+                merged.move(to: a)
+                merged.addLine(to: b)
+            }
+        }
+        return merged
+    }
+
+    /// Remembered stars as the app's tier-0 mark: the tiny SPECTRAL
+    /// PENTAGON squircle (FavouriteHeart's below-badge-tier form).
+    @MainActor
+    func favouriteStarMarks() -> [(id: String, position: CGPoint, top: Color, bottom: Color)] {
+        let clip = radiusForDeclination(Self.romanDialDec) + 3
+        var out: [(String, CGPoint, Color, Color)] = []
+        for star in FavouritesStore().stars(key: FavouritesStore.Key.favouriteStars) {
+            guard let sc = camera.screen(equatorial: star.equatorialVector),
+                  hypot(sc.x - center.x, sc.y - center.y) < clip else { continue }
+            let g = star.spectralClass.badgeGradient
+            out.append((star.name, sc, g.top, g.bottom))
+        }
+        return out
+    }
+
+    /// The seven planets in their canonical tints — riding the ecliptic
+    /// through the rete, like the wanderers they are.
+    @MainActor
+    func planetMarks() -> [(id: String, position: CGPoint, top: Color, bottom: Color)] {
+        var out: [(String, CGPoint, Color, Color)] = []
+        for (planet, vec, _, _) in EPlanetPosition.allVectors(for: date,
+                                                              siderealOffset: camera.sidereal) {
+            guard let sc = camera.screen(rotatedEquatorial: vec) else { continue }
+            let g = EArtist.shared.planetGradient(planet)
+            out.append((planet.name, sc, g.top, g.bottom))
+        }
+        return out
     }
 
     /// Phase that makes the Roman dial read CIVIL time — the device
@@ -318,30 +377,6 @@ private struct OrlojFace {
 
     private static let romanTexts = ["XII", "I", "II", "III", "IV", "V",
                                      "VI", "VII", "VIII", "IX", "X", "XI"]
-
-    /// A plain circle outline at a ring's declination.
-    @MainActor
-    func ringCirclePath(declination dec: Angle) -> Path {
-        circle(center, radiusForDeclination(dec))
-    }
-
-    /// Hour ticks for a ring — Roman dial (offset 0, long tick every 6)
-    /// and Old-Bohemian ring (offset by sunset hour angle, one long tick
-    /// at 0/24) are the same construction, different phase and rhythm.
-    /// Ticks are PROJECTED (RA = LST − H, like a star) — they carry the
-    /// meaning, they must land where the Sun hand actually crosses.
-    @MainActor
-    func ringTicksPath(declination dec: Angle, hourOffset: Double,
-                       tickLength: CGFloat, longEvery: Int) -> Path {
-        var merged = Path()
-        for h in 0..<24 {
-            let H = hourOffset + Double(h) / 24 * 2 * .pi
-            guard let p = ringPoint(hourAngle: H, declination: dec) else { continue }
-            let long = (h % longEvery == 0) ? tickLength * 1.6 : tickLength
-            merged.addPath(tick(at: p, length: long))
-        }
-        return merged
-    }
 
     // MARK: Rete (rotates with the sky)
 
@@ -531,17 +566,6 @@ private struct OrlojFace {
         return path
     }
 
-    /// Inward tick from `point` toward the plate centre.
-    private func tick(at point: CGPoint, length: CGFloat) -> Path {
-        let dx = center.x - point.x, dy = center.y - point.y
-        let len = max(hypot(dx, dy), 0.0001)
-        let inner = CGPoint(x: point.x + dx / len * length, y: point.y + dy / len * length)
-        var p = Path()
-        p.move(to: point)
-        p.addLine(to: inner)
-        return p
-    }
-
     private func circle(_ centre: CGPoint, _ radius: CGFloat) -> Path {
         Path(ellipseIn: CGRect(x: centre.x - radius, y: centre.y - radius,
                               width: radius * 2, height: radius * 2))
@@ -572,13 +596,21 @@ private struct GlassBand: View {
         let shape = OrlojPath(source: band)
         let style = FillStyle(eoFill: eoFill)
         ZStack {
-            // Body — the tinted glass slab.
-            shape.fill(tint.opacity(tintOpacity), style: style)
+            // Body — a vertical GRADIENT slab, the badge-orb treatment
+            // (bright above, deep below) instead of a flat tint.
+            shape.fill(LinearGradient(colors: [tint.opacity(tintOpacity * 1.4),
+                                               tint.opacity(tintOpacity * 0.6)],
+                                      startPoint: .top, endPoint: .bottom),
+                       style: style)
             // Sheen — light falling from the top.
             shape.fill(LinearGradient(colors: [.white.opacity(0.14),
                                                .white.opacity(0.02)],
                                       startPoint: .top, endPoint: .bottom),
                        style: style)
+            // Casing — the dark border every Ephoemerous badge wears
+            // (poiTextBorderWidth, canvas-navy so it never goes light).
+            shape.stroke(EArtist.shared.canvasBackground.opacity(0.9),
+                         lineWidth: EArtist.shared.poiTextBorderWidth)
             // Rim light — bright top edge, fading out below.
             shape.stroke(LinearGradient(colors: [.white.opacity(0.45),
                                                  .white.opacity(0.07)],
@@ -605,6 +637,14 @@ struct OrlojWidgetView: View {
     /// everything that belongs to the heavens reads silver, while the
     /// instrument's own concentric metalwork stays gold.
     private static let silver   = Color(red: 0.78, green: 0.82, blue: 0.88)
+
+    /// The numerals' voice — the same serif-semibold the POI labels use,
+    /// as a concrete UIFont for OutlinedText's CoreText layout.
+    private static let numeralFont: UIFont = {
+        var desc = UIFont.systemFont(ofSize: 9, weight: .semibold).fontDescriptor
+        desc = desc.withDesign(.serif) ?? desc
+        return UIFont(descriptor: desc, size: 9)
+    }()
 
     var body: some View {
         GeometryReader { geo in
@@ -647,29 +687,36 @@ struct OrlojWidgetView: View {
                 OrlojPath(source: face.unequalHoursPath())
                     .stroke(Self.silver.opacity(0.5), lineWidth: 0.5)
 
+                // Remembered constellations — traced solid, the postcard
+                // widget's hero treatment for every favourite.
+                OrlojPath(source: face.favouriteConstellationsPath())
+                    .stroke(Self.silver.opacity(0.85),
+                            style: .init(lineWidth: 1, lineCap: .round, lineJoin: .round))
+
                 // Tympan region labels — the original's Latin, laid out
-                // character by character ALONG their bands' curves.
+                // character by character ALONG their bands' curves, with
+                // the app's dark casing so they hold up at a squint.
                 ForEach(face.tympanLabelChars(), id: \.id) { glyph in
                     Text(glyph.char)
                         .font(.system(size: 6.5, weight: .medium, design: .serif))
                         .foregroundStyle(Self.silver.opacity(0.8))
+                        .shadow(color: EArtist.shared.canvasBackground.opacity(0.9),
+                                radius: 1)
                         .rotationEffect(glyph.rotation)
                         .position(glyph.position)
                 }
 
-                // ── Dial scales, riding the glass band. The Roman dial
-                // is phased to CIVIL time (device timezone, DST-aware) —
-                // hand against numeral reads the wall clock.
-//                OrlojPath(source: face.ringCirclePath(declination: OrlojFace.romanDialDec))
-//                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
-//                OrlojPath(source: face.ringTicksPath(declination: OrlojFace.romanDialDec,
-//                                                     hourOffset: face.civilDialPhase,
-//                                                     tickLength: 8, longEvery: 6))
-//                    .stroke(Self.brass.opacity(0.85), lineWidth: 1)
+                // ── The crown carries NUMERALS ALONE, in the app's label
+                // voice: OutlinedText — serif brass with the real dark
+                // casing, crisp at any zoom, squint-proof. Phased to
+                // CIVIL time (device timezone, DST-aware) — hand against
+                // numeral reads the wall clock.
                 ForEach(face.dialNumerals(), id: \.id) { numeral in
-                    Text(numeral.text)
-                        .font(.system(size: 8, weight: .semibold, design: .serif))
-                        .foregroundStyle(Self.brass.opacity(0.9))
+                    OutlinedText(text:      numeral.text,
+                                 fill:      Self.brass,
+                                 stroke:    EArtist.shared.canvasBackground,
+                                 lineWidth: 1.2,
+                                 font:      Self.numeralFont)
                         .rotationEffect(numeral.rotation)
                         .position(numeral.position)
                 }
@@ -697,11 +744,44 @@ struct OrlojWidgetView: View {
                         .position(glyph.position)
                 }
 
+                // ── The wanderers and the remembered — the app's OWN
+                // marks, badge grammar and all: spectral PENTAGON
+                // squircles for favourite stars, canonical-tint rounded
+                // squircles for the seven planets, each with the badge's
+                // gradient fill, dark casing, and soft glow.
+                ForEach(face.favouriteStarMarks(), id: \.id) { mark in
+                    Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
+                        .fill(LinearGradient(colors: [mark.top, mark.bottom],
+                                             startPoint: .bottom, endPoint: .top))
+                        .overlay(
+                            Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
+                                .stroke(EArtist.shared.canvasBackground.opacity(0.9),
+                                        lineWidth: 1.1)
+                        )
+                        .frame(width: 9, height: 9)
+                        .shadow(color: mark.top.opacity(0.5), radius: 1.5)
+                        .position(mark.position)
+                }
+                ForEach(face.planetMarks(), id: \.id) { mark in
+                    Squircle(corners: 4, bulge: 2.0)
+                        .fill(LinearGradient(colors: [mark.top, mark.bottom],
+                                             startPoint: .bottom, endPoint: .top))
+                        .overlay(
+                            Squircle(corners: 4, bulge: 2.0)
+                                .stroke(EArtist.shared.canvasBackground.opacity(0.9),
+                                        lineWidth: 1)
+                        )
+                        .frame(width: 7, height: 7)
+                        .shadow(color: mark.top.opacity(0.45), radius: 1.2)
+                        .position(mark.position)
+                }
+
                 // ── Hands — tipped with the app's OWN Sun and Moon
                 // badges (POILabelView, same species as everywhere).
                 if let sun = face.sunPoint {
                     OrlojPath(source: face.handPath(to: sun))
                         .stroke(Self.sunGold, lineWidth: 1.3)
+                        .shadow(color: Self.sunGold.opacity(0.5), radius: 2)
                     POILabelView(category:   .sun,
                                  text:       "",
                                  labelStyle: .star,

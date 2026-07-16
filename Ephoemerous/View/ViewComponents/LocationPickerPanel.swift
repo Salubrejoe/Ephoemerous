@@ -40,7 +40,6 @@ struct LocationPickerPanel: View {
         ZStack {
             // The map IS the background — fills the whole sheet.
             mapView
-                .opacity(0.5)
             // Suggestion list covers the map (on a material) while
             // searching; the map stays mounted underneath so returning
             // from search doesn't re-seed the camera.
@@ -203,6 +202,7 @@ struct LocationPickerPanel: View {
                 centerCoordinate = ctx.camera.centerCoordinate
             }
             .ignoresSafeArea()
+            .mapStyle(.imagery)
             .overlay {
                 // Fixed centred crosshair — whatever's under it is the
                 // candidate location.
