@@ -12,5 +12,6 @@ import SwiftUI
 struct EphoemerousWidgetsBundle: WidgetBundle {
     var body: some Widget {
         EphoemerousWidgets()
+        OrlojWidget()
     }
 }
