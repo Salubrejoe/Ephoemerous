@@ -66,10 +66,11 @@ struct OrlojEntry: TimelineEntry {
 // the view decides what's glass, what's filigree.
 private struct OrlojFace {
 
-    let camera:   SkyCamera
-    let date:     Date
-    let lst:      Angle
-    let latitude: Angle
+    let camera:    SkyCamera
+    let date:      Date
+    let lst:       Angle
+    let latitude:  Angle
+    let longitude: Angle
 
     /// Declinations the decorative rings sit at — outside the Tropic of
     /// Cancer plate, Roman dial the outermost. ▼ TWEAK ring spacing ▼
@@ -83,7 +84,8 @@ private struct OrlojFace {
         // the one widget that's explicitly styled after this city's clock.
         let lat = Angle.degrees(origin?.latDeg ?? 50.09)
         let lon = Angle.degrees(origin?.lonDeg ?? 14.42)
-        latitude = lat
+        latitude  = lat
+        longitude = lon
         lst = EPrecession.lst(for: date, longitude: lon)
 
         let viewpoint = EProjection.Viewpoint(
@@ -93,11 +95,12 @@ private struct OrlojFace {
             morph: 1)   // pure NorthOUT — this IS the astrolabe's projection
 
         // ▼ TWEAK the dial size here — fit the Roman dial ring within
-        // ~46% of the shorter side. Solved directly (radius is linear in
-        // scale). NOTE the factor 2: EProjection's stereographic puts a
-        // declination circle at ρ = 2·tan(45°+δ/2) projection units —
-        // the same 2 as northOutDefaultScale's derivation. ▼
-        let targetOuterRadius = min(size.width, size.height) * 0.46
+        // ~42% of the shorter side (numerals need breathing room past
+        // it). Solved directly (radius is linear in scale). NOTE the
+        // factor 2: EProjection's stereographic puts a declination
+        // circle at ρ = 2·tan(45°+δ/2) projection units — the same 2 as
+        // northOutDefaultScale's derivation. ▼
+        let targetOuterRadius = min(size.width, size.height) * 0.42
         let romanRho = 2 * tan(.pi / 4 + Self.romanDialDec.radians / 2)
         let scale = targetOuterRadius / CGFloat(romanRho)
 
@@ -202,17 +205,55 @@ private struct OrlojFace {
     // MARK: Dial rings (fixed)
 
     /// The outer dial as a GLASS BAND: annulus from just inside the
-    /// Old-Bohemian ring to just outside the Roman dial — the real
-    /// clock's single black ring that carries both scales. Even-odd.
+    /// Old-Bohemian ring to past the Roman numerals — the real clock's
+    /// single black ring that carries both scales. Even-odd.
     /// ▼ TWEAK the band edges here ▼
     @MainActor
     func dialBandPath() -> Path {
-        let outer = radiusForDeclination(Self.romanDialDec) + 5
+        let outer = radiusForDeclination(Self.romanDialDec) + 22
         let inner = radiusForDeclination(Self.bohemianRingDec) - 11
         var path = circle(center, outer)
         path.addPath(circle(center, inner))
         return path
     }
+
+    /// Phase that makes the Roman dial read CIVIL time — the device
+    /// timezone, DST-aware. The Sun hand's direction is apparent solar
+    /// time; at civil hour h the sun sits at hour angle
+    /// (h + Δ − 12)·15°, where Δ = longitude/15h − tz offset. Anchoring
+    /// tick h there means hand-against-numeral reads the wall clock —
+    /// exactly what the real Orloj's Roman ring does for CET. (The
+    /// ±16 min equation-of-time wobble is accepted: ours is the REAL
+    /// apparent sun; the original's clockwork hand is a mean sun.)
+    var civilDialPhase: Double {
+        let tzHours  = Double(TimeZone.current.secondsFromGMT(for: date)) / 3600
+        let lonHours = longitude.degrees / 15
+        return (lonHours - tzHours - 12) * (2 * .pi / 24)
+    }
+
+    /// Roman numerals for the 24 CIVIL hours, positioned just outside
+    /// the dial circle and rotated feet-to-centre, like the original.
+    @MainActor
+    func dialNumerals(radiusPadding: CGFloat = 11)
+        -> [(id: Int, text: String, position: CGPoint, rotation: Angle)] {
+        let r = radiusForDeclination(Self.romanDialDec) + radiusPadding
+        var out: [(Int, String, CGPoint, Angle)] = []
+        for h in 0..<24 {
+            let H = civilDialPhase + Double(h) / 24 * 2 * .pi
+            guard let onRing = ringPoint(hourAngle: H, declination: Self.romanDialDec)
+            else { continue }
+            let dx  = onRing.x - center.x, dy = onRing.y - center.y
+            let len = max(hypot(dx, dy), 0.0001)
+            let p   = CGPoint(x: center.x + dx / len * r,
+                              y: center.y + dy / len * r)
+            let rot = Angle.radians(atan2(Double(dy), Double(dx)) + .pi / 2)
+            out.append((h, Self.romanTexts[h % 12], p, rot))
+        }
+        return out
+    }
+
+    private static let romanTexts = ["XII", "I", "II", "III", "IV", "V",
+                                     "VI", "VII", "VIII", "IX", "X", "XI"]
 
     /// A plain circle outline at a ring's declination.
     @MainActor
@@ -301,10 +342,6 @@ private struct OrlojFace {
         hand.move(to: center)
         hand.addLine(to: p)
         return hand
-    }
-
-    func markerPath(at p: CGPoint, radius: CGFloat) -> Path {
-        circle(p, radius)
     }
 
     // MARK: Sun helpers
@@ -495,13 +532,22 @@ struct OrlojWidgetView: View {
                 OrlojPath(source: face.unequalHoursPath())
                     .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
 
-                // ── Dial scales, riding the glass band.
+                // ── Dial scales, riding the glass band. The Roman dial
+                // is phased to CIVIL time (device timezone, DST-aware) —
+                // hand against numeral reads the wall clock.
                 OrlojPath(source: face.ringCirclePath(declination: OrlojFace.romanDialDec))
                     .stroke(Self.brass.opacity(0.85), lineWidth: 1)
                 OrlojPath(source: face.ringTicksPath(declination: OrlojFace.romanDialDec,
-                                                     hourOffset: 0,
+                                                     hourOffset: face.civilDialPhase,
                                                      tickLength: 8, longEvery: 6))
                     .stroke(Self.brass.opacity(0.85), lineWidth: 1)
+                ForEach(face.dialNumerals(), id: \.id) { numeral in
+                    Text(numeral.text)
+                        .font(.system(size: 8, weight: .semibold, design: .serif))
+                        .foregroundStyle(Self.brass.opacity(0.9))
+                        .rotationEffect(numeral.rotation)
+                        .position(numeral.position)
+                }
                 if let hSet = face.bohemianOffset {
                     OrlojPath(source: face.ringCirclePath(declination: OrlojFace.bohemianRingDec))
                         .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
@@ -519,22 +565,25 @@ struct OrlojWidgetView: View {
                 OrlojPath(source: face.zodiacTicksPath())
                     .stroke(Self.brass.opacity(0.7), lineWidth: 1)
 
-                // ── Hands.
+                // ── Hands — tipped with the app's OWN Sun and Moon
+                // badges (POILabelView, same species as everywhere).
                 if let sun = face.sunPoint {
                     OrlojPath(source: face.handPath(to: sun))
                         .stroke(Self.sunGold, lineWidth: 1.3)
-                    GlassBand(band: face.markerPath(at: sun, radius: 6),
-                              tint: Self.sunGold, tintOpacity: 0.35)
-                    OrlojPath(source: face.markerPath(at: sun, radius: 6))
-                        .stroke(Self.sunGold, lineWidth: 1.6)
+                    POILabelView(category:   .sun,
+                                 text:       "",
+                                 labelStyle: .star,
+                                 nameReveal: 0)
+                        .position(sun)
                 }
                 if let moon = face.moonPoint {
                     OrlojPath(source: face.handPath(to: moon))
                         .stroke(Self.moonSilk.opacity(0.85), lineWidth: 0.9)
-                    GlassBand(band: face.markerPath(at: moon, radius: 4.5),
-                              tint: Self.moonSilk, tintOpacity: 0.25)
-                    OrlojPath(source: face.markerPath(at: moon, radius: 4.5))
-                        .stroke(Self.moonSilk.opacity(0.9), lineWidth: 1.4)
+                    POILabelView(category:   .moon,
+                                 text:       "",
+                                 labelStyle: .planetoids,
+                                 nameReveal: 0)
+                        .position(moon)
                 }
             }
         }
