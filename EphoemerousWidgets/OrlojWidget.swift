@@ -72,10 +72,10 @@ private struct OrlojFace {
     let latitude:  Angle
     let longitude: Angle
 
-    /// Declinations the decorative rings sit at — outside the Tropic of
-    /// Cancer plate, Roman dial the outermost. ▼ TWEAK ring spacing ▼
-    static let romanDialDec    = AstroConstants.tropicCancer + .degrees(12)
-    static let bohemianRingDec = AstroConstants.tropicCancer + .degrees(6)
+    /// Declination the Roman dial sits at — outside the Tropic of
+    /// Cancer plate. (The Old-Bohemian ring is retired — conductor's
+    /// call — so the crown carries one scale.) ▼ TWEAK ring spacing ▼
+    static let romanDialDec = AstroConstants.tropicCancer + .degrees(12)
 
     @MainActor
     init(date: Date, origin: (latDeg: Double, lonDeg: Double)?, size: CGSize) {
@@ -246,16 +246,14 @@ private struct OrlojFace {
 
     // MARK: Dial rings (fixed)
 
-    /// The outer dial as a GLASS BAND: annulus from just inside the
-    /// Old-Bohemian ring to past the Roman numerals — the real clock's
-    /// single black ring that carries both scales. Even-odd.
-    /// ▼ TWEAK the band edges here ▼
+    /// The crown: the outer dial as a GLASS BAND — a narrow annulus
+    /// hugging the Roman scale, tick tips to just past the numerals.
+    /// Even-odd. ▼ TWEAK the band edges here ▼
     @MainActor
     func dialBandPath() -> Path {
-        let outer = radiusForDeclination(Self.romanDialDec) + 22
-        let inner = radiusForDeclination(Self.bohemianRingDec) - 11
-        var path = circle(center, outer)
-        path.addPath(circle(center, inner))
+        let roman = radiusForDeclination(Self.romanDialDec)
+        var path = circle(center, roman + 19)
+        path.addPath(circle(center, roman - 15))
         return path
     }
 
@@ -319,11 +317,6 @@ private struct OrlojFace {
             merged.addPath(tick(at: p, length: long))
         }
         return merged
-    }
-
-    /// Sunset hour angle for TODAY's sun — the Old-Bohemian ring's phase.
-    var bohemianOffset: Double? {
-        Self.sunsetHourAngle(declination: sunDec, latitude: latitude)
     }
 
     // MARK: Rete (rotates with the sky)
@@ -412,7 +405,6 @@ private struct OrlojFace {
     // MARK: Sun helpers
 
     private var sunLambda: Angle { ESunPosition.eclipticLongitude(for: date) }
-    private var sunDec:    Angle { ESunPosition.equatorialCoords(lambda: sunLambda).dec }
 
     // MARK: Sampling helpers
 
@@ -628,15 +620,6 @@ struct OrlojWidgetView: View {
                         .rotationEffect(numeral.rotation)
                         .position(numeral.position)
                 }
-                // Old-Bohemian hour ticks — bare on the glass band, no
-                // base circle (conductor's call: less ring clutter).
-                if let hSet = face.bohemianOffset {
-                    OrlojPath(source: face.ringTicksPath(declination: OrlojFace.bohemianRingDec,
-                                                         hourOffset: hSet,
-                                                         tickLength: 5, longEvery: 24))
-                        .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
-                }
-
                 // ── Rete: the zodiac band (glass, brass-tinted), sign
                 // ticks, and the glyphs standing on the ring.
                 GlassBand(band: face.zodiacBandPath(),
