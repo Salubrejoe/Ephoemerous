@@ -86,6 +86,7 @@
 				Model/Bodies/EStarKnownData.swift,
 				Model/Bodies/ESunPosition.swift,
 				Model/Constellations/ConstellationLines.swift,
+				Model/Constellations/EZodiacSign.swift,
 				Model/Constellations/EConstellation.swift,
 				Model/JSONModel/StarData.swift,
 				Model/JSONModel/StarDatabase.swift,

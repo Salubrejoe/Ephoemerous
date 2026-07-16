@@ -154,16 +154,18 @@ private struct OrlojFace {
          (sampledParallel(declination: AstroConstants.tropicCancer),    1.0)]
     }
 
-    /// The horizon — altitude = 0 around the OBSERVER's zenith (not the
+    /// A constant-altitude circle around the OBSERVER's zenith (not the
     /// pole), clipped to the Tropic of Cancer like the real tympan.
+    /// altitude 0 = the horizon; −18° = the astronomical-twilight line
+    /// that bounds the AVRORA / CREPVSCVLVM bands on the original.
     @MainActor
-    func horizonPath() -> Path {
+    func almucantarPath(altitude: Angle) -> Path {
         let clip = radiusForDeclination(AstroConstants.tropicCancer) * 1.02
         var path = Path()
         var started = false
         for i in 0...160 {
             let t = Double(i) / 160
-            let q = camera.viewpoint.skyPoint(altitude: .zero, at: t)
+            let q = camera.viewpoint.skyPoint(altitude: altitude, at: t)
             if let sc = camera.screen(rotatedEquatorial: q),
                hypot(sc.x - center.x, sc.y - center.y) <= clip {
                 if started { path.addLine(to: sc) } else { path.move(to: sc); started = true }
@@ -172,6 +174,46 @@ private struct OrlojFace {
             }
         }
         return path
+    }
+
+    @MainActor
+    func horizonPath() -> Path { almucantarPath(altitude: .zero) }
+
+    /// The tympan's Latin region labels, exactly the original's wording:
+    /// ORTVS (rising) on the day side of the east horizon, AVRORA in the
+    /// east twilight band, OCCASVS / CREPVSCVLVM their west mirrors, NOX
+    /// in the northern dark. Positions are PROJECTED from (azimuth,
+    /// altitude) — east and west land where they physically are, no
+    /// left/right assumption — and each label rides its band's local
+    /// tangent, flipped to stay upright.
+    @MainActor
+    func tympanLabels() -> [(id: String, text: String, position: CGPoint, rotation: Angle)] {
+        // ▼ TWEAK the label anchors here (azimuth°, altitude°) ▼
+        let specs: [(String, Double, Double)] = [
+            ("ORTVS",        90,   5),
+            ("AVRORA",       90,  -9),
+            ("OCCASVS",     270,   5),
+            ("CREPVSCVLVM", 270,  -9),
+            ("NOX",           0, -24),
+        ]
+        let clip = radiusForDeclination(AstroConstants.tropicCancer) * 0.97
+        var out: [(String, String, CGPoint, Angle)] = []
+        for (text, azDeg, altDeg) in specs {
+            func point(azimuth: Double) -> CGPoint? {
+                let q = camera.viewpoint.skyPoint(azimuth: azimuth * .pi / 180,
+                                                  altitude: altDeg * .pi / 180)
+                return camera.screen(rotatedEquatorial: q)
+            }
+            guard let p = point(azimuth: azDeg),
+                  hypot(p.x - center.x, p.y - center.y) <= clip,
+                  let before = point(azimuth: azDeg - 5),
+                  let after  = point(azimuth: azDeg + 5) else { continue }
+            // Local band tangent, flipped upright.
+            var a = atan2(Double(after.y - before.y), Double(after.x - before.x))
+            if a > .pi / 2 || a < -.pi / 2 { a += .pi }
+            out.append((text, text, p, .radians(a)))
+        }
+        return out
     }
 
     /// Unequal (planetary) hours: the day arc between sunrise and sunset,
@@ -324,6 +366,29 @@ private struct OrlojFace {
             merged.addPath(tick(at: p, length: 8))
         }
         return merged
+    }
+
+    /// The 12 zodiac glyphs (EZodiacSign — Aries at λ 0°) at their sign
+    /// midpoints ON the band, feet toward the ecliptic ring's OWN centre
+    /// (recovered from three projected points — the projected ecliptic
+    /// is a true circle, so three points pin it exactly). That's the
+    /// original's orientation: glyphs standing on the rete ring.
+    @MainActor
+    func zodiacGlyphs() -> [(id: Int, symbol: String, position: CGPoint, rotation: Angle)] {
+        guard let a = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(0))),
+              let b = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(120))),
+              let c = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(240))),
+              let ring = Self.circle(through: a, b, c) else { return [] }
+        var out: [(Int, String, CGPoint, Angle)] = []
+        for sign in EZodiacSign.zodiac {
+            let mid = Angle.degrees(Double(sign.index - 1) * 30 + 15)
+            guard let p = camera.screen(equatorial: .eclipticPoint(lambda: mid))
+            else { continue }
+            let rot = Angle.radians(atan2(Double(p.y - ring.centre.y),
+                                          Double(p.x - ring.centre.x)) + .pi / 2)
+            out.append((sign.index, sign.symbol, p, rot))
+        }
+        return out
     }
 
     // MARK: Hands
@@ -529,8 +594,23 @@ struct OrlojWidgetView: View {
                 }
                 OrlojPath(source: face.horizonPath())
                     .stroke(Self.brass.opacity(0.9), lineWidth: 1.3)
+                // Astronomical-twilight line — the AVRORA/CREPVSCVLVM
+                // bands' inner boundary, the night's edge.
+                OrlojPath(source: face.almucantarPath(altitude: .degrees(-18)))
+                    .stroke(Self.brass.opacity(0.4), lineWidth: 0.8)
                 OrlojPath(source: face.unequalHoursPath())
                     .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
+
+                // Tympan region labels — the original's Latin, riding
+                // their bands' local curves.
+                ForEach(face.tympanLabels(), id: \.id) { label in
+                    Text(label.text)
+                        .font(.system(size: 6.5, weight: .medium, design: .serif))
+                        .kerning(1.6)
+                        .foregroundStyle(Self.brass.opacity(0.75))
+                        .rotationEffect(label.rotation)
+                        .position(label.position)
+                }
 
                 // ── Dial scales, riding the glass band. The Roman dial
                 // is phased to CIVIL time (device timezone, DST-aware) —
@@ -548,22 +628,30 @@ struct OrlojWidgetView: View {
                         .rotationEffect(numeral.rotation)
                         .position(numeral.position)
                 }
+                // Old-Bohemian hour ticks — bare on the glass band, no
+                // base circle (conductor's call: less ring clutter).
                 if let hSet = face.bohemianOffset {
-                    OrlojPath(source: face.ringCirclePath(declination: OrlojFace.bohemianRingDec))
-                        .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
                     OrlojPath(source: face.ringTicksPath(declination: OrlojFace.bohemianRingDec,
                                                          hourOffset: hSet,
                                                          tickLength: 5, longEvery: 24))
                         .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
                 }
 
-                // ── Rete: the zodiac band (glass, brass-tinted) + ticks.
+                // ── Rete: the zodiac band (glass, brass-tinted), sign
+                // ticks, and the glyphs standing on the ring.
                 GlassBand(band: face.zodiacBandPath(),
                           tint: Self.brass, tintOpacity: 0.16)
                 OrlojPath(source: face.zodiacLinePath())
                     .stroke(Self.brass.opacity(0.9), lineWidth: 1)
                 OrlojPath(source: face.zodiacTicksPath())
                     .stroke(Self.brass.opacity(0.7), lineWidth: 1)
+                ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
+                    Text(glyph.symbol)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Self.brass)
+                        .rotationEffect(glyph.rotation)
+                        .position(glyph.position)
+                }
 
                 // ── Hands — tipped with the app's OWN Sun and Moon
                 // badges (POILabelView, same species as everywhere).
