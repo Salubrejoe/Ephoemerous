@@ -102,13 +102,33 @@ private struct OrlojFace {
 
         // ▼ TWEAK the dial size here — fit the Roman dial ring within
         // ~46% of the shorter side. Solved directly (radius is linear in
-        // scale) rather than picked by eye and checked. ▼
+        // scale). NOTE the factor 2: EProjection's stereographic puts a
+        // declination circle at ρ = 2·tan(45°+δ/2) projection units —
+        // the same 2 as northOutDefaultScale's derivation. ▼
         let targetOuterRadius = min(size.width, size.height) * 0.46
-        let romanTan = tan(.pi / 4 + Self.romanDialDec.radians / 2)
-        let scale = targetOuterRadius / CGFloat(romanTan)
+        let romanRho = 2 * tan(.pi / 4 + Self.romanDialDec.radians / 2)
+        let scale = targetOuterRadius / CGFloat(romanRho)
 
-        camera = SkyCamera(scale: scale, offset: .zero, size: size,
-                          viewpoint: viewpoint, sidereal: .radians(-lst.radians))
+        // The face must stand STILL — meridian vertical, noon at top,
+        // the sky rotating over it (dial fixed, rete turns — the real
+        // mechanism). At morph 1 the screen basis is the pole fallback
+        // (arbitrary phase, and LST-dependent through `sidereal`), so:
+        // project a probe at H = 0 (upper meridian, RA = LST) with an
+        // unrotated camera, measure where it landed, and set the camera
+        // rotation that carries it straight UP.
+        let sidereal = Angle.radians(-lst.radians)
+        let unrotated = SkyCamera(scale: scale, offset: .zero, size: size,
+                                 viewpoint: viewpoint, sidereal: sidereal)
+        var rotation = Angle.zero
+        let c = unrotated.screen(.zero)
+        if let probe = unrotated.screen(
+            equatorial: EPrecession.equatorialVector(ra: lst, dec: .zero)) {
+            let theta = atan2(Double(probe.y - c.y), Double(probe.x - c.x))
+            rotation = .radians(-Double.pi / 2 - theta)
+        }
+
+        camera = SkyCamera(scale: scale, offset: .zero, rotation: rotation,
+                          size: size, viewpoint: viewpoint, sidereal: sidereal)
     }
 
     private var center: CGPoint { camera.screen(.zero) }
@@ -317,8 +337,11 @@ private struct OrlojFace {
     /// rotation-agnostic distance-from-centre (clipping thresholds,
     /// plain circle outlines), never for placing a specific point
     /// (that always goes through the real per-point projection above).
+    /// ρ = 2·tan(45°+δ/2) — the 2 is EProjection's convention (horizon
+    /// at ρ=2 in NorthIN); dropping it once made every ring render at
+    /// double size while these outlines sat at half their own ticks.
     private func radiusForDeclination(_ dec: Angle) -> CGFloat {
-        camera.scale * CGFloat(tan(.pi / 4 + dec.radians / 2))
+        camera.scale * CGFloat(2 * tan(.pi / 4 + dec.radians / 2))
     }
 
     // MARK: Pure geometry (mirrors EOrlojGeometry / OrlojUnequalHoursLayer,
