@@ -114,6 +114,10 @@ private struct SkySnapshot {
     /// Set when the PINNED object is a constellation — it has no badge
     /// or dot; instead its stick-figure is traced solid on the map.
     let pinnedConstellation: EConstellation?
+    /// The pinned object's direction, in the SAME sidereally-rotated
+    /// frame the camera projects from — kept for the altitude/azimuth
+    /// readout (large family only) so it isn't recomputed twice.
+    private let pinnedVector: SIMD3<Double>?
 
     @MainActor
     init(entity: SkyObjectEntity, date: Date,
@@ -140,9 +144,10 @@ private struct SkySnapshot {
         // screen() = size/2 + (p.x·s, −p.y·s) + offset, so solve for
         // offset with the dot as the wanted screen point. Objects that
         // fail to project (antipodal degeneracy) fall back to zenith-ish.
+        let target = Self.vector(for: entity, date: date, sidereal: sidereal)
+        pinnedVector = target
         var offset = CGSize.zero
-        if let target = Self.vector(for: entity, date: date, sidereal: sidereal),
-           let p = EProjection.project(target, viewpoint: viewpoint) {
+        if let target, let p = EProjection.project(target, viewpoint: viewpoint) {
             let dot = Pin.dot(in: size)
             offset = CGSize(width:  dot.x - size.width  / 2 - p.x * scale,
                             height: dot.y - size.height / 2 + p.y * scale)
@@ -154,6 +159,38 @@ private struct SkySnapshot {
                            viewpoint: viewpoint,
                            sidereal:  sidereal)
     }
+
+    /// "34° up · NE" — the pinned object's altitude above the horizon and
+    /// compass bearing, derived straight from the projection vectors:
+    /// `sin(altitude) = target · zenith`, and the horizon-plane residual
+    /// resolves the bearing against the SAME (e1 = north, e2 = west)
+    /// basis `skyPoint(azimuth:altitude:)` builds from. Nil when the
+    /// object has no single direction (constellation) or fails to
+    /// resolve.
+    var altitudeAzimuthLabel: String? {
+        guard let target = pinnedVector else { return nil }
+        let zenith = camera.viewpoint.originVector
+        let sinAlt = simd_dot(target, zenith)
+        let altDeg = asin(max(-1, min(1, sinAlt))) * 180 / .pi
+
+        let (e1, e2) = zenith.baseVectors()
+        let residual = target - sinAlt * zenith
+        let x = simd_dot(residual, e1)          // ∝ cos(alt)·cos(az)
+        let y = simd_dot(residual, e2)          // ∝ −cos(alt)·sin(az)
+        let azDeg = (atan2(-y, x) * 180 / .pi).truncatingRemainder(dividingBy: 360)
+        let bearing = Self.compassPoints[Int(((azDeg < 0 ? azDeg + 360 : azDeg) / 22.5)
+                                             .rounded()) % 16]
+
+        let altText = altDeg >= 0
+            ? String(localized: "\(Int(altDeg.rounded()))° up")
+            : String(localized: "\(Int(-altDeg.rounded()))° below horizon")
+        return "\(altText) · \(bearing)"
+    }
+
+    private static let compassPoints = [
+        "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+        "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+    ]
 
     /// The object's position in the sidereally-rotated frame the camera
     /// projects from — same helpers the app's overlay layers use.
@@ -223,10 +260,11 @@ private struct SkySnapshot {
 
     /// Star field, constellation stick-figures + names, the dashed
     /// horizon — the postcard's cartography, all through the camera.
+    /// `magnitudeLimit` lets the larger family show a denser field —
+    /// there's room to breathe without the map turning to noise.
     @MainActor
-    func draw(in ctx: inout GraphicsContext, size: CGSize) {
-        // Stars to magnitude 4.5 — the naked-eye field, a few hundred dots.
-        for star in StarDatabase.shared.workableStars where star.magnitude <= 4.5 {
+    func draw(in ctx: inout GraphicsContext, size: CGSize, magnitudeLimit: Double = 4.5) {
+        for star in StarDatabase.shared.workableStars where star.magnitude <= magnitudeLimit {
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
@@ -358,9 +396,11 @@ struct SkyObjectWidgetView: View {
                                        size:   geo.size)
 
             ZStack(alignment: .topLeading) {
-                // The map: cartography canvas + flat body labels.
+                // The map: cartography canvas + flat body labels. Large
+                // has room for a denser naked-eye field.
                 Canvas { ctx, size in
-                    snapshot.draw(in: &ctx, size: size)
+                    snapshot.draw(in: &ctx, size: size,
+                                 magnitudeLimit: family == .systemLarge ? 5.2 : 4.5)
                 }
                 ForEach(snapshot.bodies(excluding: entry.entity.id, in: geo.size),
                         id: \.2) { category, sc, name in
@@ -380,6 +420,8 @@ struct SkyObjectWidgetView: View {
                 }
 
                 // Freshness over name, hugging the corner like Find My.
+                // Large adds the altitude/bearing readout — the extra
+                // line the taller tile actually has room to earn.
                 VStack(alignment: .leading, spacing: 0) {
                     Spacer()
                     Text(entry.freshnessLabel)
@@ -390,6 +432,12 @@ struct SkyObjectWidgetView: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
+                    if family == .systemLarge, let altAz = snapshot.altitudeAzimuthLabel {
+                        Text(altAz)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.75))
+                            .padding(.top, 2)
+                    }
                 }
                 .padding(.leading, 18)
                 .padding(.bottom, 16)
@@ -416,17 +464,19 @@ struct SkyObjectWidgetView: View {
 
     /// The promoted pin: the badge lifted above its precise-location dot
     /// — the object's projection lands ON the dot (see SkySnapshot).
+    /// Large gets a slightly bigger badge — proportionate to the tile.
     @MainActor
     private func promotedPin(_ category: POICategory, in size: CGSize) -> some View {
         let style = EArtist.shared.poiStyle(for: category)
+        let scale: CGFloat = family == .systemLarge ? 2.6 : 2
 
         return ZStack {
             POILabelView(category:   category,
                          text:        "",
                          labelStyle:  labelStyle(for: category),
                          nameReveal:  0,
-                         borderScaleCompensation: 1 / 3)
-                .scaleEffect(2)
+                         borderScaleCompensation: 1 / scale)
+                .scaleEffect(scale)
                 .position(Pin.badgeCentre(in: size))
 
             // Precise-location dot — the object itself.
@@ -468,7 +518,7 @@ struct EphoemerousWidgets: Widget {
         }
         .configurationDisplayName("Sky Object")
         .description("A star, planet, the Sun or the Moon — live on your sky map.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryCircular])
         // Canvas background and pin overlay must share one coordinate
         // space — margins are managed by hand (see Pin).
         .contentMarginsDisabled()
@@ -488,4 +538,13 @@ struct EphoemerousWidgets: Widget {
                    entity: SkyObjectEntity(.planet(.jupiter)), origin: nil)
     SkyObjectEntry(date: .now, captured: .now,
                    entity: SkyObjectEntity(.star(.mockStars[0])), origin: nil)
+}
+
+#Preview(as: .systemLarge) {
+    EphoemerousWidgets()
+} timeline: {
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.moon), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.planet(.jupiter)), origin: nil)
 }
