@@ -184,10 +184,17 @@ private struct OrlojFace {
     /// east twilight band, OCCASVS / CREPVSCVLVM their west mirrors, NOX
     /// in the northern dark. Positions are PROJECTED from (azimuth,
     /// altitude) — east and west land where they physically are, no
-    /// left/right assumption — and each label rides its band's local
-    /// tangent, flipped to stay upright.
+    /// left/right assumption.
+    ///
+    /// Vended PER CHARACTER so the words genuinely FOLLOW their band's
+    /// curve (the app's cartography-rim treatment): each glyph sits at
+    /// its own azimuth along the constant-altitude circle, rotated to
+    /// the local tangent. Reading direction is decided once per word
+    /// from the mid tangent — flipped words reverse their marching
+    /// direction and rotate each glyph by π, so text always reads
+    /// left-to-right and upright.
     @MainActor
-    func tympanLabels() -> [(id: String, text: String, position: CGPoint, rotation: Angle)] {
+    func tympanLabelChars() -> [(id: String, char: String, position: CGPoint, rotation: Angle)] {
         // ▼ TWEAK the label anchors here (azimuth°, altitude°) ▼
         let specs: [(String, Double, Double)] = [
             ("ORTVS",        90,   5),
@@ -196,22 +203,39 @@ private struct OrlojFace {
             ("CREPVSCVLVM", 270,  -9),
             ("NOX",           0, -24),
         ]
+        // ▼ TWEAK per-character arc spacing (pt) ▼
+        let spacing: CGFloat = 8
         let clip = radiusForDeclination(AstroConstants.tropicCancer) * 0.97
+
         var out: [(String, String, CGPoint, Angle)] = []
         for (text, azDeg, altDeg) in specs {
-            func point(azimuth: Double) -> CGPoint? {
-                let q = camera.viewpoint.skyPoint(azimuth: azimuth * .pi / 180,
+            func point(_ az: Double) -> CGPoint? {
+                let q = camera.viewpoint.skyPoint(azimuth: az * .pi / 180,
                                                   altitude: altDeg * .pi / 180)
                 return camera.screen(rotatedEquatorial: q)
             }
-            guard let p = point(azimuth: azDeg),
-                  hypot(p.x - center.x, p.y - center.y) <= clip,
-                  let before = point(azimuth: azDeg - 5),
-                  let after  = point(azimuth: azDeg + 5) else { continue }
-            // Local band tangent, flipped upright.
-            var a = atan2(Double(after.y - before.y), Double(after.x - before.x))
-            if a > .pi / 2 || a < -.pi / 2 { a += .pi }
-            out.append((text, text, p, .radians(a)))
+            guard let anchor = point(azDeg),
+                  hypot(anchor.x - center.x, anchor.y - center.y) <= clip,
+                  let step = point(azDeg + 1),
+                  let tb   = point(azDeg - 2),
+                  let ta   = point(azDeg + 2) else { continue }
+
+            let pxPerDeg = max(hypot(step.x - anchor.x, step.y - anchor.y), 0.01)
+            let dAz      = Double(spacing / pxPerDeg)
+            let midA     = atan2(Double(ta.y - tb.y), Double(ta.x - tb.x))
+            let flip     = midA > .pi / 2 || midA < -.pi / 2
+
+            let chars = Array(text)
+            for (k, ch) in chars.enumerated() {
+                let centred = Double(k) - Double(chars.count - 1) / 2
+                let az = azDeg + (flip ? -centred : centred) * dAz
+                guard let cp = point(az),
+                      let cb = point(az - 2),
+                      let ca = point(az + 2) else { continue }
+                var rot = atan2(Double(ca.y - cb.y), Double(ca.x - cb.x))
+                if flip { rot += .pi }
+                out.append(("\(text)-\(k)", String(ch), cp, .radians(rot)))
+            }
         }
         return out
     }
@@ -563,6 +587,10 @@ struct OrlojWidgetView: View {
     private static let brass    = Color(red: 0.80, green: 0.66, blue: 0.38)
     private static let sunGold  = Color(red: 1.00, green: 0.82, blue: 0.45)
     private static let moonSilk = Color.white
+    /// The SKY-side ink — horizon, twilight, unequal hours, ecliptic:
+    /// everything that belongs to the heavens reads silver, while the
+    /// instrument's own concentric metalwork stays gold.
+    private static let silver   = Color(red: 0.78, green: 0.82, blue: 0.88)
 
     var body: some View {
         GeometryReader { geo in
@@ -584,24 +612,25 @@ struct OrlojWidgetView: View {
                     OrlojPath(source: plate.path)
                         .stroke(Self.brass.opacity(0.85), lineWidth: plate.width)
                 }
+                // Sky-side lines read SILVER (horizon, twilight, unequal
+                // hours) — the heavens against the instrument's gold.
                 OrlojPath(source: face.horizonPath())
-                    .stroke(Self.brass.opacity(0.9), lineWidth: 1.3)
+                    .stroke(Self.silver.opacity(0.85), lineWidth: 1.3)
                 // Astronomical-twilight line — the AVRORA/CREPVSCVLVM
                 // bands' inner boundary, the night's edge.
                 OrlojPath(source: face.almucantarPath(altitude: .degrees(-18)))
-                    .stroke(Self.brass.opacity(0.4), lineWidth: 0.8)
+                    .stroke(Self.silver.opacity(0.4), lineWidth: 0.8)
                 OrlojPath(source: face.unequalHoursPath())
-                    .stroke(Self.brass.opacity(0.55), lineWidth: 0.75)
+                    .stroke(Self.silver.opacity(0.5), lineWidth: 0.75)
 
-                // Tympan region labels — the original's Latin, riding
-                // their bands' local curves.
-                ForEach(face.tympanLabels(), id: \.id) { label in
-                    Text(label.text)
+                // Tympan region labels — the original's Latin, laid out
+                // character by character ALONG their bands' curves.
+                ForEach(face.tympanLabelChars(), id: \.id) { glyph in
+                    Text(glyph.char)
                         .font(.system(size: 6.5, weight: .medium, design: .serif))
-                        .kerning(1.6)
-                        .foregroundStyle(Self.brass.opacity(0.75))
-                        .rotationEffect(label.rotation)
-                        .position(label.position)
+                        .foregroundStyle(Self.silver.opacity(0.8))
+                        .rotationEffect(glyph.rotation)
+                        .position(glyph.position)
                 }
 
                 // ── Dial scales, riding the glass band. The Roman dial
@@ -620,18 +649,21 @@ struct OrlojWidgetView: View {
                         .rotationEffect(numeral.rotation)
                         .position(numeral.position)
                 }
-                // ── Rete: the zodiac band (glass, brass-tinted), sign
-                // ticks, and the glyphs standing on the ring.
+                // ── Rete: the zodiac band — smoky dark glass like the
+                // original's black ring, silver ecliptic line + sign
+                // ticks, and GOLD glyphs with a hard dark shadow so they
+                // pop off the band (Prague's gold-on-black, boom).
                 GlassBand(band: face.zodiacBandPath(),
-                          tint: Self.brass, tintOpacity: 0.16)
+                          tint: .black, tintOpacity: 0.35)
                 OrlojPath(source: face.zodiacLinePath())
-                    .stroke(Self.brass.opacity(0.9), lineWidth: 1)
+                    .stroke(Self.silver.opacity(0.85), lineWidth: 1)
                 OrlojPath(source: face.zodiacTicksPath())
-                    .stroke(Self.brass.opacity(0.7), lineWidth: 1)
+                    .stroke(Self.silver.opacity(0.6), lineWidth: 1)
                 ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
                     Text(glyph.symbol)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Self.brass)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Self.sunGold)
+                        .shadow(color: .black.opacity(0.9), radius: 1, y: 0.5)
                         .rotationEffect(glyph.rotation)
                         .position(glyph.position)
                 }
