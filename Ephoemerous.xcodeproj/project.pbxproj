@@ -46,6 +46,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7C1803D6300A4F64004D9B33 /* EphoemerousWatch.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = EphoemerousWatch.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C51B0DD2F8F8C2600B39A8A /* Ephoemerous.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ephoemerous.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C5E79FB2FD17C0700F88416 /* EphoemerousTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EphoemerousTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CF48C293007AC620087F47F /* EphoemerousWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EphoemerousWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -54,6 +55,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7C1803DF300A4F64004D9B33 /* Exceptions for "EphoemerousWatch" folder in "EphoemerousWatch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7C1803D5300A4F64004D9B33 /* EphoemerousWatch */;
+		};
 		7CCEB00F2FA34EBF00012354 /* Exceptions for "Ephoemerous" folder in "Ephoemerous" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -124,6 +132,14 @@
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		7C1803D7300A4F64004D9B33 /* EphoemerousWatch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7C1803DF300A4F64004D9B33 /* Exceptions for "EphoemerousWatch" folder in "EphoemerousWatch" target */,
+			);
+			path = EphoemerousWatch;
+			sourceTree = "<group>";
+		};
 		7C51B0DF2F8F8C2600B39A8A /* Ephoemerous */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -145,6 +161,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		7C1803D3300A4F64004D9B33 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7C51B0DA2F8F8C2600B39A8A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -178,6 +201,7 @@
 			children = (
 				7C51B0DF2F8F8C2600B39A8A /* Ephoemerous */,
 				7CF48C2F3007AC620087F47F /* EphoemerousWidgets */,
+				7C1803D7300A4F64004D9B33 /* EphoemerousWatch */,
 				7CF48C2A3007AC620087F47F /* Frameworks */,
 				7C51B0DE2F8F8C2600B39A8A /* Products */,
 			);
@@ -189,6 +213,7 @@
 				7C51B0DD2F8F8C2600B39A8A /* Ephoemerous.app */,
 				7C5E79FB2FD17C0700F88416 /* EphoemerousTests.xctest */,
 				7CF48C293007AC620087F47F /* EphoemerousWidgetsExtension.appex */,
+				7C1803D6300A4F64004D9B33 /* EphoemerousWatch.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -205,6 +230,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		7C1803D5300A4F64004D9B33 /* EphoemerousWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7C1803E0300A4F64004D9B33 /* Build configuration list for PBXNativeTarget "EphoemerousWatch" */;
+			buildPhases = (
+				7C1803D2300A4F64004D9B33 /* Sources */,
+				7C1803D3300A4F64004D9B33 /* Frameworks */,
+				7C1803D4300A4F64004D9B33 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7C1803D7300A4F64004D9B33 /* EphoemerousWatch */,
+			);
+			name = EphoemerousWatch;
+			packageProductDependencies = (
+			);
+			productName = EphoemerousWatch;
+			productReference = 7C1803D6300A4F64004D9B33 /* EphoemerousWatch.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
 		7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7C51B0E82F8F8C2700B39A8A /* Build configuration list for PBXNativeTarget "Ephoemerous" */;
@@ -283,6 +330,9 @@
 				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
+					7C1803D5300A4F64004D9B33 = {
+						CreatedOnToolsVersion = 27.0;
+					};
 					7C51B0DC2F8F8C2600B39A8A = {
 						CreatedOnToolsVersion = 26.4;
 					};
@@ -316,11 +366,19 @@
 				7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */,
 				7C5E79FA2FD17C0700F88416 /* EphoemerousTests */,
 				7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */,
+				7C1803D5300A4F64004D9B33 /* EphoemerousWatch */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7C1803D4300A4F64004D9B33 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7C51B0DB2F8F8C2600B39A8A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -345,6 +403,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		7C1803D2300A4F64004D9B33 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7C51B0D92F8F8C2600B39A8A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -382,6 +447,69 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		7C1803DD300A4F64004D9B33 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CLM5L23Y57;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EphoemerousWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EphoemerousWatch;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lorep.uk.EphoemerousWatch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Debug;
+		};
+		7C1803DE300A4F64004D9B33 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CLM5L23Y57;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EphoemerousWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EphoemerousWatch;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lorep.uk.EphoemerousWatch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
 		7C51B0E62F8F8C2700B39A8A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -756,6 +884,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		7C1803E0300A4F64004D9B33 /* Build configuration list for PBXNativeTarget "EphoemerousWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C1803DD300A4F64004D9B33 /* Debug */,
+				7C1803DE300A4F64004D9B33 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		7C51B0D82F8F8C2600B39A8A /* Build configuration list for PBXProject "Ephoemerous" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
