@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - SkyLabView
 // Proving ground for the rendering rethink: a Canvas layer (the grid) and
@@ -71,6 +72,37 @@ struct MainView😇: View {
         guard let top = app.bottomSheetTop, viewSize.height > 0 else { return rest }
         return max(rest, viewSize.height - top + gap)
     }
+
+    /// Seed / retune the camera's home + zoom floor from the visible screen
+    /// size. The coordinator's built-in 90 approximates an iPhone; on iPad
+    /// the horizon launched small until a NorthOUT round-trip happened to
+    /// reseed it (the `isNorthOut` onChange). NorthOUT frames itself, so
+    /// it's left alone; and only a camera still resting at its old home is
+    /// moved — a user zoom survives a resize.
+    private func seedCameraHome(for size: CGSize) {
+        guard !app.isNorthOut else { return }
+        let wasHome = abs(sky.scale - sky.defaultScale) < 0.5
+        let target  = app.defaultScale(for: size)
+        sky.minScale     = northInMinScale(defaultScale: target)
+        sky.defaultScale = target
+        if wasHome { sky.scale = target }
+    }
+
+    /// NorthIN zoom floor. iPhone: home itself — no pulling back past the
+    /// fit-to-height default. iPad: opened DOWN to where a favourite
+    /// star's name label is still FULLY revealed — `textIn` plus the 18%
+    /// fade band (see `POILabelView.tierReveal`) — so the wide canvas can
+    /// zoom out further without the favourites going mute.
+    private func northInMinScale(defaultScale target: CGFloat) -> CGFloat {
+        guard isPad else { return target }
+        let nameIn = EArtist.shared.followedStarTier.textIn * 1.0
+        return Swift.min(target, CGFloat(nameIn))
+    }
+
+    /// iPad relocates the camera cluster to the top-trailing corner —
+    /// the wide canvas leaves the bottom-trailing slot marooned mid-air
+    /// above the full-width search sheet.
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     /// Camera scale/offset captured at the start of a NorthIN↔NorthOUT morph.
     /// The camera glides from these to the committed `sky` target across the
@@ -309,6 +341,7 @@ struct MainView😇: View {
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                         sky.onTap  = makeTapHandler()
                         viewSize   = geo.size
+                        seedCameraHome(for: geo.size)
                         // Grabbing the canvas drops compass mode (heading no
                         // longer owns the view) — but the zoom/framing stays
                         // put (frozen in the `compassMode` exit handler), so
@@ -321,6 +354,7 @@ struct MainView😇: View {
                     .onChange(of: geo.size) {
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                         viewSize   = geo.size
+                        seedCameraHome(for: geo.size)
                     }
             }
         }
@@ -361,26 +395,39 @@ struct MainView😇: View {
                 .padding(.horizontal, 16)
                 .padding(.top,        64)
         }
-        .overlay(alignment: .bottomTrailing) {
+        .overlay(alignment: isPad ? .topTrailing : .bottomTrailing) {
             // Hidden while a scene editor is up — camera-mode toggles are
             // noise mid-picking, and the floating date crown owns the
             // bottom stage.
             if !app.isShowingDatePicker && !app.isShowingLocationPicker {
+                let lift = sheetLift(gap: 12, rest: 114)
                 CameraClusterCapsule()
                     .padding(.trailing, 16)
-                    // Rides the frontmost sheet's top edge: rests above the
+                    // iPad: top-trailing, level with the context capsule
+                    // (same 64pt top inset as MainToolbar). iPhone: rides
+                    // the frontmost sheet's top edge — rests above the
                     // search bar (114) and rises 1:1 as the sheet expands.
                     // ▼ TWEAK the rest / gap here ▼
-                    .padding(.bottom, sheetLift(gap: 12, rest: 114))
+                    .padding(.top,    isPad ? 64 : 0)
+                    .padding(.bottom, isPad ? 0  : lift)
+                    // A sheet PRESENTING publishes its top edge once, not
+                    // per-frame like a drag — animate the lift so the pill
+                    // glides to meet it instead of snapping. Drag frames
+                    // just retarget the spring; the pill trails by a hair.
+                    .animation(.snappy(duration: 0.28), value: lift)
                     .transition(.opacity)
             }
         }
         .overlay(alignment: .bottomLeading) {
             // Compass rose — self-hides when the sky is upright; tap
             // springs back to North.
+            let roseLift = sheetLift(gap: 22, rest: 124)
             CompassButton()
                 .padding(.leading, 16)
-                .padding(.bottom, sheetLift(gap: 22, rest: 124))
+                .padding(.bottom, roseLift)
+                // Same glide as the camera cluster — the bottom chrome
+                // moves as one when a sheet presents.
+                .animation(.snappy(duration: 0.28), value: roseLift)
         }
         
         .ignoresSafeArea()
@@ -450,7 +497,7 @@ struct MainView😇: View {
         // detent whenever nothing else owns the bottom slot. Selecting an
         // object sets `detailDestination`, which flips `searchPresented`
         // false → search yields to the detail sheet. Verbatim production.
-        .sheet(isPresented: searchPresented) { SearchSheet() }
+        .sheet(isPresented: searchPresented) { SearchSheet().tracksBottomSheet() }
         // Any selection (canvas tap OR search pick) glides into the comfort
         // zone — one place, so the two paths behave identically.
         .onChange(of: app.detailDestination) { _, obj in
@@ -500,7 +547,7 @@ struct MainView😇: View {
             morphScaleFrom  = sky.scale
             morphOffsetFrom = sky.offset
             let target = northOut ? app.northOutDefaultScale : app.defaultScale
-            sky.minScale     = target
+            sky.minScale     = northOut ? target : northInMinScale(defaultScale: target)
             sky.defaultScale = target
             sky.scale        = target
             sky.offset       = .zero

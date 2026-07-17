@@ -330,6 +330,11 @@ class EAppState {
     /// SYNC with the sheet instead of a fixed offset; the same signal drives
     /// the sheet-title morph. `nil` when nothing is tracked.
     var bottomSheetTop:          CGFloat? = nil
+    /// Identity of the tracker that last wrote `bottomSheetTop`. Sheet
+    /// swaps overlap dismissal + presentation; the outgoing tracker's
+    /// `onDisappear` may only nil-clear the slot if it still owns it.
+    /// Bookkeeping, not display state — nothing observes it.
+    @ObservationIgnored var _bottomSheetOwner: UUID? = nil
     /// True only during the brief window where one bottom-slot sheet is
     /// being torn down and another presented in its place (detail ⇄ scene
     /// editor, detail → detail, detail → myth). The persistent search

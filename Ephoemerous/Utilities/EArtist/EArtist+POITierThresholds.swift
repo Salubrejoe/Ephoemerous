@@ -19,6 +19,12 @@ struct POITier {
 
 extension EArtist {
 
+    /// The `.followedStar` gates, reachable without a star in hand (the
+    /// tier map below ignores the payload). The iPad zoom floor anchors
+    /// on its `textIn` so favourite names survive a full zoom-out — see
+    /// `northInMinScale` in MainView😇.
+    var followedStarTier: POITier { POITier(badgeIn: 100, textIn: 120) }
+
     /// The tier map — tweak every category's reveal timing here.
     func poiTier(for category: POICategory) -> POITier {
         switch category {
@@ -27,7 +33,7 @@ extension EArtist {
         // Constellations lead the reading order.
         case .constellation:  return POITier(badgeIn: 130, textIn: 190)
         // A tapped/followed star sits early so it's easy to re-find.
-        case .followedStar:   return POITier(badgeIn: 100,  textIn: 120)
+        case .followedStar:   return followedStarTier
         // Planets bloom from their tier-0 dot only once zoomed in.
         case .planet:         return POITier(badgeIn: 160, textIn: 220)
         // Named stars cascade in brightest-first, well past

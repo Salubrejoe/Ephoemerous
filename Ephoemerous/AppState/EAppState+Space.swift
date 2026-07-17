@@ -90,9 +90,15 @@ extension EAppState {
     /// canvasSize didSet in EAppState.swift re-applies `defaultScale`
     /// the moment the real size arrives, so the launch view always
     /// lands at the canvas-derived value, not the fallback.
-    var defaultScale: Double {
+    var defaultScale: Double { defaultScale(for: canvasSize) }
+
+    /// Size-explicit form of `defaultScale`, for callers that know the
+    /// screen size before the clock canvas has published `canvasSize` —
+    /// the SkyLab camera seeds its home / zoom floor from this at launch
+    /// (see `seedCameraHome` in MainView😇).
+    func defaultScale(for size: CGSize) -> Double {
         let pad: Double = 24
-        let shorter = Swift.min(canvasSize.width, canvasSize.height)
+        let shorter = Swift.min(size.width, size.height)
         guard shorter > 0 else { return AstroConstants.defaultScale }
         return Swift.max(1, (shorter - 2 * pad) / 4)
     }

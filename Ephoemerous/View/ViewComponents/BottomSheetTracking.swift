@@ -12,14 +12,27 @@ import SwiftUI
 private struct BottomSheetTracker: ViewModifier {
     @Environment(EAppState.self) private var app
 
+    /// Publisher identity. During a sheet SWAP (search → detail) the two
+    /// trackers overlap: the incoming sheet publishes while the outgoing
+    /// one is still dismissing, and the outgoing `onDisappear` fires LAST.
+    /// An unconditional nil-clear there would erase the incoming sheet's
+    /// value and strand the chrome at rest — so a tracker only clears the
+    /// slot if it is still the one that last wrote it.
+    @State private var id = UUID()
+
     func body(content: Content) -> some View {
         content
             .onGeometryChange(for: CGFloat.self) { proxy in
                 proxy.frame(in: .global).minY
             } action: { top in
-                app.bottomSheetTop = top
+                app.bottomSheetTop    = top
+                app._bottomSheetOwner = id
             }
-            .onDisappear { app.bottomSheetTop = nil }
+            .onDisappear {
+                guard app._bottomSheetOwner == id else { return }
+                app.bottomSheetTop    = nil
+                app._bottomSheetOwner = nil
+            }
     }
 }
 
