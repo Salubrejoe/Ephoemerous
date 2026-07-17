@@ -35,7 +35,7 @@ extension EArtist {
 
         /// Casing colour shared by every badge — the light outline that
         /// reads against a busy sky. One source of truth for all categories.
-        var border: Color { .systemBackground }
+        var border: Color { .black.opacity(0.9) }
         /// Rendered-scale at which the badge appears (tier 0 → 1).
         var badgeIn: Double { tier.badgeIn }
         /// Rendered-scale at which the name appears (tier 1 → 2).
@@ -118,7 +118,7 @@ extension EArtist {
             return POICategoryStyle(
                 gradientTop:    palette.sun.bottom,
                 gradientBottom: palette.sun.top,
-                textColor:      .primary,
+                textColor:      .white,
                 badgeSize:      22,
                 badgeCorners:   12,         // near-circle
                 tier:           tier)
@@ -127,7 +127,7 @@ extension EArtist {
             return POICategoryStyle(
                 gradientTop:    palette.moon.bottom,
                 gradientBottom: palette.moon.top,
-                textColor:      .primary,
+                textColor:      .white,
                 badgeSize:      18,
                 badgeCorners:   3,          // triangle
                 tier:           tier)

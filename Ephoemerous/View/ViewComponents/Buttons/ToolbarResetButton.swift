@@ -20,7 +20,7 @@ struct ToolbarResetButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .bold))
+                .font(.callout.weight(.bold))
                 .foregroundStyle(.primary)
                 .offset(y: -0.5)
                 .frame(width: size, height: size)

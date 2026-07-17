@@ -20,7 +20,7 @@ struct MainToolbar: View {
     @Namespace private var glassNS
 
     /// Capsule + reset-chip height.
-    private let barHeight: CGFloat = 32
+    private let barHeight: CGFloat = 40
 
     
     

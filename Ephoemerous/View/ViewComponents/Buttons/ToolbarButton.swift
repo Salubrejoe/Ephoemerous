@@ -17,7 +17,7 @@ struct ToolbarPill: View {
                 .font(.callout.weight(.bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 16)
                 .padding(.vertical,    8)
                 .contentShape(Capsule())
         }

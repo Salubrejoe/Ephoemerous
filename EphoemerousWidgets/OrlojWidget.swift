@@ -666,6 +666,33 @@ struct OrlojWidgetView: View {
                 Canvas { ctx, size in
                     face.drawStars(in: &ctx, size: size)
                 }
+                
+                // Remembered constellations — traced solid, the postcard
+                // widget's hero treatment for every favourite.
+                OrlojPath(source: face.favouriteConstellationsPath())
+                    .stroke(Self.silver.opacity(0.85),
+                            style: .init(lineWidth: 1, lineCap: .round, lineJoin: .round))
+                
+                // ── The wanderers and the remembered — the app's OWN
+                // marks, badge grammar and all: spectral PENTAGON
+                // squircles for favourite stars, canonical-tint rounded
+                // squircles for the seven planets, each with the badge's
+                // gradient fill, dark casing, and soft glow.
+                ForEach(face.favouriteStarMarks(), id: \.id) { mark in
+                    Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
+                        .fill(LinearGradient(colors: [mark.top, mark.bottom],
+                                             startPoint: .bottom, endPoint: .top))
+                    
+                        .overlay(
+                            Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
+                                .stroke(EArtist.shared.canvasBackground.opacity(0.9),
+                                        lineWidth: 1.1)
+                        )
+                        .frame(width: 9 * u, height: 9 * u)
+                        .shadow(color: mark.top.opacity(0.5), radius: 1.5)
+                        .position(mark.position)
+                }
+                
 
                 // ── Fixed dial band (glass) — the real clock's black
                 // outer ring, smoky so the sky reads through it.
@@ -680,18 +707,18 @@ struct OrlojWidgetView: View {
                 }
                 // Sky-side lines read SILVER (horizon, twilight, unequal
                 // hours) — the heavens against the instrument's gold.
-                OrlojPath(source: face.horizonPath())
-//                    .stroke(Self.silver.opacity(0.85), lineWidth: 0.5)
-                    .stroke(
-                        Self.silver.opacity(0.55),
-                        style: .init(
-                            lineWidth: 0.8,
-                            lineCap: .round,
-                            lineJoin: .round,
-                            dash: [10,10],
-                            dashPhase: 20
-                        )
-                    )
+//                OrlojPath(source: face.horizonPath())
+////                    .stroke(Self.silver.opacity(0.85), lineWidth: 0.5)
+//                    .stroke(
+//                        Self.silver.opacity(0.55),
+//                        style: .init(
+//                            lineWidth: 0.8,
+//                            lineCap: .round,
+//                            lineJoin: .round,
+//                            dash: [10,10],
+//                            dashPhase: 20
+//                        )
+//                    )
                 // Astronomical-twilight line — the AVRORA/CREPVSCVLVM
                 // bands' inner boundary, the night's edge.
                 OrlojPath(source: face.almucantarPath(altitude: .degrees(-18)))
@@ -699,11 +726,7 @@ struct OrlojWidgetView: View {
                 OrlojPath(source: face.unequalHoursPath())
                     .stroke(Self.silver.opacity(0.5), lineWidth: 0.5)
 
-                // Remembered constellations — traced solid, the postcard
-                // widget's hero treatment for every favourite.
-                OrlojPath(source: face.favouriteConstellationsPath())
-                    .stroke(Self.silver.opacity(0.85),
-                            style: .init(lineWidth: 1, lineCap: .round, lineJoin: .round))
+                
 
                 // Tympan region labels — the original's Latin, laid out
                 // character by character ALONG their bands' curves, with
@@ -757,25 +780,6 @@ struct OrlojWidgetView: View {
                         .position(glyph.position)
                 }
 
-                // ── The wanderers and the remembered — the app's OWN
-                // marks, badge grammar and all: spectral PENTAGON
-                // squircles for favourite stars, canonical-tint rounded
-                // squircles for the seven planets, each with the badge's
-                // gradient fill, dark casing, and soft glow.
-                ForEach(face.favouriteStarMarks(), id: \.id) { mark in
-                    Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
-                        .fill(LinearGradient(colors: [mark.top, mark.bottom],
-                                             startPoint: .bottom, endPoint: .top))
-                        
-                        .overlay(
-                            Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
-                                .stroke(EArtist.shared.canvasBackground.opacity(0.9),
-                                        lineWidth: 1.1)
-                        )
-                        .frame(width: 9 * u, height: 9 * u)
-                        .shadow(color: mark.top.opacity(0.5), radius: 1.5)
-                        .position(mark.position)
-                }
                 ForEach(face.planetMarks(), id: \.id) { mark in
                     Squircle(corners: 4, bulge: 2.0)
                         .fill(LinearGradient(colors: [mark.top, mark.bottom],
@@ -789,14 +793,15 @@ struct OrlojWidgetView: View {
                         .shadow(color: mark.top.opacity(0.45), radius: 1.2)
                         .position(mark.position)
                 }
+                
 
                 // ── Hands — tipped with the app's OWN Sun and Moon
                 // badges (POILabelView, same species as everywhere).
                 if let sun = face.sunPoint {
                     OrlojPath(source: face.handPath(to: sun))
-                        .stroke(Self.sunGold.opacity(0.55), style: .init(lineWidth: 4.4 * u, lineCap: .round))
+                        .stroke(Self.sunGold.opacity(0.75), style: .init(lineWidth: 4.4 * u, lineCap: .round))
 //                        .shadow(color: Self.sunGold.opacity(0.5), radius: 2)
-                        .shadow(radius: 4, y: 2.5)
+//                        .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .sun,
                                  text:       "",
                                  labelStyle: .star,
@@ -807,7 +812,7 @@ struct OrlojWidgetView: View {
                 }
                 if let moon = face.moonPoint {
                     OrlojPath(source: face.handPath(to: moon))
-                        .stroke(Self.moonSilk.opacity(0.55), style: .init(lineWidth: 2.4 * u, lineCap: .round))
+                        .stroke(Self.moonSilk.opacity(0.75), style: .init(lineWidth: 2.4 * u, lineCap: .round))
                         .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .moon,
                                  text:       "",
