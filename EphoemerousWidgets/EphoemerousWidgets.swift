@@ -85,18 +85,18 @@ struct SkyObjectEntry: TimelineEntry {
 // so canvas and overlay share the full-bleed coordinate space.
 private enum Pin {
     /// Badge centre → dot centre drop, the promoted-pin lift.
-    static let lift: CGFloat = 34
+//    static let lift: CGFloat = 24.0
 
     /// The precise-location dot — where the camera lands the object.
     /// Near the tile's midpoint (Find My plants its pin there), a touch
     /// trailing so the lifted badge reads top-trailing. ▼ TWEAK ▼
-    static func dot(in size: CGSize) -> CGPoint {
-        CGPoint(x: size.width * 0.73, y: size.height * 0.50)
+    static func dot(in size: CGSize, isLandscape: Bool) -> CGPoint {
+        CGPoint(x: size.width * (isLandscape ? 0.77 : 0.68), y: size.height * (isLandscape ? 0.47 : 0.35))
     }
 
     /// Badge centre — lifted straight above the dot.
-    static func badgeCentre(in size: CGSize) -> CGPoint {
-        let d = dot(in: size)
+    static func badgeCentre(in size: CGSize, lift: CGFloat = 0.0, isLandscape: Bool) -> CGPoint {
+        let d = dot(in: size, isLandscape: isLandscape)
         return CGPoint(x: d.x, y: d.y - lift)
     }
 }
@@ -111,6 +111,7 @@ private struct SkySnapshot {
 
     let camera: SkyCamera
     let date:   Date
+    let isLandscape: Bool
     /// Set when the PINNED object is a constellation — it has no badge
     /// or dot; instead its stick-figure is traced solid on the map.
     let pinnedConstellation: EConstellation?
@@ -121,8 +122,9 @@ private struct SkySnapshot {
 
     @MainActor
     init(entity: SkyObjectEntity, date: Date,
-         origin: (latDeg: Double, lonDeg: Double)?, size: CGSize) {
+         origin: (latDeg: Double, lonDeg: Double)?, size: CGSize, isLandscape: Bool) {
         self.date = date
+        self.isLandscape = isLandscape
         if case .constellation(let c) = entity.skyObject {
             pinnedConstellation = c
         } else {
@@ -151,7 +153,7 @@ private struct SkySnapshot {
         pinnedVector = target
         var offset = CGSize.zero
         if let target, let p = EProjection.project(target, viewpoint: viewpoint) {
-            let dot = Pin.dot(in: size)
+            let dot = Pin.dot(in: size, isLandscape: isLandscape)
             offset = CGSize(width:  dot.x - size.width  / 2 - p.x * scale,
                             height: dot.y - size.height / 2 + p.y * scale)
         }
@@ -229,7 +231,7 @@ private struct SkySnapshot {
     @MainActor
     func bodies(excluding pinned: String, in size: CGSize) -> [(POICategory, CGPoint, String)] {
         var out: [(POICategory, CGPoint, String)] = []
-        let badge = Pin.badgeCentre(in: size)
+        let badge = Pin.badgeCentre(in: size, isLandscape: isLandscape)
 
         func admit(_ sc: CGPoint?) -> CGPoint? {
             guard let sc,
@@ -355,6 +357,19 @@ struct SkyObjectWidgetView: View {
     var entry: SkyObjectProvider.Entry
     @Environment(\.widgetFamily) private var family
 
+    /// Large and extra-large share the roomy treatment — denser star
+    /// field, bigger promoted pin, the altitude/bearing line. Extra
+    /// large (iPad always; iPhone since iOS 27) is the same postcard,
+    /// panoramic: everything derives from `geo.size`, so it just
+    /// breathes wider.
+    private var isExpansive: Bool {
+        family == .systemLarge || family == .systemExtraLarge
+    }
+    
+    private var isLandscape: Bool {
+        family == .systemMedium || family == .systemExtraLarge
+    }
+
     @MainActor
     private var category: POICategory? {
         switch entry.entity.skyObject {
@@ -391,19 +406,23 @@ struct SkyObjectWidgetView: View {
 
     // MARK: Postcard (system families)
 
+    
     private var postcard: some View {
         GeometryReader { geo in
             let snapshot = SkySnapshot(entity: entry.entity,
                                        date:   entry.date,
                                        origin: entry.origin,
-                                       size:   geo.size)
+                                       size:   geo.size,
+                                       isLandscape: isLandscape)
 
             ZStack(alignment: .topLeading) {
                 // The map: cartography canvas + flat body labels. Large
                 // has room for a denser naked-eye field.
                 Canvas { ctx, size in
+                    // Extra large earns the densest field — panorama room.
                     snapshot.draw(in: &ctx, size: size,
-                                 magnitudeLimit: family == .systemLarge ? 5.2 : 4.5)
+                                 magnitudeLimit: family == .systemExtraLarge ? 5.6
+                                               : isExpansive               ? 5.2 : 4.5)
                 }
                 ForEach(snapshot.bodies(excluding: entry.entity.id, in: geo.size),
                         id: \.2) { category, sc, name in
@@ -436,7 +455,7 @@ struct SkyObjectWidgetView: View {
                             .foregroundStyle(.white)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
-                        if family == .systemLarge, let altAz = snapshot.altitudeAzimuthLabel {
+                        if isExpansive, let altAz = snapshot.altitudeAzimuthLabel {
                             Text(altAz)
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.75))
@@ -489,27 +508,51 @@ struct SkyObjectWidgetView: View {
 
     /// The promoted pin: the badge lifted above its precise-location dot
     /// — the object's projection lands ON the dot (see SkySnapshot).
-    /// Large gets a slightly bigger badge — proportionate to the tile.
+    /// The roomier families get a bigger badge — proportionate to the tile.
     @MainActor
     private func promotedPin(_ category: POICategory, in size: CGSize) -> some View {
         let style = EArtist.shared.poiStyle(for: category)
-        let scale: CGFloat = family == .systemLarge ? 2.6 : 2
+        let isSun = category == .sun
+        let isMoon = category == .moon
+        let isSunOrMoon = isSun || isMoon
+        let dotPosition = Pin.dot(in: size, isLandscape: isLandscape)
+        let glyphPosition = Pin.badgeCentre(in: size, isLandscape: isLandscape)
+        let sunScale = family == .systemExtraLarge ? 2.6
+        : family == .systemLarge      ? 2.2 : 1.5
+        
+        let moonScale = family == .systemExtraLarge ? 2.6
+        : family == .systemLarge      ? 2.2 : 1.8
+        
+        let scale: CGFloat = family == .systemExtraLarge ? 2.6
+        : family == .systemLarge      ? 2.2 : 1.9
+        let backgroundRadius = 18 * scale
+        
+        let corners = 12
+        let bulge = 2.6
 
         return ZStack {
+            // Precise-location dot — the object itself.
+            Group {
+                Squircle(corners: corners, bulge: bulge, rotation: .pi(over: 2))
+                    .fill(style.gradientTop)
+            }
+                .opacity(isSunOrMoon ? 0.0 : 0.4)
+//                .blendMode(.luminosity)
+                .blur(radius: 1)
+//                .fill(style.gradientBottom.opacity(isSun ? 0.0 : 0.6))
+                .frame(width: backgroundRadius, height: backgroundRadius)
+                .shadow(color: .black.opacity(0.55), radius: 1.5)
+                .position(Pin.dot(in: size, isLandscape: isLandscape))
+            
             POILabelView(category:   category,
                          text:        "",
                          labelStyle:  labelStyle(for: category),
                          nameReveal:  0,
                          borderScaleCompensation: 1 / scale)
-                .scaleEffect(scale)
-                .position(Pin.badgeCentre(in: size))
+            .scaleEffect(isSun ? sunScale : isMoon ? moonScale : scale)
+                .position(Pin.badgeCentre(in: size, isLandscape: isLandscape))
 
-            // Precise-location dot — the object itself.
-            Circle()
-                .fill(style.gradientBottom)
-                .frame(width: 6, height: 6)
-                .shadow(color: .black.opacity(0.7), radius: 1.5)
-                .position(Pin.dot(in: size))
+            
         }
     }
 
@@ -543,7 +586,8 @@ struct EphoemerousWidgets: Widget {
         }
         .configurationDisplayName("Sky Object")
         .description("A star, planet, the Sun or the Moon — live on your sky map.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryCircular])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge,
+                            .systemExtraLarge, .accessoryCircular])
         // Canvas background and pin overlay must share one coordinate
         // space — margins are managed by hand (see Pin).
         .contentMarginsDisabled()
@@ -565,11 +609,57 @@ struct EphoemerousWidgets: Widget {
                    entity: SkyObjectEntity(.star(.mockStars[0])), origin: nil)
 }
 
+#Preview(as: .systemMedium) {
+    EphoemerousWidgets()
+} timeline: {
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.moon), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.sun), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.planet(.mars)), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.planet(.jupiter)), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.star(.mockStars[0])), origin: nil)
+}
+
 #Preview(as: .systemLarge) {
     EphoemerousWidgets()
 } timeline: {
     SkyObjectEntry(date: .now, captured: .now,
                    entity: SkyObjectEntity(.moon), origin: nil)
     SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.sun), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.planet(.mars)), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
                    entity: SkyObjectEntity(.planet(.jupiter)), origin: nil)
+    SkyObjectEntry(date: .now, captured: .now,
+                   entity: SkyObjectEntity(.star(.mockStars[0])), origin: nil)
 }
+
+//#Preview(as: .systemExtraLarge) {
+//    EphoemerousWidgets()
+//} timeline: {
+//    SkyObjectEntry(date: .now, captured: .now,
+//                   entity: SkyObjectEntity(.moon), origin: nil)
+//    SkyObjectEntry(date: .now, captured: .now,
+//                   entity: SkyObjectEntity(.star(.mockStars[0])), origin: nil)
+//}
+
+
+//#Preview(as: .systemExtraLargePortrait) {
+//    EphoemerousWidgets()
+//} timeline: {
+//    SkyObjectEntry(date: .now, captured: .now,
+//                   entity: SkyObjectEntity(.moon), origin: nil)
+//    SkyObjectEntry(date: .now, captured: .now,
+//                   entity: SkyObjectEntity(.sun), origin: nil)
+//    SkyObjectEntry(date: .now, captured: .now,
+//                   entity: SkyObjectEntity(.planet(.mars)), origin: nil)
+//    SkyObjectEntry(date: .now, captured: .now,
+//                   entity: SkyObjectEntity(.planet(.jupiter)), origin: nil)
+//    SkyObjectEntry(date: .now, captured: .now,
+//                   entity: SkyObjectEntity(.star(.mockStars[0])), origin: nil)
+//}

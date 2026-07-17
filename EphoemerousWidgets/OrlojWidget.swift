@@ -826,7 +826,7 @@ struct OrlojWidgetView: View {
                 // badges (POILabelView, same species as everywhere).
                 if let sun = face.sunPoint {
                     OrlojPath(source: face.handPath(to: sun))
-                        .stroke(.black.opacity(0.45), style: .init(lineWidth: 3.4 * u, lineCap: .round))
+                        .stroke(.black.opacity(0.15), style: .init(lineWidth: 3.4 * u, lineCap: .round))
 //                        .shadow(color: Self.sunGold.opacity(0.3), radius: 1, y: 0.4)
 //                        .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .sun,
@@ -839,7 +839,7 @@ struct OrlojWidgetView: View {
                 }
                 if let moon = face.moonPoint {
                     OrlojPath(source: face.handPath(to: moon))
-                        .stroke(.black.opacity(0.45), style: .init(lineWidth: 3.4 * u, lineCap: .round))
+                        .stroke(.black.opacity(0.15), style: .init(lineWidth: 3.4 * u, lineCap: .round))
 //                        .shadow(color: Self.sunGold.opacity(0.3), radius: 1, y: 0.4)
                     POILabelView(category:   .moon,
                                  text:       "",

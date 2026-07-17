@@ -69,7 +69,7 @@ enum POIConstellationEntity: String, CaseIterable {
     }
 }
 
-enum POICategory {
+enum POICategory: Equatable {
     /// Constellations wear a single neutral tint now — the myth colour
     /// taxonomy is retired (see DeprecationStation), so no payload.
     case constellation
