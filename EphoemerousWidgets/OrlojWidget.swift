@@ -10,9 +10,9 @@ import simd
 // circle (see EAppState+Space.northOutDefaultScale); that is EXACTLY
 // DeprecationStation/Orloj/EOrlojGeometry's own r = tan(45°+δ/2) formula.
 // The Orloj and NorthOUT are the same stereographic projection from the
-// celestial north pole (eye = NCP, tangent plane = SCP) — one was built
-// for a 1410 astrolabe, the other for this app; they were always the
-// same math. Everything here is SAMPLED through the real `SkyCamera`
+// observer's hidden celestial pole (eye = NCP / tangent plane = SCP in
+// the north; mirrored in the south) — one was built for a 1410
+// astrolabe, the other for this app; they were always the same math. Everything here is SAMPLED through the real `SkyCamera`
 // (the codebase's established pattern — CelestialGridCanvas,
 // AlmucantarCurve), so it's exact for the viewer's actual latitude with
 // no separate handedness reasoning.
@@ -77,10 +77,26 @@ private struct OrlojFace {
     /// marks — so the whole instrument miniaturises coherently.
     let ui:        CGFloat
 
-    /// Declination the Roman dial sits at — outside the Tropic of
-    /// Cancer plate. (The Old-Bohemian ring is retired — conductor's
+    /// Declination MAGNITUDE the Roman dial sits at — outside the outer
+    /// tropic plate. (The Old-Bohemian ring is retired — conductor's
     /// call — so the crown carries one scale.) ▼ TWEAK ring spacing ▼
-    static let romanDialDec = AstroConstants.tropicCancer + .degrees(12)
+    static let romanDialBase = AstroConstants.tropicCancer + .degrees(12)
+
+    /// +1 north of the equator, −1 south. The projection flings out the
+    /// observer's HIDDEN pole (see `EProjection.project(_:viewpoint:)`),
+    /// so every hardcoded northern declination mirrors below the equator
+    /// — the tympan builds around the other pole.
+    private var hemi: Double { latitude.radians >= 0 ? 1 : -1 }
+
+    /// The dial's actual declination — `romanDialBase`, mirrored for the
+    /// southern hemisphere.
+    var romanDialDec: Angle { .radians(hemi * Self.romanDialBase.radians) }
+
+    /// The OUTER tropic under the current projection — Cancer in the
+    /// north, Capricorn in the south (the tympan's traditional clip).
+    private var outerTropic: Angle {
+        .radians(hemi * AstroConstants.tropicCancer.radians)
+    }
 
     @MainActor
     init(date: Date, origin: (latDeg: Double, lonDeg: Double)?, size: CGSize) {
@@ -107,17 +123,26 @@ private struct OrlojFace {
         // circle at ρ = 2·tan(45°+δ/2) projection units — the same 2 as
         // northOutDefaultScale's derivation. ▼
         let targetOuterRadius = min(size.width, size.height) * 0.52
-        let romanRho = 2 * tan(.pi / 4 + Self.romanDialDec.radians / 2)
+        // The magnitude is hemisphere-invariant: the dial dec mirrors AND
+        // the projection mirrors, so the radius comes out identical.
+        let romanRho = 2 * tan(.pi / 4 + Self.romanDialBase.radians / 2)
         let scale = targetOuterRadius / CGFloat(romanRho)
 
         // The face must stand STILL — meridian vertical, noon at top,
         // the sky rotating over it (dial fixed, rete turns — the real
-        // mechanism). At morph 1 the screen basis is the pole fallback
-        // (arbitrary phase, and LST-dependent through `sidereal`), so:
+        // mechanism). At morph 1 the screen basis is east-pinned (see
+        // EProjection) but still time-dependent through `sidereal`, so:
         // project a probe at H = 0 (upper meridian, RA = LST) with an
         // unrotated camera, measure where it landed, and set the camera
         // rotation that carries it straight UP.
-        let sidereal = Angle.radians(-lst.radians)
+        //
+        // `sidereal` is −GMST, NOT −LST: the anchors (`originVector`,
+        // `skyPoint`'s zenith) are geographic globe vectors, so longitude
+        // lives in the anchor and the sky spins over it by GMST alone —
+        // same frame as the app (see EAppState.localSiderealOffset).
+        // −LST double-counted longitude and spun the tympan (horizon,
+        // twilight bands, Latin labels) by `lon` against the rete/ring.
+        let sidereal = -EPrecession.gmstSiderealOffset(for: date)
         let unrotated = SkyCamera(scale: scale, offset: .zero, size: size,
                                  viewpoint: viewpoint, sidereal: sidereal)
         var rotation = Angle.zero
@@ -169,7 +194,7 @@ private struct OrlojFace {
     /// that bounds the AVRORA / CREPVSCVLVM bands on the original.
     @MainActor
     func almucantarPath(altitude: Angle) -> Path {
-        let clip = radiusForDeclination(AstroConstants.tropicCancer) * 1.26
+        let clip = radiusForDeclination(outerTropic) * 1.26
         var path = Path()
         var started = false
         for i in 0...160 {
@@ -205,16 +230,20 @@ private struct OrlojFace {
     @MainActor
     func tympanLabelChars() -> [(id: String, char: String, position: CGPoint, rotation: Angle)] {
         // ▼ TWEAK the label anchors here (azimuth°, altitude°) ▼
+        // NOX sits toward the observer's HIDDEN pole — the side of the
+        // sky where the midnight sun passes below the horizon: due north
+        // in the northern hemisphere, due south in the southern.
+        let noxAzimuth: Double = latitude.radians >= 0 ? 0 : 180
         let specs: [(String, Double, Double)] = [
             ("ORTVS",        90,   5),
             ("AVRORA",       90,  -9),
             ("OCCASVS",     270,   5),
             ("CREPVSCVLVM", 270,  -9),
-            ("NOX",           0, -24),
+            ("NOX",  noxAzimuth, -24),
         ]
         // ▼ TWEAK per-character arc spacing (pt) ▼
         let spacing: CGFloat = 8 * ui
-        let clip = radiusForDeclination(AstroConstants.tropicCancer) * 0.97
+        let clip = radiusForDeclination(outerTropic) * 0.97
 
         var out: [(String, String, CGPoint, Angle)] = []
         for (text, azDeg, altDeg) in specs {
@@ -286,7 +315,7 @@ private struct OrlojFace {
     /// ▼ TWEAK the band edges here ▼
     @MainActor
     func dialBandPath() -> Path {
-        let roman  = radiusForDeclination(Self.romanDialDec)
+        let roman  = radiusForDeclination(romanDialDec)
         let outerR = roman + 19 * ui
         let rect   = CGRect(x: center.x - outerR, y: center.y - outerR,
                             width: outerR * 2, height: outerR * 2)
@@ -304,7 +333,7 @@ private struct OrlojFace {
     func favouriteConstellationsPath() -> Path {
         let favs = Set(FavouritesStore().constellations())
         guard !favs.isEmpty else { return Path() }
-        let clip = radiusForDeclination(Self.romanDialDec) + 3
+        let clip = radiusForDeclination(romanDialDec) + 3
         var merged = Path()
         for (cons, segs) in ConstellationLines.shared.segments where favs.contains(cons) {
             for seg in segs {
@@ -324,7 +353,7 @@ private struct OrlojFace {
     /// PENTAGON squircle (FavouriteHeart's below-badge-tier form).
     @MainActor
     func favouriteStarMarks() -> [(id: String, position: CGPoint, top: Color, bottom: Color)] {
-        let clip = radiusForDeclination(Self.romanDialDec) + 3
+        let clip = radiusForDeclination(romanDialDec) + 3
         var out: [(String, CGPoint, Color, Color)] = []
         for star in FavouritesStore().stars(key: FavouritesStore.Key.favouriteStars) {
             guard let sc = camera.screen(equatorial: star.equatorialVector),
@@ -349,30 +378,26 @@ private struct OrlojFace {
         return out
     }
 
-    /// Phase that makes the Roman dial read CIVIL time — the device
-    /// timezone, DST-aware. The Sun hand's direction is apparent solar
-    /// time; at civil hour h the sun sits at hour angle
-    /// (h + Δ − 12)·15°, where Δ = longitude/15h − tz offset. Anchoring
-    /// tick h there means hand-against-numeral reads the wall clock —
-    /// exactly what the real Orloj's Roman ring does for CET. (The
-    /// ±16 min equation-of-time wobble is accepted: ours is the REAL
-    /// apparent sun; the original's clockwork hand is a mean sun.)
-    var civilDialPhase: Double {
-        let tzHours  = Double(TimeZone.current.secondsFromGMT(for: date)) / 3600
-        let lonHours = longitude.degrees / 15
-        return (lonHours - tzHours - 12) * (2 * .pi / 24)
-    }
+    /// Phase that pins the ring like a CLOCK FACE: numeral XII (noon) at
+    /// the TOP — the upper meridian, where the sun culminates — for every
+    /// origin on Earth. The dial reads APPARENT SOLAR time: the Sun hand
+    /// on XII IS local noon, ± the equation of time. (The retired civil
+    /// phase anchored to the DEVICE timezone — fine at home, but browsing
+    /// a far origin — a Sydney sky from a Rome device — spun the whole
+    /// ring hours away from the tympan's solar geometry, so the numerals
+    /// stopped registering with the horizon bands and labels.)
+    var solarDialPhase: Double { -.pi }
 
-    /// Roman numerals for the 24 CIVIL hours, positioned just outside
+    /// Roman numerals for the 24 SOLAR hours, positioned just outside
     /// the dial circle and rotated feet-to-centre, like the original.
     @MainActor
     func dialNumerals()
         -> [(id: Int, text: String, position: CGPoint, rotation: Angle)] {
-        let r = radiusForDeclination(Self.romanDialDec) + 11 * ui
+        let r = radiusForDeclination(romanDialDec) + 11 * ui
         var out: [(Int, String, CGPoint, Angle)] = []
         for h in 0..<24 {
-            let H = civilDialPhase + Double(h) / 24 * 2 * .pi
-            guard let onRing = ringPoint(hourAngle: H, declination: Self.romanDialDec)
+            let H = solarDialPhase + Double(h) / 24 * 2 * .pi
+            guard let onRing = ringPoint(hourAngle: H, declination: romanDialDec)
             else { continue }
             let dx  = onRing.x - center.x, dy = onRing.y - center.y
             let len = max(hypot(dx, dy), 0.0001)
@@ -520,9 +545,11 @@ private struct OrlojFace {
     /// Closed-form declination-circle radius — valid ONLY as a
     /// rotation-agnostic distance-from-centre (clipping thresholds,
     /// plain circle outlines), never for placing a specific point.
-    /// ρ = 2·tan(45°+δ/2) — the 2 is EProjection's convention.
+    /// ρ = 2·tan(45°+δ/2) — the 2 is EProjection's convention; `hemi`
+    /// mirrors δ in the south, where the projection flings out the SCP
+    /// and the radius formula runs the other way.
     private func radiusForDeclination(_ dec: Angle) -> CGFloat {
-        camera.scale * 0.81 * CGFloat(2 * tan(.pi / 4 + dec.radians / 2))
+        camera.scale * 0.81 * CGFloat(2 * tan(.pi / 4 + hemi * dec.radians / 2))
     }
 
     // MARK: Pure geometry (mirrors EOrlojGeometry / OrlojUnequalHoursLayer,
@@ -670,7 +697,7 @@ struct OrlojWidgetView: View {
                 // Remembered constellations — traced solid, the postcard
                 // widget's hero treatment for every favourite.
                 OrlojPath(source: face.favouriteConstellationsPath())
-                    .stroke(Self.silver.opacity(0.85),
+                    .stroke(Self.silver.opacity(0.45),
                             style: .init(lineWidth: 1, lineCap: .round, lineJoin: .round))
                 
                 // ── The wanderers and the remembered — the app's OWN
@@ -743,9 +770,9 @@ struct OrlojWidgetView: View {
 
                 // ── The crown carries NUMERALS ALONE, in the app's label
                 // voice: OutlinedText — serif brass with the real dark
-                // casing, crisp at any zoom, squint-proof. Phased to
-                // CIVIL time (device timezone, DST-aware) — hand against
-                // numeral reads the wall clock.
+                // casing, crisp at any zoom, squint-proof. Phased SOLAR —
+                // XII up = local noon, so the ring registers with the
+                // tympan for any origin (see `solarDialPhase`).
                 ForEach(face.dialNumerals(), id: \.id) { numeral in
                     OutlinedText(text:      numeral.text,
                                  fill:      Self.brass,
@@ -799,8 +826,8 @@ struct OrlojWidgetView: View {
                 // badges (POILabelView, same species as everywhere).
                 if let sun = face.sunPoint {
                     OrlojPath(source: face.handPath(to: sun))
-                        .stroke(Self.sunGold.opacity(0.75), style: .init(lineWidth: 4.4 * u, lineCap: .round))
-//                        .shadow(color: Self.sunGold.opacity(0.5), radius: 2)
+                        .stroke(.black.opacity(0.45), style: .init(lineWidth: 3.4 * u, lineCap: .round))
+//                        .shadow(color: Self.sunGold.opacity(0.3), radius: 1, y: 0.4)
 //                        .shadow(radius: 4, y: 2.5)
                     POILabelView(category:   .sun,
                                  text:       "",
@@ -812,8 +839,8 @@ struct OrlojWidgetView: View {
                 }
                 if let moon = face.moonPoint {
                     OrlojPath(source: face.handPath(to: moon))
-                        .stroke(Self.moonSilk.opacity(0.75), style: .init(lineWidth: 2.4 * u, lineCap: .round))
-                        .shadow(radius: 4, y: 2.5)
+                        .stroke(.black.opacity(0.45), style: .init(lineWidth: 3.4 * u, lineCap: .round))
+//                        .shadow(color: Self.sunGold.opacity(0.3), radius: 1, y: 0.4)
                     POILabelView(category:   .moon,
                                  text:       "",
                                  labelStyle: .planetoids,

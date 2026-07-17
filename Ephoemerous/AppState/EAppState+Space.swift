@@ -63,10 +63,19 @@ extension EAppState {
         return Angle.spherePoint(latitude: origin.latitude, longitude: lst)
     }
 
-    /// Rotation angle that aligns the equatorial coordinate grid with the local sidereal time.
-    /// Canvas layers apply this as a rotation offset so stars drift westward over time.
+    /// Rotation that carries equatorial vectors into the EARTH-FIXED frame
+    /// the projection anchors live in: `originVector` / `planeVector` are
+    /// geographic globe vectors (latitude, LONGITUDE), so the sky must spin
+    /// over them by GMST alone — longitude enters through the anchor, not
+    /// the rotation. A star culminating at the observer (RA = GMST + lon)
+    /// then lands exactly on the anchor's meridian: RA − GMST = lon. ✓
+    ///
+    /// The old `-lst(date, lon)` counted longitude TWICE (once in LST, once
+    /// in the anchor), skewing sky-vs-horizon by exactly `lon` — invisible
+    /// at European longitudes (4–14° ≈ minutes of sky), catastrophic at
+    /// Sydney's 151°E, where the whole sky sat ~10 hours off the horizon.
     var localSiderealOffset: Angle {
-        -EPrecession.lst(for: renderedObservationDate, longitude: origin.longitude)
+        -EPrecession.gmst(for: renderedObservationDate)
     }
 
     /// Greenwich Mean Sidereal Time offset, used for coordinate grids that are

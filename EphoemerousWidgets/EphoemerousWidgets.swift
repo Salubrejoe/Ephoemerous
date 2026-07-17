@@ -135,7 +135,10 @@ private struct SkySnapshot {
             originVector: Angle.spherePoint(latitude: lat, longitude: lon),
             planeVector:  Angle.spherePoint(latitude: .radians(-lat.radians),
                                             longitude: lon + .radians(.pi)))
-        let sidereal = -EPrecession.lst(for: date, longitude: lon)
+        // −GMST, not −LST: the viewpoint anchors are geographic globe
+        // vectors, so longitude lives in the anchor and the sky spins by
+        // GMST alone — same frame as the app (see localSiderealOffset).
+        let sidereal = -EPrecession.gmstSiderealOffset(for: date)
 
         // ▼ TWEAK the postcard zoom here — screen pt per projection unit ▼
         let scale: CGFloat = 110

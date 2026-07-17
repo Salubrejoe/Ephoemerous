@@ -9,10 +9,12 @@ import LoreKit
 ///   Celestial north sits IN (near centre, inside the horizon, for a
 ///   northern observer).
 /// - `northOut` — the celestial frame: the SKY is fixed (centred on the
-///   South celestial pole, RA as radial spokes, Dec as concentric rings)
-///   and the HORIZON is the thing that moves — latitude slides it (a circle
-///   at the poles, a straight line at the equator). Celestial north is flung
-///   OUT to infinity, the visible sky OUTSIDE the horizon.
+///   observer's VISIBLE celestial pole, RA as radial spokes, Dec as
+///   concentric rings) and the HORIZON is the thing that moves — latitude
+///   slides it (a circle at the poles, a straight line at the equator).
+///   The observer's HIDDEN pole — celestial north in the northern
+///   hemisphere, south in the southern — is flung OUT to infinity, the
+///   visible sky OUTSIDE the horizon.
 enum SkyPerspective: Equatable {
     case northIn
     case northOut
@@ -88,7 +90,8 @@ enum EProjection {
     
     static func project(_ Q      : SIMD3<Double>,
                         origin  O: SIMD3<Double>,
-                        plane   P: SIMD3<Double>) -> CGPoint? {
+                        plane   P: SIMD3<Double>,
+                        basis    : (e1: SIMD3<Double>, e2: SIMD3<Double>)? = nil) -> CGPoint? {
 
         let PdotO = simd_dot(P, O)
         let PdotQ = simd_dot(P, Q)
@@ -98,7 +101,7 @@ enum EProjection {
         guard t > 0 else { return nil }
         let intersection = O + t * (Q - O)
         let delta = intersection - P
-        var (e1, e2) = P.baseVectors() 
+        var (e1, e2) = basis ?? P.baseVectors()
 //        // Pin e2 so it always points toward the same celestial hemisphere as O,
 //        // preventing a sign flip when P crosses low latitudes during a drag.
 //        if simd_dot(e2, O) < 0 { e2 = -e2 }
@@ -125,16 +128,35 @@ enum EProjection {
     static func project(_ Q     : SIMD3<Double>,
                         viewpoint: Viewpoint) -> CGPoint? {
         // The projection light-source "eye". NorthIN = the observer's nadir
-        // (moves with location); NorthOUT = the celestial NORTH pole (fixed,
-        // invariant under the sidereal rotation baked into `Q`). The tangent
-        // plane is the antipode, `-eye`, so the screen centre glides from the
-        // zenith to the celestial SOUTH pole as the morph runs.
+        // (moves with location); NorthOUT = the observer's HIDDEN celestial
+        // pole — north for a northern observer, SOUTH for a southern one, so
+        // the eye always crosses the horizon mid-morph and the visible sky
+        // ends up flung OUTSIDE the horizon circle. (Hardcoding the NCP
+        // inverted the southern hemisphere: its eye never crossed the
+        // horizon, the sky stayed INSIDE, and the ground/sky shading read
+        // swapped.) The tangent plane is the antipode, `-eye`, so the screen
+        // centre glides from the zenith to the observer's VISIBLE pole.
         let m = viewpoint.morph
+        let pole = SIMD3(0, 0, viewpoint.originVector.z >= 0 ? 1.0 : -1.0)
         let eye: SIMD3<Double>
         if m <= 0        { eye = viewpoint.planeVector }               // nadir
-        else if m >= 1   { eye = SIMD3(0, 0, 1) }                      // NCP
-        else             { eye = slerp(viewpoint.planeVector, SIMD3(0, 0, 1), m) }
-        return project(Q, origin: eye, plane: -eye)
+        else if m >= 1   { eye = pole }
+        else             { eye = slerp(viewpoint.planeVector, pole, m) }
+
+        // Screen basis pinned to the observer's EAST. The eye's morph path
+        // runs along the observer's meridian, where `cross(-east, plane)`
+        // equals exactly what `plane.baseVectors()` returns — EXCEPT at the
+        // pole endpoint, where baseVectors' zUp reference degenerates to its
+        // arbitrary (1, 0, 0) fallback and snapped the whole sky by the
+        // observer's longitude on the morph's final frame (invisible near
+        // Greenwich, glaring at Sydney's 151°E). This basis is continuous
+        // everywhere on the path, poles included.
+        let plane = -eye
+        let h = SIMD3(viewpoint.originVector.y, -viewpoint.originVector.x, 0)
+        let minusEast = simd_length_squared(h) > 1e-18 ? simd_normalize(h)
+                                                       : SIMD3(0, -1, 0)
+        let e1 = simd_normalize(simd_cross(minusEast, plane))
+        return project(Q, origin: eye, plane: plane, basis: (e1, minusEast))
     }
 
     /// Spherical linear interpolation of two unit vectors — the constant-speed
