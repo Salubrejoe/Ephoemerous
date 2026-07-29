@@ -49,6 +49,14 @@ struct EphoemerousApp: App {
                 state.focus(on: obj)
             }
 
+            // Screenshot harness — DEBUG only, gated on a launch argument so
+            // it's inert in every normal run. `simctl launch … -shot <state>`
+            // seeds a screen state headlessly (the sim tooling on this box
+            // can't inject taps), for App Store captures. Remove freely.
+            #if DEBUG
+            .task { await seedScreenshotState() }
+            #endif
+
             .onAppear(perform: EMotionService.shared.start)
             .onChange(of: scenePhase) { _, phase in
                 // Attitude streaming is battery-cheap but pointless in
@@ -68,5 +76,29 @@ struct EphoemerousApp: App {
             .environment(state)
         }
     }
+
+    #if DEBUG
+    /// Reads `-shot <state>` from the launch arguments and seeds the app
+    /// into that screen for an App Store capture. No-op without the arg.
+    /// States: `northout`, `date`, or any SkyObjectEntity id (`moon`,
+    /// `sun`, `planet_jupiter`, `star_Vega`) to raise its detail card.
+    @MainActor
+    private func seedScreenshotState() async {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-shot"), i + 1 < args.count else { return }
+        let want = args[i + 1]
+        // Let the canvas publish its size + first projection before seeding,
+        // so focus panning and the NorthOUT reframe have geometry to work with.
+        try? await Task.sleep(for: .milliseconds(500))
+        switch want {
+        case "northout":  state.isNorthOut = true
+        case "date":      state.isShowingDatePicker = true
+        // Widget artwork export (see WidgetArtExporter) — marketing art.
+        case "exportart": WidgetArtExporter.exportAll()
+        default:
+            if let obj = SkyObjectEntity(id: want)?.skyObject { state.focus(on: obj) }
+        }
+    }
+    #endif
 }
 

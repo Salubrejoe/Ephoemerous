@@ -355,7 +355,16 @@ private struct SkySnapshot {
 struct SkyObjectWidgetView: View {
 
     var entry: SkyObjectProvider.Entry
-    @Environment(\.widgetFamily) private var family
+    @Environment(\.widgetFamily) private var environmentFamily
+
+    /// Explicit family, for rendering this tile OUTSIDE a widget host —
+    /// `\.widgetFamily` is read-only, so the DEBUG art exporter can't inject
+    /// it and every render would otherwise fall back to the environment's
+    /// default (medium) geometry. Real widgets leave this nil and read the
+    /// environment as before.
+    var familyOverride: WidgetFamily? = nil
+
+    private var family: WidgetFamily { familyOverride ?? environmentFamily }
 
     /// Large and extra-large share the roomy treatment — denser star
     /// field, bigger promoted pin, the altitude/bearing line. Extra
