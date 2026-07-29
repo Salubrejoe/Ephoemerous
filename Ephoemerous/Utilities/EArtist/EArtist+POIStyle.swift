@@ -151,7 +151,10 @@ extension EArtist {
     /// have no Greek cycle), so all constellations read as one "cultural /
     /// info" species. ▼ TWEAK the constellation colour here ▼
     var constellationGradient: (top: Color, bottom: Color) {
-        (Color(.systemIndigo), Color(.systemPurple))
+        // LoreKit's Color wrappers, not `Color(.systemIndigo)` — the
+        // UIColor spelling doesn't exist on watchOS; the wrapper carries
+        // a literal fallback there and the same UIKit value on iOS.
+        (Color.systemIndigo, Color.systemPurple)
     }
 
     /// Squircle bulge shared by every badge — corner count is

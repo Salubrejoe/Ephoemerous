@@ -1,4 +1,22 @@
-#if canImport(UIKit)
+#if os(watchOS)
+
+import SwiftUI
+
+// watchOS UIKit ships almost none of the semantic UIColor roles (no
+// `.label`, no backgrounds, no `.tintColor`), so the bridge below can't
+// compile there. Provide literal stand-ins for the few roles shared
+// sources actually reach for — the watch renders on an always-dark
+// canvas, so the dark-appearance values are the honest ones.
+public extension Color {
+    static let label            = Color.primary
+    static let systemBackground = Color.black
+    static let tint             = Color.accentColor
+    // UIKit's dark-appearance palette values, hardcoded.
+    static let systemIndigo     = Color(red: 0.369, green: 0.361, blue: 0.902)
+    static let systemPurple     = Color(red: 0.749, green: 0.353, blue: 0.949)
+}
+
+#elseif canImport(UIKit)
 
 import SwiftUI
 import UIKit

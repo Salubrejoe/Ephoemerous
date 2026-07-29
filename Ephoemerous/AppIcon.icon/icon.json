@@ -2,7 +2,10 @@
   "fill-specializations" : [
     {
       "value" : {
-        "automatic-gradient" : "display-p3:0.97544,0.85994,0.43509,1.00000",
+        "linear-gradient" : [
+          "display-p3:0.97544,0.85994,0.43509,1.00000",
+          "display-p3:0.95704,0.67845,0.23199,1.00000"
+        ],
         "orientation" : {
           "start" : {
             "x" : 0.5,
@@ -10,7 +13,7 @@
           },
           "stop" : {
             "x" : 0.5,
-            "y" : 0.3
+            "y" : 0
           }
         }
       }
@@ -31,13 +34,26 @@
             {
               "appearance" : "dark",
               "value" : {
-                "solid" : "display-p3:0.97544,0.85994,0.43509,1.00000"
+                "linear-gradient" : [
+                  "display-p3:0.95704,0.67845,0.23199,1.00000",
+                  "display-p3:0.97544,0.85994,0.43509,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 1
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  }
+                }
               }
             }
           ],
           "image-name" : "poi_sun.svg",
           "name" : "poi_sun",
-          "opacity" : 0.9,
+          "opacity" : 1,
           "position" : {
             "scale" : 7,
             "translation-in-points" : [

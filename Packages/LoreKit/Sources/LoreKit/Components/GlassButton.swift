@@ -76,6 +76,7 @@ public struct GlassButton<S: Shape, Label: View>: View {
 // modifier chain produces a long opaque `ModifiedContent<…>` type
 // that can't be named in a `where Label == …` clause. The AnyView
 // erasure costs a single extra view-graph node per button.
+#if !os(watchOS)
 @available(iOS 26, *)
 public extension GlassButton where S == SFSymbolShape, Label == AnyView {
 
@@ -138,5 +139,6 @@ public extension GlassButton where S == SFSymbolShape, Label == AnyView {
         }
     }
 }
+#endif
 
 #endif
