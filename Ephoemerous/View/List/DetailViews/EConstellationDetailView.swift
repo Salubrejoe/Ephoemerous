@@ -115,12 +115,15 @@ struct EConstellationDetailView: View {
 
     // MARK: Origin story
 
-    /// The emotional centrepiece: the on-device model retells how this
-    /// figure was set among the stars, in the chosen voice. Grounded in
-    /// the curated catasterism line + cultural category + one live star
-    /// fact (see `MythStoryteller`). On the Simulator — or any device
-    /// without Apple Intelligence — it falls back to the raw curated
-    /// line so there's always something to read.
+    /// The emotional centrepiece: how this figure was set among the stars.
+    ///
+    /// Two paths, gated on Apple Intelligence:
+    ///  • Available (eligible device, AI on) — the tone picker + the
+    ///    on-device model retelling in the chosen voice, grounded in our
+    ///    curated line + cultural category + one live star fact.
+    ///  • Unavailable (the mini, the Simulator, AI off) — the curated
+    ///    catasterism line shown verbatim, with NO picker: the three
+    ///    voices would otherwise collapse to the same line, a dead control.
     private var storySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
@@ -131,18 +134,43 @@ struct EConstellationDetailView: View {
                 Spacer(minLength: 0)
             }
 
-            Picker("Tone", selection: $tone) {
-                ForEach(MythStoryteller.Tone.allCases) { t in
-                    Text(t.label).tag(t)
+            if MythStoryteller.isAvailable {
+                Picker("Tone", selection: $tone) {
+                    ForEach(MythStoryteller.Tone.allCases) { t in
+                        Text(t.label).tag(t)
+                    }
                 }
-            }
-            .pickerStyle(.segmented)
+                .pickerStyle(.segmented)
 
-            storyBody
+                storyBody
+                    // Fires on appear and whenever the tone segment changes;
+                    // the teller cancels any in-flight telling before the next.
+                    .task(id: tone) { storyteller.tell(constellation, tone: tone) }
+            } else {
+                curatedStory
+            }
         }
-        // Fires on appear and whenever the tone segment changes; the
-        // teller cancels any in-flight telling before starting the next.
-        .task(id: tone) { storyteller.tell(constellation, tone: tone) }
+    }
+
+    /// The AI-free telling: the curated placement line verbatim, or — for a
+    /// modern constellation with no sky myth — an honest note in its place
+    /// (no false "unfolds on your device" promise a non-AI device can't keep).
+    @ViewBuilder
+    private var curatedStory: some View {
+        if let line = ConstellationCatasterism.shared.catasterism(for: constellation) {
+            Text(line)
+                .font(.callout)
+                .fontDesign(.serif)
+                .foregroundStyle(.primary)
+                .lineSpacing(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+        } else {
+            Text("A modern constellation, charted to fill the gaps between the ancient figures — no ancient myth set it among the stars.")
+                .font(.callout)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     @ViewBuilder

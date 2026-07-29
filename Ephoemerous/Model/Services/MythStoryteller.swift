@@ -49,6 +49,17 @@ final class MythStoryteller {
         case fallback(String)
     }
 
+    /// Whether the on-device model can actually tell the story on THIS
+    /// device. The constellation detail view gates the tone picker on this:
+    /// without Apple Intelligence the three voices all collapse to the same
+    /// curated line, so the picker would be a dead control. Available on
+    /// eligible hardware with Apple Intelligence enabled; never in the
+    /// Simulator. Cheap synchronous check — safe to read in a view body.
+    static var isAvailable: Bool {
+        if case .available = SystemLanguageModel.default.availability { return true }
+        return false
+    }
+
     private(set) var text:  String = ""
     private(set) var phase: Phase  = .idle
 
