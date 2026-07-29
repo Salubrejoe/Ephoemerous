@@ -1,6 +1,12 @@
 import SwiftUI
 import simd
 import LoreKit
+// `CLHeading`'s members (headingAccuracy / trueHeading / magneticHeading) are
+// read in `drawAim`. MEMBER_IMPORT_VISIBILITY is on for this project, so the
+// DEFINING module must be imported explicitly — reaching them through
+// `ELocationService.heading` isn't enough. Xcode 26.6 enforces this; the 27
+// beta doesn't, which is how it reached CI unnoticed.
+import CoreLocation
 
 // MARK: - SkyLabUserLocationOverlay
 // The "you are here" cluster — aim cone + globe puck — anchored at the
