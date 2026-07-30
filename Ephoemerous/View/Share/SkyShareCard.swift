@@ -73,8 +73,22 @@ struct SkyShareCard: View {
             scrim
             footer
         }
+        .overlay(alignment: .topTrailing) { wordmark }
         .frame(width: Self.size.width, height: Self.size.height)
         .environment(\.colorScheme, .dark)   // it is the night sky
+    }
+
+    /// The signature, top-trailing — a corner the sky rarely fills, and
+    /// well clear of the footer (which wraps to two lines in languages
+    /// with longer date phrasing). Faint, with a dark halo so it holds
+    /// against a bright star field without shouting.
+    private var wordmark: some View {
+        Text("Ephemerous")
+            .font(.system(size: 12, weight: .semibold, design: .serif))
+            .foregroundStyle(.white.opacity(0.5))
+            .shadow(color: EArtist.shared.canvasBackground.opacity(0.9), radius: 3)
+            .padding(.top, 20)
+            .padding(.trailing, 22)
     }
 
     // MARK: Pieces
@@ -109,26 +123,24 @@ struct SkyShareCard: View {
                 Text(whereAndWhen)
                     .font(.system(size: 12.5))
                     .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
 
-            Spacer(minLength: 12)
-
-            // Quiet signature. The card should market itself without
-            // shouting — a wordmark, not a badge.
-            Text("Ephemerous")
-                .font(.system(size: 11, weight: .semibold, design: .serif))
-                .foregroundStyle(.white.opacity(0.45))
-                .padding(.bottom, 4)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 22)
         .padding(.bottom, 22)
     }
 
-    /// "Florence · 29 July 2026, 21:40" — or coordinates when no town has
+    /// "Florence · 30 Jul 2026, 21:40" — or coordinates when no town has
     /// been resolved, so the card always states its own provenance.
+    ///
+    /// Abbreviated deliberately: the wide-month form renders as "30 luglio
+    /// 2026 alle ore 10:10" in Italian, which wrapped the footer onto two
+    /// lines. This stays on one line in every locale I can throw at it.
     private var whereAndWhen: String {
-        let when = date.formatted(.dateTime.day().month(.wide).year()
-                                          .hour().minute())
+        let when = date.formatted(date: .abbreviated, time: .shortened)
         if let placeName, !placeName.isEmpty { return "\(placeName) · \(when)" }
         let lat = String(format: "%.1f°%@", abs(latDeg), latDeg >= 0 ? "N" : "S")
         let lon = String(format: "%.1f°%@", abs(lonDeg), lonDeg >= 0 ? "E" : "W")
