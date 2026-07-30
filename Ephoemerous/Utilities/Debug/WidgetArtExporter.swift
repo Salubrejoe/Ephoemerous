@@ -100,6 +100,24 @@ enum WidgetArtExporter {
                   to: dir, name: "postcard_\(slug)_small.png")
         }
 
+        // ── Share postcards — the real 4:5 card the share sheet sends,
+        // rendered here so it can be eyeballed without a device.
+        let cards: [(String, ESkyObject)] = [
+            ("moon",  .moon),
+            ("orion", .constellation(.Ori)),
+        ]
+        var starCard: ESkyObject?
+        if let betelgeuse = StarDatabase.shared.workableStars
+            .first(where: { $0.name == "α Ori" }) { starCard = .star(betelgeuse) }
+        for (label, obj) in cards + (starCard.map { [("betelgeuse", $0)] } ?? []) {
+            let postcard = SkyPostcard(object: obj, date: now,
+                                       latDeg: origin.latDeg, lonDeg: origin.lonDeg,
+                                       placeName: "Florence")
+            if let data = try? postcard.pngData() {
+                try? data.write(to: dir.appendingPathComponent("share_\(label).png"))
+            }
+        }
+
         ELogger.starDatabase("widget art exported to \(dir.path)")
         return dir
     }

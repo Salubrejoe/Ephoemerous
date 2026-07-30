@@ -40,6 +40,11 @@ struct DetailHeader<Icon: View>: View {
     let onNow:                  (() -> Void)?
     let nowIsActive:            Bool
     let onDismiss:              () -> Void
+    /// The postcard this sheet can send. When present, whichever slot
+    /// carries `.share` becomes a real `ShareLink` instead of a plain
+    /// button — ShareLink owns the sheet, the iPad popover anchor, and
+    /// renders the image lazily (see `SkyPostcard`).
+    let postcard:               SkyPostcard?
 
     init(title:                  String,
          subtitle:               String,
@@ -51,7 +56,9 @@ struct DetailHeader<Icon: View>: View {
          onSecondaryLeading:     (() -> Void)?     = nil,
          onNow:                  (() -> Void)?     = nil,
          nowIsActive:            Bool              = false,
+         postcard:               SkyPostcard?      = nil,
          onDismiss:              @escaping () -> Void) {
+        self.postcard               = postcard
         self.title                  = title
         self.subtitle               = subtitle
         self.accent                 = accent
@@ -91,10 +98,10 @@ struct DetailHeader<Icon: View>: View {
             .frame(maxWidth: .infinity)
 
             HStack(spacing: 8) {
-                CircleIconButton(symbol: leadingSymbol, action: onLeading)
+                slot(leadingSymbol, onLeading)
                 if let sym = secondaryLeadingSymbol,
                    let act = onSecondaryLeading {
-                    CircleIconButton(symbol: sym, action: act)
+                    slot(sym, act)
                 }
                 Spacer()
 
@@ -105,6 +112,41 @@ struct DetailHeader<Icon: View>: View {
         .padding(.top, 16)
         .padding(.horizontal, 6)
         .padding(.bottom, 8)
+    }
+
+    /// One header slot. The share symbol becomes a `ShareLink` when this
+    /// sheet has a postcard to send; everything else stays a plain button.
+    /// Both wear the identical glass circle, so the row reads as one family.
+    @ViewBuilder
+    private func slot(_ symbol: LoreSymbol,
+                      _ action: @escaping () -> Void) -> some View {
+        if symbol == .share, let postcard {
+            ShareLink(item:    postcard,
+                      subject: Text(title),
+                      message: Text(postcard.message),
+                      preview: SharePreview(title)) {
+                CircleIconLabel(symbol: symbol)
+            }
+            .buttonStyle(.plain)
+        } else {
+            CircleIconButton(symbol: symbol, action: action)
+        }
+    }
+}
+
+// MARK: - CircleIconLabel
+// The glass circle WITHOUT a button around it, so a `ShareLink` (which
+// brings its own tap handling) can wear the same clothes as
+// `CircleIconButton`. One visual definition, two hosts.
+struct CircleIconLabel: View {
+    let symbol: LoreSymbol
+
+    var body: some View {
+        Image(symbol: symbol)
+            .offset(y: symbol == .share ? -2 : 0)
+            .frame(width: 44, height: 44)
+            .contentShape(.circle)
+            .glassEffect(.clear.interactive(), in: .circle)
     }
 }
 

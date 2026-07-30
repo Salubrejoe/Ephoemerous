@@ -65,6 +65,7 @@ struct EConstellationDetailView: View {
                 icon:          { EmptyView() },
                 leadingSymbol: .share,
                 onLeading:     {},
+                postcard:      state.postcard(for: .constellation(constellation)),
                 onDismiss:     { state.dismissDetail() }
             )
             if !collapsed {

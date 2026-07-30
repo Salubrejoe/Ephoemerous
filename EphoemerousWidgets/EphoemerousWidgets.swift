@@ -107,11 +107,17 @@ private enum Pin {
 // `EProjection`, compiled into this target), drawn once into a
 // widget-sized Canvas. The camera is offset so the object's projection
 // lands exactly on the pin's precise-location dot.
-private struct SkySnapshot {
+// Internal (not private): the app's `SkyShareCard` renders the very same
+// sky for the share postcard, so the two can never drift apart.
+struct SkySnapshot {
 
     let camera: SkyCamera
     let date:   Date
     let isLandscape: Bool
+    /// Where the pinned object lands on the tile. The widget uses the
+    /// Find My pin dot; the share card centres it higher, above its
+    /// footer. Bodies that would collide with it are dropped.
+    let focusPoint: CGPoint
     /// Set when the PINNED object is a constellation — it has no badge
     /// or dot; instead its stick-figure is traced solid on the map.
     let pinnedConstellation: EConstellation?
@@ -122,7 +128,8 @@ private struct SkySnapshot {
 
     @MainActor
     init(entity: SkyObjectEntity, date: Date,
-         origin: (latDeg: Double, lonDeg: Double)?, size: CGSize, isLandscape: Bool) {
+         origin: (latDeg: Double, lonDeg: Double)?, size: CGSize, isLandscape: Bool,
+         focus: CGPoint? = nil) {
         self.date = date
         self.isLandscape = isLandscape
         if case .constellation(let c) = entity.skyObject {
@@ -151,9 +158,10 @@ private struct SkySnapshot {
         // fail to project (antipodal degeneracy) fall back to zenith-ish.
         let target = Self.vector(for: entity, date: date, sidereal: sidereal)
         pinnedVector = target
+        let dot = focus ?? Pin.dot(in: size, isLandscape: isLandscape)
+        focusPoint = dot
         var offset = CGSize.zero
         if let target, let p = EProjection.project(target, viewpoint: viewpoint) {
-            let dot = Pin.dot(in: size, isLandscape: isLandscape)
             offset = CGSize(width:  dot.x - size.width  / 2 - p.x * scale,
                             height: dot.y - size.height / 2 + p.y * scale)
         }
@@ -231,7 +239,7 @@ private struct SkySnapshot {
     @MainActor
     func bodies(excluding pinned: String, in size: CGSize) -> [(POICategory, CGPoint, String)] {
         var out: [(POICategory, CGPoint, String)] = []
-        let badge = Pin.badgeCentre(in: size, isLandscape: isLandscape)
+        let badge = focusPoint
 
         func admit(_ sc: CGPoint?) -> CGPoint? {
             guard let sc,

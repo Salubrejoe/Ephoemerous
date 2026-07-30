@@ -59,6 +59,7 @@ struct EMoonDetailView: View {
                 },
                 leadingSymbol: .share,
                 onLeading:     {},
+                postcard:      state.postcard(for: .moon),
                 onDismiss:     { state.dismissDetail() }
             )
             // No event dots — `WeatherKit` only returns a ~10-day

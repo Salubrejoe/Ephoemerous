@@ -42,6 +42,7 @@ struct ENSPlanetDetailView: View {
                 },
                 leadingSymbol: .share,
                 onLeading:     {},
+                postcard:      state.postcard(for: .planet(planet)),
                 onDismiss:     { state.dismissDetail() }
             )
             // No RememberButton — planets, sun, and moon aren't

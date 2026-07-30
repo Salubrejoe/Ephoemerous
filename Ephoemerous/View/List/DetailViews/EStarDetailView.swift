@@ -51,6 +51,7 @@ struct EStarDetailView: View {
                 onLeading:              { showsBackChevron ? dismiss() : () },
                 secondaryLeadingSymbol: showsBackChevron ? .share : nil,
                 onSecondaryLeading:     showsBackChevron ? {} : nil,
+                postcard:               state.postcard(for: .star(star)),
                 onDismiss:              { state.dismissDetail() }
             )
             if !collapsed {

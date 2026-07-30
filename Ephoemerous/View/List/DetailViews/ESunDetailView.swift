@@ -45,6 +45,7 @@ struct ESunDetailView: View {
                 },
                 leadingSymbol: .share,
                 onLeading:     {},
+                postcard:      state.postcard(for: .sun),
                 onDismiss:     { state.dismissDetail() }
             )
             
