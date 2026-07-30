@@ -584,10 +584,20 @@ struct GlassBand: View {
     var tint:   Color  = .white
     var tintOpacity:   Double = 0.10
     var eoFill: Bool   = false
+    /// Host renders the widget as a LUMINANCE MAP (the tinted / "Clear"
+    /// Home Screen themes): every fill becomes opaque white, so a stack of
+    /// slab + sheen + casing + rim collapses into one fat white ring and
+    /// swallows the instrument. In that mode the band is its outline only.
+    var lineArt: Bool  = false
 
     var body: some View {
         let shape = OrlojPath(source: band)
         let style = FillStyle(eoFill: eoFill)
+        if lineArt {
+            // Stroking an even-odd band path traces BOTH its edges, which
+            // is exactly the ring pair the filled version implies.
+            shape.stroke(.white.opacity(0.9), lineWidth: 0.9)
+        } else {
         ZStack {
             // Body — a vertical GRADIENT slab, the badge-orb treatment
             // (bright above, deep below) instead of a flat tint.
@@ -612,6 +622,7 @@ struct GlassBand: View {
         }
         .compositingGroup()
         .shadow(color: .black.opacity(0.35), radius: 3, y: 1.5)
+        }
     }
 }
 
@@ -629,6 +640,13 @@ struct OrlojFaceLayers: View {
     /// hairline widths grow at half rate, so the drawing stays filigree
     /// — brighter, not bolder. ▼ TWEAK per mount at the call site ▼
     var brilliance: Double = 1
+
+    /// Draw as LINE ART for hosts that render the widget as a luminance
+    /// map — iOS's tinted / "Clear" Home Screen themes. Fills, glows and
+    /// shadows all resolve to solid white there, which bloats the face
+    /// into mush; line art keeps the instrument readable. The full-colour
+    /// render is untouched. ▼ set by the widget, never by the watch ▼
+    var lineArt: Bool = false
 
     /// Opacity through the brilliance gain, clamped at full ink.
     private func ink(_ opacity: Double) -> Double {
@@ -689,7 +707,7 @@ struct OrlojFaceLayers: View {
                                     lineWidth: 1.1)
                     )
                     .frame(width: 9 * u, height: 9 * u)
-                    .shadow(color: mark.top.opacity(0.5), radius: 1.5)
+                    .shadow(color: mark.top.opacity(0.5), radius: lineArt ? 0 : 1.5)
                     .position(mark.position)
             }
 
@@ -697,8 +715,9 @@ struct OrlojFaceLayers: View {
             // ── Fixed dial band (glass) — the real clock's black
             // outer ring, smoky so the sky reads through it.
             GlassBand(band: face.dialBandPath(),
-                      tint: .black, tintOpacity: 0.30, eoFill: true)
-            .shadow(radius: 4, y: 2.5)
+                      tint: .black, tintOpacity: 0.30, eoFill: true,
+                      lineArt: lineArt)
+            .shadow(radius: lineArt ? 0 : 4, y: lineArt ? 0 : 2.5)
 
             // ── Plate filigree.
             ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
@@ -720,7 +739,7 @@ struct OrlojFaceLayers: View {
                     .font(.system(size: max(3.5, 6.5 * u), weight: .medium, design: .serif))
                     .foregroundStyle(Self.silver.opacity(ink(0.8)))
                     .shadow(color: EArtist.shared.canvasBackground.opacity(0.9),
-                            radius: 1)
+                            radius: lineArt ? 0 : 1)
                     .rotationEffect(glyph.rotation)
                     .position(glyph.position)
             }
@@ -731,13 +750,24 @@ struct OrlojFaceLayers: View {
             // XII up = local noon, so the ring registers with the
             // tympan for any origin (see `solarDialPhase`).
             ForEach(face.dialNumerals(), id: \.id) { numeral in
-                OutlinedText(text:      numeral.text,
-                             fill:      Self.brass,
-                             stroke:    EArtist.shared.canvasBackground,
-                             lineWidth: max(0.7, 1.2 * u),
-                             font:      Self.numeralFont(size: 9 * u))
-                    .rotationEffect(numeral.rotation)
-                    .position(numeral.position)
+                Group {
+                    if lineArt {
+                        // Fill + casing both resolve to white and merge —
+                        // the numerals turn into solid blocks. Plain glyphs.
+                        Text(numeral.text)
+                            .font(.system(size: 9 * u, weight: .semibold,
+                                          design: .serif))
+                            .foregroundStyle(.white)
+                    } else {
+                        OutlinedText(text:      numeral.text,
+                                     fill:      Self.brass,
+                                     stroke:    EArtist.shared.canvasBackground,
+                                     lineWidth: max(0.7, 1.2 * u),
+                                     font:      Self.numeralFont(size: 9 * u))
+                    }
+                }
+                .rotationEffect(numeral.rotation)
+                .position(numeral.position)
             }
             // ── Rete: the zodiac band — smoky dark glass like the
             // original's black ring, its RIM LINES traced silver
@@ -745,8 +775,9 @@ struct OrlojFaceLayers: View {
             // rim to rim, and GOLD glyphs between the rims with a
             // hard dark shadow (Prague's gold-on-black, boom).
             GlassBand(band: face.zodiacBandPath(),
-                      tint: .black, tintOpacity: 0.35, eoFill: true)
-            .shadow(radius: 4, y: 2.5)
+                      tint: .black, tintOpacity: 0.35, eoFill: true,
+                      lineArt: lineArt)
+            .shadow(radius: lineArt ? 0 : 4, y: lineArt ? 0 : 2.5)
             if let edges = face.zodiacEdgePaths() {
                 OrlojPath(source: edges.outer)
                     .stroke(Self.silver.opacity(ink(0.85)), lineWidth: heft(1))
@@ -759,7 +790,7 @@ struct OrlojFaceLayers: View {
                 Text(glyph.symbol)
                     .font(.system(size: 11 * u, weight: .bold))
                     .foregroundStyle(Self.silver)
-                    .shadow(color: .black.opacity(0.9), radius: 1, y: 0.5)
+                    .shadow(color: .black.opacity(0.9), radius: lineArt ? 0 : 1, y: lineArt ? 0 : 0.5)
                     .rotationEffect(glyph.rotation)
                     .position(glyph.position)
             }
@@ -774,7 +805,7 @@ struct OrlojFaceLayers: View {
                                     lineWidth: 1)
                     )
                     .frame(width: 7 * u, height: 7 * u)
-                    .shadow(color: mark.top.opacity(0.45), radius: 1.2)
+                    .shadow(color: mark.top.opacity(0.45), radius: lineArt ? 0 : 1.2)
                     .position(mark.position)
             }
 
@@ -782,8 +813,11 @@ struct OrlojFaceLayers: View {
             // ── Hands — tipped with the app's OWN Sun and Moon
             // badges (POILabelView, same species as everywhere).
             if let sun = face.sunPoint {
-                OrlojPath(source: face.handPath(to: sun))
-                    .stroke(.black.opacity(0.15), style: .init(lineWidth: 3.4 * u, lineCap: .round))
+                if !lineArt {
+                    OrlojPath(source: face.handPath(to: sun))
+                        .stroke(.black.opacity(0.15),
+                                style: .init(lineWidth: 3.4 * u, lineCap: .round))
+                }
                 POILabelView(category:   .sun,
                              text:       "",
                              labelStyle: .star,
@@ -793,8 +827,11 @@ struct OrlojFaceLayers: View {
                     .position(sun)
             }
             if let moon = face.moonPoint {
-                OrlojPath(source: face.handPath(to: moon))
-                    .stroke(.black.opacity(0.15), style: .init(lineWidth: 3.4 * u, lineCap: .round))
+                if !lineArt {
+                    OrlojPath(source: face.handPath(to: moon))
+                        .stroke(.black.opacity(0.15),
+                                style: .init(lineWidth: 3.4 * u, lineCap: .round))
+                }
                 POILabelView(category:   .moon,
                              text:       "",
                              labelStyle: .planetoids,

@@ -62,11 +62,20 @@ struct OrlojEntry: TimelineEntry {
 struct OrlojWidgetView: View {
     var entry: OrlojEntry
 
+    /// How the Home Screen is rendering us. `.fullColor` is the normal
+    /// tile — untouched. The tinted / "Clear" themes hand the widget to a
+    /// luminance map instead (`.vibrant` / `.accented`), where every fill,
+    /// glow and shadow resolves to solid white: the glass bands fuse into
+    /// fat rings and the numerals bloat into blocks. Those modes get the
+    /// line-art face (see `OrlojFaceLayers.lineArt`).
+    @Environment(\.widgetRenderingMode) private var renderingMode
+
     var body: some View {
         GeometryReader { geo in
             OrlojFaceLayers(face: OrlojFace(date:   entry.date,
                                             origin: entry.origin,
-                                            size:   geo.size))
+                                            size:   geo.size),
+                            lineArt: renderingMode != .fullColor)
         }
         .containerBackground(for: .widget) {
             EArtist.shared.canvasBackground

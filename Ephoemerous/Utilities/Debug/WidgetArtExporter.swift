@@ -100,6 +100,28 @@ enum WidgetArtExporter {
                   to: dir, name: "postcard_\(slug)_small.png")
         }
 
+        // ── Clear/tinted simulation. The system hands a vibrant-mode
+        // widget's LUMINANCE through as alpha and tints the result, so
+        // reproducing that here shows whether the line-art face survives
+        // the treatment — before (fills) vs after (outlines).
+        for (label, art) in [("clear_before", false), ("clear_after", true)] {
+            let size = CGSize(width: 364, height: 382)
+            let face = OrlojFace(date: now, origin: origin, size: size)
+            let view = ZStack {
+                // Stand-in wallpaper, so the tint reads like a Home Screen.
+                LinearGradient(colors: [Color(red: 0.33, green: 0.47, blue: 0.66),
+                                        Color(red: 0.52, green: 0.46, blue: 0.30)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                Color.white.mask {
+                    OrlojFaceLayers(face: face, lineArt: art)
+                        .luminanceToAlpha()
+                }
+            }
+            .frame(width: size.width, height: size.height)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            write(view, to: dir, name: "orloj_\(label).png")
+        }
+
         // ── Share postcards — the real 4:5 card the share sheet sends,
         // rendered here so it can be eyeballed without a device.
         let cards: [(String, ESkyObject)] = [
