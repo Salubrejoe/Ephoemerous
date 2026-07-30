@@ -365,6 +365,14 @@ struct SkyObjectWidgetView: View {
     var entry: SkyObjectProvider.Entry
     @Environment(\.widgetFamily) private var environmentFamily
 
+    /// Tinted / "Clear" Home Screen themes repaint every non-transparent
+    /// pixel with a light vibrant material, so the legibility scrim behind
+    /// the name block — a black gradient — comes back as a WHITE wash that
+    /// hurts the very text it exists to help. Dropped in those modes, along
+    /// with some star density (the field turns to white noise there).
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+    private var isMasked: Bool { widgetRenderingMode != .fullColor }
+
     /// Explicit family, for rendering this tile OUTSIDE a widget host —
     /// `\.widgetFamily` is read-only, so the DEBUG art exporter can't inject
     /// it and every render would otherwise fall back to the environment's
@@ -438,8 +446,9 @@ struct SkyObjectWidgetView: View {
                 Canvas { ctx, size in
                     // Extra large earns the densest field — panorama room.
                     snapshot.draw(in: &ctx, size: size,
-                                 magnitudeLimit: family == .systemExtraLarge ? 5.6
-                                               : isExpansive               ? 5.2 : 4.5)
+                                 magnitudeLimit: isMasked                    ? 4.0
+                                               : family == .systemExtraLarge ? 5.6
+                                               : isExpansive                 ? 5.2 : 4.5)
                 }
                 ForEach(snapshot.bodies(excluding: entry.entity.id, in: geo.size),
                         id: \.2) { category, sc, name in
@@ -486,8 +495,9 @@ struct SkyObjectWidgetView: View {
                     .padding(.top, 8)
 //                    .border(.green)
                     .background {
+                        // No scrim under a masking host — see `isMasked`.
                         ContainerRelativeShape()
-                            .fill (
+                            .fill (isMasked ? AnyShapeStyle(.clear) : AnyShapeStyle(
 //                                .ultraThinMaterial.opacity(0.55)
                         LinearGradient(colors: [.black.opacity(0.45), .clear],
                                        startPoint: .bottom, endPoint: .top)
@@ -495,7 +505,7 @@ struct SkyObjectWidgetView: View {
 //                                    .init(color: .clear              , location: 0.5),
 //                                    .init(color: .black.opacity(0.75), location: 0.0),
 //                                ], center: .bottomLeading, startRadius: 24, endRadius: 150)
-                        )
+                        ))
 //                            .padding(6)
 //                            .shadow(radius: 3.5)
                     }

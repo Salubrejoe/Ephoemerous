@@ -112,14 +112,37 @@ enum WidgetArtExporter {
                 LinearGradient(colors: [Color(red: 0.33, green: 0.47, blue: 0.66),
                                         Color(red: 0.52, green: 0.46, blue: 0.30)],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
-                Color.white.mask {
+                Color.white.opacity(0.92).mask {
                     OrlojFaceLayers(face: face, lineArt: art)
-                        .luminanceToAlpha()
                 }
             }
             .frame(width: size.width, height: size.height)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             write(view, to: dir, name: "orloj_\(label).png")
+        }
+
+        // ── Postcard widget under the same simulated Clear treatment.
+        // NOTE: the environment can't be injected here, so this shows the
+        // FULL-COLOUR content masked — i.e. the "before". The real fix is
+        // environment-driven (POILabelView / OutlinedText / the scrim) and
+        // has to be confirmed on device with the theme actually on.
+        if let sirius = StarDatabase.shared.workableStars
+            .first(where: { $0.name == "α Ori" }) {
+            let size  = CGSize(width: 364, height: 382)
+            let entry = SkyObjectEntry(date: now, captured: now,
+                                       entity: SkyObjectEntity(.star(sirius)),
+                                       origin: origin)
+            let view = ZStack {
+                LinearGradient(colors: [Color(red: 0.33, green: 0.47, blue: 0.66),
+                                        Color(red: 0.52, green: 0.46, blue: 0.30)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                Color.white.opacity(0.92).mask {
+                    SkyObjectWidgetView(entry: entry, familyOverride: .systemLarge)
+                }
+            }
+            .frame(width: size.width, height: size.height)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            write(view, to: dir, name: "postcard_clear_sim.png")
         }
 
         // ── Share postcards — the real 4:5 card the share sheet sends,

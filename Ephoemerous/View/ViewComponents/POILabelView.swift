@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import CoreText
 import LoreKit
+import WidgetKit
 
 // MARK: - POILabelView
 // Apple-Maps-style POI label as a STANDALONE, reusable SwiftUI view — the
@@ -22,6 +23,16 @@ import LoreKit
 //     busy sky) + a soft drop shadow for lift
 //   • the name, cased (8-way outline) in the gradient's OUTER colour
 struct POILabelView: View {
+
+    /// Tinted / "Clear" Home Screen themes don't show our colours — the
+    /// system paints every non-transparent pixel with a light vibrant
+    /// material. The casing (a 90%-opaque BLACK ring, doing legibility
+    /// work against a dark sky) therefore renders as a 90% WHITE slab and
+    /// makes the label *less* readable, not more. So in those modes the
+    /// casing and the drop shadow are dropped and the mark carries itself.
+    /// Reads `.fullColor` outside a widget, so the app is unaffected.
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+    private var isMasked: Bool { widgetRenderingMode != .fullColor }
 
     enum LabelStyle {
         case star, planetoids
@@ -144,11 +155,13 @@ struct POILabelView: View {
         .overlay(
 //            Circle()
             Squircle(corners: 5, bulge: bulge)
-                .stroke(style.border, lineWidth: bw)
+                .stroke(isMasked ? .clear : style.border, lineWidth: bw)
         )
         // Soft drop shadow for lift (one view → cheap, unlike the Canvas
-        // per-glyph blur).
-        .shadow(color: style.gradientTop.opacity(0.35), radius: 2.5, y: 0.5)
+        // per-glyph blur). No glow under a masking host — it just fattens
+        // the white blob.
+        .shadow(color: isMasked ? .clear : style.gradientTop.opacity(0.35),
+                radius: isMasked ? 0 : 2.5, y: isMasked ? 0 : 0.5)
     }
 }
 
@@ -169,16 +182,24 @@ struct OutlinedText: View {
     var lineWidth: CGFloat = 1.5
     let font:      UIFont
 
+    /// See `POILabelView.isMasked`. The casing is a dark halo drawn to lift
+    /// text off a night sky; under a tinted / "Clear" theme it is repainted
+    /// as a WHITE halo and smears the glyphs. Dropped there.
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+    private var isMasked: Bool { widgetRenderingMode != .fullColor }
+
     var body: some View {
         let path = Self.glyphPath(text, font: font)
         let size = path.boundingRect.size
         let bw = EArtist.shared.poiTextBorderWidth*1.5
         ZStack(alignment: .topLeading) {
             // Casing first (behind), rounded so corners don't spike.
-            path.stroke(style: StrokeStyle(lineWidth: bw,
-                                           lineCap: .round, lineJoin: .round))
-                .foregroundStyle(stroke)
-                .shadow(color: .black.opacity(0.35), radius: 2.5, y: 0.5)
+            if !isMasked {
+                path.stroke(style: StrokeStyle(lineWidth: bw,
+                                               lineCap: .round, lineJoin: .round))
+                    .foregroundStyle(stroke)
+                    .shadow(color: .black.opacity(0.35), radius: 2.5, y: 0.5)
+            }
             path.fill(fill)
         }
         // Size to the ink box; pad for the half of the stroke that sits
