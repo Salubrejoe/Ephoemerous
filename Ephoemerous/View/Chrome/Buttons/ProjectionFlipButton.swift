@@ -52,6 +52,7 @@ struct ProjectionFlipButton: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         LinearGradient(colors: [.indigo, .black],
@@ -61,3 +62,4 @@ struct ProjectionFlipButton: View {
             .environment(AppState())
     }
 }
+#endif

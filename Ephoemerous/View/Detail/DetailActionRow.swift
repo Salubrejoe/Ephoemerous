@@ -165,8 +165,10 @@ struct DetailActionRow: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview("Orion star") {
     DetailActionRow(obj: .star(Star.mockStars[0]))
     .padding()
     .environment(AppState())
 }
+#endif

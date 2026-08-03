@@ -30,3 +30,11 @@ struct ToolbarResetButton: View {
         .buttonStyle(.plain)
     }
 }
+
+#if DEBUG
+#Preview("Reset chip") {
+    PreviewSky.night {
+        ToolbarResetButton(size: 32, symbol: "location.fill") {}
+    }
+}
+#endif

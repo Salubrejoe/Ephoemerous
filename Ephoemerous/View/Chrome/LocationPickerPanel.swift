@@ -281,8 +281,10 @@ struct LocationPickerPanel: View {
     }
 }
 
+#if DEBUG
 #Preview {
     LocationPickerPanel()
         .environment(AppState())
         .padding()
 }
+#endif

@@ -124,9 +124,11 @@ struct MoonDetailView: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     NavigationStack {
         MoonDetailView()
     }
     .environment(AppState())
 }
+#endif

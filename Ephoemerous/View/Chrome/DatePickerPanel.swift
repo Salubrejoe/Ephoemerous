@@ -260,6 +260,7 @@ struct DatePickerPanel: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         LinearGradient(colors: [.indigo, .black],
@@ -272,3 +273,4 @@ struct DatePickerPanel: View {
     }
     .environment(AppState())
 }
+#endif

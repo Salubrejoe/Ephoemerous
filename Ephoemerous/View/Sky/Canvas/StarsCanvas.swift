@@ -103,3 +103,14 @@ struct StarsCanvas: View, Equatable {
         min(1, max(0.35, (6.5 - m) / 6.5))
     }
 }
+
+#if DEBUG
+#Preview("Star field") {
+    PreviewSky.night {
+        StarsCanvas(camera: PreviewSky.camera,
+                    stars: StarDatabase.shared.workableStars,
+                    favouriteIDs: [],
+                    namedIDs: [])
+    }
+}
+#endif

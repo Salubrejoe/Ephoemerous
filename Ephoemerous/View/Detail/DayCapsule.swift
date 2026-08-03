@@ -249,3 +249,15 @@ struct DayCapsule: View {
                     + (comps.second ?? 0))
     }
 }
+
+#if DEBUG
+#Preview("Day arc") {
+    let base = PreviewSky.date
+    return DayCapsule(events: [
+        .init(time: base.addingTimeInterval(-8 * 3600), label: "Rise",  color: .orange),
+        .init(time: base,                               label: "Peak",  color: .yellow),
+        .init(time: base.addingTimeInterval( 5 * 3600), label: "Set",   color: .indigo),
+    ], tint: .orange)
+    .padding()
+}
+#endif

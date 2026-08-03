@@ -84,3 +84,11 @@ struct SkyChrome: ViewModifier {
         }
     }
 }
+
+#if DEBUG
+#Preview("Chrome over the sky") {
+    Artist.shared.canvasBackground
+        .modifier(SkyChrome(viewSize: CGSize(width: 390, height: 844)))
+        .environment(AppState())
+}
+#endif

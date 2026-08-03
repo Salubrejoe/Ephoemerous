@@ -54,3 +54,12 @@ struct ConstellationLinesCanvas: View, Equatable {
         }
     }
 }
+
+#if DEBUG
+#Preview("Figures") {
+    PreviewSky.night {
+        ConstellationLinesCanvas(camera: PreviewSky.camera,
+                                 favouriteTints: [.Ori: .tertiary])
+    }
+}
+#endif

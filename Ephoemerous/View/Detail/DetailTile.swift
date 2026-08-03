@@ -23,3 +23,13 @@ struct DetailTile: View {
         )
     }
 }
+
+#if DEBUG
+#Preview("Tile") {
+    HStack {
+        DetailTile(icon: "ruler", value: "642 ly")
+        DetailTile(icon: "sparkles", value: "0.42")
+    }
+    .padding()
+}
+#endif

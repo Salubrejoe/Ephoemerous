@@ -360,7 +360,9 @@ struct SearchSheet: View {
     }
 }
 
+#if DEBUG
 #Preview {
     SearchSheet()
         .environment(AppState())
 }
+#endif

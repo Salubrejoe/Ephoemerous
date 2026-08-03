@@ -65,3 +65,9 @@ struct CelestialGridCanvas: View, Equatable {
         }
     }
 }
+
+#if DEBUG
+#Preview("Grid") {
+    PreviewSky.night { CelestialGridCanvas(camera: PreviewSky.camera) }
+}
+#endif

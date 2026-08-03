@@ -161,9 +161,11 @@ private struct PlanetFacts {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     NavigationStack {
         PlanetDetailView(planet: .mars)
     }
     .environment(AppState())
 }
+#endif

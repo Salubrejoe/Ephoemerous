@@ -206,7 +206,7 @@ extension MainToolbar {
     }
 }
 
-
+#if DEBUG
 #Preview {
     ZStack {
         LinearGradient(colors: [.blue, .pink],
@@ -221,3 +221,4 @@ extension MainToolbar {
     }
     .environment(AppState())
 }
+#endif

@@ -44,3 +44,11 @@ struct FavouriteButton: View {
         return .primary
     }
 }
+
+#if DEBUG
+#Preview("Remember toggle") {
+    FavouriteButton(obj: .star(PreviewSky.someStar))
+        .environment(AppState())
+        .padding()
+}
+#endif

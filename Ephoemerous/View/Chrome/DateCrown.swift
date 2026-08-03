@@ -299,6 +299,7 @@ struct DateCrown: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         LinearGradient(colors: [.indigo, .black],
@@ -308,3 +309,4 @@ struct DateCrown: View {
             .environment(AppState())
     }
 }
+#endif

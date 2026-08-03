@@ -26,6 +26,7 @@ struct CameraClusterCapsule: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         LinearGradient(colors: [.indigo, .black],
@@ -35,3 +36,4 @@ struct CameraClusterCapsule: View {
             .environment(AppState())
     }
 }
+#endif

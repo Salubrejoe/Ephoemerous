@@ -85,3 +85,13 @@ struct ConstellationLabels: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Constellation names") {
+    PreviewSky.night {
+        ConstellationLabels(camera: PreviewSky.camera,
+                            pinch: 1, scale: 220, rotation: .zero,
+                            selectedID: nil)
+    }
+}
+#endif

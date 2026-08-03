@@ -48,3 +48,16 @@ struct DetailHScrollView: View {
             .scrollIndicators(.hidden)
     }
 }
+
+#if DEBUG
+#Preview("Stat scroller") {
+    DetailHScrollView(stats: [
+        .init(value: "5h 55m", statType: .rightAscenscion),
+        .init(value: "+7° 24'", statType: .declination),
+        .init(value: "642 ly",  statType: .distance),
+        .init(value: "0.42",    statType: .magnitude),
+        .init(value: "M1",      statType: .hrClass),
+    ])
+    .padding(.vertical)
+}
+#endif

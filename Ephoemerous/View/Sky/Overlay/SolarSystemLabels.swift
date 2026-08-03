@@ -144,3 +144,14 @@ struct SolarSystemLabels: View {
             }
     }
 }
+
+#if DEBUG
+#Preview("Sun, Moon, planets") {
+    PreviewSky.night {
+        SolarSystemLabels(camera: PreviewSky.camera,
+                          date: PreviewSky.date,
+                          pinch: 1, scale: 220, rotation: .zero,
+                          selected: nil)
+    }
+}
+#endif

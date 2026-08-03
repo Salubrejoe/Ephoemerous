@@ -80,3 +80,14 @@ struct FavouriteHeart: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Remembered hearts") {
+    PreviewSky.night {
+        FavouriteHeart(camera: PreviewSky.camera,
+                       stars: PreviewSky.brightStars,
+                       pinch: 1, scale: 320, rotation: .zero,
+                       selectedID: nil)
+    }
+}
+#endif

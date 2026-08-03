@@ -31,6 +31,7 @@ struct DetailStatList: View {
     }
 }
 
+#if DEBUG
 #Preview {
     DetailStatList(stats: [
         .init(label: "Constellation",   value: "Orion"),
@@ -41,3 +42,4 @@ struct DetailStatList: View {
         .init(label: "Declination",     value: "+7.4°"),
     ])
 }
+#endif

@@ -135,3 +135,13 @@ private struct HorizonRegion: Shape {
         return path
     }
 }
+
+#if DEBUG
+// Only legible over something — the frost is the region BELOW the horizon.
+#Preview("Frosted ground") {
+    PreviewSky.night {
+        CelestialGridCanvas(camera: PreviewSky.camera)
+        HorizonBlurOverlay(camera: PreviewSky.camera)
+    }
+}
+#endif

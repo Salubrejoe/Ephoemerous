@@ -72,6 +72,7 @@ private struct CompassModePressStyle: ButtonStyle {
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         LinearGradient(colors: [.indigo, .black],
@@ -81,3 +82,4 @@ private struct CompassModePressStyle: ButtonStyle {
             .environment(AppState())
     }
 }
+#endif

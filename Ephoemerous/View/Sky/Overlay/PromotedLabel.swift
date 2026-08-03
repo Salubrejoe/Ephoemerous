@@ -232,3 +232,16 @@ private struct SkyLabPromotedPin: View {
     /// `cy + nameDrop` (the text hangs just below the precise dot).
     private static let nameHalfHeight: CGFloat = nameFont.lineHeight / 2
 }
+
+#if DEBUG
+#Preview("Promoted pin") {
+    PreviewSky.night {
+        PromotedLabel(camera: PreviewSky.camera,
+                      selection: .star(PreviewSky.someStar),
+                      date: PreviewSky.date,
+                      pinch: 1, rotation: .zero,
+                      isFavourite: true)
+    }
+    .environment(AppState())
+}
+#endif

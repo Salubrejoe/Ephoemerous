@@ -71,3 +71,15 @@ struct StarLabels: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Named stars") {
+    PreviewSky.night {
+        StarLabels(camera: PreviewSky.camera,
+                   stars: PreviewSky.brightStars,
+                   pinch: 1, scale: 320, rotation: .zero,
+                   category: { .namedStar($0) },
+                   selectedID: nil)
+    }
+}
+#endif

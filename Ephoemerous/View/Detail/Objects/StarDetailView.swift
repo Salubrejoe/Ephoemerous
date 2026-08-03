@@ -161,9 +161,11 @@ struct StarDetailView: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     NavigationStack {
         StarDetailView(star: Star.mockStars[0])
     }
     .environment(AppState())
 }
+#endif

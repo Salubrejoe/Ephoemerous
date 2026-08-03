@@ -86,6 +86,7 @@ struct OutlinedText: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         Color.black
@@ -94,4 +95,4 @@ struct OutlinedText: View {
     }
     .ignoresSafeArea()
 }
-
+#endif

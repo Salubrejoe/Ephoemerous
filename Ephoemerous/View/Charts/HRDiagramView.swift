@@ -386,6 +386,7 @@ struct HRDiagramView: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     HRDiagramView()
 }
@@ -394,3 +395,4 @@ struct HRDiagramView: View {
     HRDiagramView()
         .preferredColorScheme(.dark)
 }
+#endif

@@ -143,3 +143,13 @@ struct PuckAndConeOverlay: View {
             .frame(width: size, height: size)
     }
 }
+
+#if DEBUG
+// The aim cone needs live CoreMotion, so in a preview this is the puck
+// alone — which is the half worth eyeballing anyway.
+#Preview("You are here") {
+    PreviewSky.night {
+        PuckAndConeOverlay(camera: PreviewSky.camera, pinch: 1)
+    }
+}
+#endif

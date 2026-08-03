@@ -69,3 +69,16 @@ struct NamedStarDotsCanvas: View, Equatable {
         }
     }
 }
+
+#if DEBUG
+// Past `namedStarDotIn` the dots appear, then crossfade into their badges —
+// the scale here sits in that window on purpose.
+#Preview("Named dots") {
+    PreviewSky.night {
+        NamedStarDotsCanvas(camera: PreviewSky.camera,
+                            stars: PreviewSky.brightStars,
+                            scale: 200,
+                            selectedID: nil)
+    }
+}
+#endif

@@ -89,3 +89,9 @@ private struct AlmucantarCurve: Shape {
         return path
     }
 }
+
+#if DEBUG
+#Preview("Horizon + twilight") {
+    PreviewSky.night { EarthGridOverlay(camera: PreviewSky.camera) }
+}
+#endif

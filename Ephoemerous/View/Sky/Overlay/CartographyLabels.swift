@@ -247,3 +247,14 @@ struct CartographyLabels: View, Equatable {
         }
     }
 }
+
+#if DEBUG
+#Preview("Rim + colures") {
+    PreviewSky.night {
+        CartographyLabels(camera: PreviewSky.camera,
+                          latitude: PreviewSky.latitude,
+                          date: PreviewSky.date,
+                          visibleRect: CGRect(origin: .zero, size: PreviewSky.size))
+    }
+}
+#endif

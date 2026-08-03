@@ -42,3 +42,15 @@ struct CircleIconLabel: View {
             .glassEffect(.clear.interactive(), in: .circle)
     }
 }
+
+#if DEBUG
+#Preview("Glass circles") {
+    PreviewSky.night {
+        HStack(spacing: 12) {
+            CircleIconButton(symbol: .share) {}
+            CircleIconButton(symbol: .xmark) {}
+            CircleIconLabel(symbol: .share)
+        }
+    }
+}
+#endif

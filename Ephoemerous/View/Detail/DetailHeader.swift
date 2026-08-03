@@ -133,3 +133,17 @@ struct DetailHeader<Icon: View>: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Detail header") {
+    DetailHeader(title: "Betelgeuse",
+                 subtitle: "Star · Orion",
+                 accent: .orange,
+                 icon: { EmptyView() },
+                 leadingSymbol: .share,
+                 onLeading: {},
+                 onDismiss: {})
+        .padding(.bottom, 40)
+        .background(.thinMaterial)
+}
+#endif

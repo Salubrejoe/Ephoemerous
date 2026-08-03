@@ -111,3 +111,21 @@ struct SkyLayerStack: View {
         }
     }
 }
+
+#if DEBUG
+// The whole sky in one preview — every layer, one camera. Needs a real
+// `SkyFrame`, so it builds one from a fresh app state and camera.
+#Preview("All layers") {
+    let app = AppState()
+    return PreviewSky.night {
+        SkyLayerStack(frame: SkyFrame(app: app,
+                                      sky: MainGestureCoordinator(),
+                                      geoSize: PreviewSky.size,
+                                      overdraw: 0,
+                                      compassEngage: 0,
+                                      morphScaleFrom: 0,
+                                      morphOffsetFrom: .zero))
+    }
+    .environment(app)
+}
+#endif

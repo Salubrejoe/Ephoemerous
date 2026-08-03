@@ -196,3 +196,27 @@ struct POILabelView: View {
                 radius: isMasked ? 0 : 2.5, y: isMasked ? 0 : 0.5)
     }
 }
+
+#if DEBUG
+// The badge grammar at a glance: every species, name revealed.
+// Self-contained on purpose — this file also compiles into the widget and
+// watch targets, which don't carry the app's preview scaffolding.
+#Preview("POI species") {
+    let star = Star.mockStars[0]
+    return ZStack {
+        Artist.shared.canvasBackground
+        VStack(alignment: .leading, spacing: 22) {
+            POILabelView(category: .sun,   text: "Sun",   labelStyle: .star)
+            POILabelView(category: .moon,  text: "Moon",  labelStyle: .planetoids)
+            POILabelView(category: .planet(.mars), text: "Mars", labelStyle: .planetoids)
+            POILabelView(category: .followedStar(star),
+                         text: star.displayName, labelStyle: .star)
+            // A showpiece double wears the companion pip.
+            POILabelView(category: .namedStar(star),
+                         text: "Albireo", labelStyle: .star, companionReveal: 1)
+        }
+    }
+    .frame(width: 320, height: 320)
+    .environment(\.colorScheme, .dark)
+}
+#endif

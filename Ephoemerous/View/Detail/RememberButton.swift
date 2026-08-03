@@ -48,3 +48,11 @@ struct RememberButton: View {
         .animation(.bouncy, value: remembered)
     }
 }
+
+#if DEBUG
+#Preview("Remember") {
+    RememberButton(obj: .star(PreviewSky.someStar))
+        .environment(AppState())
+        .padding()
+}
+#endif

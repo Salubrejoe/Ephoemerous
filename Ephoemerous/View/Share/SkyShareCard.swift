@@ -197,3 +197,13 @@ struct SkyShareCard: View {
                                                                  threshold: style.textIn))
     }
 }
+
+#if DEBUG
+// The real 4:5 postcard, at its true design size.
+#Preview("Postcard") {
+    SkyShareCard(object: .star(PreviewSky.someStar),
+                 date: PreviewSky.date,
+                 latDeg: 43.77, lonDeg: 11.25,
+                 placeName: "Florence")
+}
+#endif

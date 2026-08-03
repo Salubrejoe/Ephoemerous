@@ -46,3 +46,10 @@ extension EnvironmentValues {
         set { self[DetailCollapsedKey.self] = newValue }
     }
 }
+
+#if DEBUG
+#Preview("Detail host") {
+    DetailHost(obj: .star(PreviewSky.someStar))
+        .environment(AppState())
+}
+#endif

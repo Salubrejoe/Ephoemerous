@@ -16,3 +16,10 @@ struct StarCard: View {
         .padding(.vertical, 8)
     }
 }
+
+#if DEBUG
+#Preview("Star card") {
+    HStack { ForEach(PreviewSky.brightStars.prefix(3)) { StarCard(star: $0) } }
+        .padding()
+}
+#endif

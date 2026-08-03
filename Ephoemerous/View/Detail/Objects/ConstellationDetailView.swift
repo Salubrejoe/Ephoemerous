@@ -210,8 +210,9 @@ struct ConstellationDetailView: View {
 // `StarCard` lives in ViewComponents/FavouriteCards.swift and is
 // shared with the SearchSheet's favourites scroll.
 
-
+#if DEBUG
 #Preview {
     ConstellationDetailView(constellation: .And)
         .environment(AppState())
 }
+#endif

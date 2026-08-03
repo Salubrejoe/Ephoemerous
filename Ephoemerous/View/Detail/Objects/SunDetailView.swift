@@ -91,11 +91,11 @@ struct SunDetailView: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     NavigationStack {
         SunDetailView()
     }
     .environment(AppState())
 }
-
-
+#endif

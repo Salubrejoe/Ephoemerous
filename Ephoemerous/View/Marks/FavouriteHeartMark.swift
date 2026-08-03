@@ -55,3 +55,15 @@ struct FavouriteHeartMark: View {
                     radius: isMasked ? 0 : 1.5)
     }
 }
+
+#if DEBUG
+#Preview("Remembered") {
+    PreviewSky.night {
+        HStack(spacing: 18) {
+            FavouriteHeartMark(size: 9)
+            FavouriteHeartMark(size: 13)
+            FavouriteHeartMark(size: 28)
+        }
+    }
+}
+#endif

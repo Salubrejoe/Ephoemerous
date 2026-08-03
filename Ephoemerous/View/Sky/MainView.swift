@@ -360,7 +360,9 @@ struct MainView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     MainView()
         .environment(AppState())
 }
+#endif

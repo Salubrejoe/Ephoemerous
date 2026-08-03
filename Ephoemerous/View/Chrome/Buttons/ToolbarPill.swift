@@ -24,3 +24,11 @@ struct ToolbarPill: View {
         .buttonStyle(.plain)
     }
 }
+
+#if DEBUG
+#Preview("Toolbar pill") {
+    PreviewSky.night {
+        HStack { ToolbarPill("Here") {}; ToolbarPill("21:30") {} }
+    }
+}
+#endif

@@ -151,6 +151,7 @@ private struct CompassPressStyle: ButtonStyle {
     }
 }
 
+#if DEBUG
 #Preview {
     ZStack {
         LinearGradient(colors: [.indigo, .black],
@@ -164,3 +165,4 @@ private struct CompassPressStyle: ButtonStyle {
             }())
     }
 }
+#endif

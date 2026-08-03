@@ -18,8 +18,9 @@ struct ConstellationCard: View {
     }
 }
 
-
+#if DEBUG
 #Preview {
     StarCard(star: .mockStars.last!)
     ConstellationCard(constellation: .And)
 }
+#endif
