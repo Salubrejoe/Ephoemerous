@@ -207,7 +207,7 @@ struct MainView😇: View {
             // (also drives the detail sheet), so tap-select, the sheet's X,
             // and a swipe-away all stay in lockstep.
             let selection = app.detailDestination
-            let selectedStarID: UUID?  = { if case .star(let s) = selection { return s.id };          return nil }()
+            let selectedStarID: String? = { if case .star(let s) = selection { return s.id };          return nil }()
             let selectedConsID: String? = { if case .constellation(let c) = selection { return c.rawValue }; return nil }()
 
             // A favourite that's also proper-named would otherwise draw BOTH
@@ -215,6 +215,8 @@ struct MainView😇: View {
             // from the named overlay so each star gets exactly one label.
             let favIDs = Set(app.favouriteStars.map(\.id))
             let namedOnly = Self.properNamedStars.filter { !favIDs.contains($0.id) }
+            // The field defers to these once their own dot/badge takes over.
+            let namedIDs  = Set(namedOnly.map(\.id))
 
             // Tint for each favourite constellation's solid lines — one
             // neutral constellation colour now (myth taxonomy retired).
@@ -243,7 +245,8 @@ struct MainView😇: View {
                 ConstellationLinesCanvas(camera: camera, favouriteTints: favTints)
                     .equatable()
                 
-                StarsCanvas(camera: camera, stars: app.sortedStars, favouriteIDs: favIDs)
+                StarsCanvas(camera: camera, stars: app.sortedStars,
+                            favouriteIDs: favIDs, namedIDs: namedIDs)
                     .equatable()
                 
                 // Tier-0 spectral pentagon dots for proper-named stars —

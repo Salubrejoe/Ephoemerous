@@ -22,7 +22,16 @@ struct StarsCanvas: View, Equatable {
     /// riding the parent zoom transform, balloons out from behind its
     /// constant-size badge mid-pinch. Checked in the (frozen) draw loop, so
     /// it costs nothing per gesture frame.
-    let favouriteIDs: Set<UUID>
+    let favouriteIDs: Set<String>
+    /// Proper-named, non-favourite stars. Past `namedStarDotIn` these get a
+    /// dedicated tier-0 spectral dot (NamedStarDotsCanvas) that crossfades
+    /// into their badge (StarLabels) — so the plain field dot underneath
+    /// becomes a SECOND mark for one star, poking out from behind the badge.
+    /// That was the stray grey dot beside an unfavourited Betelgeuse; it
+    /// vanished when the star was favourited only because favourites were
+    /// already excluded above. Skipped here past the same tier, so the
+    /// handoff is clean either way.
+    let namedIDs: Set<String>
 
     // Skip the redraw unless the committed camera changed. `stars` is a
     // fixed catalogue, so its count is a sufficient (cheap) tiebreak — no
@@ -32,14 +41,23 @@ struct StarsCanvas: View, Equatable {
         l.camera == r.camera
             && l.stars.count == r.stars.count
             && l.favouriteIDs == r.favouriteIDs
+            && l.namedIDs == r.namedIDs
     }
 
     var body: some View {
         Canvas {
             ctx,
             size in
+            // The tier at which a named star's own dot takes over. Read
+            // once — not per star — and compared against the COMMITTED
+            // camera scale, since this canvas is frozen during a gesture.
+            let namedDotIn   = EArtist.shared.namedStarDotIn
+            let namedHandsOff = camera.scale >= namedDotIn
+
             for star in stars {
                 guard !favouriteIDs.contains(star.id) else { continue }   // drawn as a badge
+                // Named stars hand off to their own dot / badge past the tier.
+                if namedHandsOff, namedIDs.contains(star.id) { continue }
                 guard let sc = camera.screen(equatorial: star.equatorialVector) else { continue }
                 guard sc.x > -2,
                       sc.x < size.width  + 2,
