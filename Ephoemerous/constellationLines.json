@@ -29,7 +29,7 @@
   "Crt": [["Alp","Bet"], ["Bet","Gam"], ["Gam","Zet"], ["Zet","Eta"], ["Gam","Del"], ["Del","Eps"], ["Eps","The"], ["Del","Alp"]],
   "Cru": [["Alp","Gam"], ["Bet","Del"]],
   "Crv": [["Del","Gam"], ["Gam","Eps"], ["Eps","Bet"], ["Bet","Del"], ["Eps","Alp"]],
-  "Cyg": [["Alp","Gam"], ["Gam","Eps"], ["Gam","Bet"], ["Gam","Del"], ["Del","Iot"], ["Iot","Kap"], ["Iot","32"], ["32","Alp"], ["Alp","Nu"], ["Nu","Zet"], ["Zet","Eps"]],
+  "Cyg": [["Alp","Gam"], ["Gam","Eps"], ["Gam","Bet"], ["Gam","Del"], ["Del","Iot"], ["Iot","Kap"], ["Iot","32"], ["32","Alp"], ["Zet","Eps"]],
   "Del": [["Eps","Bet"], ["Bet","Alp"], ["Alp","Gam"], ["Gam","Del"], ["Del","Bet"]],
   "Dor": [["Gam","Alp"], ["Alp","Zet"], ["Zet","Bet"], ["Bet","Alp"], ["Bet","Del"]],
   "Dra": [["Lam","Kap"], ["Kap","Alp"], ["Alp","Iot"], ["Iot","The"], ["The","Eta"], ["Eta","Zet"], ["Zet","Phi"], ["Phi","Chi"], ["Phi","Del"], ["Del","Eps"], ["Del","Xi"], ["Xi","Nu"], ["Nu","Bet"], ["Bet","Gam"], ["Gam","Xi"]],

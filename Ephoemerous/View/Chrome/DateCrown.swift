@@ -107,7 +107,7 @@ struct DateCrown: View {
     @State private var inertiaTask: Task<Void, Never>? = nil
 
     // ▼ TWEAK the ring feel here ▼
-    private let ringWidth: CGFloat = 24    // thumb-band width
+    private let ringWidth: CGFloat = 28    // thumb-band width
     private let flingTau:  Double  = 0.7   // coast decay time constant
     private let flingMin:  Double  = 0.8   // rad/s to trigger a coast
     private let flingCap:  Double  = 12    // rad/s max spin
