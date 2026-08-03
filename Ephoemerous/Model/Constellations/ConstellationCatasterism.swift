@@ -21,7 +21,7 @@ final class ConstellationCatasterism {
 
     static let shared = ConstellationCatasterism()
 
-    private let byConstellation: [EConstellation: String]
+    private let byConstellation: [Constellation: String]
 
     private struct Entry: Decodable {
         let abbr:        String
@@ -30,10 +30,10 @@ final class ConstellationCatasterism {
 
     private init() {
         let raw = Self.loadRaw()
-        var index: [EConstellation: String] = [:]
+        var index: [Constellation: String] = [:]
         index.reserveCapacity(raw.count)
         for entry in raw {
-            if let cons = EConstellation(rawValue: entry.abbr) {
+            if let cons = Constellation(rawValue: entry.abbr) {
                 index[cons] = entry.catasterism
             }
         }
@@ -42,7 +42,7 @@ final class ConstellationCatasterism {
 
     /// The catasterism line for `cons`, or `nil` for constellations with no
     /// sky-placement myth (the modern ones).
-    func catasterism(for cons: EConstellation) -> String? {
+    func catasterism(for cons: Constellation) -> String? {
         byConstellation[cons]
     }
 
@@ -53,14 +53,14 @@ final class ConstellationCatasterism {
             forResource: "constellation_catasterism",
             withExtension: "json"
         ) else {
-            ELogger.constellationLines("constellation_catasterism.json not found in bundle")
+            Logger.constellationLines("constellation_catasterism.json not found in bundle")
             return []
         }
         do {
             let data = try Data(contentsOf: url)
             return try JSONDecoder().decode([Entry].self, from: data)
         } catch {
-            ELogger.constellationLines("constellation_catasterism decode failed: \(error)")
+            Logger.constellationLines("constellation_catasterism decode failed: \(error)")
             return []
         }
     }

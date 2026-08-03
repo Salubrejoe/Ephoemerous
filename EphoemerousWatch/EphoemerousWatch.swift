@@ -65,7 +65,7 @@ struct OrlojWatchView: View {
             }
         }
         .ignoresSafeArea()
-//        .background(EArtist.shared.canvasBackground)
+//        .background(Artist.shared.canvasBackground)
         .preferredColorScheme(.dark)
         // The crown IS the date crown here. Haptic detents; not
         // continuous — the journey has ends, like the app's timeline.

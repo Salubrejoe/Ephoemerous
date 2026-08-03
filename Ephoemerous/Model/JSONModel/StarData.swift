@@ -19,7 +19,7 @@ struct StarData: Codable {
   // MARK: Companions
   // BSC5's double / multiple-star columns. All optional — most stars carry
   // none of them, and a star can have a separation without a detection
-  // flag (or the reverse). Parsed into `EStarMultiplicity`, which is where
+  // flag (or the reverse). Parsed into `StarMultiplicity`, which is where
   // the meaning lives; here we only carry the raw strings.
   /// Detection method: W = visual double (Worley), S = spectroscopic,
   /// A = astrometric, D = occultation duplicity, I = Innes, R = other.

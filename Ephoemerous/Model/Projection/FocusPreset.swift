@@ -31,7 +31,7 @@ enum FocusPreset: String, CaseIterable, Identifiable {
 
 // MARK: - Preset animation state
 // Shared by both FocusPreset tracking transitions and the manual resetView animation.
-struct EPresetTransition {
+struct PresetTransition {
     let fromScale:  Double
     let fromOffset: CGPoint
     let toScale:    Double
@@ -66,17 +66,17 @@ struct EPresetTransition {
 }
 
 // MARK: - Rotation animation state
-// Single-angle sibling of EPresetTransition, for the compass spin-back.
+// Single-angle sibling of PresetTransition, for the compass spin-back.
 // Reuses the same bounce easing so the needle (and sky) overshoot North
 // slightly then settle.
-struct ERotationTransition {
+struct RotationTransition {
     let from:      Angle
     let to:        Angle
     let startTime: Double
     let duration:  Double
 
     func interpolated(at time: Double) -> Angle {
-        let t = EPresetTransition.bounceEase((time - startTime) / duration)
+        let t = PresetTransition.bounceEase((time - startTime) / duration)
         return .degrees(from.degrees + (to.degrees - from.degrees) * t)
     }
 
@@ -92,7 +92,7 @@ struct ERotationTransition {
 // tick and morph WITH the native labels instead of snapping while the labels
 // slide. `easedProgress` (0→1) also drives the camera reframe, so the zoom and
 // the projection morph stay in lockstep.
-struct EMorphTransition {
+struct MorphTransition {
     let from:      Double
     let to:        Double
     let startTime: Double
@@ -114,8 +114,8 @@ struct EMorphTransition {
     }
 }
 
-// MARK: - EAppState: rendered scale / offset
-extension EAppState {
+// MARK: - AppState: rendered scale / offset
+extension AppState {
 
     /// Canvas-facing rotation. Returns the bouncy interpolation while a
     /// reset spin is in flight, otherwise the live `canvasRotation`. Nils
@@ -139,7 +139,7 @@ extension EAppState {
         // invalidate the readers, and fall back to the raw heading on the
         // very first frame before the smoother is seeded.
         if compassMode {
-            let live = EMotionService.shared.aim
+            let live = MotionService.shared.aim
             if let smoothed = _compassRotCurrent { return .radians(smoothed) }
             if let live { return .radians(-live.azimuth) }
         }
@@ -155,7 +155,7 @@ extension EAppState {
     /// gesture math reads the final value) while the transition drives the
     /// visible interpolation.
     func animateRotation(to target: Angle) {
-        _rotationTransition = ERotationTransition(
+        _rotationTransition = RotationTransition(
             from:      renderedRotation,
             // Wall-clock now, NOT `animationTime` — the canvas is parked
             // (idle) by the time the compass is tapped, so `animationTime`
@@ -180,7 +180,7 @@ extension EAppState {
     private var compassHorizonYFraction: Double { 0.08 }   // horizon near the top
 
     /// Scale + offset for the heading-up pose. The horizon is a circle of
-    /// radius 2 projection-units about the zenith (see `EProjection`), so
+    /// radius 2 projection-units about the zenith (see `Projection`), so
     /// the zenith→horizon span on screen is `2·scale` — solve that to land
     /// the horizon at `compassHorizonYFraction` while the puck sits at
     /// `compassPuckYFraction`. `offset.x` drives the vertical placement
@@ -310,7 +310,7 @@ extension EAppState {
     /// ▼ TWEAK the morph duration here ▼
     func animatePerspectiveMorph(to target: Double, duration: Double = 1.0) {
         let current = _perspectiveMorphTransition?.value(at: animationTime) ?? (1 - target)
-        _perspectiveMorphTransition = EMorphTransition(
+        _perspectiveMorphTransition = MorphTransition(
             from:      current,
             to:        target,
             startTime: Date.now.timeIntervalSinceReferenceDate,
@@ -319,16 +319,16 @@ extension EAppState {
     }
 }
 
-// MARK: - EAppState: rendered scale / offset
-extension EAppState {
+// MARK: - AppState: rendered scale / offset
+extension AppState {
 
     /// The running transition, if any. Canvas reads this every frame.
-    var activeTransition: EPresetTransition? {
+    var activeTransition: PresetTransition? {
         get { _activeTransition }
         set { _activeTransition = newValue }
     }
 
-    /// Use this in EGraphicContext instead of `.scale` directly. PURE read —
+    /// Use this in GraphicContext instead of `.scale` directly. PURE read —
     /// the finished transition is retired in `advanceCanvasClock`, not here,
     /// so a view body that reads both `renderedScale` and `_activeTransition`
     /// (e.g. the canvas via `isAnimating`) can't trip an AttributeGraph cycle.
@@ -338,7 +338,7 @@ extension EAppState {
                                                : t.interpolatedScale(at: animationTime)
     }
 
-    /// Use this in EGraphicContext instead of `.offset` directly. PURE read
+    /// Use this in GraphicContext instead of `.offset` directly. PURE read
     /// (see `renderedScale`).
     var renderedOffset: CGPoint {
         guard let t = _activeTransition else { return offset }
@@ -347,7 +347,7 @@ extension EAppState {
     }
 
     /// THE single camera-animation primitive. Every programmatic camera
-    /// move — reset, and centring on an object (`EAppState+Detail`) — goes
+    /// move — reset, and centring on an object (`AppState+Detail`) — goes
     /// through here, so the dedupe and the transition-start logic live in
     /// exactly one place.
     ///
@@ -367,7 +367,7 @@ extension EAppState {
             offset = newOffset
             return
         }
-        _activeTransition = EPresetTransition(
+        _activeTransition = PresetTransition(
             fromScale:  renderedScale,
             fromOffset: renderedOffset,
             toScale:    newScale,
@@ -385,11 +385,11 @@ extension EAppState {
     }
 }
 
-// MARK: - EAppState: Screen position helpers
-extension EAppState {
+// MARK: - AppState: Screen position helpers
+extension AppState {
 
     /// Project-unit point → screen pixel. Mirror of
-    /// `EGraphicContext.toScreen` so callers outside the draw loop
+    /// `GraphicContext.toScreen` so callers outside the draw loop
     /// (focus / pan logic) land on the same screen coordinates the
     /// canvas draws to. Applies `canvasRotation` first so off-screen
     /// focus from the search sheet works correctly when the device
@@ -414,18 +414,18 @@ extension EAppState {
     /// Computes the screen position of a star without relying on the
     /// cached `favouritePositions`. Used when focusing on a star
     /// that's currently off-screen (e.g. from the search sheet).
-    func screenPosition(of star: EStar) -> CGPoint? {
+    func screenPosition(of star: Star) -> CGPoint? {
         guard canvasSize != .zero else { return nil }
-        let (pRA, pDec) = EPrecession.precess(
+        let (pRA, pDec) = Precession.precess(
             ra:  star.rightAscension,
             dec: star.declination,
             to:  renderedObservationDate
         )
         let th = localSiderealOffset.radians
         let (c, s) = (cos(th), sin(th))
-        let v = EPrecession.equatorialVector(ra: pRA, dec: pDec)
+        let v = Precession.equatorialVector(ra: pRA, dec: pDec)
         let Q = SIMD3(v.x * c - v.y * s, v.x * s + v.y * c, v.z)
-        guard let proj = EProjection.project(Q, viewpoint: self.viewpoint) else { return nil }
+        guard let proj = Projection.project(Q, viewpoint: self.viewpoint) else { return nil }
         return toScreenPoint(proj)
     }
 
@@ -436,18 +436,18 @@ extension EAppState {
     /// sheet the user can pick any constellation regardless of
     /// whether its label is visible right now, so we need to
     /// project from the anchor RA/Dec directly.
-    func screenPosition(of constellation: EConstellation) -> CGPoint? {
+    func screenPosition(of constellation: Constellation) -> CGPoint? {
         guard canvasSize != .zero,
               let anchor = ConstellationLines.shared.labelAnchors[constellation]
         else { return nil }
-        let (pRA, pDec) = EPrecession.precess(
+        let (pRA, pDec) = Precession.precess(
             ra:  anchor.ra,
             dec: anchor.dec,
             to:  renderedObservationDate
         )
-        let Q = EPrecession.equatorialVector(ra: pRA, dec: pDec)
+        let Q = Precession.equatorialVector(ra: pRA, dec: pDec)
             .sidereallyRotated(by: localSiderealOffset)
-        guard let proj = EProjection.project(Q, viewpoint: self.viewpoint) else { return nil }
+        guard let proj = Projection.project(Q, viewpoint: self.viewpoint) else { return nil }
         return toScreenPoint(proj)
     }
 
@@ -467,8 +467,8 @@ extension EAppState {
     }
 }
 
-// EOriginTransition and animateOrigin moved to EAppState+Location.swift.
+// OriginTransition and animateOrigin moved to AppState+Location.swift.
 
-// `EInertiaTransition` was generalised and is now `LoreKit.FlingInertia`
+// `InertiaTransition` was generalised and is now `LoreKit.FlingInertia`
 // (exponential-decay momentum, no app coupling). The gesture-side wiring
 // that emits one on pan release lives in CelestialGestureCoordinator+Inertia.

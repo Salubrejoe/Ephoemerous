@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 // stays instant no matter how dense the sky is.
 struct SkyPostcard: Transferable {
 
-    let object:    ESkyObject
+    let object:    SkyObject
     let date:      Date
     let latDeg:    Double
     let lonDeg:    Double
@@ -79,7 +79,7 @@ struct SkyPostcard: Transferable {
     /// building a whole snapshot just to write one sentence. Nil for
     /// constellations, which have no single direction to point at.
     @MainActor
-    private static func altAzLine(object: ESkyObject, date: Date,
+    private static func altAzLine(object: SkyObject, date: Date,
                                   latDeg: Double, lonDeg: Double) -> String? {
         let snapshot = SkySnapshot(entity: SkyObjectEntity(object),
                                    date:   date,
@@ -90,15 +90,15 @@ struct SkyPostcard: Transferable {
     }
 }
 
-// MARK: - EAppState → postcard
+// MARK: - AppState → postcard
 
-extension EAppState {
+extension AppState {
 
     /// The postcard for `obj` as the sky stands in THIS session — the
     /// observer's origin, the observation date currently on screen (so a
     /// card wound forward with the date crown shares that sky, not now),
     /// and the resolved town when the toolbar has one.
-    func postcard(for obj: ESkyObject) -> SkyPostcard {
+    func postcard(for obj: SkyObject) -> SkyPostcard {
         SkyPostcard(object:    obj,
                     date:      renderedObservationDate,
                     latDeg:    origin.latitude.degrees,

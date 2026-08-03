@@ -12,11 +12,11 @@ import WidgetKit
 
 @main
 struct EphoemerousApp: App {
-    @State private var state: EAppState
+    @State private var state: AppState
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        let state = EAppState()
+        let state = AppState()
         _state    = State(initialValue: state)
         // Hand the SAME instance the views observe to the App Intents
         // runtime — `OpenSkyObjectIntent` resolves it via `@Dependency`
@@ -27,14 +27,14 @@ struct EphoemerousApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                MainView😇()
+                MainView()
             }
-            .preferredColorScheme(.dark)
+//            .preferredColorScheme(.dark)
             .ignoresSafeArea()
             
             .onAppear(perform: state.startCloudSync)
             
-            .onChange(of: ELocationService.shared.location) { _, location in
+            .onChange(of: LocationService.shared.location) { _, location in
                 if let location { state.adoptInitialDeviceLocation(location) }
             }
 
@@ -57,17 +57,17 @@ struct EphoemerousApp: App {
             .task { await seedScreenshotState() }
             #endif
 
-            .onAppear(perform: EMotionService.shared.start)
+            .onAppear(perform: MotionService.shared.start)
             .onChange(of: scenePhase) { _, phase in
                 // Attitude streaming is battery-cheap but pointless in
                 // the background — stop with the app, resume on return.
-                if phase == .active { EMotionService.shared.start() }
-                else                { EMotionService.shared.stop()  }
+                if phase == .active { MotionService.shared.start() }
+                else                { MotionService.shared.stop()  }
                 // Leaving: park the observer origin for the widget process
                 // (it has no location access) and re-render the widgets so
                 // fresh favourites / origin land immediately.
                 if phase == .background {
-                    ECloudSync.shared.saveObserverOrigin(
+                    CloudSync.shared.saveObserverOrigin(
                         latDeg: state.origin.latitude.degrees,
                         lonDeg: state.origin.longitude.degrees)
                     WidgetCenter.shared.reloadAllTimelines()

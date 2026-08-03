@@ -26,7 +26,7 @@ struct OpenSkyObjectIntent: AppIntent {
     /// `AppDependencyManager` — intents run in the app process, so this
     /// is the same instance the views observe.
     @Dependency
-    private var appState: EAppState
+    private var appState: AppState
 
     @MainActor
     func perform() async throws -> some IntentResult {

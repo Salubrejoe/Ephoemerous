@@ -24,13 +24,13 @@ import Foundation
 //   • origin — who first catalogued it (ptolemy, lacaille,
 //              bayer, hevelius, other).
 //
-// `EArtist.constellationEntity(of:)` reads `myths.first` from
+// `Artist.constellationEntity(of:)` reads `myths.first` from
 // here to colour each constellation POI badge.
 final class ConstellationCategories {
 
     static let shared = ConstellationCategories()
 
-    private let byConstellation: [EConstellation: Entry]
+    private let byConstellation: [Constellation: Entry]
 
     /// One JSON entry, mirroring the file shape verbatim.
     struct Entry: Decodable {
@@ -43,10 +43,10 @@ final class ConstellationCategories {
 
     private init() {
         let raw = Self.loadRaw()
-        var index: [EConstellation: Entry] = [:]
+        var index: [Constellation: Entry] = [:]
         index.reserveCapacity(raw.count)
         for entry in raw {
-            if let cons = EConstellation(rawValue: entry.abbr) {
+            if let cons = Constellation(rawValue: entry.abbr) {
                 index[cons] = entry
             }
         }
@@ -55,7 +55,7 @@ final class ConstellationCategories {
 
     /// Look up the JSON entry for `cons`, or `nil` if it's not
     /// listed (shouldn't happen for the 88 IAU constellations).
-    func category(for cons: EConstellation) -> Entry? {
+    func category(for cons: Constellation) -> Entry? {
         byConstellation[cons]
     }
 
@@ -66,14 +66,14 @@ final class ConstellationCategories {
             forResource: "constellation_categories",
             withExtension: "json"
         ) else {
-            ELogger.constellationLines("constellation_categories.json not found in bundle")
+            Logger.constellationLines("constellation_categories.json not found in bundle")
             return []
         }
         do {
             let data = try Data(contentsOf: url)
             return try JSONDecoder().decode([Entry].self, from: data)
         } catch {
-            ELogger.constellationLines("constellation_categories decode failed: \(error)")
+            Logger.constellationLines("constellation_categories decode failed: \(error)")
             return []
         }
     }

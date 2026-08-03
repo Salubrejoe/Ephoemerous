@@ -7,7 +7,7 @@ import simd
 // The Prague astronomical clock, superimposed on the app's REAL NorthOUT
 // projection — not a lookalike drawing, the SAME projection. NorthOUT's
 // scale derivation already uses ρ = 2·tan((δ+90°)/2) for a declination
-// circle (see EAppState+Space.northOutDefaultScale); that is EXACTLY
+// circle (see AppState+Space.northOutDefaultScale); that is EXACTLY
 // DeprecationStation/Orloj/EOrlojGeometry's own r = tan(45°+δ/2) formula.
 // The Orloj and NorthOUT are the same stereographic projection from the
 // observer's hidden celestial pole (eye = NCP / tangent plane = SCP in
@@ -78,7 +78,7 @@ struct OrlojWidgetView: View {
                             lineArt: renderingMode != .fullColor)
         }
         .containerBackground(for: .widget) {
-            EArtist.shared.canvasBackground
+            Artist.shared.canvasBackground
         }
         .preferredColorScheme(.dark)
     }

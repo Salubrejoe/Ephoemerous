@@ -30,3 +30,8 @@ Pods/
 
 # Claude Code tooling / linked worktrees
 .claude/
+
+# Generated art — App Store screenshots and widget/postcard renders.
+# Regenerate with: xcrun simctl launch <udid> com.lorep.uk.Ephoemerous -shot exportart
+AppStoreShots/
+WidgetArt/

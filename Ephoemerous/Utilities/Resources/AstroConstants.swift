@@ -208,12 +208,12 @@ enum AstroConstants {
     // -------------------------------------------------------------------------
     /// Canvas star dot. Pogson-style exponential in magnitude, so each step
     /// in magnitude multiplies the radius by `dotMagRatio` (≪ 1 → faint
-    /// stars fall off fast). Visual radius applied in EArtist is half of
+    /// stars fall off fast). Visual radius applied in Artist is half of
     /// the value returned by `starRadius`.
     ///   r = clamp(dotMinRadius, dotMaxRadius, dotBaseRadius · dotMagRatio^mag)
     static let dotBaseRadius:     Double = 2.7    // r at magnitude 0
     static let dotMagRatio:       Double = 0.55   // multiplier per +1 magnitude
-    static let dotMaxRadius:      Double = 4.0    // cap → Sirius display radius = 2 px (after EArtist halves)
+    static let dotMaxRadius:      Double = 4.0    // cap → Sirius display radius = 2 px (after Artist halves)
     static let dotMinRadius:      Double = 0.4   // floor — keeps mag 8+ as sub-pixel specks rather than zero
     /// Planet dot: max(planetDotMinR, (planetDotScale − baseMag) × planetDotFactor) / 2
     static let planetDotScale:    Double = 5.0
@@ -238,7 +238,7 @@ enum AstroConstants {
     static let detailDotMax:      Double = 28.0
     static let detailDotFactor:   Double =  4.5
     /// Magnitude filter
-    static let defaultMagCap:     Double =  4.5
+    static let defaultMagCap:     Double =  5.0
     static let magRangeMin:       Double = -2.0
     static let magRangeMax:       Double =  8.0
 
@@ -252,7 +252,7 @@ enum AstroConstants {
 //    static let defaultOffsetX:    Double  = -50.0
     static let defaultOffsetY:    Double  = 0.0
     /// Hard zoom-in ceiling. Mirrors the gesture coordinator's
-    /// `maximumScale` so focus-to-tier (EAppState+Detail) and the pinch
+    /// `maximumScale` so focus-to-tier (AppState+Detail) and the pinch
     /// clamp agree on the deepest the canvas can zoom.
     static let maximumScale:      Double  = 1200
 

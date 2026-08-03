@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Strings
 // Centralised user-facing copy. This table holds ONLY translatable text +
 // format specifiers — never:
-//   • SF Symbol names  → LoreSymbol / ESymbol
+//   • SF Symbol names  → LoreSymbol / Symbol
 //   • config identifiers (bundle / group / iCloud container) → project
 //     settings + entitlements, which are the real source of truth
 //   • hardcoded astronomical data → the detail views compute it live
@@ -155,8 +155,8 @@ struct Strings {
     // change). Display-name localisation for these (e.g. planet / moon-
     // phase names) belongs in a separate display layer, TBD.
 
-    /// Planet names — `EPlanet.name` identity, `EPalette`/`EArtist`
-    /// glyph+gradient switch keys, and the `ECloudSync` favourites key.
+    /// Planet names — `Planet.name` identity, `Palette`/`Artist`
+    /// glyph+gradient switch keys, and the `CloudSync` favourites key.
     struct Planets {
         static let mercury        = "Mercury"
         static let venus          = "Venus"
@@ -169,7 +169,7 @@ struct Strings {
         static let meanMagnitude  = "Mean magnitude"
     }
 
-    /// Moon-phase names — used as switch keys in `EMoonDetailView`
+    /// Moon-phase names — used as switch keys in `MoonDetailView`
     /// (phase → symbol). Canonical until the display layer lands.
     struct MoonPhase {
         static let newMoon        = "New Moon"

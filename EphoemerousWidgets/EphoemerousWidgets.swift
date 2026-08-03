@@ -104,7 +104,7 @@ private enum Pin {
 // MARK: - Sky snapshot
 // The REAL sky at `date` from the observer's origin — the same
 // stereographic pipeline the app renders with (`SkyCamera` +
-// `EProjection`, compiled into this target), drawn once into a
+// `Projection`, compiled into this target), drawn once into a
 // widget-sized Canvas. The camera is offset so the object's projection
 // lands exactly on the pin's precise-location dot.
 // Internal (not private): the app's `SkyShareCard` renders the very same
@@ -120,7 +120,7 @@ struct SkySnapshot {
     let focusPoint: CGPoint
     /// Set when the PINNED object is a constellation — it has no badge
     /// or dot; instead its stick-figure is traced solid on the map.
-    let pinnedConstellation: EConstellation?
+    let pinnedConstellation: Constellation?
     /// The pinned object's direction, in the SAME sidereally-rotated
     /// frame the camera projects from — kept for the altitude/azimuth
     /// readout (large family only) so it isn't recomputed twice.
@@ -140,14 +140,14 @@ struct SkySnapshot {
 
         let lat = Angle.degrees(origin?.latDeg ?? 51.48)   // Greenwich fallback
         let lon = Angle.degrees(origin?.lonDeg ?? 0)
-        let viewpoint = EProjection.Viewpoint(
+        let viewpoint = Projection.Viewpoint(
             originVector: Angle.spherePoint(latitude: lat, longitude: lon),
             planeVector:  Angle.spherePoint(latitude: .radians(-lat.radians),
                                             longitude: lon + .radians(.pi)))
         // −GMST, not −LST: the viewpoint anchors are geographic globe
         // vectors, so longitude lives in the anchor and the sky spins by
         // GMST alone — same frame as the app (see localSiderealOffset).
-        let sidereal = -EPrecession.gmstSiderealOffset(for: date)
+        let sidereal = -Precession.gmstSiderealOffset(for: date)
 
         // ▼ TWEAK the postcard zoom here — screen pt per projection unit ▼
         let scale: CGFloat = 110
@@ -161,7 +161,7 @@ struct SkySnapshot {
         let dot = focus ?? Pin.dot(in: size, isLandscape: isLandscape)
         focusPoint = dot
         var offset = CGSize.zero
-        if let target, let p = EProjection.project(target, viewpoint: viewpoint) {
+        if let target, let p = Projection.project(target, viewpoint: viewpoint) {
             offset = CGSize(width:  dot.x - size.width  / 2 - p.x * scale,
                             height: dot.y - size.height / 2 + p.y * scale)
         }
@@ -214,19 +214,19 @@ struct SkySnapshot {
         case .star(let s):
             return s.equatorialVector.sidereallyRotated(by: sidereal)
         case .sun:
-            let lambda = ESunPosition.eclipticLongitude(for: date)
+            let lambda = SunPosition.eclipticLongitude(for: date)
             return SIMD3.eclipticPoint(lambda: lambda).sidereallyRotated(by: sidereal)
         case .moon:
-            let (vec, _, _) = EMoonPosition.vector(for: date, siderealOffset: sidereal)
+            let (vec, _, _) = MoonPosition.vector(for: date, siderealOffset: sidereal)
             return vec
         case .planet(let p):
-            return EPlanetPosition.allVectors(for: date, siderealOffset: sidereal)
+            return PlanetPosition.allVectors(for: date, siderealOffset: sidereal)
                 .first { $0.0 == p }?.1
         case .constellation(let c):
             // The figure-star centroid — the same anchor the app labels
             // the constellation at — so the FIGURE parks on the pin spot.
             guard let anchor = ConstellationLines.shared.labelAnchors[c] else { return nil }
-            return EPrecession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
+            return Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
                 .sidereallyRotated(by: sidereal)
         case nil:
             return nil
@@ -250,18 +250,18 @@ struct SkySnapshot {
         }
 
         if pinned != "sun" {
-            let lambda = ESunPosition.eclipticLongitude(for: date)
+            let lambda = SunPosition.eclipticLongitude(for: date)
             if let sc = admit(camera.screen(equatorial: .eclipticPoint(lambda: lambda))) {
-                out.append((.sun, sc, ESkyObject.sun.displayName))
+                out.append((.sun, sc, SkyObject.sun.displayName))
             }
         }
         if pinned != "moon" {
-            let (vec, _, _) = EMoonPosition.vector(for: date, siderealOffset: camera.sidereal)
+            let (vec, _, _) = MoonPosition.vector(for: date, siderealOffset: camera.sidereal)
             if let sc = admit(camera.screen(rotatedEquatorial: vec)) {
-                out.append((.moon, sc, ESkyObject.moon.displayName))
+                out.append((.moon, sc, SkyObject.moon.displayName))
             }
         }
-        for (planet, vec, _, _) in EPlanetPosition.allVectors(for: date,
+        for (planet, vec, _, _) in PlanetPosition.allVectors(for: date,
                                                               siderealOffset: camera.sidereal)
         where pinned != "planet_\(planet.name)" {
             if let sc = admit(camera.screen(rotatedEquatorial: vec)) {
@@ -325,7 +325,7 @@ struct SkySnapshot {
         // The pinned one is skipped: the bottom-leading block names it.
         for (cons, anchor) in ConstellationLines.shared.labelAnchors
         where cons != pinnedConstellation {
-            let vec = EPrecession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
+            let vec = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: vec),
                   sc.x > 10, sc.x < size.width - 10,
                   sc.y > 10, sc.y < size.height - 10 else { continue }
@@ -515,7 +515,7 @@ struct SkyObjectWidgetView: View {
             }
         }
         .containerBackground(for: .widget) {
-            EArtist.shared.canvasBackground
+            Artist.shared.canvasBackground
         }
     }
 
@@ -523,7 +523,7 @@ struct SkyObjectWidgetView: View {
     /// flat POI treatment at this zoom (names ride the tier reveal).
     @MainActor
     private func flatLabel(_ category: POICategory, name: String) -> some View {
-        let style = EArtist.shared.poiStyle(for: category)
+        let style = Artist.shared.poiStyle(for: category)
         return POILabelView(category:    category,
                             text:        name,
                             labelStyle:  labelStyle(for: category),
@@ -538,7 +538,7 @@ struct SkyObjectWidgetView: View {
     /// The roomier families get a bigger badge — proportionate to the tile.
     @MainActor
     private func promotedPin(_ category: POICategory, in size: CGSize) -> some View {
-        let style = EArtist.shared.poiStyle(for: category)
+        let style = Artist.shared.poiStyle(for: category)
         let isSun = category == .sun
         let isMoon = category == .moon
         let isSunOrMoon = isSun || isMoon
