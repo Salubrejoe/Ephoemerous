@@ -34,8 +34,10 @@ extension EArtist {
         let tier:           POITier
 
         /// Casing colour shared by every badge — the light outline that
-        /// reads against a busy sky. One source of truth for all categories.
-        var border: Color { .black.opacity(0.9) }
+        /// reads against a busy sky. One source of truth for all categories,
+        /// and for the marks that aren't badges either (the favourite heart)
+        /// — see `EArtist.poiBadgeCasing`.
+        var border: Color { EArtist.shared.poiBadgeCasing }
         /// Rendered-scale at which the badge appears (tier 0 → 1).
         var badgeIn: Double { tier.badgeIn }
         /// Rendered-scale at which the name appears (tier 1 → 2).
@@ -160,6 +162,11 @@ extension EArtist {
     /// Squircle bulge shared by every badge — corner count is
     /// per-category, see `POICategoryStyle.badgeCorners`.
     var poiBadgeBulge: CGFloat { 3.9 }
+
+    /// The dark casing every POI mark wears. Lives here (not on the
+    /// per-category style) so non-badge marks — the favourite heart — can
+    /// speak the same grammar. ▼ TWEAK the casing here ▼
+    var poiBadgeCasing: Color { .black.opacity(0.9) }
     /// Horizontal gap between the badge's right edge and the text's
     /// left edge — keeps the pill from feeling crowded.
     var poiTextLeadingGap: CGFloat { 6 }

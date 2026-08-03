@@ -32,7 +32,10 @@ struct StarLabels: View {
                              text:        mark.star.displayName,
                              labelStyle:    .star,
                              badgeReveal: mark.badgeReveal,
-                             nameReveal:  mark.nameReveal)
+                             nameReveal:  mark.nameReveal,
+                             // Rides in with the NAME, not the badge — see
+                             // POILabelView.companionReveal.
+                             companionReveal: mark.companionReveal)
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(mark.sc)
@@ -45,6 +48,9 @@ struct StarLabels: View {
         let sc:          CGPoint
         let badgeReveal: Double
         let nameReveal:  Double
+        /// Non-zero only for a double worth splitting — most multiples
+        /// don't qualify (`EStarMultiplicity.isShowpiece`).
+        let companionReveal: Double
         var id: String { star.id }
     }
 
@@ -56,9 +62,12 @@ struct StarLabels: View {
             guard scale >= style.badgeIn else { return nil }        // badge tier gate
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -40, sc.x < w + 40, sc.y > -40, sc.y < h + 40 else { return nil }
+            let nameReveal = POILabelView.tierReveal(scale: scale, threshold: style.textIn)
+            let isDouble   = star.multiplicity?.isShowpiece == true
             return Mark(star: star, sc: sc,
                         badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
-                        nameReveal:  POILabelView.tierReveal(scale: scale, threshold: style.textIn))
+                        nameReveal:  nameReveal,
+                        companionReveal: isDouble ? nameReveal : 0)
         }
     }
 }

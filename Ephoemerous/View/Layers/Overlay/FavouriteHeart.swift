@@ -33,18 +33,12 @@ struct FavouriteHeart: View {
     /// so a highlighted favourite isn't drawn twice (pin + heart).
     var selectedID: String? = nil
 
-    /// One favourite tint everywhere — matches SearchSheet's REMEMBERED
-    /// header. Muted so metadata never outshines the stars. ▼ TWEAK ▼
-    private static let heartTint = Color.pink.opacity(0.75)
-
     var body: some View {
         ZStack {
             ForEach(marks) { mark in
                 if mark.badged {
-                    Image(systemName: "suit.heart.fill")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(Self.heartTint)
-                        .shadow(color: .black.opacity(0.4), radius: 1.5)
+                    FavouriteHeartMark(size: 9,
+                                       borderScaleCompensation: pinch)
                         .rotationEffect(-rotation, anchor: .center)
                         .scaleEffect(1 / pinch)
                         // Top-leading of the star so it reads as a corner

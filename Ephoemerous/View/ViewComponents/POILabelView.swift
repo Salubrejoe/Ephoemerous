@@ -56,6 +56,14 @@ struct POILabelView: View {
     /// orb enlarges, the casing weight holds constant. Default 1 (no
     /// caller scaling) leaves every other call site untouched.
     var borderScaleCompensation: CGFloat = 1
+    /// 0…1 reveal for the COMPANION PIP — a second, smaller orb tucked at
+    /// the badge's lower-trailing edge, marking a double you could actually
+    /// split. Not "this is a binary": 83% of the stars we label are multiple
+    /// systems, so that would fire on nearly everything (see
+    /// `EStarMultiplicity.isShowpiece`). Callers ride it in with the NAME
+    /// tier, not the badge tier — at badge tier the mark is a few points
+    /// across and a pip would just fur its edge. 0 = absent.
+    var companionReveal: Double = 0
 
     /// Gap (pt) between the badge's trailing edge and the name.
     private let nameGap: CGFloat = 6
@@ -71,7 +79,8 @@ struct POILabelView: View {
         labelStyle: LabelStyle = .planetoids,
         badgeReveal: Double = 1,
         nameReveal: Double = 1,
-        borderScaleCompensation: CGFloat = 1
+        borderScaleCompensation: CGFloat = 1,
+        companionReveal: Double = 0
     ) {
         self.category = category
         self.text = text
@@ -79,6 +88,7 @@ struct POILabelView: View {
         self.badgeReveal = badgeReveal
         self.nameReveal = nameReveal
         self.borderScaleCompensation = borderScaleCompensation
+        self.companionReveal = companionReveal
     }
 
     var body: some View {
@@ -157,6 +167,28 @@ struct POILabelView: View {
             Squircle(corners: 5, bulge: bulge)
                 .stroke(isMasked ? .clear : style.border, lineWidth: bw)
         )
+        // Companion pip — the same orb in miniature, at the lower-trailing
+        // edge. It reads as what an eyepiece shows: one star, then a second
+        // beside it. Lower-TRAILING because the favourite heart takes the
+        // upper-leading corner (see FavouriteHeart), so a star can be both
+        // remembered and double without the two marks colliding.
+        // ▼ TWEAK the pip's size and how far it sits out ▼
+        .overlay(alignment: .bottomTrailing) {
+            if companionReveal > 0.01 {
+                let pip = d * 0.55        // ▼ TWEAK the companion's size ▼
+                Squircle(corners: 5, bulge: bulge)
+                    .fill(LinearGradient(colors: [style.gradientTop, style.gradientBottom],
+                                         startPoint: .bottom, endPoint: .top))
+                    .overlay(
+                        Squircle(corners: 5, bulge: bulge)
+                            .stroke(isMasked ? .clear : style.border, lineWidth: bw * 0.8)
+                    )
+                    .frame(width: pip, height: pip)
+                    .offset(x: pip * 0.52, y: pip * 0.34)
+                    .opacity(companionReveal)
+                    .blur(radius: (1 - companionReveal) * Self.badgeBlur * 0.5)
+            }
+        }
         // Soft drop shadow for lift (one view → cheap, unlike the Canvas
         // per-glyph blur). No glow under a masking host — it just fattens
         // the white blob.

@@ -28,6 +28,12 @@ struct PromotedLabel: View {
     /// and the false→true flip fires the celebration (burst + pop + haptic).
     var isFavourite: Bool = false
 
+    /// Only stars can be doubles, and only the rewarding ones are marked.
+    private var isShowpieceDouble: Bool {
+        if case .star(let s) = selection { return s.multiplicity?.isShowpiece == true }
+        return false
+    }
+
     private var labelStyle: POILabelView.LabelStyle {
         switch selection {
         case .star(_):
@@ -53,7 +59,8 @@ struct PromotedLabel: View {
                 SkyLabPromotedPin(category: poi.category,
                                   name:     poi.name,
                                   labelStyle: labelStyle,
-                                  favourite: isFavourite)
+                                  favourite: isFavourite,
+                                  isDouble:  isShowpieceDouble)
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
@@ -73,6 +80,9 @@ private struct SkyLabPromotedPin: View {
     let labelStyle: POILabelView.LabelStyle
     /// Remembered state of the object this pin stands for.
     let favourite:  Bool
+    /// A double worth splitting — earns the companion pip, same as the
+    /// canvas labels (see `EStarMultiplicity.isShowpiece`).
+    let isDouble:   Bool
 
     /// 0 = flat (badge on the point), 1 = fully promoted pin. Springs up
     /// on appear — the underdamped overshoot is the Apple-Maps pop.
@@ -137,17 +147,16 @@ private struct SkyLabPromotedPin: View {
                          labelStyle: labelStyle,
                          badgeReveal: 1,
                          nameReveal:  0,
-                         borderScaleCompensation: 1 / (scale * popScale))
+                         borderScaleCompensation: 1 / (scale * popScale),
+                         companionReveal: isDouble ? 1 : 0)
                 .scaleEffect(scale * popScale)
                 .position(x: cx, y: badgeY)
 
             // Corner heart — the persistent Remembered mark, springing in
             // on the flip and riding the badge's top-trailing corner (matches
             // the field hearts, one pink voice everywhere).
-            Image(systemName: "suit.heart.fill")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Self.heartTint)
-                .shadow(color: .black.opacity(0.4), radius: 1.5)
+            FavouriteHeartMark(size: 13,
+                               borderScaleCompensation: 1 / max(popScale, 0.2))
                 .scaleEffect(favourite ? popScale : 0.2)
                 .opacity(favourite ? 1 : 0)
                 .position(x: cx + onScreen * 0.42,
@@ -205,7 +214,9 @@ private struct SkyLabPromotedPin: View {
 
     /// One favourite tint everywhere — matches `FavouriteHeart` and the
     /// search sheet's REMEMBERED header.
-    private static let heartTint = Color.pink
+    /// The celebration burst rides the heart's own colour — one pink
+    /// voice, defined by `FavouriteHeartMark`.
+    private static let heartTint = FavouriteHeartMark.bright
 
     /// Footnote serif bold (CoreText needs a concrete UIFont) — matches the
     /// flat label's name font.
