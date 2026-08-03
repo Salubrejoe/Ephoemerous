@@ -60,11 +60,15 @@ struct StarMultiplicity: Hashable {
 
     /// Plain-language observing note — the detail sheet's line. Deliberately
     /// says what to DO, not what the numbers are; the numbers sit beside it.
+    ///
+    /// Nothing is returned above 120″: "wide enough to split by eye" tells
+    /// you nothing you can act on — a pair that far apart doesn't read as a
+    /// pair, it reads as two stars, and the Separation row already says how
+    /// far. A hint only earns its row when it names an INSTRUMENT.
     var observingHint: String? {
-        guard let separation, separation > 0 else { return nil }
-        if separation >= 120 { return String(localized: "Wide enough to split by eye") }
-        if separation >= 25  { return String(localized: "Binoculars divide it") }
-        if separation >= 2   { return String(localized: "A small telescope divides it") }
+        guard let separation, separation > 0, separation < 120 else { return nil }
+        if separation >= 25 { return String(localized: "Binoculars divide it") }
+        if separation >= 2  { return String(localized: "A small telescope divides it") }
         return String(localized: "Too close to split — a very fine pair")
     }
 

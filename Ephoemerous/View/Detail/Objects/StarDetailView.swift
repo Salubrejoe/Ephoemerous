@@ -60,14 +60,7 @@ struct StarDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.top,        12)
 
-                DetailStatList(stats: [
-                    .init(label: String(localized: "Distance"),       value: distanceText),
-                    .init(label: String(localized: "Spectral class"), value: star.spectralClass.rawValue),
-                    .init(label: String(localized: "Magnitude"),      value: magnitudeText),
-                    .init(label: String(localized: "Right ascension"), value: raText),
-                    .init(label: String(localized: "Declination"),    value: decText),
-                    .init(label: String(localized: "Proper motion"),  value: pmText),
-                ])
+                DetailStatList(stats: stats)
             }
             Spacer(minLength: 0)
         }
@@ -113,6 +106,63 @@ struct StarDetailView: View {
         }
     }
 
+
+    // MARK: Stat rows
+
+    /// The sheet's rows. Companion facts sit directly under Magnitude —
+    /// they qualify how the star LOOKS, so they belong with brightness
+    /// rather than after the positional/catalogue tail (RA, Dec, μ).
+    private var stats: [DetailStat] {
+        [
+            .init(label: String(localized: "Distance"),        value: distanceText),
+            .init(label: String(localized: "Spectral class"),  value: star.spectralClass.rawValue),
+            .init(label: String(localized: "Magnitude"),       value: magnitudeText),
+        ]
+        + companionStats
+        + [
+            .init(label: String(localized: "Right ascension"), value: raText),
+            .init(label: String(localized: "Declination"),     value: decText),
+            .init(label: String(localized: "Proper motion"),   value: pmText),
+        ]
+    }
+
+    /// Companion rows, present ONLY when the catalogue actually knows
+    /// something. Every row here is individually optional: BSC5 fills these
+    /// columns unevenly, and an empty "Separation —" row is worse than no
+    /// row at all. A star with no companion data adds nothing.
+    private var companionStats: [DetailStat] {
+        guard let m = star.multiplicity else { return [] }
+        var rows: [DetailStat] = []
+
+        if let hint = m.observingHint {
+            rows.append(.init(label: String(localized: "Companion"), value: hint))
+        }
+        if let text = separationText(m) {
+            rows.append(.init(label: String(localized: "Separation"), value: text))
+        }
+        if let dm = m.magnitudeDifference, dm > 0 {
+            rows.append(.init(label: String(localized: "Brightness gap"),
+                              value: String(format: "%.1f mag", dm)))
+        }
+        if let count = m.componentCount, count > 1 {
+            rows.append(.init(label: String(localized: "Components"), value: "\(count)"))
+        }
+        return rows
+    }
+
+    /// Separation, in whichever unit reads without a mental conversion:
+    /// arcseconds up to a minute, then arcminutes (Alpheratz's 81.5″ is
+    /// easier to picture as 1.4′).
+    ///
+    /// `0` is NOT "touching" — it is the catalogue's "known multiple, gap
+    /// unrecorded", which is why Mizar carries no separation despite being
+    /// a 14″ pair. Saying so is more honest than printing 0.0″.
+    private func separationText(_ m: StarMultiplicity) -> String? {
+        guard let sep = m.separation else { return nil }
+        if sep == 0    { return String(localized: "Unresolved") }
+        if sep >= 60   { return String(format: "%.1f′", sep / 60) }
+        return String(format: "%.1f″", sep)
+    }
 
     // MARK: Value formatting
 
@@ -162,9 +212,19 @@ struct StarDetailView: View {
 // MARK: - Preview
 
 #if DEBUG
-#Preview {
+#Preview("Star") {
     NavigationStack {
         StarDetailView(star: Star.mockStars[0])
+    }
+    .environment(AppState())
+}
+
+// A real showpiece double, so the companion rows have something to say.
+#Preview("Double star") {
+    let double = StarDatabase.shared.workableStars
+        .first { $0.multiplicity?.isShowpiece == true } ?? Star.mockStars[0]
+    return NavigationStack {
+        StarDetailView(star: double)
     }
     .environment(AppState())
 }
