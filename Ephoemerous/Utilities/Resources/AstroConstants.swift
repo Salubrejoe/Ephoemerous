@@ -238,7 +238,7 @@ enum AstroConstants {
     static let detailDotMax:      Double = 28.0
     static let detailDotFactor:   Double =  4.5
     /// Magnitude filter
-    static let defaultMagCap:     Double =  4.5
+    static let defaultMagCap:     Double =  5.0
     static let magRangeMin:       Double = -2.0
     static let magRangeMax:       Double =  8.0
 
