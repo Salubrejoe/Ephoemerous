@@ -32,6 +32,6 @@ struct CameraClusterCapsule: View {
                        startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
         CameraClusterCapsule()
-            .environment(EAppState())
+            .environment(AppState())
     }
 }

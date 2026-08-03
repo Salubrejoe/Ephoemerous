@@ -29,7 +29,7 @@ import LoreKit
 // comparability (click, click, watch the sky change).
 struct DateCrown: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
 
     // MARK: Gears
 
@@ -305,6 +305,6 @@ struct DateCrown: View {
                        startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
         DateCrown(radius: 170, gear: .constant(.hours))
-            .environment(EAppState())
+            .environment(AppState())
     }
 }

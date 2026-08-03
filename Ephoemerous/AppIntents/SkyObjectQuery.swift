@@ -25,8 +25,8 @@ struct SkyObjectQuery: EntityQuery, EntityStringQuery {
         var out: [SkyObjectEntity] = []
         out.append(SkyObjectEntity(.sun))
         out.append(SkyObjectEntity(.moon))
-        out.append(contentsOf: EPlanet.all.map { SkyObjectEntity(.planet($0)) })
-        // FavouritesStore, not ECloudSync — this file also compiles in the
+        out.append(contentsOf: Planet.all.map { SkyObjectEntity(.planet($0)) })
+        // FavouritesStore, not CloudSync — this file also compiles in the
         // widget extension, where only the KVS read side exists.
         for fav in FavouritesStore().favourites() {
             let entity = SkyObjectEntity(fav)

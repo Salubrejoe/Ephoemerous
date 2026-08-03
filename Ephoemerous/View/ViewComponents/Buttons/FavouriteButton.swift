@@ -11,17 +11,17 @@ import LoreKit
 // The accent only specialises for stars (spectral class). Other
 // categories fall back to `.primary` until their detail UI lights up.
 struct FavouriteButton: View {
-    @Environment(EAppState.self) var state
-    let obj: ESkyObject
+    @Environment(AppState.self) var state
+    let obj: SkyObject
 
-    init(obj: ESkyObject) {
+    init(obj: SkyObject) {
         self.obj = obj
     }
 
     /// Convenience for the common star call site — keeps usage as
     /// `FavouriteButton(star: …)` legible even though the canonical
     /// form is `FavouriteButton(obj: .star(…))`.
-    init(star: EStar) {
+    init(star: Star) {
         self.obj = .star(star)
     }
 

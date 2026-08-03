@@ -8,9 +8,9 @@ import SwiftUI
 // `onGeometryChange` on it fires every frame the sheet moves.
 //
 // Attach `.tracksBottomSheet()` to a sheet's root content; it publishes the
-// top edge to `EAppState.bottomSheetTop` and clears it on dismiss.
+// top edge to `AppState.bottomSheetTop` and clears it on dismiss.
 private struct BottomSheetTracker: ViewModifier {
-    @Environment(EAppState.self) private var app
+    @Environment(AppState.self) private var app
 
     /// Publisher identity. During a sheet SWAP (search → detail) the two
     /// trackers overlap: the incoming sheet publishes while the outgoing
@@ -38,7 +38,7 @@ private struct BottomSheetTracker: ViewModifier {
 
 extension View {
     /// Publish this sheet's live top-edge Y (global) to
-    /// `EAppState.bottomSheetTop` for every frame of the drag. See
+    /// `AppState.bottomSheetTop` for every frame of the drag. See
     /// `BottomSheetTracker`.
     func tracksBottomSheet() -> some View { modifier(BottomSheetTracker()) }
 }

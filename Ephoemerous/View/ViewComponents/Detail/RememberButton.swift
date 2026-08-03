@@ -17,11 +17,11 @@ import LoreKit
 //
 // "Remember" is the in-UI verb for what the codebase calls a favourite —
 // softer than "follow", matching the app's mnemonic voice. State-bound
-// to `EAppState.isFavourite(obj)`; toggles via `toggleFavourite(obj)`.
-// Works for any ESkyObject case.
+// to `AppState.isFavourite(obj)`; toggles via `toggleFavourite(obj)`.
+// Works for any SkyObject case.
 struct RememberButton: View {
-    @Environment(EAppState.self) var state
-    let obj: ESkyObject
+    @Environment(AppState.self) var state
+    let obj: SkyObject
 
     /// Same fixed height the paired DetailActionRow pills use, so the
     /// row keeps a constant height whether or not the object has a myth.

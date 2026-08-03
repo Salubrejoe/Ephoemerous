@@ -2,14 +2,14 @@ import AppIntents
 import Foundation
 
 // MARK: - SkyObjectEntity
-// `ESkyObject` as the system sees it — the AppEntity that widgets
+// `SkyObject` as the system sees it — the AppEntity that widgets
 // (configuration parameter), Shortcuts and Siri all resolve against.
 // The exposed universe: the Sun, the Moon, each planet, and every
 // favourite (stars + constellations ride in through the favourites).
 //
 // IDENTITY: ids must survive relaunch AND cross processes (a widget
 // stores the id and resolves it cold), so they are built on the same
-// canonical names the iCloud favourites keys use — NOT `ESkyObject.id`,
+// canonical names the iCloud favourites keys use — NOT `SkyObject.id`,
 // whose star arm embeds a per-launch UUID:
 //
 //   sun · moon · planet_Mars · star_Sirius · constellation_orion
@@ -32,9 +32,9 @@ struct SkyObjectEntity: AppEntity {
                               image:    .init(systemName: symbolName))
     }
 
-    // MARK: ESkyObject → entity
+    // MARK: SkyObject → entity
 
-    init(_ obj: ESkyObject) {
+    init(_ obj: SkyObject) {
         switch obj {
         case .star(let s):
             id         = "star_\(s.name)"
@@ -76,31 +76,31 @@ struct SkyObjectEntity: AppEntity {
     }
 
     /// The live model object this entity stands for — resolved fresh so
-    /// stars come back as real `EStar`s, not stale snapshots.
+    /// stars come back as real `Star`s, not stale snapshots.
     @MainActor
-    var skyObject: ESkyObject? { Self.skyObject(for: id) }
+    var skyObject: SkyObject? { Self.skyObject(for: id) }
 
     @MainActor
-    private static func skyObject(for id: String) -> ESkyObject? {
+    private static func skyObject(for id: String) -> SkyObject? {
         switch id {
         case "sun":  return .sun
         case "moon": return .moon
         default:
             if id.hasPrefix("planet_") {
                 let name = String(id.dropFirst("planet_".count))
-                return EPlanet.all.first { $0.name == name }
-                                  .map(ESkyObject.planet)
+                return Planet.all.first { $0.name == name }
+                                  .map(SkyObject.planet)
             }
             if id.hasPrefix("constellation_") {
                 let raw = String(id.dropFirst("constellation_".count))
-                return EConstellation(rawValue: raw)
-                                  .map(ESkyObject.constellation)
+                return Constellation(rawValue: raw)
+                                  .map(SkyObject.constellation)
             }
             if id.hasPrefix("star_") {
                 let name = String(id.dropFirst("star_".count))
                 return StarDatabase.shared.workableStars
                                   .first { $0.name == name }
-                                  .map(ESkyObject.star)
+                                  .map(SkyObject.star)
             }
             return nil
         }

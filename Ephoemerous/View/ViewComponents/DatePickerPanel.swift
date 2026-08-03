@@ -21,7 +21,7 @@ import LoreKit
 // new month's max so we never construct an illegal date (e.g. 31 Feb).
 struct DatePickerPanel: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
 
     @State private var gear: DateCrown.Gear = .hours
     /// Precise-wheels disclosure — folded by default; the crown's centre
@@ -270,5 +270,5 @@ struct DatePickerPanel: View {
             DatePickerPanel()
         }
     }
-    .environment(EAppState())
+    .environment(AppState())
 }

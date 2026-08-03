@@ -20,13 +20,13 @@ import LoreKit
 //
 // The horizontal-scroll favourites row uses the shared
 // `StarCard` / `ConstellationCard` from
-// `View/Cards/EFavouriteCards.swift`. Tapping any favourite card
+// `ViewComponents/FavouriteCards.swift`. Tapping any favourite card
 // — or any result row — focuses the canvas on that object and
 // dismisses the sheet; the existing `detailDestination` flow then
 // brings up the matching detail card.
 struct SearchSheet: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
     @State private var searchText: String = ""
     @FocusState private var searchFocused: Bool
     @State private var detent: PresentationDetent = Self.barDetent
@@ -109,7 +109,7 @@ struct SearchSheet: View {
             if !text.isEmpty, detent == Self.barDetent { detent = .medium }
         }
         .fullScreenCover(isPresented: $showHRDiagram) {
-            EHRDiagramView()
+            HRDiagramView()
         }
         .alert("Return to your location?",
                isPresented: Bindable(state)._compassReturnHomePrompt) {
@@ -156,7 +156,7 @@ struct SearchSheet: View {
     /// the user spec'd. Solar-system favourites are stored on
     /// `state.favourites` but don't have a card form yet (they're
     /// always present on the canvas anyway).
-    private var favouriteCards: [ESkyObject] {
+    private var favouriteCards: [SkyObject] {
         state.favourites.filter {
             switch $0 {
             case .star, .constellation: return true
@@ -190,7 +190,7 @@ struct SearchSheet: View {
     }
 
     @ViewBuilder
-    private func cardView(for obj: ESkyObject) -> some View {
+    private func cardView(for obj: SkyObject) -> some View {
         switch obj {
         case .star(let s):          StarCard(star: s)
         case .constellation(let c): ConstellationCard(constellation: c)
@@ -201,7 +201,7 @@ struct SearchSheet: View {
 
     /// One recents row — icon + name + type, mirroring `resultRow` but
     /// laid out for the inset card (its own padding, no List chrome).
-    private func recentRowBody(for obj: ESkyObject) -> some View {
+    private func recentRowBody(for obj: SkyObject) -> some View {
         HStack(spacing: 12) {
             resultIcon(for: obj)
                 .frame(width: 32, height: 32)
@@ -262,7 +262,7 @@ struct SearchSheet: View {
         .scrollContentBackground(.hidden)
     }
 
-    private func resultRow(for obj: ESkyObject) -> some View {
+    private func resultRow(for obj: SkyObject) -> some View {
         Button { open(obj) } label: {
             HStack(spacing: 12) {
                 resultIcon(for: obj)
@@ -286,7 +286,7 @@ struct SearchSheet: View {
     }
 
     @ViewBuilder
-    private func resultIcon(for obj: ESkyObject) -> some View {
+    private func resultIcon(for obj: SkyObject) -> some View {
         switch obj {
         case .star(let s):
             POILabelView(category: .followedStar(s), text: "", labelStyle: .star)
@@ -301,14 +301,14 @@ struct SearchSheet: View {
             POILabelView(category: .planet(p), text: "")
 //            POIBadgeView(category: .planet(p), size: 22)
         case .constellation(let c):
-            Image(symbol: EArtist.shared.constellationEntitySymbol(
-                EArtist.shared.constellationEntity(of: c)
+            Image(symbol: Artist.shared.constellationEntitySymbol(
+                Artist.shared.constellationEntity(of: c)
             ))
             .foregroundStyle(.secondary)
         }
     }
 
-    private func typeLabel(_ obj: ESkyObject) -> String {
+    private func typeLabel(_ obj: SkyObject) -> String {
         switch obj {
         case .star(let s):          return String(localized: "Star · \(s.constellation.localizedName)")
         case .sun:                  return String(localized: "Solar system · Star")
@@ -322,15 +322,15 @@ struct SearchSheet: View {
 
     private var query: String { searchText.lowercased() }
 
-    private var solarResults: [ESkyObject] {
-        let all: [ESkyObject] = [.sun, .moon] + EPlanet.all.map { .planet($0) }
+    private var solarResults: [SkyObject] {
+        let all: [SkyObject] = [.sun, .moon] + Planet.all.map { .planet($0) }
         return all.filter { $0.searchTokens.contains(query) }
     }
 
-    private var constellationResults: [ESkyObject] {
-        EConstellation.allCases
+    private var constellationResults: [SkyObject] {
+        Constellation.allCases
             .filter { $0 != .none }
-            .map    { ESkyObject.constellation($0) }
+            .map    { SkyObject.constellation($0) }
             .filter { $0.searchTokens.contains(query) }
             .sorted { $0.displayName < $1.displayName }
     }
@@ -338,10 +338,10 @@ struct SearchSheet: View {
     /// Hard cap the star list because there are ~hundreds of named
     /// stars and the list would otherwise wreck the sheet's
     /// scroll feel for a query like "a".
-    private var starResults: [ESkyObject] {
+    private var starResults: [SkyObject] {
         let matches = StarDatabase.shared.listableStars
             .filter { $0.name != "Unknown" }
-            .map    { ESkyObject.star($0) }
+            .map    { SkyObject.star($0) }
             .filter { $0.searchTokens.contains(query) }
         return Array(matches.prefix(50))
     }
@@ -353,7 +353,7 @@ struct SearchSheet: View {
     /// search sheet out for the detail sheet — MainView's derived binding
     /// hides search the moment a selection exists. We just drop keyboard
     /// focus and reset the field so search returns clean on dismiss.
-    private func open(_ obj: ESkyObject) {
+    private func open(_ obj: SkyObject) {
         searchFocused = false
         searchText = ""
         state.focus(on: obj)
@@ -362,5 +362,5 @@ struct SearchSheet: View {
 
 #Preview {
     SearchSheet()
-        .environment(EAppState())
+        .environment(AppState())
 }

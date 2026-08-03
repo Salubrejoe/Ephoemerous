@@ -21,7 +21,7 @@ import LoreKit
 struct FavouriteHeart: View {
 
     let camera: SkyCamera
-    let stars:  [EStar]
+    let stars:  [Star]
     let pinch:  CGFloat
     /// Live (clamped) zoom — gates the heart on the followed-star badge
     /// tier so the heart only ever rides a visible badge.
@@ -47,7 +47,7 @@ struct FavouriteHeart: View {
                 } else {
                     // Tier-0 pentagon dot in the star's spectral rim colour —
                     // the followed-star mark the style system already defines.
-                    Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
+                    Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
                         .fill(mark.dotColor)
                         .frame(width: mark.dotRadius * 2, height: mark.dotRadius * 2)
                         .scaleEffect(1 / pinch)
@@ -71,7 +71,7 @@ struct FavouriteHeart: View {
             guard star.id != selectedID else { return nil }    // shown as the promoted pin
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -20, sc.x < w + 20, sc.y > -20, sc.y < h + 20 else { return nil }
-            let style = EArtist.shared.poiStyle(for: .followedStar(star))
+            let style = Artist.shared.poiStyle(for: .followedStar(star))
             return Mark(id:        star.id,
                         sc:        sc,
                         badged:    scale >= style.badgeIn,

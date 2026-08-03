@@ -19,7 +19,7 @@ import LoreKit
 struct NamedStarDotsCanvas: View, Equatable {
 
     let camera:     SkyCamera
-    let stars:      [EStar]      // proper-named, favourites excluded
+    let stars:      [Star]      // proper-named, favourites excluded
     let scale:      CGFloat      // live (clamped) scale
     let selectedID: String?      // promoted star is drawn by the pin instead
 
@@ -34,7 +34,7 @@ struct NamedStarDotsCanvas: View, Equatable {
 
     var body: some View {
         Canvas { ctx, _ in
-            let a = EArtist.shared
+            let a = Artist.shared
             guard scale >= a.namedStarDotIn else { return }   // hard tier gate
 
             let w = camera.size.width, h = camera.size.height

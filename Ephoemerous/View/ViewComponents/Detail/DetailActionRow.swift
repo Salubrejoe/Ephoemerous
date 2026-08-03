@@ -38,9 +38,9 @@ import LoreKit
 // stars in them).
 
 struct DetailActionRow: View {
-    let obj:         ESkyObject
+    let obj:         SkyObject
 
-    @Environment(EAppState.self) var state
+    @Environment(AppState.self) var state
 
     /// Drives `Image(systemName:)` between `heart` and `heart.fill`.
     /// Separate from `remembered` because we deliberately delay the
@@ -70,7 +70,7 @@ struct DetailActionRow: View {
     @Namespace private var morphNS
 
     private var remembered: Bool { state.isFavourite(obj) }
-//    private var accent:     Color { EArtist.shared.constellationMythGradient(myth).top }
+//    private var accent:     Color { Artist.shared.constellationMythGradient(myth).top }
 
     /// Fixed row height for every pill in every state. Widths morph
     /// between circular (== height) and "fills the rest of the row";
@@ -166,7 +166,7 @@ struct DetailActionRow: View {
 // MARK: - Preview
 
 #Preview("Orion star") {
-    DetailActionRow(obj: .star(EStar.mockStars[0]))
+    DetailActionRow(obj: .star(Star.mockStars[0]))
     .padding()
-    .environment(EAppState())
+    .environment(AppState())
 }

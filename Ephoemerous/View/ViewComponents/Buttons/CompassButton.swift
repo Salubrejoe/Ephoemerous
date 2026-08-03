@@ -18,10 +18,10 @@ import LoreKit
 // where it stays as a live heading readout.
 //
 // E/W run the SKY way here (East left of North), matching the
-// inside-the-dome projection — see `EProjection` / `cardinalAtTop`.
+// inside-the-dome projection — see `Projection` / `cardinalAtTop`.
 struct CompassButton: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
 
     /// Crisp tick on reset — same rigid feel as the rotation detent.
     private let resetHaptic = UIImpactFeedbackGenerator(style: .rigid)
@@ -158,7 +158,7 @@ private struct CompassPressStyle: ButtonStyle {
             .ignoresSafeArea()
         CompassButton()
             .environment({
-                let s = EAppState()
+                let s = AppState()
                 s.canvasRotation = .degrees(134)
                 return s
             }())

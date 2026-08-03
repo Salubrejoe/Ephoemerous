@@ -18,7 +18,7 @@ import simd
 struct PromotedLabel: View {
 
     let camera:    SkyCamera
-    let selection: ESkyObject?
+    let selection: SkyObject?
     let date:      Date
     let pinch:     CGFloat
     /// Live map rotation — counter-rotated so the pin stays screen-upright
@@ -81,7 +81,7 @@ private struct SkyLabPromotedPin: View {
     /// Remembered state of the object this pin stands for.
     let favourite:  Bool
     /// A double worth splitting — earns the companion pip, same as the
-    /// canvas labels (see `EStarMultiplicity.isShowpiece`).
+    /// canvas labels (see `StarMultiplicity.isShowpiece`).
     let isDouble:   Bool
 
     /// 0 = flat (badge on the point), 1 = fully promoted pin. Springs up
@@ -98,10 +98,10 @@ private struct SkyLabPromotedPin: View {
     /// Fixed local canvas; centre == the precise location (the object).
     private let box = CGSize(width: 220, height: 140)
 
-    private var style: EArtist.POICategoryStyle { EArtist.shared.poiStyle(for: category) }
+    private var style: Artist.POICategoryStyle { Artist.shared.poiStyle(for: category) }
 
     var body: some View {
-        let a        = EArtist.shared
+        let a        = Artist.shared
         let badge    = style.badgeSize
         let lift     = promo * a.poiSelectLiftFactor * badge          // badge rises
         let scale    = 1 + promo * (a.poiSelectScale - 1)             // badge enlarges

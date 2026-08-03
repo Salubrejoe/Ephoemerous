@@ -24,23 +24,23 @@ struct CelestialGridCanvas: View, Equatable {
             // Parallels — constant declination, RA sweeps 0…2π.
             for decDeg in Self.parallelsDeg {
                 appendCurve(to: &path) { t in
-                    EPrecession.equatorialVector(ra:  .radians(t * 2 * .pi),
+                    Precession.equatorialVector(ra:  .radians(t * 2 * .pi),
                                                  dec: .degrees(decDeg))
                 }
             }
             // Meridians — constant RA, Dec sweeps −90°…90°.
             for h in Self.meridianHours {
                 appendCurve(to: &path) { t in
-                    EPrecession.equatorialVector(ra:  .radians(h / 24 * 2 * .pi),
+                    Precession.equatorialVector(ra:  .radians(h / 24 * 2 * .pi),
                                                  dec: .radians((t - 0.5) * .pi))
                 }
             }
             
             ctx.stroke(
                 path,
-                with: .color(EArtist.shared.gridColor),
+                with: .color(Artist.shared.gridColor),
 //                with: .color(.secondary.opacity(0.25)),
-                lineWidth: EArtist.shared.gridWidth
+                lineWidth: Artist.shared.gridWidth
             )
         }
     }

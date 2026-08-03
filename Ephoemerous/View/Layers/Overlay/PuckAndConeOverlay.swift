@@ -4,14 +4,14 @@ import LoreKit
 // `CLHeading`'s members (headingAccuracy / trueHeading / magneticHeading) are
 // read in `drawAim`. MEMBER_IMPORT_VISIBILITY is on for this project, so the
 // DEFINING module must be imported explicitly — reaching them through
-// `ELocationService.heading` isn't enough. Xcode 26.6 enforces this; the 27
+// `LocationService.heading` isn't enough. Xcode 26.6 enforces this; the 27
 // beta doesn't, which is how it reached CI unnoticed.
 import CoreLocation
 
 // MARK: - SkyLabUserLocationOverlay
 // The "you are here" cluster — aim cone + globe puck — anchored at the
 // zenith (`camera.screen(.zero)`). Native port of production's
-// `UserLocationLayer`, reusing its tunables/styling (EArtist.userPuck* /
+// `UserLocationLayer`, reusing its tunables/styling (Artist.userPuck* /
 // aimCone*), with the puck drawn as a plain CIRCLE (the squircle scallop
 // border dropped).
 //
@@ -28,7 +28,7 @@ struct PuckAndConeOverlay: View {
 
     let camera: SkyCamera
     let pinch:  CGFloat
-    @Environment(EAppState.self) private var app
+    @Environment(AppState.self) private var app
 
     var body: some View {
         // The puck + cone are anchored to the zenith (projection origin). As
@@ -54,8 +54,8 @@ struct PuckAndConeOverlay: View {
     // MARK: Aim cone
 
     private func drawAim(_ ctx: GraphicsContext, zenith: CGPoint) {
-        let a = EArtist.shared
-        let compass  = ELocationService.shared.heading
+        let a = Artist.shared
+        let compass  = LocationService.shared.heading
         let accuracy = (compass?.headingAccuracy ?? -1) >= 0
             ? compass!.headingAccuracy
             : a.userPuckConeMinHalfAngle
@@ -69,7 +69,7 @@ struct PuckAndConeOverlay: View {
 
         // Live device motion → real direction cone (tip is the projected
         // aim point, so it carries rotation + the pitch→length law).
-        if let aim = EMotionService.shared.aim,
+        if let aim = MotionService.shared.aim,
            let wedge = aimWedge(zenith: zenith, azimuth: aim.azimuth,
                                 altitude: aim.altitude, accuracy: accuracy) {
             paint(wedge.path, length: wedge.length)
@@ -89,7 +89,7 @@ struct PuckAndConeOverlay: View {
     /// and direction tracks azimuth + the camera rotation automatically.
     private func aimWedge(zenith: CGPoint, azimuth: Double, altitude: Double,
                           accuracy: Double) -> (path: Path, length: CGFloat)? {
-        let a = EArtist.shared
+        let a = Artist.shared
         let geared     = altitude * 180 / .pi * a.aimConeLengthGain
         let clampedDeg = min(a.aimConeMaxAltitudeDeg, max(a.aimConeMinAltitudeDeg, geared))
         let displayAlt = clampedDeg * .pi / 180
@@ -108,7 +108,7 @@ struct PuckAndConeOverlay: View {
     }
 
     private func clampHalfAngle(_ accuracy: Double) -> Double {
-        let a = EArtist.shared
+        let a = Artist.shared
         return max(a.userPuckConeMinHalfAngle, min(a.userPuckConeMaxHalfAngle, accuracy)) * .pi / 180
     }
 
@@ -135,11 +135,11 @@ struct PuckAndConeOverlay: View {
     // and the horizon bump), solid in the grid ink with a casing ring so it
     // reads "marker", never "button".
     private var puck: some View {
-        let size = EArtist.shared.userPuckSize * 0.7
+        let size = Artist.shared.userPuckSize * 0.7
         let mark = Squircle(corners: 12, bulge: 2.5)
         return mark
-            .fill(EArtist.shared.gridColor)
-            .overlay(mark.stroke(EArtist.shared.canvasBackground, lineWidth: 2))
+            .fill(Artist.shared.gridColor)
+            .overlay(mark.stroke(Artist.shared.canvasBackground, lineWidth: 2))
             .frame(width: size, height: size)
     }
 }

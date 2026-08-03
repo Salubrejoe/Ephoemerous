@@ -4,7 +4,7 @@ import LoreKit
 
 struct MainToolbar: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
     @Environment(\.scenePhase)   private var scenePhase
 
     /// Bumped on appear and on every scene-becomes-active so the
@@ -132,7 +132,7 @@ struct MainToolbar: View {
     /// and we actually have a fix to return to — so the leading "back to
     /// Here" chip is worth showing.
     private var notHere: Bool {
-        ELocationService.shared.location != nil && !state.isAtDeviceLocation
+        LocationService.shared.location != nil && !state.isAtDeviceLocation
     }
 
     /// True when the observation time is more than a minute off real now,
@@ -219,5 +219,5 @@ extension MainToolbar {
                 .padding(.bottom,     12)
         }
     }
-    .environment(EAppState())
+    .environment(AppState())
 }

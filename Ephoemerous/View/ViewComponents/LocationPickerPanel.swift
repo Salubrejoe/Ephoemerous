@@ -19,7 +19,7 @@ import LoreKit
 // the map.
 struct LocationPickerPanel: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
 
     @State private var completer = LocationSearchCompleter()
     @State private var cameraPosition: MapCameraPosition = .automatic
@@ -215,8 +215,8 @@ struct LocationPickerPanel: View {
         // The 12-point horizon scallop — the app's signature silhouette
         // (shared with the user puck + horizon rim) instead of a generic
         // ring, so the aim reticle reads as Ephoemerous's own. Corner /
-        // bulge come from EArtist so it can never drift from the real rim.
-        let artist = EArtist.shared
+        // bulge come from Artist so it can never drift from the real rim.
+        let artist = Artist.shared
         return ZStack {
             Squircle(corners: artist.horizonBumpCorners,
                      bulge:   artist.horizonBumpBulge)
@@ -283,6 +283,6 @@ struct LocationPickerPanel: View {
 
 #Preview {
     LocationPickerPanel()
-        .environment(EAppState())
+        .environment(AppState())
         .padding()
 }

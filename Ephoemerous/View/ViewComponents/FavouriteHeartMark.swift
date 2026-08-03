@@ -41,13 +41,13 @@ struct FavouriteHeartMark: View {
     }
 
     var body: some View {
-        let bw = EArtist.shared.poiTextBorderWidth * borderScaleCompensation * 0.7
+        let bw = Artist.shared.poiTextBorderWidth * borderScaleCompensation * 0.7
 
         heart
             .fill(LinearGradient(colors: [Self.deep, Self.bright],
                                  startPoint: .bottom, endPoint: .top))
             .overlay {
-                heart.stroke(isMasked ? .clear : EArtist.shared.poiBadgeCasing,
+                heart.stroke(isMasked ? .clear : Artist.shared.poiBadgeCasing,
                              lineWidth: bw)
             }
             .frame(width: size, height: size)

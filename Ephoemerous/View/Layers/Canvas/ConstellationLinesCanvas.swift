@@ -15,7 +15,7 @@ import simd
 struct ConstellationLinesCanvas: View, Equatable {
 
     let camera:         SkyCamera
-    let favouriteTints: [EConstellation: Color]
+    let favouriteTints: [Constellation: Color]
 
     static func == (l: Self, r: Self) -> Bool {
         l.camera == r.camera && l.favouriteTints == r.favouriteTints

@@ -7,7 +7,7 @@ struct DetailHScrollView: View {
         enum StatType {
             case rightAscenscion, declination, distance, magnitude, diameter, hrClass, period
             
-            var symbol: ESymbol {
+            var symbol: Symbol {
                 switch self {
                 case .rightAscenscion:
                         .rightAscension

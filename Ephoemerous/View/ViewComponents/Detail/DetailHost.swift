@@ -1,16 +1,16 @@
 import SwiftUI
 
 // MARK: - DetailHost
-// Hosts the right detail view for the current `ESkyObject` destination.
-// The NavigationStack is here so EConstellationDetailView can still
-// push to EStarDetailView via NavigationLink, but the system nav bar
+// Hosts the right detail view for the current `SkyObject` destination.
+// The NavigationStack is here so ConstellationDetailView can still
+// push to StarDetailView via NavigationLink, but the system nav bar
 // is hidden — each detail view draws its own Apple-Maps-style
 // `DetailHeader` (share / title / subtitle / icon / xmark) and
 // `RememberButton` so the chrome looks the same regardless of how
 // you got to it.
 struct DetailHost: View {
-    @Environment(EAppState.self) var state
-    let obj: ESkyObject
+    @Environment(AppState.self) var state
+    let obj: SkyObject
 
     var body: some View {
         NavigationStack {
@@ -22,11 +22,11 @@ struct DetailHost: View {
     @ViewBuilder
     private var content: some View {
         switch obj {
-        case .sun:                  ESunDetailView()
-        case .moon:                 EMoonDetailView()
-        case .star(let s):          EStarDetailView(star: s)
-        case .planet(let p):        ENSPlanetDetailView(planet: p)
-        case .constellation(let c): EConstellationDetailView(constellation: c)
+        case .sun:                  SunDetailView()
+        case .moon:                 MoonDetailView()
+        case .star(let s):          StarDetailView(star: s)
+        case .planet(let p):        PlanetDetailView(planet: p)
+        case .constellation(let c): ConstellationDetailView(constellation: c)
         }
     }
 }

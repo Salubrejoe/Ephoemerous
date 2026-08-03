@@ -143,6 +143,8 @@ struct CircleIconLabel: View {
 
     var body: some View {
         Image(symbol: symbol)
+//            .imageScale(.large)
+            .bold()
             .offset(y: symbol == .share ? -2 : 0)
             .frame(width: 44, height: 44)
             .contentShape(.circle)
@@ -162,6 +164,8 @@ struct CircleIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(symbol: symbol)
+//                .imageScale(.large)
+                .bold()
                 .offset(y: symbol == .share ? -2 : 0)
         }
         .frame(width: 44, height: 44)

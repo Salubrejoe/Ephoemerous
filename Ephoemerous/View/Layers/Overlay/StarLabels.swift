@@ -12,7 +12,7 @@ import simd
 struct StarLabels: View {
 
     let camera:     SkyCamera
-    let stars:      [EStar]
+    let stars:      [Star]
     let pinch:      CGFloat
     let scale:      CGFloat
     /// Live map rotation — counter-rotated per label so the badge stays
@@ -20,7 +20,7 @@ struct StarLabels: View {
     /// symbol centre. Committed rotation only moves positions, so the live
     /// delta is all we cancel.
     let rotation:   Angle
-    let category:   (EStar) -> POICategory
+    let category:   (Star) -> POICategory
     /// The selected star is drawn by the promoted overlay instead — skip it
     /// here so its badge isn't drawn twice.
     var selectedID: String? = nil
@@ -44,12 +44,12 @@ struct StarLabels: View {
     }
 
     private struct Mark: Identifiable {
-        let star:        EStar
+        let star:        Star
         let sc:          CGPoint
         let badgeReveal: Double
         let nameReveal:  Double
         /// Non-zero only for a double worth splitting — most multiples
-        /// don't qualify (`EStarMultiplicity.isShowpiece`).
+        /// don't qualify (`StarMultiplicity.isShowpiece`).
         let companionReveal: Double
         var id: String { star.id }
     }
@@ -58,7 +58,7 @@ struct StarLabels: View {
         let w = camera.size.width, h = camera.size.height
         return stars.compactMap { star in
             guard star.id != selectedID else { return nil }         // promoted elsewhere
-            let style = EArtist.shared.poiStyle(for: category(star))
+            let style = Artist.shared.poiStyle(for: category(star))
             guard scale >= style.badgeIn else { return nil }        // badge tier gate
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -40, sc.x < w + 40, sc.y > -40, sc.y < h + 40 else { return nil }

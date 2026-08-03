@@ -17,11 +17,11 @@ import LoreKit
 // share plumbing. Nothing here is interactive; it exists to be drawn once.
 struct SkyShareCard: View {
 
-    let object:    ESkyObject
+    let object:    SkyObject
     let date:      Date
     let latDeg:    Double
     let lonDeg:    Double
-    /// Resolved town, when the app knows one (`EAppState.localityName`).
+    /// Resolved town, when the app knows one (`AppState.localityName`).
     /// Falls back to coordinates so the card is never anonymous.
     let placeName: String?
 
@@ -48,7 +48,7 @@ struct SkyShareCard: View {
         let snap = snapshot
 
         ZStack(alignment: .bottomLeading) {
-            EArtist.shared.canvasBackground
+            Artist.shared.canvasBackground
 
             // The sky: stars, constellation figures + names, the horizon.
             // A denser field than any widget — this is a big canvas and the
@@ -86,7 +86,7 @@ struct SkyShareCard: View {
         Text("Ephemerous")
             .font(.system(size: 12, weight: .semibold, design: .serif))
             .foregroundStyle(.white.opacity(0.5))
-            .shadow(color: EArtist.shared.canvasBackground.opacity(0.9), radius: 3)
+            .shadow(color: Artist.shared.canvasBackground.opacity(0.9), radius: 3)
             .padding(.top, 20)
             .padding(.trailing, 22)
     }
@@ -97,8 +97,8 @@ struct SkyShareCard: View {
     /// whole card — the sky stays sharp above the fold.
     private var scrim: some View {
         LinearGradient(colors: [.clear,
-                                EArtist.shared.canvasBackground.opacity(0.55),
-                                EArtist.shared.canvasBackground.opacity(0.92)],
+                                Artist.shared.canvasBackground.opacity(0.55),
+                                Artist.shared.canvasBackground.opacity(0.92)],
                        startPoint: .center, endPoint: .bottom)
             .allowsHitTesting(false)
     }
@@ -187,7 +187,7 @@ struct SkyShareCard: View {
     /// treatment at this zoom.
     @MainActor
     private func flatLabel(_ category: POICategory, name: String) -> some View {
-        let style = EArtist.shared.poiStyle(for: category)
+        let style = Artist.shared.poiStyle(for: category)
         return POILabelView(category:    category,
                             text:        name,
                             labelStyle:  labelStyle(for: category),

@@ -28,9 +28,9 @@ struct SolarSystemLabels: View {
     var rotation: Angle = .zero
     /// Selected body is drawn by the promoted overlay instead — skip it
     /// here so its badge isn't drawn twice.
-    var selected: ESkyObject? = nil
+    var selected: SkyObject? = nil
 
-    private var artist: EArtist { .shared }
+    private var artist: Artist { .shared }
 
     var body: some View {
         // Declutter: labels never overlap. Priority runs Sun > Moon >
@@ -97,7 +97,7 @@ struct SolarSystemLabels: View {
     /// `.position` is the shared recipe for every native overlay.
     /// `suppressName` drops the label to badge-only (collision declutter).
     @ViewBuilder
-    private func marker(for object: ESkyObject,
+    private func marker(for object: SkyObject,
                         at sc: CGPoint?,
                         category: POICategory,
                         text: String,
@@ -122,23 +122,23 @@ struct SolarSystemLabels: View {
     // MARK: Positions
 
     private var sunScreen: CGPoint? {
-        let lambda = ESunPosition.eclipticLongitude(for: date)
+        let lambda = SunPosition.eclipticLongitude(for: date)
         return camera.screen(equatorial: .eclipticPoint(lambda: lambda))
     }
 
     private var moonScreen: CGPoint? {
-        let (vec, _, _) = EMoonPosition.vector(for: date, siderealOffset: camera.sidereal)
+        let (vec, _, _) = MoonPosition.vector(for: date, siderealOffset: camera.sidereal)
         return camera.screen(rotatedEquatorial: vec)
     }
 
     private struct PlanetMark: Identifiable {
-        let planet: EPlanet
+        let planet: Planet
         let sc:     CGPoint
         var id: String { planet.name }
     }
 
     private var planetMarks: [PlanetMark] {
-        EPlanetPosition.allVectors(for: date, siderealOffset: camera.sidereal)
+        PlanetPosition.allVectors(for: date, siderealOffset: camera.sidereal)
             .compactMap { planet, vec, _, _ in
                 camera.screen(rotatedEquatorial: vec).map { PlanetMark(planet: planet, sc: $0) }
             }

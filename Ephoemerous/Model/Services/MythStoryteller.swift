@@ -71,7 +71,7 @@ final class MythStoryteller {
     /// Generate the origin story for `cons` in `tone`. Cancels any in-flight
     /// telling. Falls back to the curated catasterism when the on-device
     /// model isn't available.
-    func tell(_ cons: EConstellation, tone: Tone) {
+    func tell(_ cons: Constellation, tone: Tone) {
         let key = "\(cons.rawValue)#\(tone.rawValue)"
         lastKey = key
         task?.cancel()
@@ -121,7 +121,7 @@ final class MythStoryteller {
         """
     }
 
-    private static func prompt(for cons: EConstellation) -> String {
+    private static func prompt(for cons: Constellation) -> String {
         let cat       = ConstellationCategories.shared.category(for: cons)
         let placement = ConstellationCatasterism.shared.catasterism(for: cons)
 
@@ -142,7 +142,7 @@ final class MythStoryteller {
 
     /// One light, real fact: the brightest member's name, colour, magnitude
     /// and (if known) distance — straight from the catalogue.
-    private static func starFacts(for cons: EConstellation) -> String? {
+    private static func starFacts(for cons: Constellation) -> String? {
         guard let b = cons.stars.min(by: { $0.magnitude < $1.magnitude }) else { return nil }
         var s = "You may weave in AT MOST TWO real facts, lightly: its most prominent star is "
             + "\(b.displayName), a \(colour(b.spectralClass)) star of magnitude "
@@ -152,7 +152,7 @@ final class MythStoryteller {
         return s
     }
 
-    private static func colour(_ c: EHRClass) -> String {
+    private static func colour(_ c: HRClass) -> String {
         switch c.rawValue {
         case "O", "B": "blue-white"
         case "A":      "white"

@@ -11,7 +11,7 @@ import simd
 // the live pan / zoom is a single transform on the shared parent ZStack,
 // so the Canvas grid and the SwiftUI overlays move as one and cannot
 // desync — the whole point of the experiment. Astronomical inputs
-// (viewpoint, sidereal time) are read from the shared `EAppState`; the
+// (viewpoint, sidereal time) are read from the shared `AppState`; the
 // transform (scale / offset) is the lab's own, independent of production.
 struct SkyCamera: Equatable {
     var scale:  CGFloat
@@ -29,7 +29,7 @@ struct SkyCamera: Equatable {
     var rotation: Angle = .zero
     var size:   CGSize
 
-    var viewpoint: EProjection.Viewpoint
+    var viewpoint: Projection.Viewpoint
     var sidereal:  Angle
 
     static func == (l: SkyCamera, r: SkyCamera) -> Bool {
@@ -73,7 +73,7 @@ struct SkyCamera: Equatable {
     /// frame — the Moon / planet position helpers bake the rotation in
     /// (they take a `siderealOffset`), so re-rotating would double it.
     func screen(rotatedEquatorial Q: SIMD3<Double>) -> CGPoint? {
-        guard let p = EProjection.project(Q, viewpoint: viewpoint) else { return nil }
+        guard let p = Projection.project(Q, viewpoint: viewpoint) else { return nil }
         return screen(p)
     }
 }

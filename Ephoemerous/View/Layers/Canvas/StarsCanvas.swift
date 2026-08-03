@@ -16,7 +16,7 @@ import LoreKit
 // outside the disc and are culled by the canvas-bounds test.
 struct StarsCanvas: View, Equatable {
     let camera: SkyCamera
-    let stars:  [EStar]
+    let stars:  [Star]
     /// Favourites are represented by their `.followedStar` badge + heart, so
     /// they're skipped here — otherwise a bright favourite's white field dot,
     /// riding the parent zoom transform, balloons out from behind its
@@ -51,7 +51,7 @@ struct StarsCanvas: View, Equatable {
             // The tier at which a named star's own dot takes over. Read
             // once — not per star — and compared against the COMMITTED
             // camera scale, since this canvas is frozen during a gesture.
-            let namedDotIn   = EArtist.shared.namedStarDotIn
+            let namedDotIn   = Artist.shared.namedStarDotIn
             let namedHandsOff = camera.scale >= namedDotIn
 
             for star in stars {
@@ -68,7 +68,7 @@ struct StarsCanvas: View, Equatable {
                     Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
                                            width: r * 2, height: r * 2)),
                     with: .color(
-                        EArtist.shared.gridColor.opacity(Self.opacity(forMagnitude: star.magnitude))
+                        Artist.shared.gridColor.opacity(Self.opacity(forMagnitude: star.magnitude))
                     )
                 )
             }

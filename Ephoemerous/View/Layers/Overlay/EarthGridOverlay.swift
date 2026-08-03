@@ -16,7 +16,7 @@ import LoreKit
 struct EarthGridOverlay: View {
 
     let camera: SkyCamera
-    @Environment(EAppState.self) private var app
+    @Environment(AppState.self) private var app
 
     private struct Band {
         let altitude: Angle

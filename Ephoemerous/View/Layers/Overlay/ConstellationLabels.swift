@@ -36,7 +36,7 @@ struct ConstellationLabels: View {
 
     /// Constellation text tier.
     private static let textIn: Double =
-        EArtist.shared.poiStyle(for: .constellation).textIn
+        Artist.shared.poiStyle(for: .constellation).textIn
 
     private static let blur: CGFloat = 4
 
@@ -77,7 +77,7 @@ struct ConstellationLabels: View {
         return ConstellationLines.shared.labelAnchors.compactMap { cons, anchor in
             let selected = cons.rawValue == selectedID
             guard reveal > 0.01 || selected else { return nil }
-            let q = EPrecession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
+            let q = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: q) else { return nil }
             guard sc.x > -60, sc.x < w + 60, sc.y > -60, sc.y < h + 60 else { return nil }
             return Mark(id: cons.rawValue, name: cons.localizedName,

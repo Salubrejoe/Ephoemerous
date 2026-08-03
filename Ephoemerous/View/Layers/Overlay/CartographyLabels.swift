@@ -42,7 +42,7 @@ struct CartographyLabels: View, Equatable {
 
     var body: some View {
         Canvas { ctx, _ in
-            let artist = EArtist.shared
+            let artist = Artist.shared
             let zenith = camera.screen(.zero)
             let horizonFont   = Font.caption2.weight(.light)
 //            let horizonFont   = Font.system(size: 10, weight: .regular)
@@ -127,8 +127,8 @@ struct CartographyLabels: View, Equatable {
     // MARK: Sun geometry (twilight placement)
 
     private var sunDeclination: Double {
-        let lambda = ESunPosition.eclipticLongitude(for: date)
-        return ESunPosition.equatorialCoords(lambda: lambda).dec.radians
+        let lambda = SunPosition.eclipticLongitude(for: date)
+        return SunPosition.equatorialCoords(lambda: lambda).dec.radians
     }
 
     /// Eastern (rising) azimuth where the sun reaches altitude `h`, or
@@ -155,7 +155,7 @@ struct CartographyLabels: View, Equatable {
     }
 
     private func meridianPoint(ra: Angle, dec: Double) -> CGPoint? {
-        camera.screen(equatorial: EPrecession.equatorialVector(ra: ra, dec: .radians(dec)))
+        camera.screen(equatorial: Precession.equatorialVector(ra: ra, dec: .radians(dec)))
     }
 
     // MARK: Per-glyph placement

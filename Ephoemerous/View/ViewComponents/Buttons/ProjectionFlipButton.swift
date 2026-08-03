@@ -8,7 +8,7 @@ import SwiftUI
 // mirrors `CompassModeButton` so the top control cluster reads as one family.
 struct ProjectionFlipButton: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
 
     /// `bare` = no glass of its own — for riding inside the shared camera
     /// capsule, where the container carries the glass and the ENGAGED state
@@ -58,6 +58,6 @@ struct ProjectionFlipButton: View {
                        startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
         ProjectionFlipButton()
-            .environment(EAppState())
+            .environment(AppState())
     }
 }

@@ -4,9 +4,9 @@ import LoreKit
 // MARK: - POI types
 // The category / glyph / myth vocabulary shared by every tracked
 // celestial object's Apple-Maps-style label. These are standalone
-// value types (not `EArtist` members); the styling that maps them to
-// colours + thresholds lives in `EArtist+POIStyle.swift`, and the
-// drawing in `EArtist+POILabel.swift`.
+// value types (not `Artist` members); the styling that maps them to
+// colours + thresholds lives in `Artist+POIStyle.swift`, and the
+// drawing in `Artist+POILabel.swift`.
 
 enum POIGlyph {
     /// SF Symbol drawn via `Image(systemName:)`. Use for "named"
@@ -18,13 +18,13 @@ enum POIGlyph {
     case unicode(String)
 
     /// Typed builders so glyph call sites reference a `LoreSymbol` /
-    /// `ESymbol` case instead of a raw string — one source of truth per
+    /// `Symbol` case instead of a raw string — one source of truth per
     /// symbol. The canvas path stays string-based (`.sfSymbol`), so this
     /// is pure call-site sugar. Distinct enums, no name collisions, so
     /// `.symbol(.starFill)` (Lore) and `.symbol(.sunMaxFill)` (E) both
     /// resolve via leading-dot.
     static func symbol(_ s: LoreSymbol) -> POIGlyph { .sfSymbol(s.rawValue) }
-    static func symbol(_ s: ESymbol)    -> POIGlyph { .sfSymbol(s.rawValue) }
+    static func symbol(_ s: Symbol)    -> POIGlyph { .sfSymbol(s.rawValue) }
 }
 
 /// Shape for the tier-0 "dot" marker — what the POI collapses to
@@ -73,14 +73,14 @@ enum POICategory: Equatable {
     /// Constellations wear a single neutral tint now — the myth colour
     /// taxonomy is retired (see DeprecationStation), so no payload.
     case constellation
-    case followedStar(EStar)
+    case followedStar(Star)
     /// Proper-named star surfaced as a POI at high zoom. Visually a
     /// quieter sibling of `.followedStar` — same pentagon silhouette
     /// and spectral palette, but later thresholds so they only appear
     /// when the user is clearly zoomed in. Selecting (following) a
     /// named star promotes it to `.followedStar`.
-    case namedStar(EStar)
+    case namedStar(Star)
     case sun
     case moon
-    case planet(EPlanet)
+    case planet(Planet)
 }

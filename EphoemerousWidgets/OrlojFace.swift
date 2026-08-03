@@ -36,11 +36,11 @@ struct OrlojFace {
     /// `workableStars` rebuilds ~9k structs per ACCESS — fine for a
     /// widget's single render per timeline entry, lethal on the watch
     /// where the Digital Crown re-renders the face every tick.
-    private static let starField: [EStar] =
+    private static let starField: [Star] =
         StarDatabase.shared.workableStars.filter { $0.magnitude <= 4.6 }
 
     /// +1 north of the equator, −1 south. The projection flings out the
-    /// observer's HIDDEN pole (see `EProjection.project(_:viewpoint:)`),
+    /// observer's HIDDEN pole (see `Projection.project(_:viewpoint:)`),
     /// so every hardcoded northern declination mirrors below the equator
     /// — the tympan builds around the other pole.
     private var hemi: Double { latitude.radians >= 0 ? 1 : -1 }
@@ -64,10 +64,10 @@ struct OrlojFace {
         let lon = Angle.degrees(origin?.lonDeg ?? 14.42)
         latitude  = lat
         longitude = lon
-        lst = EPrecession.lst(for: date, longitude: lon)
+        lst = Precession.lst(for: date, longitude: lon)
         ui  = min(1, min(size.width, size.height) / 340)   // systemLarge ≈ 1
 
-        let viewpoint = EProjection.Viewpoint(
+        let viewpoint = Projection.Viewpoint(
             originVector: Angle.spherePoint(latitude: lat, longitude: lon),
             planeVector:  Angle.spherePoint(latitude: .radians(-lat.radians),
                                             longitude: lon + .radians(.pi)),
@@ -76,7 +76,7 @@ struct OrlojFace {
         // ▼ TWEAK the dial size here — fit the Roman dial ring within
         // ~42% of the shorter side (numerals need breathing room past
         // it). Solved directly (radius is linear in scale). NOTE the
-        // factor 2: EProjection's stereographic puts a declination
+        // factor 2: Projection's stereographic puts a declination
         // circle at ρ = 2·tan(45°+δ/2) projection units — the same 2 as
         // northOutDefaultScale's derivation. ▼
         let targetOuterRadius = min(size.width, size.height) * 0.52
@@ -88,7 +88,7 @@ struct OrlojFace {
         // The face must stand STILL — meridian vertical, noon at top,
         // the sky rotating over it (dial fixed, rete turns — the real
         // mechanism). At morph 1 the screen basis is east-pinned (see
-        // EProjection) but still time-dependent through `sidereal`, so:
+        // Projection) but still time-dependent through `sidereal`, so:
         // project a probe at H = 0 (upper meridian, RA = LST) with an
         // unrotated camera, measure where it landed, and set the camera
         // rotation that carries it straight UP.
@@ -96,16 +96,16 @@ struct OrlojFace {
         // `sidereal` is −GMST, NOT −LST: the anchors (`originVector`,
         // `skyPoint`'s zenith) are geographic globe vectors, so longitude
         // lives in the anchor and the sky spins over it by GMST alone —
-        // same frame as the app (see EAppState.localSiderealOffset).
+        // same frame as the app (see AppState.localSiderealOffset).
         // −LST double-counted longitude and spun the tympan (horizon,
         // twilight bands, Latin labels) by `lon` against the rete/ring.
-        let sidereal = -EPrecession.gmstSiderealOffset(for: date)
+        let sidereal = -Precession.gmstSiderealOffset(for: date)
         let unrotated = SkyCamera(scale: scale, offset: .zero, size: size,
                                  viewpoint: viewpoint, sidereal: sidereal)
         var rotation = Angle.zero
         let c = unrotated.screen(.zero)
         if let probe = unrotated.screen(
-            equatorial: EPrecession.equatorialVector(ra: lst, dec: .zero)) {
+            equatorial: Precession.equatorialVector(ra: lst, dec: .zero)) {
             let theta = atan2(Double(probe.y - c.y), Double(probe.x - c.x))
             rotation = .radians(-Double.pi / 2 - theta)
         }
@@ -267,7 +267,7 @@ struct OrlojFace {
 
     /// The crown: the outer dial as a GLASS BAND whose outer edge is the
     /// app's SIGNATURE SCALLOPED SQUIRCLE — the same corner/bulge pair
-    /// as the horizon rim (EArtist.horizonBump*, the DateCrown language).
+    /// as the horizon rim (Artist.horizonBump*, the DateCrown language).
     /// Inner edge stays a true circle (the dial side). Even-odd.
     /// ▼ TWEAK the band edges here ▼
     @MainActor
@@ -276,8 +276,8 @@ struct OrlojFace {
         let outerR = roman + 19 * ui
         let rect   = CGRect(x: center.x - outerR, y: center.y - outerR,
                             width: outerR * 2, height: outerR * 2)
-        var path = Squircle(corners: EArtist.shared.horizonBumpCorners,
-                            bulge:   EArtist.shared.horizonBumpBulge).path(in: rect)
+        var path = Squircle(corners: Artist.shared.horizonBumpCorners,
+                            bulge:   Artist.shared.horizonBumpBulge).path(in: rect)
         path.addPath(circle(center, roman + 3 * ui))
         return path
     }
@@ -326,10 +326,10 @@ struct OrlojFace {
     @MainActor
     func planetMarks() -> [(id: String, position: CGPoint, top: Color, bottom: Color)] {
         var out: [(String, CGPoint, Color, Color)] = []
-        for (planet, vec, _, _) in EPlanetPosition.allVectors(for: date,
+        for (planet, vec, _, _) in PlanetPosition.allVectors(for: date,
                                                               siderealOffset: camera.sidereal) {
             guard let sc = camera.screen(rotatedEquatorial: vec) else { continue }
-            let g = EArtist.shared.planetGradient(planet)
+            let g = Artist.shared.planetGradient(planet)
             out.append((planet.name, sc, g.top, g.bottom))
         }
         return out
@@ -430,14 +430,14 @@ struct OrlojFace {
         return merged
     }
 
-    /// The 12 zodiac glyphs (EZodiacSign — Aries at λ 0°) at their sign
+    /// The 12 zodiac glyphs (ZodiacSign — Aries at λ 0°) at their sign
     /// midpoints on the band's CENTRELINE — between the rim lines — feet
     /// toward the ring's own centre, the original's orientation.
     @MainActor
     func zodiacGlyphs() -> [(id: Int, symbol: String, position: CGPoint, rotation: Angle)] {
         guard let ring = eclipticCircle() else { return [] }
         var out: [(Int, String, CGPoint, Angle)] = []
-        for sign in EZodiacSign.zodiac {
+        for sign in ZodiacSign.zodiac {
             let mid = Angle.degrees(Double(sign.index - 1) * 30 + 15)
             guard let p = camera.screen(equatorial: .eclipticPoint(lambda: mid))
             else { continue }
@@ -455,7 +455,7 @@ struct OrlojFace {
     }
 
     @MainActor var moonPoint: CGPoint? {
-        let (vec, _, _) = EMoonPosition.vector(for: date, siderealOffset: camera.sidereal)
+        let (vec, _, _) = MoonPosition.vector(for: date, siderealOffset: camera.sidereal)
         return camera.screen(rotatedEquatorial: vec)
     }
 
@@ -468,7 +468,7 @@ struct OrlojFace {
 
     // MARK: Sun helpers
 
-    private var sunLambda: Angle { ESunPosition.eclipticLongitude(for: date) }
+    private var sunLambda: Angle { SunPosition.eclipticLongitude(for: date) }
 
     // MARK: Sampling helpers
 
@@ -479,7 +479,7 @@ struct OrlojFace {
         var started = false
         for i in 0...steps {
             let t = Double(i) / Double(steps)
-            let q = EPrecession.equatorialVector(ra: .radians(t * 2 * .pi), dec: dec)
+            let q = Precession.equatorialVector(ra: .radians(t * 2 * .pi), dec: dec)
             if let sc = camera.screen(equatorial: q) {
                 if started { path.addLine(to: sc) } else { path.move(to: sc); started = true }
             } else {
@@ -495,14 +495,14 @@ struct OrlojFace {
     /// consistent with every other hour-angle element by construction.
     @MainActor
     private func ringPoint(hourAngle H: Double, declination dec: Angle) -> CGPoint? {
-        let q = EPrecession.equatorialVector(ra: .radians(lst.radians - H), dec: dec)
+        let q = Precession.equatorialVector(ra: .radians(lst.radians - H), dec: dec)
         return camera.screen(equatorial: q)
     }
 
     /// Closed-form declination-circle radius — valid ONLY as a
     /// rotation-agnostic distance-from-centre (clipping thresholds,
     /// plain circle outlines), never for placing a specific point.
-    /// ρ = 2·tan(45°+δ/2) — the 2 is EProjection's convention; `hemi`
+    /// ρ = 2·tan(45°+δ/2) — the 2 is Projection's convention; `hemi`
     /// mirrors δ in the south, where the projection flings out the SCP
     /// and the radius formula runs the other way.
     private func radiusForDeclination(_ dec: Angle) -> CGFloat {
@@ -612,8 +612,8 @@ struct GlassBand: View {
                        style: style)
             // Casing — the dark border every Ephoemerous badge wears
             // (poiTextBorderWidth, canvas-navy so it never goes light).
-            shape.stroke(EArtist.shared.canvasBackground.opacity(0.9),
-                         lineWidth: EArtist.shared.poiTextBorderWidth)
+            shape.stroke(Artist.shared.canvasBackground.opacity(0.9),
+                         lineWidth: Artist.shared.poiTextBorderWidth)
             // Rim light — bright top edge, fading out below.
             shape.stroke(LinearGradient(colors: [.white.opacity(0.45),
                                                  .white.opacity(0.07)],
@@ -697,13 +697,13 @@ struct OrlojFaceLayers: View {
             // squircles for the seven planets, each with the badge's
             // gradient fill, dark casing, and soft glow.
             ForEach(face.favouriteStarMarks(), id: \.id) { mark in
-                Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
+                Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
                     .fill(LinearGradient(colors: [mark.top, mark.bottom],
                                          startPoint: .bottom, endPoint: .top))
 
                     .overlay(
-                        Squircle(corners: 5, bulge: EArtist.shared.poiBadgeBulge)
-                            .stroke(EArtist.shared.canvasBackground.opacity(0.9),
+                        Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
+                            .stroke(Artist.shared.canvasBackground.opacity(0.9),
                                     lineWidth: 1.1)
                     )
                     .frame(width: 9 * u, height: 9 * u)
@@ -738,7 +738,7 @@ struct OrlojFaceLayers: View {
                 Text(glyph.char)
                     .font(.system(size: max(3.5, 6.5 * u), weight: .medium, design: .serif))
                     .foregroundStyle(Self.silver.opacity(ink(0.8)))
-                    .shadow(color: EArtist.shared.canvasBackground.opacity(0.9),
+                    .shadow(color: Artist.shared.canvasBackground.opacity(0.9),
                             radius: lineArt ? 0 : 1)
                     .rotationEffect(glyph.rotation)
                     .position(glyph.position)
@@ -761,7 +761,7 @@ struct OrlojFaceLayers: View {
                     } else {
                         OutlinedText(text:      numeral.text,
                                      fill:      Self.brass,
-                                     stroke:    EArtist.shared.canvasBackground,
+                                     stroke:    Artist.shared.canvasBackground,
                                      lineWidth: max(0.7, 1.2 * u),
                                      font:      Self.numeralFont(size: 9 * u))
                     }
@@ -801,7 +801,7 @@ struct OrlojFaceLayers: View {
                                          startPoint: .bottom, endPoint: .top))
                     .overlay(
                         Squircle(corners: 4, bulge: 2.0)
-                            .stroke(EArtist.shared.canvasBackground.opacity(0.9),
+                            .stroke(Artist.shared.canvasBackground.opacity(0.9),
                                     lineWidth: 1)
                     )
                     .frame(width: 7 * u, height: 7 * u)

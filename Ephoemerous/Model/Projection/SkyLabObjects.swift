@@ -14,24 +14,24 @@ enum SkyLabObjects {
     /// matching projection path. `nil` when it projects behind the viewer
     /// or has no anchor. Bodies recompute from `date` so the mark tracks
     /// the moving object.
-    static func screen(_ obj: ESkyObject, camera: SkyCamera, date: Date) -> CGPoint? {
+    static func screen(_ obj: SkyObject, camera: SkyCamera, date: Date) -> CGPoint? {
         switch obj {
         case .star(let s):
             return camera.screen(equatorial: s.equatorialVector)
         case .sun:
-            let lambda = ESunPosition.eclipticLongitude(for: date)
+            let lambda = SunPosition.eclipticLongitude(for: date)
             return camera.screen(equatorial: .eclipticPoint(lambda: lambda))
         case .moon:
-            let (vec, _, _) = EMoonPosition.vector(for: date, siderealOffset: camera.sidereal)
+            let (vec, _, _) = MoonPosition.vector(for: date, siderealOffset: camera.sidereal)
             return camera.screen(rotatedEquatorial: vec)
         case .planet(let p):
-            guard let match = EPlanetPosition
+            guard let match = PlanetPosition
                 .allVectors(for: date, siderealOffset: camera.sidereal)
                 .first(where: { $0.0.name == p.name }) else { return nil }
             return camera.screen(rotatedEquatorial: match.1)
         case .constellation(let c):
             guard let anchor = ConstellationLines.shared.labelAnchors[c] else { return nil }
-            let q = EPrecession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
+            let q = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             return camera.screen(equatorial: q)
         }
     }
@@ -39,16 +39,16 @@ enum SkyLabObjects {
     /// POI descriptor (category + glyph + name) for the badge-style objects.
     /// `nil` for constellations — they promote as an emphasised NAME in
     /// place (no badge), like production's `isSelected` label.
-    static func poiMark(_ obj: ESkyObject, date: Date)
+    static func poiMark(_ obj: SkyObject, date: Date)
         -> (category: POICategory, glyph: POIGlyph, name: String)? {
-        let a = EArtist.shared
+        let a = Artist.shared
         switch obj {
         case .star(let s):
             return (.followedStar(s), .sfSymbol("star.fill"), s.displayName)
         case .sun:
             return (.sun, .symbol(.sunMaxFill), Strings.Bodies.sun)
         case .moon:
-            let frac = EMoonPosition.illuminatedFraction(for: date)
+            let frac = MoonPosition.illuminatedFraction(for: date)
             return (.moon, .symbol(a.moonPhaseSymbol(fraction: frac)), Strings.Bodies.moon)
         case .planet(let p):
             return (.planet(p), .unicode(a.planetGlyph(p)), p.displayName)

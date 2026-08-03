@@ -9,7 +9,7 @@ import WidgetKit
 // native counterpart of the Canvas `drawPOILabel`. Driven by a
 // `POICategory`, so every tracked body (sun / moon / planets / stars /
 // constellations) gets the same component, faithful to the production
-// palette via `EArtist.poiStyle(for:)`.
+// palette via `Artist.poiStyle(for:)`.
 //
 // Layout anchor is the BADGE: the name floats to its right as a
 // non-layout overlay, so the view's size == the badge and a caller can
@@ -60,7 +60,7 @@ struct POILabelView: View {
     /// the badge's lower-trailing edge, marking a double you could actually
     /// split. Not "this is a binary": 83% of the stars we label are multiple
     /// systems, so that would fire on nearly everything (see
-    /// `EStarMultiplicity.isShowpiece`). Callers ride it in with the NAME
+    /// `StarMultiplicity.isShowpiece`). Callers ride it in with the NAME
     /// tier, not the badge tier — at badge tier the mark is a few points
     /// across and a pip would just fur its edge. 0 = absent.
     var companionReveal: Double = 0
@@ -71,7 +71,7 @@ struct POILabelView: View {
     private static let nameBlur:  CGFloat = 4
     private static let badgeBlur: CGFloat = 3
 
-    private var style: EArtist.POICategoryStyle { EArtist.shared.poiStyle(for: category) }
+    private var style: Artist.POICategoryStyle { Artist.shared.poiStyle(for: category) }
     
     init(
         category: POICategory,
@@ -146,7 +146,7 @@ struct POILabelView: View {
         let d  = style.badgeSize
         // Pre-shrunk so a caller's `.scaleEffect` renders it back at the
         // true casing weight — see `borderScaleCompensation`.
-        let bw = EArtist.shared.poiTextBorderWidth * borderScaleCompensation
+        let bw = Artist.shared.poiTextBorderWidth * borderScaleCompensation
         let bulge = labelStyle == .planetoids ? 2.0 : 5.0
         
         return ZStack {
@@ -223,7 +223,7 @@ struct OutlinedText: View {
     var body: some View {
         let path = Self.glyphPath(text, font: font)
         let size = path.boundingRect.size
-        let bw = EArtist.shared.poiTextBorderWidth*1.5
+        let bw = Artist.shared.poiTextBorderWidth*1.5
         ZStack(alignment: .topLeading) {
             // Casing first (behind), rounded so corners don't spike.
             if !isMasked {

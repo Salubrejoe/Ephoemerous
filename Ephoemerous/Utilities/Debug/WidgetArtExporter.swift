@@ -60,7 +60,7 @@ enum WidgetArtExporter {
         // ── The postcard — one tile per pinned object, at every family's
         // proportions AND its true treatment (`familyOverride`, since
         // `\.widgetFamily` can't be injected outside a widget host).
-        let pins: [(String, ESkyObject)] = [
+        let pins: [(String, SkyObject)] = [
             ("moon",  .moon),
             ("sun",   .sun),
             ("orion", .constellation(.Ori)),
@@ -85,7 +85,7 @@ enum WidgetArtExporter {
         let catalogue = StarDatabase.shared.workableStars
         for catName in starPins {
             guard let star = catalogue.first(where: { $0.name == catName }) else {
-                ELogger.starDatabase("widget art: star not found — \(catName)")
+                Logger.starDatabase("widget art: star not found — \(catName)")
                 continue
             }
             let entry = SkyObjectEntry(date:     now,
@@ -147,11 +147,11 @@ enum WidgetArtExporter {
 
         // ── Share postcards — the real 4:5 card the share sheet sends,
         // rendered here so it can be eyeballed without a device.
-        let cards: [(String, ESkyObject)] = [
+        let cards: [(String, SkyObject)] = [
             ("moon",  .moon),
             ("orion", .constellation(.Ori)),
         ]
-        var starCard: ESkyObject?
+        var starCard: SkyObject?
         if let betelgeuse = StarDatabase.shared.workableStars
             .first(where: { $0.name == "α Ori" }) { starCard = .star(betelgeuse) }
         for (label, obj) in cards + (starCard.map { [("betelgeuse", $0)] } ?? []) {
@@ -163,7 +163,7 @@ enum WidgetArtExporter {
             }
         }
 
-        ELogger.starDatabase("widget art exported to \(dir.path)")
+        Logger.starDatabase("widget art exported to \(dir.path)")
         return dir
     }
 
@@ -175,7 +175,7 @@ enum WidgetArtExporter {
     private static func tile<V: View>(size: CGSize,
                                       @ViewBuilder _ content: () -> V) -> some View {
         ZStack {
-            EArtist.shared.canvasBackground
+            Artist.shared.canvasBackground
             content()
         }
         .frame(width: size.width, height: size.height)
@@ -187,7 +187,7 @@ enum WidgetArtExporter {
         let renderer = ImageRenderer(content: view)
         renderer.scale = scale
         guard let image = renderer.uiImage, let data = image.pngData() else {
-            ELogger.starDatabase("widget art FAILED: \(name)")
+            Logger.starDatabase("widget art FAILED: \(name)")
             return
         }
         try? data.write(to: dir.appendingPathComponent(name))

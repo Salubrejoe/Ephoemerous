@@ -19,19 +19,19 @@ class StarDatabase {
   ///
   /// • CACHING. This used to rebuild ~9k structs on EVERY access, and it
   ///   is read from several layers per frame. Built once now — which also
-  ///   makes `EStar` instances stable for the whole session.
-  private(set) lazy var workableStars: [EStar] = {
-      let workable = stars.map(EStar.init(from:))
+  ///   makes `Star` instances stable for the whole session.
+  private(set) lazy var workableStars: [Star] = {
+      let workable = stars.map(Star.init(from:))
           .filter { $0.displayName != "Unknown" }
       // Brightest first, so `uniqued(by:)` keeps the primary component.
       let byBrightness = workable.sorted { $0.magnitude < $1.magnitude }
       var seen = Set<String>()
       let deduped = byBrightness.filter { seen.insert($0.name).inserted }
-      ELogger.starDatabase("\(deduped.count) stars (\(workable.count - deduped.count) companion records folded in)")
+      Logger.starDatabase("\(deduped.count) stars (\(workable.count - deduped.count) companion records folded in)")
       return deduped
   }()
     
-    var listableStars: [EStar] {
+    var listableStars: [Star] {
         workableStars
             .filter { star in
                 // Keep stars whose displayName starts with a Greek letter
@@ -42,8 +42,8 @@ class StarDatabase {
             }
     }
   
-  func stars(for constellations: [EConstellation]) -> [EStar] {
-    var stars = [EStar]()
+  func stars(for constellations: [Constellation]) -> [Star] {
+    var stars = [Star]()
     for star in workableStars {
       for constellation in constellations {
         if star.constellation == constellation {
@@ -58,7 +58,7 @@ class StarDatabase {
   
   private func loadStars() {
     guard let url = Bundle.main.url(forResource: "bsc5", withExtension: "json") else {
-      ELogger.starDatabase("JSON file not found")
+      Logger.starDatabase("JSON file not found")
       return
     }
     
@@ -67,7 +67,7 @@ class StarDatabase {
       let decodedStars = try JSONDecoder().decode([StarData].self, from: data)
       self.stars = decodedStars
     } catch {
-      ELogger.starDatabase("Error decoding JSON: \(error)")
+      Logger.starDatabase("Error decoding JSON: \(error)")
     }
   }
   

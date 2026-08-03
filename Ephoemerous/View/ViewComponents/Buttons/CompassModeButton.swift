@@ -13,7 +13,7 @@ import SwiftUI
 // so the two read as one stacked rotation cluster.
 struct CompassModeButton: View {
 
-    @Environment(EAppState.self) private var state
+    @Environment(AppState.self) private var state
 
     /// `bare` = no glass of its own — for riding inside the shared camera
     /// capsule; the engaged state is spoken by the glyph tint (Maps' blue
@@ -25,7 +25,7 @@ struct CompassModeButton: View {
 
     var body: some View {
         // No gyro → nothing to follow; don't offer the control at all.
-        if EMotionService.shared.isAvailable {
+        if MotionService.shared.isAvailable {
             let on = state.compassMode
 
             let button = Button {
@@ -78,6 +78,6 @@ private struct CompassModePressStyle: ButtonStyle {
                        startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
         CompassModeButton()
-            .environment(EAppState())
+            .environment(AppState())
     }
 }
