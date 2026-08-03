@@ -1,48 +1,45 @@
 import SwiftUI
 import UIKit
 
-// MARK: - SkyLabView
-// Proving ground for the rendering rethink: a Canvas layer (the grid) and
-// a native SwiftUI overlay (the Sun label) under ONE shared parent
-// transform.
+// MARK: - MainView
+// The app's root: the sky, everything drawn on it, and the chrome over it.
 //
-// The sync model — the thing this view exists to validate:
-//   • Both children render at the camera's COMMITTED (resting) transform.
-//   • A live gesture writes only the transient `drag` / `pinch`, which
-//     drive a single `.scaleEffect` + `.offset` on the ZStack that holds
-//     BOTH children. A parent transform lands on every child in the same
-//     CoreAnimation commit, so the Canvas and the overlay move as one and
-//     cannot desync — no per-frame re-projection, no two clocks.
-//   • On release the delta folds into the committed transform and resets
-//     to identity: one reconciliation render at the new camera.
+// THE SYNC MODEL, which the whole canvas is built around:
+//   • Every layer renders at the camera's COMMITTED (resting) transform.
+//   • A live gesture writes only transient deltas, which drive ONE
+//     `.scaleEffect` + `.rotationEffect` + `.offset` on the stack holding
+//     every child. A parent transform lands on all of them in the same
+//     CoreAnimation commit, so frozen Canvases and native overlays move as
+//     one and cannot desync — no per-frame reprojection, no second clock.
+//   • On release the delta folds into the committed camera: one
+//     reconciliation render at the new position.
 //
-// Astronomical data (viewpoint, sidereal time, date) is read from the
-// shared `AppState`; the camera transform is the lab's own.
-//
-// To run it as the app root, swap `MainView()` for `SkyLabView()` in
-// `EphoemerousApp` (kept out of production by default).
+// This file keeps only the composition. The pieces live beside it:
+//   SkyFrame          — camera + live transform + per-layer star ownership
+//   SkyLayerStack     — the layers themselves, back to front
+//   SkyChrome         — the floating controls
+//   MainView+Selection — tap hit-testing and the comfort-zone pan
 struct MainView: View {
 
-    @Environment(AppState.self) private var app
+    // A few members below are internal rather than private: the selection
+    // logic lives in `MainView+Selection.swift`, and `private` in Swift is
+    // file-scoped, so a sibling extension cannot see it.
+
+
+    @Environment(AppState.self) var app
 
     /// Camera + gesture engine — committed camera (scale/offset/rotation)
     /// frozen during a gesture, live deltas drive the parent transform,
     /// folded once on release. Driven by the UIKit recogniser layer
     /// (`MainGestureCoordinator`); see `MainGestureCoordinator`.
-    @State private var sky = MainGestureCoordinator()
+    @State var sky = MainGestureCoordinator()
 
-    /// Only PROPER-named stars (Sirius, Betelgeuse…) get the POI label —
-    /// like production. The Bayer / Flamsteed rest will get plain
-    /// secondary text past max scale later; skipped for now. Computed
-    /// ONCE (workableStars rebuilds ~9k Stars per access).
-    private static let properNamedStars: [Star] =
-        StarDatabase.shared.workableStars.filter { $0.properName != nil }
 
     /// Off-screen drawing margin per edge (pt). The Canvas is rendered
     /// this much larger than the screen so a pan reveals drawn grid, not
     /// blank — see the framing note in `body`. Generous for the lab;
     /// tune (and add `.clipped()`) when this graduates to production.
-    private let overdraw: CGFloat = 600
+    let overdraw: CGFloat = 600
 
     /// Detail place-card detent — pinned so the sheet opens at the third
     /// (not the smallest member of the set) and can fold to a header-only
@@ -62,16 +59,6 @@ struct MainView: View {
     /// framing to freeze it into the committed camera.
     @State private var viewSize: CGSize = .zero
 
-    /// Bottom padding for a floating chrome element so it rides the frontmost
-    /// bottom sheet's top edge (published live in `app.bottomSheetTop`), a
-    /// `gap` above it. Clamped at `rest` so the chrome never dips below its
-    /// resting home — it sits above the sheet's bar detent and RISES only as
-    /// the sheet expands past it, exactly like Apple Maps' controls. Falls
-    /// back to `rest` before any sheet reports / while none is tracked.
-    private func sheetLift(gap: CGFloat, rest: CGFloat) -> CGFloat {
-        guard let top = app.bottomSheetTop, viewSize.height > 0 else { return rest }
-        return max(rest, viewSize.height - top + gap)
-    }
 
     /// Seed / retune the camera's home + zoom floor from the visible screen
     /// size. The coordinator's built-in 90 approximates an iPhone; on iPad
@@ -130,209 +117,26 @@ struct MainView: View {
       ZStack {
       TimelineView(clockSchedule) { timeline in
         GeometryReader { geo in
-            // The canvas is rendered OVERSIZE — the screen plus an
-            // `overdraw` margin on every edge — and centred. A SwiftUI
-            // Canvas clips to its own frame, so a screen-sized one would
-            // slide in blank at the trailing edge the instant the parent
-            // transform pans it. Drawing the margin keeps grid in reserve
-            // all around; nothing clips it because we never apply
-            // `.clipped()` and a `.frame` doesn't clip overflow.
-            let canvasSize = CGSize(width:  geo.size.width  + overdraw * 2,
-                                    height: geo.size.height + overdraw * 2)
+            // One value carries the whole frame — camera, live transform,
+            // and which layer owns which star. See `SkyFrame`.
+            let frame = SkyFrame(app: app,
+                                 sky: sky,
+                                 geoSize: geo.size,
+                                 overdraw: overdraw,
+                                 compassEngage: compassEngage,
+                                 morphScaleFrom: morphScaleFrom,
+                                 morphOffsetFrom: morphOffsetFrom)
 
-            // Compass (heading-up) mode: the device heading OWNS the
-            // rotation. The committed `sky.rotation` is replaced by the
-            // smoothed heading (`renderedRotation` — positions only, so
-            // labels stay upright), and the live rotation gesture is ignored
-            // (`liveRot` → 0). The clock ticks continuously while it's on
-            // (see `clockSchedule`) so the heading low-pass integrates each
-            // frame; on exit the heading is frozen back into `sky.rotation`
-            // (see `onChange`) so nothing jumps.
-            let inCompass      = app.compassMode
-            // NEGATED: SkyLabCamera.screen rotates AFTER the y-flip, whereas
-            // production's toScreen (which `renderedRotation` is tuned for)
-            // rotates BEFORE it — a y-flip inverts rotation handedness. Without
-            // the negation, heading-up spins the wrong way (face east → west up).
-            let cameraRotation = inCompass ? .radians(-app.renderedRotation.radians)
-                                           : sky.rotation
-            let liveRot        = inCompass ? .zero : sky.liveRotation
-
-            // Compass mode also FRAMES the sky: the zenith puck drops just
-            // above the bottom sheet and the facing horizon rises just below
-            // the Here/Now capsules (see `compassCameraFraming`). `compassEngage`
-            // eases 0→1 on toggle, so the camera GLIDES between the committed
-            // `sky` view and the framing rather than snapping. It's a pure
-            // view-time blend baked into the camera — the committed `sky` camera
-            // is never touched, so leaving compass restores the exact view you
-            // were on. (Compass mode already redraws per heading step, so the
-            // per-frame interpolation during the glide is free.)
-            let framing = app.compassCameraFraming(screenHeight: geo.size.height)
-            let t       = compassEngage
-            let engaging = t > 0.0001
-
-            // NorthIN↔NorthOUT reframe: glide scale/offset from where the morph
-            // started to the committed `sky` target, by the SAME clock-driven
-            // progress the projection morph rides — so the zoom animates on the
-            // Canvas in lockstep with the eye slerp. At rest progress = 1, so
-            // this collapses to the plain (gesture-controlled) `sky` values.
-            let mp        = app.perspectiveMorphProgress
-            let baseScale = morphScaleFrom       + (sky.scale        - morphScaleFrom)       * mp
-            let baseOffW  = morphOffsetFrom.width  + (sky.offset.width  - morphOffsetFrom.width)  * mp
-            let baseOffH  = morphOffsetFrom.height + (sky.offset.height - morphOffsetFrom.height) * mp
-
-            // Centre = canvasSize/2, which (because the oversize content is
-            // centred in the screen below) lands on the screen centre. Compass
-            // framing (if engaged) blends on top of the morph base.
-            let camera = SkyCamera(
-                scale:     baseScale + (framing.scale - baseScale) * t,
-                offset:    CGSize(width:  baseOffW + (framing.offset.width  - baseOffW) * t,
-                                  height: baseOffH + (framing.offset.height - baseOffH) * t),
-                rotation:  cameraRotation,   // committed pan baked in → Canvas draws centred + spun
-                size:      canvasSize,
-                viewpoint: app.viewpoint,
-                sidereal:  app.localSiderealOffset
-            )
-
-            // Live transform values from the coordinator (clamped). While the
-            // compass framing is in play the framing is baked into the camera
-            // and touch is off, so the live gesture transform is identity —
-            // labels take the camera scale for their zoom tiers and stay put
-            // (no counter-scale drift).
-            let effPinch  = engaging ? 1            : sky.effPinch
-            let liveScale = engaging ? camera.scale : sky.liveScale
-            let applied   = engaging ? .zero        : sky.applied
-
-            // Selection selectors — which passive label to suppress /
-            // emphasise. Source of truth is the production `detailDestination`
-            // (also drives the detail sheet), so tap-select, the sheet's X,
-            // and a swipe-away all stay in lockstep.
-            let selection = app.detailDestination
-            let selectedStarID: String? = { if case .star(let s) = selection { return s.id };          return nil }()
-            let selectedConsID: String? = { if case .constellation(let c) = selection { return c.rawValue }; return nil }()
-
-            // A favourite that's also proper-named would otherwise draw BOTH
-            // a `.followedStar` and a `.namedStar` badge — exclude favourites
-            // from the named overlay so each star gets exactly one label.
-            let favIDs = Set(app.favouriteStars.map(\.id))
-            let namedOnly = Self.properNamedStars.filter { !favIDs.contains($0.id) }
-            // The field defers to these once their own dot/badge takes over.
-            let namedIDs  = Set(namedOnly.map(\.id))
-
-            // Tint for each favourite constellation's solid lines — one
-            // neutral constellation colour now (myth taxonomy retired).
-            let favTint  = Color.tertiary
-            let favTints = Dictionary(uniqueKeysWithValues:
-                app.favouriteConstellations.map { ($0, favTint) })
-
-            ZStack {
-                // `.equatable()` → these Canvases redraw only when the
-                // committed camera changes (a settle / date / origin move),
-                // NOT per gesture frame. Frozen + parent-transformed = the
-                // whole point. The starfield is the stress test.
-                CelestialGridCanvas(camera: camera)
-                    .equatable()
-                
-                // "You are here" — aim cone + globe puck at the zenith,
-                // gated on being at the device location.
-                PuckAndConeOverlay(camera: camera, pinch: effPinch)
-                
-                // Horizon + twilight rings — native concentric circles
-                // about the zenith, riding the parent transform.
-                EarthGridOverlay(camera: camera)
-                
-                // Constellation stick-figures — frozen Canvas; favourites
-                // stroke solid in their myth tint.
-                ConstellationLinesCanvas(camera: camera, favouriteTints: favTints)
-                    .equatable()
-                
-                StarsCanvas(camera: camera, stars: app.sortedStars,
-                            favouriteIDs: favIDs, namedIDs: namedIDs)
-                    .equatable()
-                
-                // Tier-0 spectral pentagon dots for proper-named stars —
-                // appear past namedStarDotIn, crossfade into the badge.
-                NamedStarDotsCanvas(camera: camera,
-                                          stars: namedOnly,
-                                          scale: liveScale,
-                                          selectedID: selectedStarID)
-                    .equatable()
-
-                // Frosted pane over the ground below the horizon — an exact
-                // circle/line region recomputed from the morphing camera, so
-                // it deforms live through the NorthIN↔NorthOUT transition.
-                // Above the star canvases (the murk frosts), below the
-                // labels (they stay sharp).
-                HorizonBlurOverlay(camera: camera)
-
-                // Curved cartographic labels — horizon rim + colures.
-                // Canvas (per-glyph curve), frozen via .equatable().
-                // `visibleRect` = the geo window centred in the overdraw
-                // margin, for the edge fade on curved words.
-                CartographyLabels(camera:   camera,
-                                        latitude: app.origin.latitude,
-                                        date:     app.renderedObservationDate,
-                                        visibleRect: CGRect(x: overdraw, y: overdraw,
-                                                            width:  geo.size.width,
-                                                            height: geo.size.height))
-                    .equatable()
-                // Tiered native labels — each object reveals at its
-                // production zoom tier (see each overlay's gate):
-                //   • favourite stars  — .followedStar  (badgeIn 70)
-                //   • constellation names — tier ~190
-                //   • proper-name stars — .namedStar    (badgeIn ~280)
-                //   • Sun/Moon/planets  — bodies overlay (0 / 80)
-                // Greek-letter stars: skipped for now.
-                ConstellationLabels(camera: camera,
-                                                 pinch: effPinch,
-                                                 scale: liveScale,
-                                                 rotation: liveRot,
-                                                 selectedID: selectedConsID)
-                StarLabels(camera: camera,
-                                        stars: app.favouriteStars,
-                                        pinch: effPinch,
-                                        scale: liveScale,
-                                        rotation: liveRot,
-                                        category: { .followedStar($0) },
-                                        selectedID: selectedStarID)
-                // Favourite-star heart signal (always visible, except the
-                // selected one — the promoted pin stands in for it).
-                FavouriteHeart(camera: camera,
-                                        stars: app.favouriteStars,
-                                        pinch: effPinch,
-                                        scale: liveScale,
-                                        rotation: liveRot,
-                                        selectedID: selectedStarID)
-                StarLabels(camera: camera,
-                                        stars: namedOnly,
-                                        pinch: effPinch,
-                                        scale: liveScale,
-                                        rotation: liveRot,
-                                        category: { .namedStar($0) },
-                                        selectedID: selectedStarID)
-                SolarSystemLabels(camera: camera,
-                                    date:  app.renderedObservationDate,
-                                    pinch: effPinch,
-                                    scale: liveScale,
-                                    rotation: liveRot,
-                                    selected: selection)
-                // Promoted label — the selected object, forced visible at
-                // any zoom (topmost so it reads above the passive labels).
-                PromotedLabel(camera: camera,
-                                           selection: selection,
-                                           date:  app.renderedObservationDate,
-                                           pinch: effPinch,
-                                           rotation: liveRot,
-                                           isFavourite: selection.map(app.isFavourite) ?? false)
-            }
+            SkyLayerStack(frame: frame)
             
-            .frame(width: canvasSize.width, height: canvasSize.height)
+            .frame(width: frame.canvasSize.width, height: frame.canvasSize.height)
             // THE shared parent transform — scale + rotation about centre,
             // then the live translation. Committed values live in the
             // camera; only the live deltas (frozen Canvases ride along)
             // are here. Order matters: scale, rotate, translate.
-            .scaleEffect(effPinch, anchor: .center)
-            .rotationEffect(liveRot, anchor: .center)
-            .offset(x: applied.width, y: applied.height)
+            .scaleEffect(frame.effPinch, anchor: .center)
+            .rotationEffect(frame.liveRot, anchor: .center)
+            .offset(x: frame.applied.width, y: frame.applied.height)
             // Constrain the layout back to the screen (centres the oversize
             // content; overflow renders off-screen, ready for the pan).
             .frame(width: geo.size.width, height: geo.size.height)
@@ -385,54 +189,7 @@ struct MainView: View {
         gradient
       )
         .preferredColorScheme(.dark)
-        // Production toolbar — Here / Now reset chips + location / date
-        // pills. It acts on the shared AppState the SkyLab camera reads,
-        // so the sky follows; the clock above plays the transitions.
-        // Chrome grammar (current-Maps layout): context capsule ALONE at
-        // top-centre; the camera-family capsule (flip + compass mode)
-        // bottom-trailing just above the search bar — thumb territory; the
-        // transient compass rose on the OPPOSITE edge so it can appear /
-        // vanish without nudging the capsule. The sky's centre stays sacred.
-        .overlay(alignment: .top) {
-            MainToolbar()
-                .padding(.horizontal, 16)
-                .padding(.top,        64)
-        }
-        .overlay(alignment: isPad ? .topTrailing : .bottomTrailing) {
-            // Hidden while a scene editor is up — camera-mode toggles are
-            // noise mid-picking, and the floating date crown owns the
-            // bottom stage.
-            if !app.isShowingDatePicker && !app.isShowingLocationPicker {
-                let lift = sheetLift(gap: 12, rest: 114)
-                CameraClusterCapsule()
-                    .padding(.trailing, 16)
-                    // iPad: top-trailing, level with the context capsule
-                    // (same 64pt top inset as MainToolbar). iPhone: rides
-                    // the frontmost sheet's top edge — rests above the
-                    // search bar (114) and rises 1:1 as the sheet expands.
-                    // ▼ TWEAK the rest / gap here ▼
-                    .padding(.top,    isPad ? 64 : 0)
-                    .padding(.bottom, isPad ? 0  : lift)
-                    // A sheet PRESENTING publishes its top edge once, not
-                    // per-frame like a drag — animate the lift so the pill
-                    // glides to meet it instead of snapping. Drag frames
-                    // just retarget the spring; the pill trails by a hair.
-                    .animation(.snappy(duration: 0.28), value: lift)
-                    .transition(.opacity)
-            }
-        }
-        .overlay(alignment: .bottomLeading) {
-            // Compass rose — self-hides when the sky is upright; tap
-            // springs back to North.
-            let roseLift = sheetLift(gap: 22, rest: 124)
-            CompassButton()
-                .padding(.leading, 16)
-                .padding(.bottom, roseLift)
-                // Same glide as the camera cluster — the bottom chrome
-                // moves as one when a sheet presents.
-                .animation(.snappy(duration: 0.28), value: roseLift)
-        }
-        
+        .modifier(SkyChrome(viewSize: viewSize))
         .ignoresSafeArea()
 
 //        .alert("Return to your location?",
@@ -600,177 +357,6 @@ struct MainView: View {
                                   || app._rotationTransition         != nil
                                   || app._perspectiveMorphTransition != nil
                                   || app.compassMode)
-    }
-
-    // MARK: - Tap → select + comfort-zone pan
-
-    /// Builds the tap handler stored on the coordinator. The closure
-    /// captures the live `app` (a reference) and rebuilds the camera from
-    /// the coordinator's CURRENT committed state at tap time, so it always
-    /// hit-tests against what's on screen.
-    private func makeTapHandler() -> (CGPoint) -> Void {
-        let overdraw = self.overdraw
-        let app      = self.app
-        return { [weak sky] loc in
-            guard let sky else { return }
-            // Only act at rest — otherwise interrupt the in-flight fling
-            // (so the tap stops the slide) and let the next tap select.
-            guard sky.isResting else { sky.settleNow(); return }
-
-            // Screen + canvas geometry, reconstructed from the coordinator.
-            let geoSize = CGSize(width: sky.center.x * 2, height: sky.center.y * 2)
-            guard geoSize.width > 0, geoSize.height > 0 else { return }
-            let canvasSize = CGSize(width:  geoSize.width  + overdraw * 2,
-                                    height: geoSize.height + overdraw * 2)
-            let camera = SkyCamera(scale:     sky.scale,
-                                      offset:    sky.offset,
-                                      rotation:  sky.rotation,
-                                      size:      canvasSize,
-                                      viewpoint: app.viewpoint,
-                                      sidereal:  app.localSiderealOffset)
-
-            // Only LABELLED objects are tappable — respect the tiers, so the
-            // tap target set grows exactly as the labels reveal with zoom.
-            // Gathers every kind (star / sun / moon / planet / constellation)
-            // gated by the SAME threshold its label overlay obeys, projects
-            // each, and picks the nearest within the touch radius. Canvas
-            // points are oversized → subtract `overdraw` for screen space.
-            let scale = sky.scale
-            let date  = app.renderedObservationDate
-            let a     = Artist.shared
-
-            var cands: [(obj: SkyObject, screen: CGPoint)] = []
-            func consider(_ obj: SkyObject, gate: Bool) {
-                guard gate, let cp = SkyLabObjects.screen(obj, camera: camera, date: date) else { return }
-                cands.append((obj, CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)))
-            }
-
-            // Stars — each gated by its own badge tier (favourites at 70,
-            // proper-named deeper, per-star by magnitude). A favourite that's
-            // also proper-named is tested once, as followed.
-            let favIDs = Set(app.favouriteStars.map(\.id))
-            for star in app.favouriteStars {
-                consider(.star(star), gate: scale >= a.poiStyle(for: .followedStar(star)).badgeIn)
-            }
-            for star in Self.properNamedStars where !favIDs.contains(star.id) {
-                consider(.star(star), gate: scale >= a.poiStyle(for: .namedStar(star)).badgeIn)
-            }
-
-            // Solar-system bodies — Sun / Moon always (badgeIn 0), planets
-            // past their badge tier.
-            consider(.sun,  gate: true)
-            consider(.moon, gate: true)
-            for (planet, _, _, _) in PlanetPosition.allVectors(for: date, siderealOffset: camera.sidereal) {
-                consider(.planet(planet), gate: scale >= a.poiStyle(for: .planet(planet)).badgeIn)
-            }
-
-            // Constellation names — tappable once the name tier reveals.
-            let consTextIn = a.poiStyle(for: .constellation).textIn
-            if scale >= consTextIn {
-                for (cons, _) in ConstellationLines.shared.labelAnchors {
-                    consider(.constellation(cons), gate: true)
-                }
-            }
-
-            let tapRadius: CGFloat = 30
-            var best: (obj: SkyObject, dist: CGFloat, screen: CGPoint)? = nil
-            for (obj, s) in cands {
-                let d = hypot(s.x - loc.x, s.y - loc.y)
-                if d <= tapRadius, best == nil || d < best!.dist {
-                    best = (obj, d, s)
-                }
-            }
-            // Tapped empty sky → deselect (animated demotion + sheet
-            // dismiss). Only act if something is selected, so an idle tap on
-            // empty sky doesn't thrash state.
-            guard let hit = best else {
-                if app.detailDestination != nil {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                        app.detailDestination = nil
-                    }
-                }
-                return
-            }
-
-            // Promote: springs the label in + raises the detail sheet. A
-            // picker owns the bottom slot first — close it so the sheet can
-            // take over. The comfort-zone pan is driven by `onChange(of:
-            // detailDestination)` so a search pick pans too.
-            app.isShowingLocationPicker = false
-            app.isShowingDatePicker     = false
-
-            let promote = { (obj: SkyObject) in
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    app.detailDestination = obj
-                }
-            }
-            // A DIFFERENT card is already up → tear it down and re-present
-            // after a beat (production's `sheetSwapDelay`). Swapping the
-            // sheet's item in place keeps the live presentation, and the new
-            // card lands at the wrong (large) detent instead of the third;
-            // `_sheetSwapping` hides search across the gap.
-            if let current = app.detailDestination, current.id != hit.obj.id {
-                app._sheetSwapping    = true
-                app.detailDestination = nil
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    app._sheetSwapping = false
-                    promote(hit.obj)
-                }
-            } else {
-                promote(hit.obj)
-            }
-        }
-    }
-
-    /// Reflect the SkyLab's rotation into `app.canvasRotation` so the rose
-    /// (which reads `renderedRotation`) shows up when the canvas is twisted.
-    /// Skipped in compass mode — there the heading owns `renderedRotation`.
-    private func mirrorRotationToRose() {
-        guard !app.compassMode else { return }
-        let mirrored = Angle.radians(-(sky.rotation.radians + sky.liveRotation.radians))
-        if app.canvasRotation != mirrored { app.canvasRotation = mirrored }
-    }
-
-    // MARK: - Comfort-zone pan (any selection)
-
-    /// Pan the selected object into the comfort zone — upper-third focus,
-    /// 100pt no-pan radius; outside it, glide just to the circle's edge
-    /// (minimal motion), mirroring production's `panFocus`. Driven off the
-    /// selection (not the tap) so a SEARCH pick pans the same as a canvas
-    /// tap. No-op if already comfy, mid-gesture, or the object is on the
-    /// back of the sphere (can't pan-only to it — a slew would be needed).
-    private func panIntoComfortZone(_ obj: SkyObject) {
-        guard sky.isResting else { return }
-        let geoSize = CGSize(width: sky.center.x * 2, height: sky.center.y * 2)
-        guard geoSize.width > 0, geoSize.height > 0 else { return }
-        let canvasSize = CGSize(width:  geoSize.width  + overdraw * 2,
-                                height: geoSize.height + overdraw * 2)
-        let camera = SkyCamera(scale:     sky.scale,
-                                  offset:    sky.offset,
-                                  rotation:  sky.rotation,
-                                  size:      canvasSize,
-                                  viewpoint: app.viewpoint,
-                                  sidereal:  app.localSiderealOffset)
-        guard let cp = SkyLabObjects.screen(obj, camera: camera,
-                                            date: app.renderedObservationDate) else { return }
-        let objScreen = CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)
-        let focus = CGPoint(x: geoSize.width / 2, y: geoSize.height / 3)
-        let dx = objScreen.x - focus.x
-        let dy = objScreen.y - focus.y
-        let dist = hypot(dx, dy)
-        let comfortRadius: CGFloat = 100
-        guard dist > comfortRadius else { return }
-
-        // Land the object on the NEAREST point of the comfort circle —
-        // `focus + R·û` — so it moves by `dist - R`. (Production's panFocus
-        // instead nudges `R` toward the focus, which lands a near canvas-tap
-        // inside the zone but barely shifts a FAR list pick — the "not enough
-        // to move" bug.) Minimal motion for a near tap, as much as needed
-        // for a far one.
-        let k    = comfortRadius / dist
-        let edge = CGPoint(x: focus.x + dx * k, y: focus.y + dy * k)
-        sky.focusPan(dragTarget: CGSize(width:  edge.x - objScreen.x,
-                                        height: edge.y - objScreen.y))
     }
 }
 
