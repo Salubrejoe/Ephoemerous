@@ -23,7 +23,7 @@ struct StarLabels: View {
     let category:   (EStar) -> POICategory
     /// The selected star is drawn by the promoted overlay instead — skip it
     /// here so its badge isn't drawn twice.
-    var selectedID: UUID? = nil
+    var selectedID: String? = nil
 
     var body: some View {
         ZStack {
@@ -45,7 +45,7 @@ struct StarLabels: View {
         let sc:          CGPoint
         let badgeReveal: Double
         let nameReveal:  Double
-        var id: UUID { star.id }
+        var id: String { star.id }
     }
 
     private var marks: [Mark] {

@@ -3,8 +3,22 @@ import SwiftUI
 
 
 struct EStar: Identifiable, Hashable {
-    let id = UUID()
-    
+    /// The catalogue designation IS the identity — "α Ori" is Betelgeuse
+    /// wherever it was built from.
+    ///
+    /// This used to be a fresh `UUID()` per instance, which quietly broke
+    /// every cross-array comparison. `favouriteStars` and the named-star
+    /// list are built from separate passes, so one star carried DIFFERENT
+    /// ids in each: MainView's "don't label a favourite twice" filter never
+    /// matched, and every favourited named star drew TWICE — once gold with
+    /// its heart, once plain white. `ESkyObject.id` (`star_<id>`) inherited
+    /// the instability, so the per-frame position dictionaries and the
+    /// detail sheet's identity were unreliable too.
+    ///
+    /// Depends on designations being unique, which `StarDatabase` now
+    /// guarantees by folding double-star companion records together.
+    var id: String { name }
+
     let name           : String
     let rightAscension : Angle
     let declination    : Angle

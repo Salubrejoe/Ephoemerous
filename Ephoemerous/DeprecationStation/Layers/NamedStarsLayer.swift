@@ -60,12 +60,13 @@ struct NamedStarsLayer: EGridLayer {
     }
 
     /// Extract the `EStar.id` UUID from an `ESkyObject` id of the form
-    /// `"star_<uuid>"`, or `nil` for non-star / nil ids. Lets the draw
-    /// loop match the promoted star by raw UUID (no per-star string
-    /// allocation). Parsed once per frame, not per star.
-    static func starUUID(from objectID: String?) -> UUID? {
+    /// The designation inside `"star_<name>"`, or `nil` for non-star / nil
+    /// ids. Lets the draw loop match the promoted star without building a
+    /// string per star. Parsed once per frame, not per star.
+    /// (Was a UUID parse — `EStar.id` is the catalogue designation now.)
+    static func starUUID(from objectID: String?) -> String? {
         guard let objectID, objectID.hasPrefix("star_") else { return nil }
-        return UUID(uuidString: String(objectID.dropFirst("star_".count)))
+        return String(objectID.dropFirst("star_".count))
     }
 
     func draw(in dc: inout EGraphicContext) {
@@ -121,7 +122,7 @@ struct NamedStarsLayer: EGridLayer {
             // tap target for) something the user can't see.
             guard artist.starPointFallsWithinMarigin(sc, in: dc) else { continue }
 
-            // Cheap UUID compare for the 298 non-promoted stars; only
+            // Cheap designation compare for the 298 non-promoted stars; only
             // the selected / deselecting star builds the id string +
             // reads its spring.
             let promo: Double = (star.id == selStarUUID || star.id == deselStarUUID)
@@ -160,8 +161,8 @@ struct NamedStarsLayer: EGridLayer {
     /// pan to it but never zoom). No dot, no hit-rects — just the pin; it
     /// fades out on its own as `promo` returns to 0 (drawPOILabel bails when
     /// reveal hits 0).
-    private func drawPromotedBelowGate(selected: UUID?,
-                                       deselecting: UUID?,
+    private func drawPromotedBelowGate(selected: String?,
+                                       deselecting: String?,
                                        in dc: inout EGraphicContext) {
         let ids = [selected, deselecting].compactMap { $0 }
         guard !ids.isEmpty else { return }

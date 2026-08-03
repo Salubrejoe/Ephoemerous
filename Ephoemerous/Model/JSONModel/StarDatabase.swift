@@ -5,11 +5,31 @@ class StarDatabase {
   static let shared = StarDatabase()
   private(set) var stars: [StarData] = []
   
-  var workableStars: [EStar] {
-      let workable: [EStar] = stars.map { .init(from: $0) }
-      ELogger.starDatabase(workable.count.description)
-      return workable.filter { $0.displayName != "Unknown"}
-  }
+  /// Every usable star, ONE entry per designation, built once.
+  ///
+  /// Two things happen here that everything downstream depends on:
+  ///
+  /// • DE-DUPLICATION. BSC5 lists the components of a visual double as
+  ///   SEPARATE records sharing one designation — Mizar is HR 5054 (mag
+  ///   2.27) and HR 5055 (mag 3.95), both "79Zet UMa". Rendered naively
+  ///   that draws two badges and two identical labels a few arcseconds
+  ///   apart. 64 designations are doubled this way. We keep the BRIGHTEST
+  ///   component as the system's representative; the companions belong in
+  ///   the detail sheet, not as a second POI on the canvas.
+  ///
+  /// • CACHING. This used to rebuild ~9k structs on EVERY access, and it
+  ///   is read from several layers per frame. Built once now — which also
+  ///   makes `EStar` instances stable for the whole session.
+  private(set) lazy var workableStars: [EStar] = {
+      let workable = stars.map(EStar.init(from:))
+          .filter { $0.displayName != "Unknown" }
+      // Brightest first, so `uniqued(by:)` keeps the primary component.
+      let byBrightness = workable.sorted { $0.magnitude < $1.magnitude }
+      var seen = Set<String>()
+      let deduped = byBrightness.filter { seen.insert($0.name).inserted }
+      ELogger.starDatabase("\(deduped.count) stars (\(workable.count - deduped.count) companion records folded in)")
+      return deduped
+  }()
     
     var listableStars: [EStar] {
         workableStars

@@ -21,7 +21,7 @@ struct NamedStarDotsCanvas: View, Equatable {
     let camera:     SkyCamera
     let stars:      [EStar]      // proper-named, favourites excluded
     let scale:      CGFloat      // live (clamped) scale
-    let selectedID: UUID?        // promoted star is drawn by the pin instead
+    let selectedID: String?      // promoted star is drawn by the pin instead
 
     static func == (l: Self, r: Self) -> Bool {
         l.camera == r.camera

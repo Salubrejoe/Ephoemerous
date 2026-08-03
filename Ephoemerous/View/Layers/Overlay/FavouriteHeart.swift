@@ -31,7 +31,7 @@ struct FavouriteHeart: View {
     var rotation: Angle = .zero
     /// Selected star is shown by the promoted pin instead — skip its heart
     /// so a highlighted favourite isn't drawn twice (pin + heart).
-    var selectedID: UUID? = nil
+    var selectedID: String? = nil
 
     /// One favourite tint everywhere — matches SearchSheet's REMEMBERED
     /// header. Muted so metadata never outshines the stars. ▼ TWEAK ▼
@@ -64,7 +64,7 @@ struct FavouriteHeart: View {
     }
 
     private struct Mark: Identifiable {
-        let id:        UUID
+        let id:        String
         let sc:        CGPoint
         let badged:    Bool
         let dotColor:  Color
