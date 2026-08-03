@@ -26,6 +26,10 @@ struct EStar: Identifiable, Hashable {
     let spectralClass  : EHRClass
     let pmRA           : Double
     let pmDE           : Double
+    /// Companion data, when the catalogue has any. `nil` for the majority.
+    /// See `EStarMultiplicity` for why "is a binary" is NOT the useful
+    /// question and `isShowpiece` is.
+    let multiplicity   : EStarMultiplicity?
 
     /// Unit vector in the (un-precessed, un-rotated) equatorial frame,
     /// computed once from RA/Dec at load. Constant for the star's life —
@@ -77,6 +81,7 @@ struct EStar: Identifiable, Hashable {
         self.spectralClass  = EStar.calculateSpectralClass(from: starData)
         self.pmRA           = EStar.calculateProperMotionRA(from: starData)
         self.pmDE           = EStar.calculateProperMotionDec(from: starData)
+        self.multiplicity   = EStarMultiplicity(from: starData)
         self.equatorialVector = EPrecession.equatorialVector(ra: ra, dec: dec)
     }
     
