@@ -295,7 +295,9 @@ struct SearchSheet: View {
             POILabelView(category: .sun, text: "", labelStyle: .star)
 //            POIBadgeView(category: .sun, size: 22)
         case .moon:
-            POILabelView(category: .moon, text: "")
+            POILabelView(category: .moon, text: "",
+                         moonPhase: MoonPosition.phase(for: state.observationDate,
+                                                       latitude: state.origin.latitude))
 //            POIBadgeView(category: .moon, size: 22)
         case .planet(let p):
             POILabelView(category: .planet(p), text: "")
