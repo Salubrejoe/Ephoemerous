@@ -265,16 +265,14 @@ enum AstroConstants {
     static let specK_green:       Double  = 0.85   // Class K: orange
 
     // -------------------------------------------------------------------------
-    // MARK: Moon phase thresholds (illuminated fraction 0-1)
+    // MARK: Moon phase
     // -------------------------------------------------------------------------
-    static let phaseNewMoon:          Double = 0.02
-    static let phaseWaxingCrescent:   Double = 0.24
-    static let phaseFirstQuarter:     Double = 0.26
-    static let phaseWaxingGibbous:    Double = 0.49
-    static let phaseFullMoon:         Double = 0.51
-    static let phaseWaningGibbous:    Double = 0.74
-    static let phaseLastQuarter:      Double = 0.76
-    static let phaseWaningCrescent:   Double = 0.98
+    // The eight illuminated-fraction thresholds that used to live here are
+    // gone. They encoded a model that cannot work: the fraction runs 0→1→0
+    // across a lunation, so walking it monotonically through eight names put
+    // a real quarter moon at "Full" and dropped the actual full moon off the
+    // end into "unknown". Naming a phase needs the waxing bit as well — see
+    // `LunarPhase.name`, which carries both.
 
     // -------------------------------------------------------------------------
     // MARK: Planet physical facts
