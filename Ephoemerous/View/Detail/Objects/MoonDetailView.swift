@@ -32,21 +32,14 @@ struct MoonDetailView: View {
         )
     }
 
-    /// Phase name from `moonData.fraction`, falling back through the
-    /// same threshold table the old view used.
-    private var phaseName: String {
-        switch moonData.fraction {
-        case ..<AstroConstants.phaseNewMoon:        return Strings.MoonPhase.newMoon
-        case ..<AstroConstants.phaseWaxingCrescent: return Strings.MoonPhase.waxingCrescent
-        case ..<AstroConstants.phaseFirstQuarter:   return Strings.MoonPhase.firstQuarter
-        case ..<AstroConstants.phaseWaxingGibbous:  return Strings.MoonPhase.waxingGibbous
-        case ..<AstroConstants.phaseFullMoon:       return Strings.MoonPhase.fullMoon
-        case ..<AstroConstants.phaseWaningGibbous:  return Strings.MoonPhase.waningGibbous
-        case ..<AstroConstants.phaseLastQuarter:    return Strings.MoonPhase.lastQuarter
-        case ..<AstroConstants.phaseWaningCrescent: return Strings.MoonPhase.waningCrescent
-        default:                                    return Strings.MoonPhase.unknown
-        }
+    /// The Moon as seen from here, right now — name, glyph and (on the
+    /// badge) the drawn silhouette all come off this one value.
+    private var lunarPhase: LunarPhase {
+        MoonPosition.phase(for: state.observationDate,
+                           latitude: state.origin.latitude)
     }
+
+    private var phaseName: String { lunarPhase.name }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,7 +48,7 @@ struct MoonDetailView: View {
                 subtitle:      phaseName,
                 accent:        .gray,
                 icon:          {
-                    Image(systemName: phaseSymbol(for: phaseName))
+                    Image(symbol: lunarPhase.symbol)
                 },
                 leadingSymbol: .share,
                 onLeading:     {},
@@ -92,23 +85,6 @@ struct MoonDetailView: View {
         }
     }
     // MARK: Helpers
-
-    /// SF Symbol for the eight Moon phases — the canonical
-    /// `moonphase.*` family. Falls back to plain `moon` if a phase
-    /// string we don't recognise comes through.
-    private func phaseSymbol(for name: String) -> String {
-        switch name {
-        case Strings.MoonPhase.newMoon:        return "moonphase.new.moon"
-        case Strings.MoonPhase.waxingCrescent: return "moonphase.waxing.crescent"
-        case Strings.MoonPhase.firstQuarter:   return "moonphase.first.quarter"
-        case Strings.MoonPhase.waxingGibbous:  return "moonphase.waxing.gibbous"
-        case Strings.MoonPhase.fullMoon:       return "moonphase.full.moon"
-        case Strings.MoonPhase.waningGibbous:  return "moonphase.waning.gibbous"
-        case Strings.MoonPhase.lastQuarter:    return "moonphase.last.quarter"
-        case Strings.MoonPhase.waningCrescent: return "moonphase.waning.crescent"
-        default:                               return "moon"
-        }
-    }
 
     private var raString: String {
         let hours = moonData.ra / 15

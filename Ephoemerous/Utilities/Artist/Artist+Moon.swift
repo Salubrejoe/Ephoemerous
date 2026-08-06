@@ -1,25 +1,17 @@
 import SwiftUI
 
 // MARK: - Moon
-// The moon's POI badge uses a phase-matched SF Symbol so the glyph
-// shows roughly today's illumination rather than a generic "moon".
-// We only have the illuminated fraction (no waxing / waning bit), so
-// we approximate: 0 → new, 1 → full, with first / last quarter and
-// crescent / gibbous in between. Good enough at 24 × 24 pt; the
-// detail sheet shows the precise phase when wired back up.
+// Glyph lookup for the Moon, now that the phase knows which way it's
+// heading.
+//
+// This used to take a bare illuminated fraction and admitted the cost in
+// its own doc comment: "without a waxing / waning flag we use the same
+// symbol for both half phases". The fraction is symmetric across a
+// lunation, so that drew every waning phase as its waxing mirror image,
+// two weeks out of every four. `MoonPosition.illumination(for:)` carries
+// the bit now; the mapping lives on `LunarPhase.symbol` so the badge, the
+// detail sheet and the Lab all read from one table.
 extension Artist {
 
-    /// Map an illuminated fraction (0…1) to an SF Symbol name in the
-    /// `moonphase.…` family. Symmetric — without a waxing / waning
-    /// flag we use the same "first quarter" symbol for both half
-    /// phases.
-    func moonPhaseSymbol(fraction: Double) -> Symbol {
-        switch fraction {
-        case ..<0.03:     return .moonNew
-        case 0.03..<0.22: return .moonWaxingCrescent
-        case 0.22..<0.47: return .moonFirstQuarter
-        case 0.47..<0.78: return .moonWaxingGibbous
-        default:          return .moonFull
-        }
-    }
+    func moonPhaseSymbol(_ phase: LunarPhase) -> Symbol { phase.symbol }
 }
