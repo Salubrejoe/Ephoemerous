@@ -22,12 +22,17 @@ enum Symbol: String, CaseIterable {
     case moon       = "moon"
     case moonFill   = "moon.fill"
 
-    // Moon phases (illuminated-fraction buckets) — see Artist+Moon
+    // Moon phases — see `LunarPhase.symbol`. The waning half exists now
+    // that the phase carries a waxing bit; before, both halves shared the
+    // waxing glyphs and rendered mirrored for two weeks a month.
     case moonNew            = "moonphase.new.moon"
     case moonWaxingCrescent = "moonphase.waxing.crescent"
     case moonFirstQuarter   = "moonphase.first.quarter"
     case moonWaxingGibbous  = "moonphase.waxing.gibbous"
     case moonFull           = "moonphase.full.moon"
+    case moonWaningGibbous  = "moonphase.waning.gibbous"
+    case moonLastQuarter    = "moonphase.last.quarter"
+    case moonWaningCrescent = "moonphase.waning.crescent"
 
     // Constellation-entity silhouettes — see Artist+ConstellationEntity
     case entityHero       = "figure.stand"

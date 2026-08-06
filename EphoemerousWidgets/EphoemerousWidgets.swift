@@ -407,6 +407,17 @@ struct SkyObjectWidgetView: View {
         }
     }
 
+    /// The Moon's real lit face for this entry's instant and place. The
+    /// widget is a postcard of one moment, so a generic full disc is the
+    /// one thing it must not show. Latitude falls back to the equator (no
+    /// mirror) when the app has never parked an origin.
+    @MainActor
+    private func lunarPhase(for category: POICategory?) -> LunarPhase? {
+        guard case .moon = category else { return nil }
+        return MoonPosition.phase(for: entry.date,
+                                  latitude: .degrees(entry.origin?.latDeg ?? 0))
+    }
+
     /// Stars — the Sun included — wear the pointy 5-corner squircle,
     /// exactly like the app's labels; planetoids stay rounded.
     private func labelStyle(for category: POICategory) -> POILabelView.LabelStyle {
@@ -530,7 +541,8 @@ struct SkyObjectWidgetView: View {
                             badgeReveal: POILabelView.tierReveal(scale: 110,
                                                                  threshold: style.badgeIn),
                             nameReveal:  POILabelView.tierReveal(scale: 110,
-                                                                 threshold: style.textIn))
+                                                                 threshold: style.textIn),
+                            moonPhase:   lunarPhase(for: category))
     }
 
     /// The promoted pin: the badge lifted above its precise-location dot
@@ -575,7 +587,8 @@ struct SkyObjectWidgetView: View {
                          text:        "",
                          labelStyle:  labelStyle(for: category),
                          nameReveal:  0,
-                         borderScaleCompensation: 1 / scale)
+                         borderScaleCompensation: 1 / scale,
+                         moonPhase:   lunarPhase(for: category))
             .scaleEffect(isSun ? sunScale : isMoon ? moonScale : scale)
                 .position(Pin.badgeCentre(in: size, isLandscape: isLandscape))
 
@@ -592,7 +605,8 @@ struct SkyObjectWidgetView: View {
                 POILabelView(category:   category,
                              text:        "",
                              labelStyle:  labelStyle(for: category),
-                             nameReveal:  0)
+                             nameReveal:  0,
+                             moonPhase:   lunarPhase(for: category))
             } else {
                 Image(systemName: "sparkles")
             }

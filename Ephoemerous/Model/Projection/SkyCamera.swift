@@ -32,6 +32,14 @@ struct SkyCamera: Equatable {
     var viewpoint: Projection.Viewpoint
     var sidereal:  Angle
 
+    /// Where the observer is standing, recovered from the earth-fixed
+    /// origin vector (its z IS sin φ). Saves threading a latitude down to
+    /// every overlay that already holds a camera — the Moon's phase needs
+    /// it, because the whole phase mirrors below the equator.
+    var observerLatitude: Angle {
+        .radians(asin(max(-1, min(1, viewpoint.originVector.z))))
+    }
+
     static func == (l: SkyCamera, r: SkyCamera) -> Bool {
         l.scale == r.scale
             && l.offset == r.offset

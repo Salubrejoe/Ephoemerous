@@ -64,6 +64,13 @@ struct POILabelView: View {
     /// tier, not the badge tier — at badge tier the mark is a few points
     /// across and a pip would just fur its edge. 0 = absent.
     var companionReveal: Double = 0
+    /// The Moon's phase, when the caller knows the observation date and
+    /// where the observer is standing. Given one, the `.moon` badge draws
+    /// its real lit silhouette instead of a plain disc — the one adornment
+    /// that survives at badge size, because phase is a silhouette and the
+    /// Moon's badge is the second-largest we draw. `nil` (or any other
+    /// category) keeps the plain disc, so unwired call sites are unchanged.
+    var moonPhase: LunarPhase? = nil
 
     /// Gap (pt) between the badge's trailing edge and the name.
     private let nameGap: CGFloat = 6
@@ -80,7 +87,8 @@ struct POILabelView: View {
         badgeReveal: Double = 1,
         nameReveal: Double = 1,
         borderScaleCompensation: CGFloat = 1,
-        companionReveal: Double = 0
+        companionReveal: Double = 0,
+        moonPhase: LunarPhase? = nil
     ) {
         self.category = category
         self.text = text
@@ -89,6 +97,7 @@ struct POILabelView: View {
         self.nameReveal = nameReveal
         self.borderScaleCompensation = borderScaleCompensation
         self.companionReveal = companionReveal
+        self.moonPhase = moonPhase
     }
 
     var body: some View {
@@ -148,25 +157,46 @@ struct POILabelView: View {
         // true casing weight — see `borderScaleCompensation`.
         let bw = Artist.shared.poiTextBorderWidth * borderScaleCompensation
         let bulge = labelStyle == .planetoids ? 2.0 : 5.0
-        
+        // The Moon wears its real lit silhouette; everything else keeps the
+        // squircle. Erased so fill and casing trace the SAME outline —
+        // casing a disc around a crescent would read as a stained full moon.
+        let shape: AnyShape = {
+            if case .moon = category, let moonPhase {
+                return AnyShape(MoonPhaseShape(phase: moonPhase))
+            }
+            return AnyShape(Squircle(corners: 5, bulge: bulge))
+        }()
+        let isNewMoon = moonPhase?.isNew ?? false
+
         return ZStack {
-            
-            Squircle(corners: 5, bulge: bulge)
+
+            shape
                 .fill(
-                    
-                    LinearGradient(colors: [
+                    // New moon has no lit face — a whisper of earthshine
+                    // instead, so the badge holds its place on the sky for
+                    // the two days a month it would otherwise vanish.
+                    isNewMoon
+                    ? AnyShapeStyle(style.gradientTop.opacity(0.18))
+                    : AnyShapeStyle(LinearGradient(colors: [
                         style.gradientTop,
                         style.gradientBottom
-                    ], startPoint: .bottom, endPoint: .top)
+                    ], startPoint: .bottom, endPoint: .top))
                 )
         }
         .frame(width: d, height: d)
         // Casing ring — the light outline doing the legibility work.
         .overlay(
 //            Circle()
-            Squircle(corners: 5, bulge: bulge)
+            shape
                 .stroke(isMasked ? .clear : style.border, lineWidth: bw)
         )
+        // The casing is near-black, which disappears on an unfilled new
+        // moon against a dark sky — so that one case gets a tint ring too.
+        .overlay {
+            if isNewMoon {
+                shape.stroke(style.gradientTop, lineWidth: bw * 0.7)
+            }
+        }
         // Companion pip — the same orb in miniature, at the lower-trailing
         // edge. It reads as what an eyepiece shows: one star, then a second
         // beside it. Lower-TRAILING because the favourite heart takes the

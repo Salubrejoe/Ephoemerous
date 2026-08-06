@@ -167,6 +167,13 @@ struct SkyShareCard: View {
         }
     }
 
+    /// The postcard is a keepsake of one night, so the Moon on it has to be
+    /// the Moon that was actually up — phase included.
+    private func lunarPhase(for category: POICategory) -> LunarPhase? {
+        guard case .moon = category else { return nil }
+        return MoonPosition.phase(for: date, latitude: .degrees(latDeg))
+    }
+
     /// The hero badge, oversized, sitting exactly on the object's own
     /// projection (see `focus`). No separate precise-location dot: the
     /// widget lifts its badge ABOVE the dot, but here badge and dot share
@@ -178,7 +185,8 @@ struct SkyShareCard: View {
                             text:       "",
                             labelStyle: labelStyle(for: category),
                             nameReveal: 0,
-                            borderScaleCompensation: 1 / style)
+                            borderScaleCompensation: 1 / style,
+                            moonPhase:  lunarPhase(for: category))
             .scaleEffect(style)
             .position(focus)
     }
@@ -194,7 +202,8 @@ struct SkyShareCard: View {
                             badgeReveal: POILabelView.tierReveal(scale: 110,
                                                                  threshold: style.badgeIn),
                             nameReveal:  POILabelView.tierReveal(scale: 110,
-                                                                 threshold: style.textIn))
+                                                                 threshold: style.textIn),
+                            moonPhase:   lunarPhase(for: category))
     }
 }
 

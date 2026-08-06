@@ -169,8 +169,9 @@ struct Strings {
         static let meanMagnitude  = "Mean magnitude"
     }
 
-    /// Moon-phase names — used as switch keys in `MoonDetailView`
-    /// (phase → symbol). Canonical until the display layer lands.
+    /// Moon-phase names. Resolved by `LunarPhase.name`, which is the only
+    /// thing that should map a phase to one of these — there is no
+    /// "unknown" fallback any more because the mapping is now total.
     struct MoonPhase {
         static let newMoon        = "New Moon"
         static let waxingCrescent = "Waxing Crescent"
@@ -180,7 +181,6 @@ struct Strings {
         static let waningGibbous  = "Waning Gibbous"
         static let lastQuarter    = "Last Quarter"
         static let waningCrescent = "Waning Crescent"
-        static let unknown        = "New Moon"  // fallback
     }
 
     /// Search-matching keywords (lowercased), not display text.

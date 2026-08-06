@@ -48,8 +48,10 @@ enum SkyLabObjects {
         case .sun:
             return (.sun, .symbol(.sunMaxFill), Strings.Bodies.sun)
         case .moon:
-            let frac = MoonPosition.illuminatedFraction(for: date)
-            return (.moon, .symbol(a.moonPhaseSymbol(fraction: frac)), Strings.Bodies.moon)
+            // Latitude only mirrors the DRAWN badge, not the glyph name,
+            // so the Lab's flat symbol can take the equator.
+            let phase = MoonPosition.phase(for: date, latitude: .zero)
+            return (.moon, .symbol(a.moonPhaseSymbol(phase)), Strings.Bodies.moon)
         case .planet(let p):
             return (.planet(p), .unicode(a.planetGlyph(p)), p.displayName)
         case .constellation:
