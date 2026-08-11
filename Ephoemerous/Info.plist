@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Deep-link scheme: widgets open ephoemerous://object/<entity-id>
-	     (see .widgetURL in EphoemerousWidgets + onOpenURL in EphoemerousApp). -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -15,5 +13,7 @@
 			</array>
 		</dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
