@@ -659,6 +659,26 @@ struct OrlojFaceLayers: View {
         width * (1 + (brilliance - 1) * 0.5)
     }
 
+    /// Mark fill — the badge-orb gradient in the body's canonical tints.
+    /// A line-art host keeps only alpha (the palette flattens to a solid
+    /// white slab), so the orb's shading is rebuilt in transparency alone
+    /// — the same soft glass bead `POILabelView.badgeFill` wears on the
+    /// postcard widget. ▼ TWEAK the masked softness here ▼
+    private func markFill(top: Color, bottom: Color) -> LinearGradient {
+        lineArt
+        ? LinearGradient(colors: [.white.opacity(0.78), .white.opacity(0.38)],
+                         startPoint: .bottom, endPoint: .top)
+        : LinearGradient(colors: [top, bottom],
+                         startPoint: .bottom, endPoint: .top)
+    }
+
+    /// Mark casing — canvas-navy in full colour; under line art the navy
+    /// would come back a solid white ring, so it thins to a whisper of
+    /// white rim instead, keeping the soft orb a bead on the plate.
+    private var markCasing: Color {
+        lineArt ? .white.opacity(0.5) : Artist.shared.canvasBackground.opacity(0.9)
+    }
+
     private static let brass    = Color(red: 0.80, green: 0.66, blue: 0.38)
     private static let sunGold  = Color(red: 1.00, green: 0.82, blue: 0.45)
     private static let moonSilk = Color.white
@@ -698,13 +718,10 @@ struct OrlojFaceLayers: View {
             // gradient fill, dark casing, and soft glow.
             ForEach(face.favouriteStarMarks(), id: \.id) { mark in
                 Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
-                    .fill(LinearGradient(colors: [mark.top, mark.bottom],
-                                         startPoint: .bottom, endPoint: .top))
-
+                    .fill(markFill(top: mark.top, bottom: mark.bottom))
                     .overlay(
                         Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
-                            .stroke(Artist.shared.canvasBackground.opacity(0.9),
-                                    lineWidth: 1.1)
+                            .stroke(markCasing, lineWidth: 1.1)
                     )
                     .frame(width: 9 * u, height: 9 * u)
                     .shadow(color: mark.top.opacity(0.5), radius: lineArt ? 0 : 1.5)
@@ -797,12 +814,10 @@ struct OrlojFaceLayers: View {
 
             ForEach(face.planetMarks(), id: \.id) { mark in
                 Squircle(corners: 4, bulge: 2.0)
-                    .fill(LinearGradient(colors: [mark.top, mark.bottom],
-                                         startPoint: .bottom, endPoint: .top))
+                    .fill(markFill(top: mark.top, bottom: mark.bottom))
                     .overlay(
                         Squircle(corners: 4, bulge: 2.0)
-                            .stroke(Artist.shared.canvasBackground.opacity(0.9),
-                                    lineWidth: 1)
+                            .stroke(markCasing, lineWidth: 1)
                     )
                     .frame(width: 7 * u, height: 7 * u)
                     .shadow(color: mark.top.opacity(0.45), radius: lineArt ? 0 : 1.2)
