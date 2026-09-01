@@ -410,11 +410,20 @@ struct OrlojFace {
 
     /// Roman numerals for the 24 SOLAR hours, positioned just outside
     /// the dial circle and rotated feet-to-centre, like the original.
+    /// Each knows whether its hour is DAYLIT: the dial reads solar
+    /// time, so numeral h IS the Sun at hour angle H — above the
+    /// horizon when |H| < the sunset hour angle at the Sun's current
+    /// declination. Polar seasons degrade gracefully: no sunset → all
+    /// day, no sunrise → all night.
     @MainActor
     func dialNumerals()
-        -> [(id: Int, text: String, position: CGPoint, rotation: Angle)] {
+        -> [(id: Int, text: String, position: CGPoint, rotation: Angle, isDay: Bool)] {
         let r = radiusForDeclination(romanDialDec) + 11 * ui
-        var out: [(Int, String, CGPoint, Angle)] = []
+        let sunVec   = SIMD3<Double>.eclipticPoint(lambda: sunLambda)
+        let sunDec   = Angle.radians(asin(max(-1, min(1, sunVec.z))))
+        let hSet     = Self.sunsetHourAngle(declination: sunDec, latitude: latitude)
+        let polarDay = -tan(latitude.radians) * tan(sunDec.radians) < -1
+        var out: [(Int, String, CGPoint, Angle, Bool)] = []
         for h in 0..<24 {
             let H = solarDialPhase + Double(h) / 24 * 2 * .pi
             guard let onRing = ringPoint(hourAngle: H, declination: romanDialDec)
@@ -424,7 +433,9 @@ struct OrlojFace {
             let p   = CGPoint(x: center.x + dx / len * r,
                               y: center.y + dy / len * r)
             let rot = Angle.radians(atan2(Double(dy), Double(dx)) + .pi / 2)
-            out.append((h, Self.romanTexts[h % 12], p, rot))
+            let Hn  = atan2(sin(H), cos(H))
+            let day = hSet.map { abs(Hn) < $0 } ?? polarDay
+            out.append((h, Self.romanTexts[h % 12], p, rot, day))
         }
         return out
     }
@@ -531,12 +542,29 @@ struct OrlojFace {
                                 radius: radiusForDeclination(romanDialDec)) }
     }
 
-    /// The Moon's hand — the silver sibling, a touch shorter so the
-    /// two never merge when the luminaries conjoin at new moon.
+    /// The little hand at the Sun arm's tip — Prague's golden pointer:
+    /// a slim leaf riding the arm's last stretch, its apex reaching
+    /// past the dial circle toward the numerals so the eye lands on
+    /// the hour. ▼ TWEAK the pointer's cut here ▼
     @MainActor
-    func moonHandPath() -> Path? {
-        moonPoint.map { handPath(through: $0,
-                                 radius: radiusForDeclination(romanDialDec) * 0.90) }
+    func sunHandTipPath() -> Path? {
+        guard let p = sunPoint else { return nil }
+        let dx  = p.x - center.x, dy = p.y - center.y
+        let len = max(hypot(dx, dy), 0.0001)
+        let ux  = dx / len, uy = dy / len            // outward
+        let radius  = radiusForDeclination(romanDialDec)
+        let apexAt  = radius + 5 * ui
+        let baseAt  = radius - 9 * ui
+        let halfW   = 2.6 * ui
+        var tip = Path()
+        tip.move(to:    CGPoint(x: center.x + ux * apexAt,
+                                y: center.y + uy * apexAt))
+        tip.addLine(to: CGPoint(x: center.x + ux * baseAt - uy * halfW,
+                                y: center.y + uy * baseAt + ux * halfW))
+        tip.addLine(to: CGPoint(x: center.x + ux * baseAt + uy * halfW,
+                                y: center.y + uy * baseAt - ux * halfW))
+        tip.closeSubpath()
+        return tip
     }
 
     /// Axle → tip, the tip at `radius` along the axle→`p` direction —
@@ -905,22 +933,24 @@ struct OrlojFaceLayers: View {
             }
 
             // ── The crown carries NUMERALS ALONE, in the app's label
-            // voice: OutlinedText — serif brass with the real dark
-            // casing, crisp at any zoom, squint-proof. Phased SOLAR —
-            // XII up = local noon, so the ring registers with the
-            // tympan for any origin (see `solarDialPhase`).
+            // voice: OutlinedText with the real dark casing, crisp at
+            // any zoom, squint-proof. Phased SOLAR — XII up = local
+            // noon (see `solarDialPhase`) — and spoken in TWO METALS:
+            // daylit hours brass, night hours silver, same volume,
+            // different temperature — the crown echoes the tympan.
             ForEach(face.dialNumerals(), id: \.id) { numeral in
                 Group {
                     if lineArt {
                         // Fill + casing both resolve to white and merge —
-                        // the numerals turn into solid blocks. Plain glyphs.
+                        // the numerals turn into solid blocks. Plain
+                        // glyphs; night dims where metal can't speak.
                         Text(numeral.text)
                             .font(.system(size: 9 * u, weight: .semibold,
                                           design: .serif))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.white.opacity(numeral.isDay ? 1 : 0.65))
                     } else {
                         OutlinedText(text:      numeral.text,
-                                     fill:      Self.brass,
+                                     fill:      numeral.isDay ? Self.brass : Self.silver,
                                      stroke:    Artist.shared.canvasBackground,
                                      lineWidth: max(0.7, 1.2 * u),
                                      font:      Self.numeralFont(size: 9 * u))
@@ -964,19 +994,25 @@ struct OrlojFaceLayers: View {
             }
 
 
-            // ── Hands — SOLID MATERIAL, the Prague gesture: brass
-            // for the Sun, silver for the Moon, each running from the
-            // axle THROUGH its badge to the Roman dial, so badge,
-            // hand and numeral read as one line. The only elements
-            // loud enough for a real shadow — they answer "what time
-            // is it"; everything else is scenery. Badges ride on top.
+            // ── The hand — ONE, the Sun's, SOLID brass running from
+            // the axle THROUGH its badge to the Roman dial, tipped
+            // with Prague's little golden pointer so badge, hand and
+            // numeral read as one line. The only element loud enough
+            // for a real shadow — it answers "what time is it";
+            // everything else is scenery. The Moon keeps no arm: it
+            // rides the ecliptic as a free body, so the face has one
+            // unambiguous time-teller. Badges ride on top.
             if let hand = face.sunHandPath() {
-                handView(hand, tint: Self.brass,   width: 2.0 * u)
+                handView(hand, tint: Self.brass, width: 2.0 * u)
             }
-            if let hand = face.moonHandPath() {
-                handView(hand, tint: Self.silver,  width: 1.5 * u)
+            if let tip = face.sunHandTipPath() {
+                OrlojPath(source: tip)
+                    .fill(lineArt ? AnyShapeStyle(Color.white.opacity(0.85))
+                                  : AnyShapeStyle(Self.brass))
+                    .overlay(OrlojPath(source: tip)
+                        .stroke(markCasing, lineWidth: lineArt ? 0 : 1))
             }
-            // The axle — a small brass hub grounding both hands.
+            // The axle — a small brass hub grounding the hand.
             Circle()
                 .fill(lineArt ? AnyShapeStyle(Color.white.opacity(0.85))
                               : AnyShapeStyle(Self.brass))
