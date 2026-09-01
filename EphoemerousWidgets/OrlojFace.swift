@@ -140,9 +140,11 @@ struct OrlojFace {
     /// each with its stroke weight, the equator emphasised.
     @MainActor
     func platePaths() -> [(path: Path, width: CGFloat)] {
-        [(sampledParallel(declination: AstroConstants.tropicCapricorn), 0.5),
-         (sampledParallel(declination: .zero),                          0.9),
-         (sampledParallel(declination: AstroConstants.tropicCancer),    0.5)]
+        [(sampledParallel(declination: AstroConstants.tropicCancer), 0.2),
+        (sampledParallel(declination: AstroConstants.tropicCapricorn), 0.2),
+//         (sampledParallel(declination: .zero),                          0.9),
+//         (sampledParallel(declination: AstroConstants.tropicCancer),    0.5)
+        ]
     }
 
     /// A constant-altitude circle around the OBSERVER's zenith (not the
@@ -906,7 +908,7 @@ struct OrlojFaceLayers: View {
             // ── Plate filigree.
             ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
                 OrlojPath(source: plate.path)
-                    .stroke(Self.brass.opacity(ink(0.85)), lineWidth: heft(plate.width))
+                    .stroke(Self.silver.opacity(ink(0.85)), lineWidth: heft(plate.width))
             }
             // (The −18° twilight hairline is retired — the tympan
             // fields' own edges bound AVRORA/CREPVSCVLVM now.)
