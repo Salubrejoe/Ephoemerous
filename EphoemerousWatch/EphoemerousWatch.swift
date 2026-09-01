@@ -65,7 +65,10 @@ struct OrlojWatchView: View {
             }
         }
         .ignoresSafeArea()
-//        .background(Artist.shared.canvasBackground)
+        // The same ground the widgets stand on — `canvasBackground`,
+        // via the asset catalogue this target bundles too, so the
+        // instrument reads against one night everywhere it mounts.
+        .background(Artist.shared.canvasBackground.ignoresSafeArea())
         .preferredColorScheme(.dark)
         // The crown IS the date crown here. Haptic detents; not
         // continuous — the journey has ends, like the app's timeline.
