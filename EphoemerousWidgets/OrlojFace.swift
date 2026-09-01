@@ -400,23 +400,26 @@ struct OrlojFace {
         return out
     }
 
-    /// Phase that pins the ring like a CLOCK FACE: numeral XII (noon) at
-    /// the TOP — the upper meridian, where the sun culminates — for every
-    /// origin on Earth. The dial reads APPARENT SOLAR time: the Sun hand
-    /// on XII IS local noon, ± the equation of time. (The retired civil
-    /// phase anchored to the DEVICE timezone — fine at home, but browsing
-    /// a far origin — a Sydney sky from a Rome device — spun the whole
-    /// ring hours away from the tympan's solar geometry, so the numerals
-    /// stopped registering with the horizon bands and labels.)
-    var solarDialPhase: Double { -.pi }
-
-    /// Roman numerals for the 24 SOLAR hours, positioned just outside
-    /// the dial circle and rotated feet-to-centre, like the original.
-    /// Each knows whether its hour is DAYLIT: the dial reads solar
-    /// time, so numeral h IS the Sun at hour angle H — above the
-    /// horizon when |H| < the sunset hour angle at the Sun's current
-    /// declination. Polar seasons degrade gracefully: no sunset → all
-    /// day, no sunrise → all night.
+    /// Roman numerals for the 24 hours, positioned just outside the
+    /// dial circle and rotated feet-to-centre, like the original.
+    ///
+    /// The crown reads CIVIL time — the device's wall clock, BST and
+    /// all — anchored through the Sun itself: the hand sits at the
+    /// Sun's true hour angle and the wall clock says `civilNow`, so
+    /// numeral h belongs at the hour angle the Sun will hold at civil
+    /// hour h. Longitude, the equation of time and DST all fold into
+    /// that one subtraction; the hand on X IS ten o'clock on your
+    /// phone, by construction. (An earlier civil phase anchored to
+    /// the raw timezone offset was retired for detaching the ring
+    /// from the tympan's solar geometry; deriving from the Sun's OWN
+    /// hour angle can't — the rotation changes WHICH numerals are
+    /// daylit, never where the brass day-arc sits on the plate.)
+    ///
+    /// Each numeral knows whether its hour is DAYLIT: numeral h IS
+    /// the Sun at hour angle H — above the horizon when |H| < the
+    /// sunset hour angle at the Sun's current declination. Polar
+    /// seasons degrade gracefully: no sunset → all day, no sunrise →
+    /// all night.
     @MainActor
     func dialNumerals()
         -> [(id: Int, text: String, position: CGPoint, rotation: Angle, isDay: Bool)] {
@@ -425,9 +428,16 @@ struct OrlojFace {
         let sunDec   = Angle.radians(asin(max(-1, min(1, sunVec.z))))
         let hSet     = Self.sunsetHourAngle(declination: sunDec, latitude: latitude)
         let polarDay = -tan(latitude.radians) * tan(sunDec.radians) < -1
+        // The civil anchor: the Sun's hour angle now (H = LST − RA,
+        // ringPoint's own convention) against the wall clock now.
+        let sunHA    = lst.radians - atan2(sunVec.y, sunVec.x)
+        let comps    = Calendar.current.dateComponents([.hour, .minute, .second],
+                                                       from: date)
+        let civilNow = Double(comps.hour ?? 12) + Double(comps.minute ?? 0) / 60
+                     + Double(comps.second ?? 0) / 3600
         var out: [(Int, String, CGPoint, Angle, Bool)] = []
         for h in 0..<24 {
-            let H = solarDialPhase + Double(h) / 24 * 2 * .pi
+            let H = sunHA + (Double(h) - civilNow) / 24 * 2 * .pi
             guard let onRing = ringPoint(hourAngle: H, declination: romanDialDec)
             else { continue }
             let dx  = onRing.x - center.x, dy = onRing.y - center.y
@@ -936,8 +946,8 @@ struct OrlojFaceLayers: View {
 
             // ── The crown carries NUMERALS ALONE, in the app's label
             // voice: OutlinedText with the real dark casing, crisp at
-            // any zoom, squint-proof. Phased SOLAR — XII up = local
-            // noon (see `solarDialPhase`) — and spoken in TWO METALS:
+            // any zoom, squint-proof. Phased CIVIL — the hand reads
+            // the wall clock (see `dialNumerals`) — in TWO METALS:
             // daylit hours brass, night hours silver, same volume,
             // different temperature — the crown echoes the tympan.
             ForEach(face.dialNumerals(), id: \.id) { numeral in
