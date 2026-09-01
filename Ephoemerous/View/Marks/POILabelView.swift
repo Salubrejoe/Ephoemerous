@@ -26,10 +26,11 @@ struct POILabelView: View {
 
     /// Tinted / "Clear" Home Screen themes don't show our colours — the
     /// system paints every non-transparent pixel with a light vibrant
-    /// material. The casing (a 90%-opaque BLACK ring, doing legibility
-    /// work against a dark sky) therefore renders as a 90% WHITE slab and
-    /// makes the label *less* readable, not more. So in those modes the
-    /// casing and the drop shadow are dropped and the mark carries itself.
+    /// material, so only the ALPHA channel survives. A fully-opaque badge
+    /// comes back as a stark white slab; the near-black casing as a white
+    /// ring. In those modes the orb's shading is rebuilt in pure
+    /// transparency (see `badgeFill`), the casing softens to a faint white
+    /// rim, and the drop shadow is dropped (it just fattens the blob).
     /// Reads `.fullColor` outside a widget, so the app is unaffected.
     @Environment(\.widgetRenderingMode) private var widgetRenderingMode
     private var isMasked: Bool { widgetRenderingMode != .fullColor }
@@ -79,6 +80,28 @@ struct POILabelView: View {
     private static let badgeBlur: CGFloat = 3
 
     private var style: Artist.POICategoryStyle { Artist.shared.poiStyle(for: category) }
+
+    /// Badge fill. Full colour: the category's bright→deep orb gradient.
+    /// A masked host keeps only alpha — the palette would flatten to a
+    /// solid white slab — so the same shading is rebuilt in transparency
+    /// alone: a bright core melting to a faint rim, the glassy voice the
+    /// rest of the tile speaks. ▼ TWEAK the masked softness here ▼
+    private var badgeFill: AnyShapeStyle {
+        isMasked
+        ? AnyShapeStyle(LinearGradient(colors: [.white.opacity(0.78),
+                                                .white.opacity(0.38)],
+                                       startPoint: .bottom, endPoint: .top))
+        : AnyShapeStyle(LinearGradient(colors: [style.gradientTop,
+                                                style.gradientBottom],
+                                       startPoint: .bottom, endPoint: .top))
+    }
+
+    /// Casing colour. The production near-black ring reads as a white slab
+    /// under a masking host, so there it thins to a whisper of rim — just
+    /// enough edge to keep the soft orb a bead against a busy wallpaper.
+    private var casing: Color {
+        isMasked ? .white.opacity(0.5) : style.border
+    }
     
     init(
         category: POICategory,
@@ -177,10 +200,7 @@ struct POILabelView: View {
                     // the two days a month it would otherwise vanish.
                     isNewMoon
                     ? AnyShapeStyle(style.gradientTop.opacity(0.18))
-                    : AnyShapeStyle(LinearGradient(colors: [
-                        style.gradientTop,
-                        style.gradientBottom
-                    ], startPoint: .bottom, endPoint: .top))
+                    : badgeFill
                 )
         }
         .frame(width: d, height: d)
@@ -188,7 +208,7 @@ struct POILabelView: View {
         .overlay(
 //            Circle()
             shape
-                .stroke(isMasked ? .clear : style.border, lineWidth: bw)
+                .stroke(casing, lineWidth: bw)
         )
         // The casing is near-black, which disappears on an unfilled new
         // moon against a dark sky — so that one case gets a tint ring too.
@@ -207,11 +227,10 @@ struct POILabelView: View {
             if companionReveal > 0.01 {
                 let pip = d * 0.55        // ▼ TWEAK the companion's size ▼
                 Squircle(corners: 5, bulge: bulge)
-                    .fill(LinearGradient(colors: [style.gradientTop, style.gradientBottom],
-                                         startPoint: .bottom, endPoint: .top))
+                    .fill(badgeFill)
                     .overlay(
                         Squircle(corners: 5, bulge: bulge)
-                            .stroke(isMasked ? .clear : style.border, lineWidth: bw * 0.8)
+                            .stroke(casing, lineWidth: bw * 0.8)
                     )
                     .frame(width: pip, height: pip)
                     .offset(x: pip * 0.52, y: pip * 0.34)

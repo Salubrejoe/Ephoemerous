@@ -140,9 +140,11 @@ struct OrlojFace {
     /// each with its stroke weight, the equator emphasised.
     @MainActor
     func platePaths() -> [(path: Path, width: CGFloat)] {
-        [(sampledParallel(declination: AstroConstants.tropicCapricorn), 0.5),
-         (sampledParallel(declination: .zero),                          0.9),
-         (sampledParallel(declination: AstroConstants.tropicCancer),    0.5)]
+        [(sampledParallel(declination: AstroConstants.tropicCancer), 0.2),
+        (sampledParallel(declination: AstroConstants.tropicCapricorn), 0.2),
+//         (sampledParallel(declination: .zero),                          0.9),
+//         (sampledParallel(declination: AstroConstants.tropicCancer),    0.5)
+        ]
     }
 
     /// A constant-altitude circle around the OBSERVER's zenith (not the
@@ -169,6 +171,69 @@ struct OrlojFace {
 
     @MainActor
     func horizonPath() -> Path { almucantarPath(altitude: .zero) }
+
+    // MARK: Tympan fields (fixed)
+    // Day, twilight and night as MATERIAL, the Prague read — you see
+    // which field the Sun is in, and the horizon is the EDGE between
+    // fields, not a hairline you hunt for. Geometry rests on one fact:
+    // constant-altitude circles project to TRUE circles under the
+    // stereographic, so three sample points pin each one exactly
+    // (`eclipticCircle`'s trick). Near the poles a circle can fail to
+    // fit — the vends go nil/empty and the plate simply wears fewer
+    // veils that day.
+
+    /// Exact centre + radius of one almucantar.
+    @MainActor
+    private func almucantarCircle(altitude: Angle) -> (centre: CGPoint, radius: CGFloat)? {
+        func point(_ t: Double) -> CGPoint? {
+            camera.screen(rotatedEquatorial:
+                camera.viewpoint.skyPoint(altitude: altitude, at: t))
+        }
+        guard let a = point(0), let b = point(1.0 / 3), let c = point(2.0 / 3)
+        else { return nil }
+        return Self.circle(through: a, b, c)
+    }
+
+    /// The plate's face — everything inside the crown's inner edge.
+    /// The fields' clip, so day/night run under the filigree to the
+    /// dial like the original's painted ground.
+    @MainActor
+    func plateDiscPath() -> Path {
+        circle(center, radiusForDeclination(romanDialDec) + 3 * ui)
+    }
+
+    /// The day field — the sky above the horizon, as one fill circle.
+    @MainActor
+    func dayFieldPath() -> Path? {
+        guard let h = almucantarCircle(altitude: .zero) else { return nil }
+        return circle(h.centre, h.radius)
+    }
+
+    /// The full twilight annulus — horizon down to astronomical dark
+    /// (0° → −18°), an even-odd circle pair: ONE warm AVRORA /
+    /// CREPVSCVLVM glaze for the whole band.
+    @MainActor
+    func twilightBandPath() -> Path? {
+        guard let h = almucantarCircle(altitude: .zero),
+              let t = almucantarCircle(altitude: .degrees(-18)) else { return nil }
+        var path = circle(h.centre, h.radius)
+        path.addPath(circle(t.centre, t.radius))
+        return path
+    }
+
+    /// Cumulative dusk veils — "below this altitude" at 0°, −6°, −12°,
+    /// −18° (the horizon-scallop grammar: civil, nautical, astronomical).
+    /// Each is plate-minus-circle, even-odd; STACKED in one ink they
+    /// step the plate darker band by band, night wearing all four.
+    @MainActor
+    func duskVeilPaths() -> [Path] {
+        [Angle.zero, .degrees(-6), .degrees(-12), .degrees(-18)].compactMap { alt in
+            guard let c = almucantarCircle(altitude: alt) else { return nil }
+            var path = plateDiscPath()
+            path.addPath(circle(c.centre, c.radius))
+            return path
+        }
+    }
 
     /// The tympan's Latin region labels, exactly the original's wording:
     /// ORTVS (rising) on the day side of the east horizon, AVRORA in the
@@ -335,25 +400,44 @@ struct OrlojFace {
         return out
     }
 
-    /// Phase that pins the ring like a CLOCK FACE: numeral XII (noon) at
-    /// the TOP — the upper meridian, where the sun culminates — for every
-    /// origin on Earth. The dial reads APPARENT SOLAR time: the Sun hand
-    /// on XII IS local noon, ± the equation of time. (The retired civil
-    /// phase anchored to the DEVICE timezone — fine at home, but browsing
-    /// a far origin — a Sydney sky from a Rome device — spun the whole
-    /// ring hours away from the tympan's solar geometry, so the numerals
-    /// stopped registering with the horizon bands and labels.)
-    var solarDialPhase: Double { -.pi }
-
-    /// Roman numerals for the 24 SOLAR hours, positioned just outside
-    /// the dial circle and rotated feet-to-centre, like the original.
+    /// Roman numerals for the 24 hours, positioned just outside the
+    /// dial circle and rotated feet-to-centre, like the original.
+    ///
+    /// The crown reads CIVIL time — the device's wall clock, BST and
+    /// all — anchored through the Sun itself: the hand sits at the
+    /// Sun's true hour angle and the wall clock says `civilNow`, so
+    /// numeral h belongs at the hour angle the Sun will hold at civil
+    /// hour h. Longitude, the equation of time and DST all fold into
+    /// that one subtraction; the hand on X IS ten o'clock on your
+    /// phone, by construction. (An earlier civil phase anchored to
+    /// the raw timezone offset was retired for detaching the ring
+    /// from the tympan's solar geometry; deriving from the Sun's OWN
+    /// hour angle can't — the rotation changes WHICH numerals are
+    /// daylit, never where the brass day-arc sits on the plate.)
+    ///
+    /// Each numeral knows whether its hour is DAYLIT: numeral h IS
+    /// the Sun at hour angle H — above the horizon when |H| < the
+    /// sunset hour angle at the Sun's current declination. Polar
+    /// seasons degrade gracefully: no sunset → all day, no sunrise →
+    /// all night.
     @MainActor
     func dialNumerals()
-        -> [(id: Int, text: String, position: CGPoint, rotation: Angle)] {
+        -> [(id: Int, text: String, position: CGPoint, rotation: Angle, isDay: Bool)] {
         let r = radiusForDeclination(romanDialDec) + 11 * ui
-        var out: [(Int, String, CGPoint, Angle)] = []
+        let sunVec   = SIMD3<Double>.eclipticPoint(lambda: sunLambda)
+        let sunDec   = Angle.radians(asin(max(-1, min(1, sunVec.z))))
+        let hSet     = Self.sunsetHourAngle(declination: sunDec, latitude: latitude)
+        let polarDay = -tan(latitude.radians) * tan(sunDec.radians) < -1
+        // The civil anchor: the Sun's hour angle now (H = LST − RA,
+        // ringPoint's own convention) against the wall clock now.
+        let sunHA    = lst.radians - atan2(sunVec.y, sunVec.x)
+        let comps    = Calendar.current.dateComponents([.hour, .minute, .second],
+                                                       from: date)
+        let civilNow = Double(comps.hour ?? 12) + Double(comps.minute ?? 0) / 60
+                     + Double(comps.second ?? 0) / 3600
+        var out: [(Int, String, CGPoint, Angle, Bool)] = []
         for h in 0..<24 {
-            let H = solarDialPhase + Double(h) / 24 * 2 * .pi
+            let H = sunHA + (Double(h) - civilNow) / 24 * 2 * .pi
             guard let onRing = ringPoint(hourAngle: H, declination: romanDialDec)
             else { continue }
             let dx  = onRing.x - center.x, dy = onRing.y - center.y
@@ -361,7 +445,9 @@ struct OrlojFace {
             let p   = CGPoint(x: center.x + dx / len * r,
                               y: center.y + dy / len * r)
             let rot = Angle.radians(atan2(Double(dy), Double(dx)) + .pi / 2)
-            out.append((h, Self.romanTexts[h % 12], p, rot))
+            let Hn  = atan2(sin(H), cos(H))
+            let day = hSet.map { abs(Hn) < $0 } ?? polarDay
+            out.append((h, Self.romanTexts[h % 12], p, rot, day))
         }
         return out
     }
@@ -459,11 +545,55 @@ struct OrlojFace {
         return camera.screen(rotatedEquatorial: vec)
     }
 
-    func handPath(to p: CGPoint) -> Path {
+    /// The Sun's hand — from the axle THROUGH the badge point, tip
+    /// landing on the Roman dial, Prague's gesture: badge, hand and
+    /// numeral read as one line. THIS is how the clock tells time.
+    /// `badgeClearance` BREAKS the arm around the badge itself: the
+    /// clear-mode orb is translucent glass, and an arm running under
+    /// it reads as a crack through the Sun. Two subpaths, one gap.
+    @MainActor
+    func sunHandPath(badgeClearance: CGFloat = 0) -> Path? {
+        guard let p = sunPoint else { return nil }
+        let dx  = p.x - center.x, dy = p.y - center.y
+        let d   = max(hypot(dx, dy), 0.0001)
+        let ux  = dx / d, uy = dy / d
+        let tip = radiusForDeclination(romanDialDec)
+        func along(_ r: CGFloat) -> CGPoint {
+            CGPoint(x: center.x + ux * r, y: center.y + uy * r)
+        }
         var hand = Path()
         hand.move(to: center)
-        hand.addLine(to: p)
+        hand.addLine(to: along(min(max(d - badgeClearance, 0), tip)))
+        if d + badgeClearance < tip {
+            hand.move(to:    along(d + badgeClearance))
+            hand.addLine(to: along(tip))
+        }
         return hand
+    }
+
+    /// The little hand at the Sun arm's tip — Prague's golden pointer:
+    /// a slim leaf riding the arm's last stretch, its apex reaching
+    /// past the dial circle toward the numerals so the eye lands on
+    /// the hour. ▼ TWEAK the pointer's cut here ▼
+    @MainActor
+    func sunHandTipPath() -> Path? {
+        guard let p = sunPoint else { return nil }
+        let dx  = p.x - center.x, dy = p.y - center.y
+        let len = max(hypot(dx, dy), 0.0001)
+        let ux  = dx / len, uy = dy / len            // outward
+        let radius  = radiusForDeclination(romanDialDec)
+        let apexAt  = radius + 5 * ui
+        let baseAt  = radius - 9 * ui
+        let halfW   = 2.6 * ui
+        var tip = Path()
+        tip.move(to:    CGPoint(x: center.x + ux * apexAt,
+                                y: center.y + uy * apexAt))
+        tip.addLine(to: CGPoint(x: center.x + ux * baseAt - uy * halfW,
+                                y: center.y + uy * baseAt + ux * halfW))
+        tip.addLine(to: CGPoint(x: center.x + ux * baseAt + uy * halfW,
+                                y: center.y + uy * baseAt - ux * halfW))
+        tip.closeSubpath()
+        return tip
     }
 
     // MARK: Sun helpers
@@ -659,6 +789,49 @@ struct OrlojFaceLayers: View {
         width * (1 + (brilliance - 1) * 0.5)
     }
 
+    /// Mark fill — the badge-orb gradient in the body's canonical tints.
+    /// A line-art host keeps only alpha (the palette flattens to a solid
+    /// white slab), so the orb's shading is rebuilt in transparency alone
+    /// — the same soft glass bead `POILabelView.badgeFill` wears on the
+    /// postcard widget. ▼ TWEAK the masked softness here ▼
+    private func markFill(top: Color, bottom: Color) -> LinearGradient {
+        lineArt
+        ? LinearGradient(colors: [.white.opacity(0.78), .white.opacity(0.38)],
+                         startPoint: .bottom, endPoint: .top)
+        : LinearGradient(colors: [top, bottom],
+                         startPoint: .bottom, endPoint: .top)
+    }
+
+    /// Mark casing — canvas-navy in full colour; under line art the navy
+    /// would come back a solid white ring, so it thins to a whisper of
+    /// white rim instead, keeping the soft orb a bead on the plate.
+    private var markCasing: Color {
+        lineArt ? .white.opacity(0.5) : Artist.shared.canvasBackground.opacity(0.9)
+    }
+
+    /// One hand, in the badge grammar: navy casing under a metal fill,
+    /// one true shadow for lift. Line art keeps only alpha, so there
+    /// the hand is a single bright stroke — still the loudest line on
+    /// the face, which is the whole point of a hand.
+    @ViewBuilder
+    private func handView(_ hand: Path, tint: Color, width: CGFloat) -> some View {
+        if lineArt {
+            OrlojPath(source: hand)
+                .stroke(.white.opacity(0.85),
+                        style: .init(lineWidth: width * 0.7, lineCap: .round))
+        } else {
+            ZStack {
+                OrlojPath(source: hand)
+                    .stroke(Artist.shared.canvasBackground.opacity(0.9),
+                            style: .init(lineWidth: width + 1.2, lineCap: .round))
+                OrlojPath(source: hand)
+                    .stroke(tint,
+                            style: .init(lineWidth: width, lineCap: .round))
+            }
+            .shadow(color: .black.opacity(0.35), radius: 1.5, y: 1)
+        }
+    }
+
     private static let brass    = Color(red: 0.80, green: 0.66, blue: 0.38)
     private static let sunGold  = Color(red: 1.00, green: 0.82, blue: 0.45)
     private static let moonSilk = Color.white
@@ -680,56 +853,88 @@ struct OrlojFaceLayers: View {
         let u = face.ui
 
         ZStack {
+            // ── Tympan fields — day, twilight and night as MATERIAL,
+            // not hairlines (the Prague read: you see which field the
+            // Sun stands in). A faint lift over the day, one warm
+            // AVRORA/CREPVSCVLVM glaze across the twilight annulus,
+            // and four stacked dusk veils stepping the plate darker
+            // to night. The horizon is the EDGE between fields — no
+            // stroke. Painted ground, so everything rides above it.
+            // A luminance-map host would invert the veils (black
+            // fills come back WHITE, dawn glowing at midnight), so
+            // line art draws the horizon as the one honest line.
+            if lineArt {
+                if let horizon = face.dayFieldPath() {
+                    OrlojPath(source: horizon)
+                        .stroke(.white.opacity(0.4), lineWidth: 0.8)
+                        .clipShape(OrlojPath(source: face.plateDiscPath()))
+                }
+            } else {
+                Group {
+                    if let day = face.dayFieldPath() {
+                        OrlojPath(source: day)
+                            .fill(.white.opacity(ink(0.06)))
+                    }
+                    if let dusk = face.twilightBandPath() {
+                        OrlojPath(source: dusk)
+                            .fill(Self.sunGold.opacity(ink(0.09)),
+                                  style: FillStyle(eoFill: true))
+                    }
+                    ForEach(Array(face.duskVeilPaths().enumerated()),
+                            id: \.offset) { _, veil in
+                        OrlojPath(source: veil)
+                            .fill(.black.opacity(0.10),
+                                  style: FillStyle(eoFill: true))
+                    }
+                }
+                .clipShape(OrlojPath(source: face.plateDiscPath()))
+            }
+
             // The sky behind the instrument.
             Canvas { ctx, size in
                 face.drawStars(in: &ctx, size: size, gain: brilliance)
             }
 
-            // Remembered constellations — traced solid, the postcard
-            // widget's hero treatment for every favourite.
+            // ── The memory layer, demoted to a whisper: you put
+            // these here, you know where they are. Constellation
+            // figures as hairline traces; remembered stars at tier-0
+            // — the spectral pentagon at half size and half ink, no
+            // casing, no glow. Sentiment, not signal.
             OrlojPath(source: face.favouriteConstellationsPath())
-                .stroke(Self.silver.opacity(ink(0.45)),
-                        style: .init(lineWidth: heft(1), lineCap: .round, lineJoin: .round))
+                .stroke(Self.silver.opacity(ink(0.3)),
+                        style: .init(lineWidth: heft(0.8), lineCap: .round, lineJoin: .round))
 
-            // ── The wanderers and the remembered — the app's OWN
-            // marks, badge grammar and all: spectral PENTAGON
-            // squircles for favourite stars, canonical-tint rounded
-            // squircles for the seven planets, each with the badge's
-            // gradient fill, dark casing, and soft glow.
             ForEach(face.favouriteStarMarks(), id: \.id) { mark in
                 Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
-                    .fill(LinearGradient(colors: [mark.top, mark.bottom],
-                                         startPoint: .bottom, endPoint: .top))
-
-                    .overlay(
-                        Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
-                            .stroke(Artist.shared.canvasBackground.opacity(0.9),
-                                    lineWidth: 1.1)
-                    )
-                    .frame(width: 9 * u, height: 9 * u)
-                    .shadow(color: mark.top.opacity(0.5), radius: lineArt ? 0 : 1.5)
+                    .fill(markFill(top: mark.top, bottom: mark.bottom))
+                    .frame(width: 5 * u, height: 5 * u)
+                    .opacity(ink(0.65))
                     .position(mark.position)
             }
 
 
             // ── Fixed dial band (glass) — the real clock's black
-            // outer ring, smoky so the sky reads through it.
+            // outer ring, smoky so the sky reads through it. One
+            // shadow per slab: GlassBand carries its own, no double.
             GlassBand(band: face.dialBandPath(),
                       tint: .black, tintOpacity: 0.30, eoFill: true,
                       lineArt: lineArt)
-            .shadow(radius: lineArt ? 0 : 4, y: lineArt ? 0 : 2.5)
 
             // ── Plate filigree.
             ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
                 OrlojPath(source: plate.path)
-                    .stroke(Self.brass.opacity(ink(0.85)), lineWidth: heft(plate.width))
+                    .stroke(Self.silver.opacity(ink(0.85)), lineWidth: heft(plate.width))
             }
-            // Astronomical-twilight line — the AVRORA/CREPVSCVLVM
-            // bands' inner boundary, the night's edge.
-            OrlojPath(source: face.almucantarPath(altitude: .degrees(-18)))
-                .stroke(Self.silver.opacity(ink(0.4)), lineWidth: heft(0.5))
-            OrlojPath(source: face.unequalHoursPath())
-                .stroke(Self.silver.opacity(ink(0.5)), lineWidth: heft(0.5))
+            // (The −18° twilight hairline is retired — the tympan
+            // fields' own edges bound AVRORA/CREPVSCVLVM now.)
+            // Unequal hours — twelve of the face's circles, so they
+            // earn their place only where there's room: fainter ink,
+            // and gone entirely on the small family (u < 0.7), where
+            // they read as fog.
+            if u >= 0.7 {
+                OrlojPath(source: face.unequalHoursPath())
+                    .stroke(Self.silver.opacity(ink(0.35)), lineWidth: heft(0.5))
+            }
 
             // Tympan region labels — the original's Latin, laid out
             // character by character ALONG their bands' curves, with
@@ -745,22 +950,24 @@ struct OrlojFaceLayers: View {
             }
 
             // ── The crown carries NUMERALS ALONE, in the app's label
-            // voice: OutlinedText — serif brass with the real dark
-            // casing, crisp at any zoom, squint-proof. Phased SOLAR —
-            // XII up = local noon, so the ring registers with the
-            // tympan for any origin (see `solarDialPhase`).
+            // voice: OutlinedText with the real dark casing, crisp at
+            // any zoom, squint-proof. Phased CIVIL — the hand reads
+            // the wall clock (see `dialNumerals`) — in TWO METALS:
+            // daylit hours brass, night hours silver, same volume,
+            // different temperature — the crown echoes the tympan.
             ForEach(face.dialNumerals(), id: \.id) { numeral in
                 Group {
                     if lineArt {
                         // Fill + casing both resolve to white and merge —
-                        // the numerals turn into solid blocks. Plain glyphs.
+                        // the numerals turn into solid blocks. Plain
+                        // glyphs; night dims where metal can't speak.
                         Text(numeral.text)
                             .font(.system(size: 9 * u, weight: .semibold,
                                           design: .serif))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.white.opacity(numeral.isDay ? 1 : 0.65))
                     } else {
                         OutlinedText(text:      numeral.text,
-                                     fill:      Self.brass,
+                                     fill:      numeral.isDay ? Self.brass : Self.silver,
                                      stroke:    Artist.shared.canvasBackground,
                                      lineWidth: max(0.7, 1.2 * u),
                                      font:      Self.numeralFont(size: 9 * u))
@@ -770,20 +977,14 @@ struct OrlojFaceLayers: View {
                 .position(numeral.position)
             }
             // ── Rete: the zodiac band — smoky dark glass like the
-            // original's black ring, its RIM LINES traced silver
-            // (outer leading, inner echoed), sign dividers spanning
-            // rim to rim, and GOLD glyphs between the rims with a
-            // hard dark shadow (Prague's gold-on-black, boom).
+            // original's black ring, sign dividers spanning rim to
+            // rim, glyphs between the rims. RING DIET: the explicit
+            // silver rim traces are retired — GlassBand's own casing
+            // + rim light already edge the band, and three strokes
+            // per edge was the fuzz. One shadow per slab, no double.
             GlassBand(band: face.zodiacBandPath(),
                       tint: .black, tintOpacity: 0.35, eoFill: true,
                       lineArt: lineArt)
-            .shadow(radius: lineArt ? 0 : 4, y: lineArt ? 0 : 2.5)
-            if let edges = face.zodiacEdgePaths() {
-                OrlojPath(source: edges.outer)
-                    .stroke(Self.silver.opacity(ink(0.85)), lineWidth: heft(1))
-                OrlojPath(source: edges.inner)
-                    .stroke(Self.silver.opacity(ink(0.65)), lineWidth: heft(0.8))
-            }
             OrlojPath(source: face.zodiacTicksPath())
                 .stroke(Self.silver.opacity(ink(0.6)), lineWidth: heft(0.8))
             ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
@@ -795,29 +996,54 @@ struct OrlojFaceLayers: View {
                     .position(glyph.position)
             }
 
+            // ── The wanderers — canonical-tint beads with the dark
+            // casing, right-sized as they were. No glow: the casing
+            // does the lifting, shadows are the hands' privilege.
             ForEach(face.planetMarks(), id: \.id) { mark in
                 Squircle(corners: 4, bulge: 2.0)
-                    .fill(LinearGradient(colors: [mark.top, mark.bottom],
-                                         startPoint: .bottom, endPoint: .top))
+                    .fill(markFill(top: mark.top, bottom: mark.bottom))
                     .overlay(
                         Squircle(corners: 4, bulge: 2.0)
-                            .stroke(Artist.shared.canvasBackground.opacity(0.9),
-                                    lineWidth: 1)
+                            .stroke(markCasing, lineWidth: 1)
                     )
                     .frame(width: 7 * u, height: 7 * u)
-                    .shadow(color: mark.top.opacity(0.45), radius: lineArt ? 0 : 1.2)
                     .position(mark.position)
             }
 
 
-            // ── Hands — tipped with the app's OWN Sun and Moon
-            // badges (POILabelView, same species as everywhere).
+            // ── The hand — ONE, the Sun's, SOLID brass running from
+            // the axle THROUGH its badge to the Roman dial, tipped
+            // with Prague's little golden pointer so badge, hand and
+            // numeral read as one line. The only element loud enough
+            // for a real shadow — it answers "what time is it";
+            // everything else is scenery. The Moon keeps no arm: it
+            // rides the ecliptic as a free body, so the face has one
+            // unambiguous time-teller. Badges ride on top.
+            // Under line art the badge is translucent glass and the
+            // arm shows straight through it — a crack across the Sun
+            // — so the arm BREAKS around it there: clearance = the
+            // badge's visual radius (11pt of a 22pt orb, at the pin's
+            // own scale) plus a breath. Full colour keeps the arm
+            // whole; an opaque badge hides it already.
+            if let hand = face.sunHandPath(
+                badgeClearance: lineArt ? 14 * max(0.55, u) : 0) {
+                handView(hand, tint: Self.brass, width: 2.0 * u)
+            }
+            if let tip = face.sunHandTipPath() {
+                OrlojPath(source: tip)
+                    .fill(lineArt ? AnyShapeStyle(Color.white.opacity(0.85))
+                                  : AnyShapeStyle(Self.brass))
+                    .overlay(OrlojPath(source: tip)
+                        .stroke(markCasing, lineWidth: lineArt ? 0 : 1))
+            }
+            // The axle — a small brass hub grounding the hand.
+            Circle()
+                .fill(lineArt ? AnyShapeStyle(Color.white.opacity(0.85))
+                              : AnyShapeStyle(Self.brass))
+                .overlay(Circle().stroke(markCasing, lineWidth: 1))
+                .frame(width: 6 * u, height: 6 * u)
+                .position(face.center)
             if let sun = face.sunPoint {
-                if !lineArt {
-                    OrlojPath(source: face.handPath(to: sun))
-                        .stroke(.black.opacity(0.15),
-                                style: .init(lineWidth: 3.4 * u, lineCap: .round))
-                }
                 POILabelView(category:   .sun,
                              text:       "",
                              labelStyle: .star,
@@ -827,11 +1053,6 @@ struct OrlojFaceLayers: View {
                     .position(sun)
             }
             if let moon = face.moonPoint {
-                if !lineArt {
-                    OrlojPath(source: face.handPath(to: moon))
-                        .stroke(.black.opacity(0.15),
-                                style: .init(lineWidth: 3.4 * u, lineCap: .round))
-                }
                 POILabelView(category:   .moon,
                              text:       "",
                              labelStyle: .planetoids,
