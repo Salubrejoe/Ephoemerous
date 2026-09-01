@@ -850,36 +850,30 @@ struct OrlojFaceLayers: View {
                 face.drawStars(in: &ctx, size: size, gain: brilliance)
             }
 
-            // Remembered constellations — traced solid, the postcard
-            // widget's hero treatment for every favourite.
+            // ── The memory layer, demoted to a whisper: you put
+            // these here, you know where they are. Constellation
+            // figures as hairline traces; remembered stars at tier-0
+            // — the spectral pentagon at half size and half ink, no
+            // casing, no glow. Sentiment, not signal.
             OrlojPath(source: face.favouriteConstellationsPath())
-                .stroke(Self.silver.opacity(ink(0.45)),
-                        style: .init(lineWidth: heft(1), lineCap: .round, lineJoin: .round))
+                .stroke(Self.silver.opacity(ink(0.3)),
+                        style: .init(lineWidth: heft(0.8), lineCap: .round, lineJoin: .round))
 
-            // ── The wanderers and the remembered — the app's OWN
-            // marks, badge grammar and all: spectral PENTAGON
-            // squircles for favourite stars, canonical-tint rounded
-            // squircles for the seven planets, each with the badge's
-            // gradient fill, dark casing, and soft glow.
             ForEach(face.favouriteStarMarks(), id: \.id) { mark in
                 Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
                     .fill(markFill(top: mark.top, bottom: mark.bottom))
-                    .overlay(
-                        Squircle(corners: 5, bulge: Artist.shared.poiBadgeBulge)
-                            .stroke(markCasing, lineWidth: 1.1)
-                    )
-                    .frame(width: 9 * u, height: 9 * u)
-                    .shadow(color: mark.top.opacity(0.5), radius: lineArt ? 0 : 1.5)
+                    .frame(width: 5 * u, height: 5 * u)
+                    .opacity(ink(0.65))
                     .position(mark.position)
             }
 
 
             // ── Fixed dial band (glass) — the real clock's black
-            // outer ring, smoky so the sky reads through it.
+            // outer ring, smoky so the sky reads through it. One
+            // shadow per slab: GlassBand carries its own, no double.
             GlassBand(band: face.dialBandPath(),
                       tint: .black, tintOpacity: 0.30, eoFill: true,
                       lineArt: lineArt)
-            .shadow(radius: lineArt ? 0 : 4, y: lineArt ? 0 : 2.5)
 
             // ── Plate filigree.
             ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
@@ -888,8 +882,14 @@ struct OrlojFaceLayers: View {
             }
             // (The −18° twilight hairline is retired — the tympan
             // fields' own edges bound AVRORA/CREPVSCVLVM now.)
-            OrlojPath(source: face.unequalHoursPath())
-                .stroke(Self.silver.opacity(ink(0.5)), lineWidth: heft(0.5))
+            // Unequal hours — twelve of the face's circles, so they
+            // earn their place only where there's room: fainter ink,
+            // and gone entirely on the small family (u < 0.7), where
+            // they read as fog.
+            if u >= 0.7 {
+                OrlojPath(source: face.unequalHoursPath())
+                    .stroke(Self.silver.opacity(ink(0.35)), lineWidth: heft(0.5))
+            }
 
             // Tympan region labels — the original's Latin, laid out
             // character by character ALONG their bands' curves, with
@@ -930,20 +930,14 @@ struct OrlojFaceLayers: View {
                 .position(numeral.position)
             }
             // ── Rete: the zodiac band — smoky dark glass like the
-            // original's black ring, its RIM LINES traced silver
-            // (outer leading, inner echoed), sign dividers spanning
-            // rim to rim, and GOLD glyphs between the rims with a
-            // hard dark shadow (Prague's gold-on-black, boom).
+            // original's black ring, sign dividers spanning rim to
+            // rim, glyphs between the rims. RING DIET: the explicit
+            // silver rim traces are retired — GlassBand's own casing
+            // + rim light already edge the band, and three strokes
+            // per edge was the fuzz. One shadow per slab, no double.
             GlassBand(band: face.zodiacBandPath(),
                       tint: .black, tintOpacity: 0.35, eoFill: true,
                       lineArt: lineArt)
-            .shadow(radius: lineArt ? 0 : 4, y: lineArt ? 0 : 2.5)
-            if let edges = face.zodiacEdgePaths() {
-                OrlojPath(source: edges.outer)
-                    .stroke(Self.silver.opacity(ink(0.85)), lineWidth: heft(1))
-                OrlojPath(source: edges.inner)
-                    .stroke(Self.silver.opacity(ink(0.65)), lineWidth: heft(0.8))
-            }
             OrlojPath(source: face.zodiacTicksPath())
                 .stroke(Self.silver.opacity(ink(0.6)), lineWidth: heft(0.8))
             ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
@@ -955,6 +949,9 @@ struct OrlojFaceLayers: View {
                     .position(glyph.position)
             }
 
+            // ── The wanderers — canonical-tint beads with the dark
+            // casing, right-sized as they were. No glow: the casing
+            // does the lifting, shadows are the hands' privilege.
             ForEach(face.planetMarks(), id: \.id) { mark in
                 Squircle(corners: 4, bulge: 2.0)
                     .fill(markFill(top: mark.top, bottom: mark.bottom))
@@ -963,7 +960,6 @@ struct OrlojFaceLayers: View {
                             .stroke(markCasing, lineWidth: 1)
                     )
                     .frame(width: 7 * u, height: 7 * u)
-                    .shadow(color: mark.top.opacity(0.45), radius: lineArt ? 0 : 1.2)
                     .position(mark.position)
             }
 
