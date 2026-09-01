@@ -548,10 +548,27 @@ struct OrlojFace {
     /// The Sun's hand — from the axle THROUGH the badge point, tip
     /// landing on the Roman dial, Prague's gesture: badge, hand and
     /// numeral read as one line. THIS is how the clock tells time.
+    /// `badgeClearance` BREAKS the arm around the badge itself: the
+    /// clear-mode orb is translucent glass, and an arm running under
+    /// it reads as a crack through the Sun. Two subpaths, one gap.
     @MainActor
-    func sunHandPath() -> Path? {
-        sunPoint.map { handPath(through: $0,
-                                radius: radiusForDeclination(romanDialDec)) }
+    func sunHandPath(badgeClearance: CGFloat = 0) -> Path? {
+        guard let p = sunPoint else { return nil }
+        let dx  = p.x - center.x, dy = p.y - center.y
+        let d   = max(hypot(dx, dy), 0.0001)
+        let ux  = dx / d, uy = dy / d
+        let tip = radiusForDeclination(romanDialDec)
+        func along(_ r: CGFloat) -> CGPoint {
+            CGPoint(x: center.x + ux * r, y: center.y + uy * r)
+        }
+        var hand = Path()
+        hand.move(to: center)
+        hand.addLine(to: along(min(max(d - badgeClearance, 0), tip)))
+        if d + badgeClearance < tip {
+            hand.move(to:    along(d + badgeClearance))
+            hand.addLine(to: along(tip))
+        }
+        return hand
     }
 
     /// The little hand at the Sun arm's tip — Prague's golden pointer:
@@ -577,18 +594,6 @@ struct OrlojFace {
                                 y: center.y + uy * baseAt - ux * halfW))
         tip.closeSubpath()
         return tip
-    }
-
-    /// Axle → tip, the tip at `radius` along the axle→`p` direction —
-    /// the badge rides the hand wherever the ecliptic puts it.
-    private func handPath(through p: CGPoint, radius: CGFloat) -> Path {
-        let dx  = p.x - center.x, dy = p.y - center.y
-        let len = max(hypot(dx, dy), 0.0001)
-        var hand = Path()
-        hand.move(to: center)
-        hand.addLine(to: CGPoint(x: center.x + dx / len * radius,
-                                 y: center.y + dy / len * radius))
-        return hand
     }
 
     // MARK: Sun helpers
@@ -1014,7 +1019,14 @@ struct OrlojFaceLayers: View {
             // everything else is scenery. The Moon keeps no arm: it
             // rides the ecliptic as a free body, so the face has one
             // unambiguous time-teller. Badges ride on top.
-            if let hand = face.sunHandPath() {
+            // Under line art the badge is translucent glass and the
+            // arm shows straight through it — a crack across the Sun
+            // — so the arm BREAKS around it there: clearance = the
+            // badge's visual radius (11pt of a 22pt orb, at the pin's
+            // own scale) plus a breath. Full colour keeps the arm
+            // whole; an opaque badge hides it already.
+            if let hand = face.sunHandPath(
+                badgeClearance: lineArt ? 14 * max(0.55, u) : 0) {
                 handView(hand, tint: Self.brass, width: 2.0 * u)
             }
             if let tip = face.sunHandTipPath() {
