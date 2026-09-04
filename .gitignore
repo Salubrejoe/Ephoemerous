@@ -33,5 +33,11 @@ Pods/
 
 # Generated art — App Store screenshots and widget/postcard renders.
 # Regenerate with: xcrun simctl launch <udid> com.lorep.uk.Ephoemerous -shot exportart
-AppStoreShots/
+# The captures and rendered panels stay out of the repo (large binaries), but
+# the generators that BUILD the panels are source and are kept — see
+# AppStoreShots/README.md.
+AppStoreShots/*
+!AppStoreShots/*.py
+!AppStoreShots/*.sh
+!AppStoreShots/*.md
 WidgetArt/
