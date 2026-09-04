@@ -22,14 +22,23 @@ struct HorizonBlurOverlay: View {
 
     let camera: SkyCamera
 
+    /// How far the under-earth sits below the visible sky — 0 = no murk,
+    /// 1 = solid black. ▼ TWEAK the ground's murk here ▼
+    ///
+    /// This was two multiplied opacities (0.45 fill × 0.45 view ≈ 0.20),
+    /// which is easy to misread as "0.45 dark" — it is one number, so it
+    /// is written as one. Softened from 0.20: at a fifth below
+    /// `canvasBackground` the sky's rim drifted far enough from the asset
+    /// colour that the app read as a different blue from the Home Screen
+    /// widgets, which iOS composites onto its own glass plate and so
+    /// renders LIGHTER than the same asset. The ground still reads as
+    /// ground; it just no longer overshoots.
+    private static let groundMurk: Double = 0.13
+
     var body: some View {
         HorizonRegion(camera: camera)
-            // ▼ TWEAK the frost here — material = blur strength,
-            //   opacity fades the whole effect ▼
-            .fill(
-                Color.black.opacity(0.45)
-                , style: FillStyle(eoFill: true))
-            .opacity(0.45)
+            .fill(Color.black.opacity(Self.groundMurk),
+                  style: FillStyle(eoFill: true))
             .allowsHitTesting(false)
     }
 }
