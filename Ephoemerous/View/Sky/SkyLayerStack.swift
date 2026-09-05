@@ -29,10 +29,12 @@ struct SkyLayerStack: View {
             // Horizon + twilight rings, concentric about the zenith.
             EarthGridOverlay(camera: frame.camera)
 
-            // Constellation stick-figures; favourites stroke solid.
+            // Constellation stick-figures; favourites stroke solid, the rest
+            // ride in on the constellation-NAME tier (same threshold, same
+            // smoothstep) so figures and names arrive together.
             ConstellationLinesCanvas(camera: frame.camera,
-                                     favouriteTints: frame.favouriteConstellationTints)
-                .equatable()
+                                     favouriteTints: frame.favouriteConstellationTints,
+                                     reveal: ConstellationLinesCanvas.reveal(scale: frame.liveScale))
 
             StarsCanvas(camera: frame.camera,
                         stars: app.sortedStars,
