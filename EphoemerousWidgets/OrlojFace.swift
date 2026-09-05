@@ -27,6 +27,22 @@ struct OrlojFace {
     /// coherently.
     let ui:        CGFloat
 
+    /// TYPE scale — `ui` with a floor.
+    ///
+    /// `ui` shrinks every fixed dimension linearly, which is right for band
+    /// widths, marks and strokes and WRONG for glyphs. A 45mm watch is
+    /// ~198pt on its short side, so `ui` ≈ 0.58 and the Roman numerals
+    /// render at ~5pt — less than half the wrist's legibility floor. The
+    /// face was scaled as though a watch were a small widget; it isn't.
+    /// Density should fall at the small end, not letter height.
+    ///
+    /// The floor is what the CURRENT circular dial can carry: 24 numerals
+    /// on a ring of radius ~93pt gives each a ~24pt slot, and "VIII" in 9pt
+    /// serif semibold runs ~20pt wide. Going much past this needs a bigger
+    /// ring, not a bigger floor. The small widget tile (`ui` ≈ 0.46) gains
+    /// the same lift. ▼ TWEAK the smallest type here ▼
+    let type:      CGFloat
+
     /// Declination MAGNITUDE the Roman dial sits at — outside the outer
     /// tropic plate. (The Old-Bohemian ring is retired — conductor's
     /// call — so the crown carries one scale.) ▼ TWEAK ring spacing ▼
@@ -65,7 +81,8 @@ struct OrlojFace {
         latitude  = lat
         longitude = lon
         lst = Precession.lst(for: date, longitude: lon)
-        ui  = min(1, min(size.width, size.height) / 340)   // systemLarge ≈ 1
+        ui   = min(1, min(size.width, size.height) / 340)   // systemLarge ≈ 1
+        type = max(0.92, ui)
 
         let viewpoint = Projection.Viewpoint(
             originVector: Angle.spherePoint(latitude: lat, longitude: lon),
@@ -851,6 +868,7 @@ struct OrlojFaceLayers: View {
 
     var body: some View {
         let u = face.ui
+        let t = face.type
 
         ZStack {
             // ── Tympan fields — day, twilight and night as MATERIAL,
@@ -941,7 +959,7 @@ struct OrlojFaceLayers: View {
             // the app's dark casing so they hold up at a squint.
             ForEach(face.tympanLabelChars(), id: \.id) { glyph in
                 Text(glyph.char)
-                    .font(.system(size: max(3.5, 6.5 * u), weight: .medium, design: .serif))
+                    .font(.system(size: max(3.5, 6.5 * t), weight: .medium, design: .serif))
                     .foregroundStyle(Self.silver.opacity(ink(0.8)))
                     .shadow(color: Artist.shared.canvasBackground.opacity(0.9),
                             radius: lineArt ? 0 : 1)
@@ -962,7 +980,7 @@ struct OrlojFaceLayers: View {
                         // the numerals turn into solid blocks. Plain
                         // glyphs; night dims where metal can't speak.
                         Text(numeral.text)
-                            .font(.system(size: 9 * u, weight: .semibold,
+                            .font(.system(size: 9 * t, weight: .semibold,
                                           design: .serif))
                             .foregroundStyle(.white.opacity(numeral.isDay ? 1 : 0.65))
                     } else {
@@ -970,7 +988,7 @@ struct OrlojFaceLayers: View {
                                      fill:      numeral.isDay ? Self.brass : Self.silver,
                                      stroke:    Artist.shared.canvasBackground,
                                      lineWidth: max(0.7, 1.2 * u),
-                                     font:      Self.numeralFont(size: 9 * u))
+                                     font:      Self.numeralFont(size: 9 * t))
                     }
                 }
                 .rotationEffect(numeral.rotation)
@@ -989,7 +1007,7 @@ struct OrlojFaceLayers: View {
                 .stroke(Self.silver.opacity(ink(0.6)), lineWidth: heft(0.8))
             ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
                 Text(glyph.symbol)
-                    .font(.system(size: 11 * u, weight: .bold))
+                    .font(.system(size: 11 * t, weight: .bold))
                     .foregroundStyle(Self.silver)
                     .shadow(color: .black.opacity(0.9), radius: lineArt ? 0 : 1, y: lineArt ? 0 : 0.5)
                     .rotationEffect(glyph.rotation)
