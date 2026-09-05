@@ -68,7 +68,7 @@ struct StarsCanvas: View, Equatable {
                     Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
                                            width: r * 2, height: r * 2)),
                     with: .color(
-                        Artist.shared.gridColor.opacity(Self.opacity(forMagnitude: star.magnitude))
+                        Artist.shared.starColor.opacity(Self.opacity(forMagnitude: star.magnitude))
                     )
                 )
             }
@@ -98,9 +98,16 @@ struct StarsCanvas: View, Equatable {
         let factor = min(zoomCap, pow(max(scale, zoomAnchor) / zoomAnchor, zoomExp))
         return baseRadius(forMagnitude: m) * factor
     }
-    /// Faint stars dim out so the field reads as depth, not noise.
+    /// Faint stars dim out so the field reads as depth, not noise. The
+    /// numerator sits above the 6.5 divisor so the bright end saturates
+    /// early — a 1st-magnitude star is flat white, and the ramp spends its
+    /// range on the faint half where depth actually reads. ▼ TWEAK ▼
+    private static let magnitudeSpan: Double = 6.5
+    private static let brightLift:    Double = 7.2
+    private static let faintFloor:    Double = 0.45
+
     private static func opacity(forMagnitude m: Double) -> Double {
-        min(1, max(0.35, (6.5 - m) / 6.5))
+        min(1, max(faintFloor, (brightLift - m) / magnitudeSpan))
     }
 }
 

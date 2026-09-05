@@ -53,6 +53,14 @@ struct Palette {
     /// Twilight-band strokes (civil / nautical / astronomical).
     let twilightBand: Color = Color("twilightBand")
 
+    // MARK: Stars
+
+    /// The generic field dot. Its own colour, NOT the grid's — the two
+    /// shared `grid` until the graticule was hushed and took the whole star
+    /// field down 45% with it. Stars are the content; the grid is the
+    /// scaffolding, and they should be free to move apart.
+    let starField: Color = Color("starField")
+
     // MARK: Constellations
 
     /// Default constellation stick-figure stroke.
