@@ -22,8 +22,13 @@ struct Artist {
     
     var canvasBackground : Color { palette.canvasBackground }
     
-    var gridColor : Color  { palette.grid }
-    var gridWidth : Double { 0.1 }
+    /// The equatorial graticule is scaffolding, not sky — it should read as
+    /// a whisper beneath the stars. Dimmed HERE rather than in the asset
+    /// because `palette.grid` is shared with the horizon + twilight rings,
+    /// which carry their own (louder) opacities. ▼ TWEAK ▼
+    var gridOpacity : Double { 0.55 }
+    var gridColor   : Color  { palette.grid.opacity(gridOpacity) }
+    var gridWidth   : Double { 0.1 }
     
     var eclColor : Color  { palette.ecliptic }
     var eclWidth : Double { 0.5 }
