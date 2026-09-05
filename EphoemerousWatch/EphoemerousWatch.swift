@@ -45,10 +45,30 @@ struct OrlojWatchView: View {
             GeometryReader { geo in
                 // ▼ TWEAK the wrist brightness here — 1 = the widget's
                 // postcard inks; the small OLED wants more. ▼
-                OrlojFaceLayers(face: OrlojFace(date:   date,
-                                                origin: FavouritesStore().observerOrigin(),
-                                                size:   geo.size),
+                OrlojFaceLayers(face: OrlojFace(date:    date,
+                                                origin:  FavouritesStore().observerOrigin(),
+                                                size:    geo.size,
+                                                wrist:   true),
                                 brilliance: 1.9)
+                    // Travelling, the face shows a time the CORNER CLOCK
+                    // does not — watchOS always prints now. Desaturating
+                    // says "this isn't the present" so the two readouts
+                    // can't be mistaken for one. ▼ TWEAK ▼
+                    .saturation(isTravelling ? 0.25 : 1)
+                    .animation(.easeInOut(duration: 0.25), value: isTravelling)
+                    // A soft scrim under the system clock's corner, so it
+                    // reads as the dial's own crown rather than as
+                    // something dropped on top of the sky.
+                    .overlay(alignment: .topTrailing) {
+                        RadialGradient(colors: [Artist.shared.canvasBackground.opacity(0.85),
+                                                Artist.shared.canvasBackground.opacity(0)],
+                                       center: .topTrailing,
+                                       startRadius: 2,
+                                       endRadius: geo.size.width * 0.52)
+                            .frame(width:  geo.size.width  * 0.62,
+                                   height: geo.size.height * 0.36)
+                            .allowsHitTesting(false)
+                    }
             }
             .overlay(alignment: .bottom) {
                 if isTravelling {
