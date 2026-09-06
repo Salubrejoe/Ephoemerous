@@ -70,14 +70,13 @@ struct SkyFrame {
                                        : sky.rotation
         liveRot            = inCompass ? .zero : sky.liveRotation
 
-        // Compass mode also FRAMES the sky (puck low, horizon high).
-        // `compassEngage` eases 0→1 so the camera GLIDES into the pose
-        // instead of snapping. Pure view-time blend — the committed `sky`
-        // camera is never touched, so leaving compass restores the exact
-        // view you were on.
-        let framing  = app.compassCameraFraming(screenHeight: geoSize.height)
-        let t        = compassEngage
-        let engaging = t > 0.0001
+        // Compass mode ROTATES the sky and nothing else. It used to reframe
+        // as well — puck low, horizon high, an AR-ish pose — which meant
+        // toggling it zoomed the canvas out from under you. The heading is
+        // the whole point; the framing was an opinion on top of it, and one
+        // that fought whatever zoom you had chosen. `compassCameraFraming`
+        // survives for the share card's own AR pose.
+        let engaging = compassEngage > 0.0001
 
         // NorthIN↔NorthOUT reframe rides the SAME clock-driven progress as
         // the projection morph, so zoom and eye-slerp stay in lockstep. At
@@ -88,9 +87,8 @@ struct SkyFrame {
         let baseOffH  = morphOffsetFrom.height + (sky.offset.height - morphOffsetFrom.height) * mp
 
         camera = SkyCamera(
-            scale:     baseScale + (framing.scale - baseScale) * t,
-            offset:    CGSize(width:  baseOffW + (framing.offset.width  - baseOffW) * t,
-                              height: baseOffH + (framing.offset.height - baseOffH) * t),
+            scale:     baseScale,
+            offset:    CGSize(width: baseOffW, height: baseOffH),
             rotation:  cameraRotation,
             size:      canvasSize,
             viewpoint: app.viewpoint,

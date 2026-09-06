@@ -192,10 +192,16 @@ final class MainGestureCoordinator {
     /// the parent transform instead of snapping. Used when the date crown
     /// presents: the time-ring must sit exactly on the horizon circle, which
     /// only holds at the default centred framing.
-    func glideHome() {
+    func glideHome() { glide(to: defaultScale) }
+
+    /// Glide to an ARBITRARY committed scale, same synced primitive as
+    /// `glideHome` — the live pinch animates and folds once on completion,
+    /// so every layer rides the parent transform and nothing desyncs.
+    /// The date picker uses it to make room for the crown.
+    func glide(to targetScale: CGFloat) {
         releaseID += 1
         let id = releaseID
-        let targetPinch = scale > 0 ? defaultScale / scale : 1
+        let targetPinch = scale > 0 ? targetScale / scale : 1
         let still = abs(targetPinch - pinch) < 0.001
             && offset == .zero && drag == .zero && homeBlend == 0
         if still { return }

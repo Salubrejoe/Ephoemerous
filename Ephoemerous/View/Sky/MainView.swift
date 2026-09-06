@@ -226,7 +226,11 @@ struct MainView: View {
             }
         }
         .onChange(of: app.isShowingDatePicker) { _, showing in
-            if showing { sky.glideHome() }            // camera home → ring on the horizon
+            // Camera home → the ring sits on the horizon. The picker pulls
+            // it IN as well, so the crown clears the Here/Now capsule and
+            // the control row rather than running off both.
+            sky.glide(to: showing ? app.datePickerScale(screenSize: viewSize)
+                                  : sky.defaultScale)
         }
         .fontDesign(.rounded)
         // The pills raise these inline editors, same as production MainView.
@@ -274,7 +278,11 @@ struct MainView: View {
         // Regular width: the same two surfaces, placed rather than
         // presented, sharing ONE card in the bottom-leading corner.
         .overlay(alignment: .bottomLeading) {
-            if isRegular {
+            // Same rule the sheet obeys: the panel yields while a scene
+            // editor owns the screen. `searchPresented` already excludes
+            // both pickers; the panel was ignoring it and left a search bar
+            // floating over the date crown.
+            if isRegular, app.detailDestination != nil || searchPresented.wrappedValue {
                 FloatingPanel(stage: $panelStage,
                               available: viewSize.height,
                               showsDragBand: app.detailDestination != nil) {
@@ -329,14 +337,8 @@ struct MainView: View {
                 // Rotation: negated to match `cameraRotation`'s flip so the
                 // committed rotation picks up where the heading left.
                 sky.rotation = .radians(-app.canvasRotation.radians)
-                // Zoom/offset: bake the current blended framing into `sky`
-                // (handles a mid-glide exit too), then zero the blend so the
-                // camera — now reading `sky` — shows the identical view.
-                let framing = app.compassCameraFraming(screenHeight: viewSize.height)
-                let t       = compassEngage
-                sky.scale  = sky.scale  + (framing.scale  - sky.scale)  * t
-                sky.offset = CGSize(width:  sky.offset.width  + (framing.offset.width  - sky.offset.width)  * t,
-                                    height: sky.offset.height + (framing.offset.height - sky.offset.height) * t)
+                // Nothing to bake back in: compass no longer touches zoom or
+                // offset, so `sky` already holds the view on screen.
                 compassEngage = 0
             }
         }

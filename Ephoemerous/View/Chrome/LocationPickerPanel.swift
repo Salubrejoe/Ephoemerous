@@ -45,6 +45,12 @@ struct LocationPickerPanel: View {
             // from search doesn't re-seed the camera.
             if isSearching {
                 suggestionList
+                    // FILL first, then paint. A ScrollView whose content is
+                    // empty (focused field, nothing typed yet) sizes to that
+                    // content — 20pt of horizontal padding — so the material
+                    // painted a grey vertical sliver down the middle of the
+                    // map instead of covering it.
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.regularMaterial)
             }
 
