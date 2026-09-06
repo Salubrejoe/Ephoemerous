@@ -51,6 +51,15 @@ struct SearchSheet: View {
         }
     }
 
+    /// Close the panel back to its resting bar: drop the keyboard, clear
+    /// the query (a parked bar holding a stale search would show results
+    /// it has no room to draw), and park the stage.
+    private func closeSearch() {
+        searchFocused = false
+        searchText    = ""
+        withAnimation(.snappy(duration: 0.32)) { setStage(.bar) }
+    }
+
     /// Vertical swipe on the search bar → raise or park the panel.
     private var panelSwipe: some Gesture {
         DragGesture(minimumDistance: 12)
@@ -84,15 +93,27 @@ struct SearchSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 // Pure search — the camera controls moved to the
                 // bottom-trailing capsule (CameraClusterCapsule), so the
                 // bar has exactly one job.
                 searchHeader
 
+                // Dismiss — only once the card is OPEN, and only in the
+                // panel. Parked, the bar is the app's resting state and
+                // there is nothing to close; in the sheet the search is
+                // persistent by design and has never worn an X. The same
+                // 44pt glass circle the detail header dismisses with, so
+                // the two cards close the same way.
+                if isPanel && stage != .bar {
+                    CircleIconButton(symbol: .xmark) { closeSearch() }
+                        .transition(.scale.combined(with: .opacity))
+                }
+
                 // Hertzsprung–Russell diagram — full-screen star chart.
 //                hrButton
             }
+                .animation(.snappy(duration: 0.28), value: stage)
                 // Even inset all round — the concentricity depends on it.
                 .padding(.horizontal, 18)
                 .padding(.vertical,   18)

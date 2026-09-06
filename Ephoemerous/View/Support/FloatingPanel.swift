@@ -157,7 +157,12 @@ struct FloatingPanel<Content: View>: View {
     private var dragBand: some View {
         Color.clear
             .frame(height: Self.headerInset + Self.buttonSize)
-            .padding(.horizontal, Self.headerInset + Self.buttonSize + 8)
+            // ORDER MATTERS: shape and gesture BEFORE the padding. Applied
+            // after, `contentShape` takes the padded frame — the inset is
+            // part of the hit area, so the band covered the full header
+            // width and ate the share and dismiss taps. Before, the hit
+            // area is the inner region only and the buttons keep their
+            // corners.
             .contentShape(Rectangle())
             .highPriorityGesture(
                 DragGesture(minimumDistance: 2)
@@ -172,5 +177,6 @@ struct FloatingPanel<Content: View>: View {
                         }
                     }
             )
+            .padding(.horizontal, Self.headerInset + Self.buttonSize + 8)
     }
 }

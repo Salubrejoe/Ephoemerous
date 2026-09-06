@@ -287,6 +287,15 @@ struct MainView: View {
                         SearchSheet(panelStage: $panelStage)
                     }
                 }
+                // The card is BOTTOM-anchored, so SwiftUI's keyboard
+                // avoidance lifted the whole thing by the keyboard's
+                // height — and an open card plus a keyboard is taller than
+                // the screen, which is how it ended up off the top. Opting
+                // out leaves it where it is and lets the keyboard slide
+                // over its lower half; the search field lives at the card's
+                // TOP, and focusing raises the stage to `.large`, so the
+                // field and the first results stay clear.
+                .ignoresSafeArea(.keyboard, edges: .bottom)
                 .transition(.opacity)
             }
         }
