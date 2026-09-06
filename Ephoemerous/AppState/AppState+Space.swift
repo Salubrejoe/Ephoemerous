@@ -38,7 +38,19 @@ extension AppState {
 
     /// Toggle NorthOUT on/off. The view observes `isNorthOut` to reframe the
     /// camera for the new perspective.
-    func toggleSkyPerspective() { isNorthOut.toggle() }
+    /// Flip NorthIN ↔ NorthOUT.
+    ///
+    /// Compass mode and NorthOUT are mutually exclusive perspectives — one
+    /// is heading-up from where you stand, the other is a fixed
+    /// pole-centred map — so taking the projection switches compass OFF
+    /// rather than leaving the two to fight over the rotation. Disengaging
+    /// first freezes the live heading into `canvasRotation`, so the sky
+    /// doesn't snap before it morphs; the morph clock then animates the
+    /// projection change from that pose.
+    func toggleSkyPerspective() {
+        if compassMode { disengageCompassMode() }
+        isNorthOut.toggle()
+    }
 
     /// Launch/home scale for NorthOUT (the pole-centred view). Framed so the
     /// tropic of Cancer matches the on-screen size of the NorthIN horizon:

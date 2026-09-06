@@ -17,10 +17,10 @@ import SwiftUI
 enum PanelStage: CaseIterable {
     case bar, medium, large
 
-    /// Parked height — one header band. 16pt above a 44pt button row and
-    /// its padding below; the search field's own 18/18 lands in the same
-    /// place. No grabber strip: the header band IS the handle now.
-    static let barHeight: CGFloat = 80
+    /// Parked height — one band. The search card is a 16pt handle strip
+    /// above a 44pt field with 14 below; the detail card's 16 + 44 + 14
+    /// header lands in the same place.
+    static let barHeight: CGFloat = 74
 
     var isOpen: Bool { self != .bar }
 }
@@ -135,7 +135,14 @@ struct FloatingPanel<Content: View>: View {
     }
 
     var body: some View {
-        content
+        VStack(spacing: 0) {
+            // The detail card's handle is its header band, between the two
+            // buttons. Search has no such band — those pixels are the text
+            // field — so it gets a visible grabber instead, the way the
+            // iPhone sheet does.
+            if !showsDragBand { grabber }
+            content
+        }
             .frame(width: Self.width, height: height, alignment: .top)
             .clipShape(shape)
             // Clear interactive glass — no material, no fill. The card is a
@@ -147,6 +154,31 @@ struct FloatingPanel<Content: View>: View {
             }
             .padding(.leading, Self.margin)
             .padding(.bottom,  Self.margin)
+    }
+
+    /// The visible handle, for the surfaces that have no header band to
+    /// use as one. Carries the same drag.
+    private var grabber: some View {
+        Capsule()
+            .fill(.white.opacity(0.55))
+            .frame(width: 40, height: 5)
+            .shadow(color: .black.opacity(0.4), radius: 1, y: 0.5)
+            .frame(maxWidth: .infinity)
+            .frame(height: 16)
+            .contentShape(Rectangle())
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 2)
+                    .updating($drag) { value, state, _ in
+                        state = value.translation.height
+                    }
+                    .onEnded { value in
+                        let d = value.translation.height
+                        withAnimation(.snappy(duration: 0.32)) {
+                            if d < -Self.dragThreshold { stage = .large }
+                            if d >  Self.dragThreshold { stage = .bar }
+                        }
+                    }
+            )
     }
 
     /// The handle is the header band BETWEEN the two buttons — no separate

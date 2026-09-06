@@ -19,8 +19,9 @@ struct MainToolbar: View {
     /// into the status capsule (Liquid Glass `glassEffectID`).
     @Namespace private var glassNS
 
-    /// Capsule + reset-chip height.
-    private let barHeight: CGFloat = 40
+    /// Capsule + reset-chip height. The iPad passes a taller one — the
+    /// phone's chrome on a 13" canvas reads as a toy. ▼ TWEAK ▼
+    var barHeight: CGFloat = 40
 
     
     

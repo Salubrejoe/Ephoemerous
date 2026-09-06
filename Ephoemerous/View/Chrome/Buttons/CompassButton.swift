@@ -32,7 +32,8 @@ struct CompassButton: View {
     // Circular face + orbiting-dot geometry. ONE face size across every
     // round control (44 pt) — the 46/44 mismatch was invisible to name and
     // visible to feel.
-    private let faceSize:    CGFloat = 44
+    /// Face diameter. The iPad passes a bigger one — see `SkyChrome`.
+    var faceSize: CGFloat = 44
     private let roseCorners: Int     = 12
     private let roseBulge:   CGFloat = 2.5
     private let orbitRadius: CGFloat = 16
@@ -87,7 +88,9 @@ struct CompassButton: View {
     /// The cardinal nearest the top, dead centre and always upright.
     private var centralLetter: some View {
         Text(cardinalAtTop)
-            .font(.system(size: 15, weight: .heavy, design: .rounded))
+            // Scales with the face, so the iPad's bigger rose gets a
+            // bigger N rather than a small one adrift in a large scallop.
+            .font(.system(size: faceSize * 0.42, weight: .heavy, design: .rounded))
             .foregroundStyle(.primary)
 //            .rotationEffect(state.renderedRotation)
             .contentTransition(.opacity)

@@ -114,9 +114,12 @@ struct SearchSheet: View {
 //                hrButton
             }
                 .animation(.snappy(duration: 0.28), value: stage)
-                // Even inset all round — the concentricity depends on it.
-                .padding(.horizontal, 18)
-                .padding(.vertical,   18)
+                // Matching the iPhone sheet: the handle above supplies the
+                // top air, so the field only needs its own inset. 14 a side
+                // still nests the 44pt capsule inside the card's corner
+                // (22 + 14 ≈ 37, the parked radius).
+                .padding(.horizontal, 14)
+                .padding(.bottom,     14)
 
             if searchText.isEmpty && stage != .bar {
                 // Idle browse state: favourites scroll + recents list,
