@@ -51,6 +51,18 @@ struct SearchSheet: View {
         }
     }
 
+    /// Vertical swipe on the search bar → raise or park the panel.
+    private var panelSwipe: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onEnded { value in
+                let d = value.translation.height
+                guard abs(d) > 30 else { return }
+                withAnimation(.snappy(duration: 0.32)) {
+                    setStage(d < 0 ? .large : .bar)
+                }
+            }
+    }
+
     private func setStage(_ new: PanelStage) {
         if let panelStage { panelStage.wrappedValue = new; return }
         switch new {
@@ -81,10 +93,9 @@ struct SearchSheet: View {
                 // Hertzsprung–Russell diagram — full-screen star chart.
 //                hrButton
             }
-                .padding(.leading, 12)
-                .padding(.trailing, 14)
-                .padding(.top, 18)
-                .padding(.bottom, 18)
+                // Even inset all round — the concentricity depends on it.
+                .padding(.horizontal, 18)
+                .padding(.vertical,   18)
 
             if searchText.isEmpty && stage != .bar {
                 // Idle browse state: favourites scroll + recents list,
@@ -172,8 +183,18 @@ struct SearchSheet: View {
         }
 //        .font(.callout)
         .padding(.horizontal, 18)
-        .frame(height: 47)
-        .glassEffect(.regular.interactive(), in: .containerRelative)
+        // 44 in an 80pt card with an 18pt inset all round is EXACTLY
+        // concentric: the outer capsule's radius is 40, the inner's 22,
+        // and 22 + 18 = 40. `.containerRelative` had no container shape to
+        // resolve against inside the panel and fell back to a rectangle.
+        .frame(height: 44)
+        .glassEffect(.regular.interactive(), in: .capsule)
+        // Swipe the BAR to open the panel, tap it to type. Both, on the
+        // same pixels: `simultaneousGesture` leaves the field's own tap
+        // intact rather than consuming it, and the 12pt minimum keeps a
+        // slightly-imprecise tap from reading as a swipe. Panel only — in
+        // a sheet the system's detent drag owns this.
+        .simultaneousGesture(panelSwipe, isEnabled: isPanel)
     }
 
     // MARK: Favourites scroll

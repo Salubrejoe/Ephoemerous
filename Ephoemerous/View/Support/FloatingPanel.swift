@@ -17,10 +17,10 @@ import SwiftUI
 enum PanelStage: CaseIterable {
     case bar, medium, large
 
-    /// Parked height: the grabber strip plus a search field, or a detail
-    /// card's header. The sheet's 72 worked because the SYSTEM drew the
-    /// grabber inside the detent; the panel draws its own.
-    static let barHeight: CGFloat = 96
+    /// Parked height — one header band. 16pt above a 44pt button row and
+    /// its padding below; the search field's own 18/18 lands in the same
+    /// place. No grabber strip: the header band IS the handle now.
+    static let barHeight: CGFloat = 80
 
     var isOpen: Bool { self != .bar }
 }
@@ -51,6 +51,14 @@ struct FloatingPanel<Content: View>: View {
     /// GeometryReader here so the panel doesn't force a layout pass on the
     /// sky behind it.
     let available: CGFloat
+    /// Whether the panel draws its own drag band across the header.
+    ///
+    /// True for the detail card, whose header band is inert chrome between
+    /// two buttons. FALSE for search, where those same pixels are the text
+    /// field: a band over it swallows the tap that should raise the
+    /// keyboard. Search carries the swipe itself instead, as a
+    /// `simultaneousGesture` on the field, so tap and swipe coexist.
+    var showsDragBand: Bool = true
     @ViewBuilder var content: Content
 
     /// Apple Maps' iPad card is ~320pt; this one carries a search field
@@ -63,8 +71,27 @@ struct FloatingPanel<Content: View>: View {
     /// How far a drag must travel before it changes stage.
     private static var dragThreshold: CGFloat { 44 }
 
-    /// The grabber's strip at the top of the card.
-    private static var grabberStrip: CGFloat { 22 }
+    /// The header's own inset from the card edge — `DetailHeader`'s 6 + 10.
+    private static var headerInset: CGFloat { 16 }
+
+    /// Header button diameter (`CircleIconLabel`).
+    private static var buttonSize: CGFloat { 44 }
+
+    /// CONCENTRIC with the header's buttons: an inner radius plus the gap
+    /// around it. The buttons are 22pt-radius circles sitting `headerInset`
+    /// from the card's edges, so the card's corner has to be 38 for the two
+    /// curves to share a centre. Anything else and the button reads as
+    /// dropped into the corner rather than nested in it.
+    private static var cornerRadius: CGFloat { buttonSize / 2 + headerInset }
+
+    /// Capped at half the height, so the PARKED card is a true capsule
+    /// (radius 40 at 80pt) and the search field — a 44pt capsule inset 18
+    /// — is exactly concentric inside it. Opening interpolates the corner
+    /// back down to 38, where it nests the header's buttons instead.
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: min(Self.cornerRadius, height / 2),
+                         style: .continuous)
+    }
 
     /// Live drag, in points, positive DOWN. `@GestureState` rather than
     /// `@State`: it resets itself when the gesture ends, so a cancelled or
@@ -108,38 +135,29 @@ struct FloatingPanel<Content: View>: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            grabber
-            content
-                .frame(maxWidth: .infinity, alignment: .top)
-        }
-        .frame(width: Self.width, height: height, alignment: .top)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(.white.opacity(0.12), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
-        .padding(.leading, Self.margin)
-        .padding(.bottom,  Self.margin)
+        content
+            .frame(width: Self.width, height: height, alignment: .top)
+            .clipShape(shape)
+            // Clear interactive glass — no material, no fill. The card is a
+            // lens over the sky, the same species as the buttons it holds.
+            .glassEffect(.clear.interactive(), in: shape)
+            .shadow(color: .black.opacity(0.28), radius: 16, y: 5)
+            .overlay(alignment: .top) {
+                if showsDragBand { dragBand }
+            }
+            .padding(.leading, Self.margin)
+            .padding(.bottom,  Self.margin)
     }
 
-    /// The drag handle — and the only thing carrying the gesture. The body
-    /// is a scroll view and a text field; stealing their drags would make
-    /// the results unscrollable.
-    ///
-    /// `.secondary` on `regularMaterial` was invisible on the sky at this
-    /// size, so it is drawn in plain white at a fixed opacity, a point
-    /// thicker, with a hairline shadow under it. ▼ TWEAK ▼
-    private var grabber: some View {
-        Capsule()
-            .fill(.white.opacity(0.55))
-            .frame(width: 40, height: 6)
-            .shadow(color: .black.opacity(0.4), radius: 1, y: 0.5)
-            .frame(maxWidth: .infinity)
-            .frame(height: Self.grabberStrip)
+    /// The handle is the header band BETWEEN the two buttons — no separate
+    /// grabber. Inset past a button on each side so the share and dismiss
+    /// taps are never stolen, and only this band carries the gesture: the
+    /// body is a scroll view and a text field, and taking their drags would
+    /// make the results unscrollable.
+    private var dragBand: some View {
+        Color.clear
+            .frame(height: Self.headerInset + Self.buttonSize)
+            .padding(.horizontal, Self.headerInset + Self.buttonSize + 8)
             .contentShape(Rectangle())
             .highPriorityGesture(
                 DragGesture(minimumDistance: 2)

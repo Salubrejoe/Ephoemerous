@@ -73,10 +73,12 @@ struct DetailHeader<Icon: View>: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
+        // Centre alignment, not top: the title sits on the BUTTONS' axis
+        // rather than above it, so the three read as one row.
+        ZStack {
             VStack(spacing: 4) {
                 Text(title)
-                    .font(.title3.weight(.semibold))
+                    .font(.title2.weight(.bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .foregroundStyle(.primary)

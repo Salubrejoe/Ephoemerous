@@ -275,7 +275,9 @@ struct MainView: View {
         // presented, sharing ONE card in the bottom-leading corner.
         .overlay(alignment: .bottomLeading) {
             if isRegular {
-                FloatingPanel(stage: $panelStage, available: viewSize.height) {
+                FloatingPanel(stage: $panelStage,
+                              available: viewSize.height,
+                              showsDragBand: app.detailDestination != nil) {
                     if let obj = app.detailDestination {
                         DetailHost(obj: obj, stacked: false)
                             .id(obj.id)
