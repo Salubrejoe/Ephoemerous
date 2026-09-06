@@ -59,6 +59,19 @@ struct MainView: View {
     /// framing to freeze it into the committed camera.
     @State private var viewSize: CGSize = .zero
 
+    /// iPad / regular width takes the Apple-Maps treatment: ONE floating
+    /// card in the bottom-LEADING corner instead of a bottom sheet. Keyed
+    /// on the size class, NOT the idiom — an iPad in Slide Over or a
+    /// narrow Stage Manager window is compact, and the sheet is genuinely
+    /// the right answer there.
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var isRegular: Bool { hSize == .regular }
+
+    /// The floating panel's rest position (regular width only). Owned
+    /// here, not by the content, because ONE panel hosts both search and
+    /// the detail card and the stage has to survive the swap.
+    @State private var panelStage: PanelStage = .bar
+
 
     /// Seed / retune the camera's home + zoom floor from the visible screen
     /// size. The coordinator's built-in 90 approximates an iPhone; on iPad
@@ -98,16 +111,6 @@ struct MainView: View {
     @State private var morphScaleFrom:  CGFloat = 0
     @State private var morphOffsetFrom: CGSize  = .zero
     
-    private var gradient: RadialGradient {
-        let backColor   = Artist.shared.canvasBackground
-        let colorEdge   = app.isNorthOut ? backColor : .black.opacity(0.01)
-        
-        return RadialGradient(stops: [
-            .init(color: backColor, location: 0.0),
-            .init(color: colorEdge, location: 1.0),
-        ], center: .center, startRadius: app.scale*3, endRadius: app.canvasSize.height)
-    }
-
     var body: some View {
       // One timeline, production's `CanvasSchedule`: ticks at 60fps ONLY
       // while an app origin/date transition is in flight (the Here / Now
@@ -185,9 +188,12 @@ struct MainView: View {
         // bright outline. Without a dark background (and dark scheme) the
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
-      .background(
-        gradient
-      )
+      // Flat ground, no vignette. This was a RadialGradient running from
+      // `canvasBackground` at the centre to `.black.opacity(0.01)` at the
+      // rim — and a nearly-TRANSPARENT edge doesn't fade to black, it
+      // reveals whatever is behind the app, which is black. Hence the dark
+      // corners. The sky's own layers carry the depth now.
+      .background(Artist.shared.canvasBackground)
         .preferredColorScheme(.dark)
         .modifier(SkyChrome(viewSize: viewSize))
         .ignoresSafeArea()
@@ -213,7 +219,11 @@ struct MainView: View {
             }
         }
         .onChange(of: app.isShowingDatePicker) { _, showing in
-            if showing { sky.glideHome() }            // camera home → ring on the horizon
+            // Camera home → the ring sits on the horizon. The picker pulls
+            // it IN as well, so the crown clears the Here/Now capsule and
+            // the control row rather than running off both.
+            sky.glide(to: showing ? app.datePickerScale(screenSize: viewSize)
+                                  : sky.defaultScale)
         }
         .fontDesign(.rounded)
         // The pills raise these inline editors, same as production MainView.
@@ -240,7 +250,7 @@ struct MainView: View {
         // Apple-Maps detents, header-only fold + the default third, plus
         // `.large` for the constellation roster. Search / myth deliberately
         // left out for now. Mirrors production MainView's detail host.
-        .sheet(item: Bindable(app).detailDestination) { obj in
+        .sheet(item: detailSheetItem) { obj in
             DetailHost(obj: obj)
                 .id(obj.id)
                 .environment(\.detailCollapsed, detailDetent == detailHeaderDetent)
@@ -257,11 +267,50 @@ struct MainView: View {
         // detent whenever nothing else owns the bottom slot. Selecting an
         // object sets `detailDestination`, which flips `searchPresented`
         // false → search yields to the detail sheet. Verbatim production.
-        .sheet(isPresented: searchPresented) { SearchSheet().tracksBottomSheet() }
+        .sheet(isPresented: searchSheetPresented) { SearchSheet().tracksBottomSheet() }
+        // Regular width: the same two surfaces, placed rather than
+        // presented, sharing ONE card in the bottom-leading corner.
+        .overlay(alignment: .bottomLeading) {
+            // Same rule the sheet obeys: the panel yields while a scene
+            // editor owns the screen. `searchPresented` already excludes
+            // both pickers; the panel was ignoring it and left a search bar
+            // floating over the date crown.
+            if isRegular, app.detailDestination != nil || searchPresented.wrappedValue {
+                FloatingPanel(stage: $panelStage,
+                              available: viewSize.height,
+                              showsDragBand: app.detailDestination != nil) {
+                    if let obj = app.detailDestination {
+                        DetailHost(obj: obj, stacked: false)
+                            .id(obj.id)
+                            .environment(\.detailCollapsed, panelStage == .bar)
+                            .environment(\.detailInPanel,   true)
+                    } else {
+                        SearchSheet(panelStage: $panelStage)
+                    }
+                }
+                // The card is BOTTOM-anchored, so SwiftUI's keyboard
+                // avoidance lifted the whole thing by the keyboard's
+                // height — and an open card plus a keyboard is taller than
+                // the screen, which is how it ended up off the top. Opting
+                // out leaves it where it is and lets the keyboard slide
+                // over its lower half; the search field lives at the card's
+                // TOP, and focusing raises the stage to `.large`, so the
+                // field and the first results stay clear.
+                .ignoresSafeArea(.keyboard, edges: .bottom)
+                .transition(.opacity)
+            }
+        }
         // Any selection (canvas tap OR search pick) glides into the comfort
         // zone — one place, so the two paths behave identically.
         .onChange(of: app.detailDestination) { _, obj in
             if let obj { panIntoComfortZone(obj) }
+            // The card arriving in the panel should be readable without a
+            // drag; leaving it parks the panel back at the search bar.
+            if isRegular {
+                withAnimation(.snappy(duration: 0.32)) {
+                    panelStage = obj == nil ? .bar : .medium
+                }
+            }
         }
         // Leaving compass mode → freeze the live heading into the committed
         // `sky.rotation`, so the camera (which now reads `sky.rotation`
@@ -281,14 +330,8 @@ struct MainView: View {
                 // Rotation: negated to match `cameraRotation`'s flip so the
                 // committed rotation picks up where the heading left.
                 sky.rotation = .radians(-app.canvasRotation.radians)
-                // Zoom/offset: bake the current blended framing into `sky`
-                // (handles a mid-glide exit too), then zero the blend so the
-                // camera — now reading `sky` — shows the identical view.
-                let framing = app.compassCameraFraming(screenHeight: viewSize.height)
-                let t       = compassEngage
-                sky.scale  = sky.scale  + (framing.scale  - sky.scale)  * t
-                sky.offset = CGSize(width:  sky.offset.width  + (framing.offset.width  - sky.offset.width)  * t,
-                                    height: sky.offset.height + (framing.offset.height - sky.offset.height) * t)
+                // Nothing to bake back in: compass no longer touches zoom or
+                // offset, so `sky` already holds the view on screen.
                 compassEngage = 0
             }
         }
@@ -336,6 +379,22 @@ struct MainView: View {
     /// selection, no myth, neither picker, and not mid sheet-swap. Read-only
     /// (a no-op setter); `interactiveDismissDisabled` blocks manual dismiss,
     /// so only a selection / editor hides it. Mirrors production MainView.
+    /// The search SHEET is compact-width only — in regular width the same
+    /// content lives in the floating panel, so the sheet must not present
+    /// as well or the app would carry two search fields.
+    private var searchSheetPresented: Binding<Bool> {
+        Binding(get: { !isRegular && searchPresented.wrappedValue },
+                set: { _ in })
+    }
+
+    /// Likewise the detail sheet: in regular width the panel hosts the
+    /// place card, so the sheet host is starved of its item. The SETTER
+    /// stays live so dismissal still clears the selection either way.
+    private var detailSheetItem: Binding<SkyObject?> {
+        Binding(get: { isRegular ? nil : app.detailDestination },
+                set: { app.detailDestination = $0 })
+    }
+
     private var searchPresented: Binding<Bool> {
         Binding(
             get: {

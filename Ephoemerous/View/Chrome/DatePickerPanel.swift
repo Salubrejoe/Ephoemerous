@@ -42,8 +42,16 @@ struct DatePickerPanel: View {
             // glides home on present (see MainView), where the horizon
             // projects at exactly 2 · defaultScale about the screen centre.
             if !showWheels {
-                DateCrown(radius: CGFloat(2 * state.defaultScale), gear: $gear)
-                    .transition(.opacity)
+                // Same scale MainView glides the camera to while the picker
+                // is open, so the ring still rests exactly on the horizon —
+                // just a smaller horizon. Read from the screen rather than
+                // `defaultScale`, which framed the crown off both edges.
+                GeometryReader { geo in
+                    DateCrown(radius: 2 * state.datePickerScale(screenSize: geo.size),
+                              gear: $gear)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .transition(.opacity)
             }
 
             VStack(spacing: 16) {
@@ -117,9 +125,12 @@ struct DatePickerPanel: View {
             }
         }
         .pickerStyle(.segmented)
-        .frame(height: 44)
-        .padding(.horizontal, 6)
-        .glassEffect(.regular.interactive(), in: .capsule)
+        // Small and bare: the row already carries two glass circles, and a
+        // third glass slab between them made the control row read as the
+        // loudest thing on the canvas. `fixedSize` stops the segments
+        // stretching to fill the row. ▼ TWEAK ▼
+        .fixedSize()
+        .controlSize(.small)
     }
 
     // MARK: - Precise wheels (the escape hatch)

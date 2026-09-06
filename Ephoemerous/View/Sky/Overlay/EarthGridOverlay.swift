@@ -2,57 +2,36 @@ import SwiftUI
 import LoreKit
 
 // MARK: - SkyLabHorizonCircles
-// The horizon + twilight rings. Every constant-ALTITUDE circle (almucantar)
-// is drawn as a PROJECTED curve through the live camera, so it MORPHS with the
-// NorthIN↔NorthOUT transition instead of crossfading: concentric circles about
-// the zenith in NorthIN (the stereographic image of an almucantar is a true
-// circle there), opening into the single offset horizon curve in NorthOUT
-// (pole-centred sky, the horizon sliding with latitude — a circle at the
-// poles, a straight line at the equator).
+// The horizon ring. It is drawn as a PROJECTED curve through the live
+// camera, so it MORPHS with the NorthIN↔NorthOUT transition instead of
+// crossfading: a circle about the zenith in NorthIN (the stereographic
+// image of an almucantar is a true circle there), opening into the single
+// offset horizon curve in NorthOUT (pole-centred sky, the horizon sliding
+// with latitude — a circle at the poles, a straight line at the equator).
 //
-// The horizon (0°) holds; the below-horizon twilight bands fade out toward
-// NorthOUT, which is bare. They fade while still morphing — the lines
-// translate, they don't dissolve into a different shape.
+// The below-horizon twilight bands (−6°…−48°, the concentric scallops that
+// spelled civil / nautical / astronomical dusk spatially) were REMOVED by
+// request. The frosted ground below the rim still carries time-of-day, so
+// the horizon is now the only almucantar drawn — and the only dashed ring
+// on the canvas, which is what makes it read as the rim rather than as one
+// member of a family.
 struct EarthGridOverlay: View {
 
     let camera: SkyCamera
-    @Environment(AppState.self) private var app
 
-    private struct Band {
-        let altitude: Angle
-        let opacity:  Double
-    }
-
-    private static let bands: [Band] = [
-        .init(altitude: .degrees(  0), opacity: 0.55),   // horizon
-        .init(altitude: .degrees( -6), opacity: 0.1),
-        .init(altitude: .degrees(-12), opacity: 0.1),
-        .init(altitude: .degrees(-18), opacity: 0.1),
-        .init(altitude: .degrees(-24), opacity: 0.1),
-        .init(altitude: .degrees(-30), opacity: 0.1),
-        .init(altitude: .degrees(-36), opacity: 0.1),
-        .init(altitude: .degrees(-42), opacity: 0.1),
-        .init(altitude: .degrees(-48), opacity: 0.1),
-    ]
+    /// The rim's weight. Was the horizon band's own opacity in the old
+    /// band table, kept at the same value so the ring didn't change
+    /// brightness when its siblings went. ▼ TWEAK ▼
+    private static let opacity: Double = 0.55
 
     var body: some View {
-        let morph = app.perspectiveMorph
-        ZStack {
-            ForEach(0 ..< Self.bands.count, id: \.self) { i in
-                let band = Self.bands[i]
-                // Horizon holds full; the twilight bands fade out toward the
-                // bare NorthOUT view. Every band is a projected curve, so the
-                // lines translate continuously through the morph.
-                let fade = band.altitude == .degrees(0) ? 1 : (1 - morph)
-                AlmucantarCurve(camera: camera, altitude: band.altitude)
-                    .stroke(style: .init(lineWidth: 0.8,
-                                         lineCap:  .round,
-                                         lineJoin: .round,
-                                         dash:     [10, 10]))
-                    .foregroundStyle(.grid)
-                    .opacity(band.opacity * fade)
-            }
-        }
+        AlmucantarCurve(camera: camera, altitude: .degrees(0))
+            .stroke(style: .init(lineWidth: 0.8,
+                                 lineCap:  .round,
+                                 lineJoin: .round,
+                                 dash:     [10, 10]))
+            .foregroundStyle(.grid)
+            .opacity(Self.opacity)
     }
 }
 
@@ -91,7 +70,7 @@ private struct AlmucantarCurve: Shape {
 }
 
 #if DEBUG
-#Preview("Horizon + twilight") {
+#Preview("Horizon") {
     PreviewSky.night { EarthGridOverlay(camera: PreviewSky.camera) }
 }
 #endif

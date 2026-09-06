@@ -22,9 +22,18 @@ struct Artist {
     
     var canvasBackground : Color { palette.canvasBackground }
     
-    var gridColor : Color  { palette.grid }
-    var gridWidth : Double { 0.1 }
+    /// The equatorial graticule is scaffolding, not sky — it should read as
+    /// a whisper beneath the stars. Dimmed HERE rather than in the asset
+    /// because `palette.grid` is shared with the horizon + twilight rings,
+    /// which carry their own (louder) opacities. ▼ TWEAK ▼
+    var gridOpacity : Double { 0.55 }
+    var gridColor   : Color  { palette.grid.opacity(gridOpacity) }
+    var gridWidth   : Double { 0.1 }
     
+    /// The generic star field. White in dark mode, at full strength — the
+    /// per-star magnitude opacity below is the only thing that dims it.
+    var starColor : Color { palette.starField }
+
     var eclColor : Color  { palette.ecliptic }
     var eclWidth : Double { 0.5 }
     

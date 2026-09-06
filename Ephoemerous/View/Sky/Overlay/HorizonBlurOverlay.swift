@@ -2,8 +2,8 @@ import SwiftUI
 import simd
 
 // MARK: - HorizonBlurOverlay
-// Frosted glass over the ground BELOW the horizon — the visible sky stays
-// sharp, the under-earth murk frosts over, and during the NorthIN↔NorthOUT
+// A pale pane over the ground BELOW the horizon — the visible sky stays
+// bare, the under-earth frosts over, and during the NorthIN↔NorthOUT
 // morph the pane deforms with the horizon itself (circle → line → offset
 // circle), which is the whole show.
 //
@@ -22,22 +22,68 @@ struct HorizonBlurOverlay: View {
 
     let camera: SkyCamera
 
-    /// How far the under-earth sits below the visible sky — 0 = no murk,
-    /// 1 = solid black. ▼ TWEAK the ground's murk here ▼
+    /// How far the under-earth sits from the visible sky — 0 = no veil,
+    /// 1 = opaque. ▼ TWEAK the ground's frost here ▼
     ///
-    /// This was two multiplied opacities (0.45 fill × 0.45 view ≈ 0.20),
-    /// which is easy to misread as "0.45 dark" — it is one number, so it
-    /// is written as one. Softened from 0.20: at a fifth below
-    /// `canvasBackground` the sky's rim drifted far enough from the asset
-    /// colour that the app read as a different blue from the Home Screen
-    /// widgets, which iOS composites onto its own glass plate and so
-    /// renders LIGHTER than the same asset. The ground still reads as
-    /// ground; it just no longer overshoots.
-    private static let groundMurk: Double = 0.13
+    /// INVERTED from the old black murk (0.13, itself softened from a
+    /// two-opacity 0.20). Pale, so the sky inside the horizon is the
+    /// darkest thing on screen and the under-earth reads as OCCLUSION —
+    /// glass over the earth — rather than as more night. It isn't night
+    /// down there; it's ground.
+    ///
+    /// Veiling the ground rather than deepening the sky is deliberate:
+    /// `canvasBackground` is what keeps the app and the Home Screen
+    /// widgets the same blue (iOS composites widgets onto its own glass
+    /// plate, so the same asset renders LIGHTER there). Darkening the sky
+    /// would reopen exactly the drift the old 0.20 → 0.13 softening was
+    /// there to close; veiling leaves the asset alone.
+    ///
+    /// NOTE the polarity is now opposite to the widget's tympan, which
+    /// lifts its day field (white 0.06) and steps the ground down with
+    /// four stacked dusk veils. Deliberate — the widget is an instrument
+    /// face read in daylight, the app is a full screen at night.
+    ///
+    /// NOTE the file's name is now a misnomer and should stay one: a real
+    /// `.ultraThinMaterial` backdrop blur WAS built here and taken back
+    /// out — preferred without. At full strength a material over a star
+    /// field is an opaque slab (ground, stars and grid all gone); blended
+    /// to ~0.45 it frosted properly, stars ghosting through, and the
+    /// horizon dash had to be lifted above it to survive. It read well and
+    /// was still the wrong look. Don't re-add it as a "fix" for the name.
+    private static let groundFrost: Double = 0.08
 
     var body: some View {
-        HorizonRegion(camera: camera)
-            .fill(Color.black.opacity(Self.groundMurk),
+        HorizonRegion(camera: camera, side: .ground)
+            .fill(Color.white.opacity(Self.groundFrost),
+                  style: FillStyle(eoFill: true))
+            .allowsHitTesting(false)
+    }
+}
+
+// MARK: - HorizonSkyVeil
+// Deepens the visible sky INSIDE the horizon, one notch below
+// `canvasBackground`.
+//
+// Mounted at the BOTTOM of the stack, under the grid and the star
+// canvases — that is the whole point. Veiling from above would dim the
+// stars and the marks along with the ground, undoing the star field's
+// white; from below it only deepens what they sit on, so contrast goes UP
+// on both sides of the edge.
+//
+// Not done by darkening `canvasBackground`: that asset is shared with the
+// Home Screen widget's plate (`OrlojWidget`), so it is the app/widget
+// colour match, not a sky knob.
+struct HorizonSkyVeil: View {
+
+    let camera: SkyCamera
+
+    /// How far the visible sky sits below `canvasBackground`.
+    /// ▼ TWEAK the sky's depth here ▼
+    private static let skyDepth: Double = 0.10
+
+    var body: some View {
+        HorizonRegion(camera: camera, side: .sky)
+            .fill(Color.black.opacity(Self.skyDepth),
                   style: FillStyle(eoFill: true))
             .allowsHitTesting(false)
     }
@@ -52,7 +98,11 @@ struct HorizonBlurOverlay: View {
 // the path is a huge rect + the circle and eoFill carves the hole.
 private struct HorizonRegion: Shape {
 
+    /// Which side of the horizon this region covers.
+    enum Side { case ground, sky }
+
     let camera: SkyCamera
+    let side:   Side
 
     func path(in rect: CGRect) -> Path {
         let vp = camera.viewpoint
@@ -71,6 +121,9 @@ private struct HorizonRegion: Shape {
             }
         }
         guard pts.count >= 3, let sky = skyAnchor() else { return Path() }
+        // Every branch below is written for the GROUND and flipped for the
+        // sky at the last step, so the two sides can't disagree about
+        // where the edge is.
 
         // Three spread samples pin the circle.
         let a = pts[0]
@@ -100,9 +153,11 @@ private struct HorizonRegion: Shape {
 
         let circle = CGRect(x: ux - r, y: uy - r, width: r * 2, height: r * 2)
         var path = Path()
-        if hypot(sky.x - ux, sky.y - uy) <= r {
-            // Sky fills the circle's interior — the ground is everything
-            // OUTSIDE it: huge rect minus the circle.
+        // The wanted region is the circle's EXTERIOR when the side we want
+        // isn't the side the sky anchor landed on — huge rect plus the
+        // circle, which eoFill then carves into a hole.
+        let skyInside = hypot(sky.x - ux, sky.y - uy) <= r
+        if skyInside == (side == .ground) {
             path.addRect(rect.insetBy(dx: -8000, dy: -8000))
         }
         path.addEllipse(in: circle)
@@ -124,15 +179,16 @@ private struct HorizonRegion: Shape {
     }
 
     /// Horizon projects as a (near-)line through `a`–`c`: the region is
-    /// the half-plane OPPOSITE the sky side — the ground.
+    /// the half-plane on this instance's side of it.
     private func halfPlane(_ a: CGPoint, _ c: CGPoint,
                            sky: CGPoint, in rect: CGRect) -> Path {
         let len = hypot(c.x - a.x, c.y - a.y)
         guard len > 1e-6 else { return Path() }
         let dir  = CGPoint(x: (c.x - a.x) / len, y: (c.y - a.y) / len)
         var n    = CGPoint(x: -dir.y, y: dir.x)
-        if (sky.x - a.x) * n.x + (sky.y - a.y) * n.y > 0 {
-            n = CGPoint(x: -n.x, y: -n.y)              // flip AWAY from the sky
+        let towardSky = (sky.x - a.x) * n.x + (sky.y - a.y) * n.y > 0
+        if towardSky != (side == .sky) {
+            n = CGPoint(x: -n.x, y: -n.y)              // point INTO our side
         }
         let L: CGFloat = 20000
         var path = Path()
@@ -149,6 +205,7 @@ private struct HorizonRegion: Shape {
 // Only legible over something — the frost is the region BELOW the horizon.
 #Preview("Frosted ground") {
     PreviewSky.night {
+        HorizonSkyVeil(camera: PreviewSky.camera)
         CelestialGridCanvas(camera: PreviewSky.camera)
         HorizonBlurOverlay(camera: PreviewSky.camera)
     }

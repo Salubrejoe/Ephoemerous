@@ -12,10 +12,25 @@ struct DetailHost: View {
     @Environment(AppState.self) var state
     let obj: SkyObject
 
+    /// Whether to wrap the detail view in a `NavigationStack`.
+    ///
+    /// The sheet does (compact width): the constellation roster pushes to
+    /// a star, with a chevron back to its parent. The iPad's floating
+    /// panel does NOT — a NavigationStack always FILLS the height it is
+    /// given and can never report a natural one, so the card could only
+    /// ever be a fixed slab. Without it the panel hugs its content, and
+    /// the roster SELECTS the star instead of pushing to it: the panel's
+    /// contents swap, which is the Maps idiom on a big screen anyway.
+    var stacked: Bool = true
+
     var body: some View {
-        NavigationStack {
+        if stacked {
+            NavigationStack {
+                content
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+        } else {
             content
-                .toolbar(.hidden, for: .navigationBar)
         }
     }
 
@@ -45,6 +60,19 @@ extension EnvironmentValues {
         get { self[DetailCollapsedKey.self] }
         set { self[DetailCollapsedKey.self] = newValue }
     }
+
+    /// True when the detail view is hosted by the iPad's `FloatingPanel`
+    /// rather than a sheet — i.e. there is no `NavigationStack` to push
+    /// onto. Read by `ConstellationDetailView`'s roster, which selects
+    /// instead of pushing.
+    var detailInPanel: Bool {
+        get { self[DetailInPanelKey.self] }
+        set { self[DetailInPanelKey.self] = newValue }
+    }
+}
+
+private struct DetailInPanelKey: EnvironmentKey {
+    static let defaultValue = false
 }
 
 #if DEBUG

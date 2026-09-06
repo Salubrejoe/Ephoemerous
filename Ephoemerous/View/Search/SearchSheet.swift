@@ -31,6 +31,56 @@ struct SearchSheet: View {
     @FocusState private var searchFocused: Bool
     @State private var detent: PresentationDetent = Self.barDetent
 
+    /// PANEL mode (iPad, regular width): the host `FloatingPanel` owns the
+    /// stage, so this view drives that binding instead of its own detent
+    /// and skips every `presentation*` modifier — those belong to a sheet
+    /// and are inert (or fight the host) outside one.
+    ///
+    /// nil = sheet mode, the compact path, byte-for-byte as before.
+    var panelStage: Binding<PanelStage>? = nil
+
+    private var isPanel: Bool { panelStage != nil }
+
+    /// The current rest position, whichever presentation owns it.
+    private var stage: PanelStage {
+        if let panelStage { return panelStage.wrappedValue }
+        switch detent {
+        case Self.barDetent: return .bar
+        case .medium:        return .medium
+        default:             return .large
+        }
+    }
+
+    /// Close the panel back to its resting bar: drop the keyboard, clear
+    /// the query (a parked bar holding a stale search would show results
+    /// it has no room to draw), and park the stage.
+    private func closeSearch() {
+        searchFocused = false
+        searchText    = ""
+        withAnimation(.snappy(duration: 0.32)) { setStage(.bar) }
+    }
+
+    /// Vertical swipe on the search bar → raise or park the panel.
+    private var panelSwipe: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onEnded { value in
+                let d = value.translation.height
+                guard abs(d) > 30 else { return }
+                withAnimation(.snappy(duration: 0.32)) {
+                    setStage(d < 0 ? .large : .bar)
+                }
+            }
+    }
+
+    private func setStage(_ new: PanelStage) {
+        if let panelStage { panelStage.wrappedValue = new; return }
+        switch new {
+        case .bar:    detent = Self.barDetent
+        case .medium: detent = .medium
+        case .large:  detent = .large
+        }
+    }
+
     /// Full-screen Hertzsprung–Russell diagram. Presented from THIS
     /// sheet (not MainView) because the search sheet is always up — a
     /// cover hung off the root would fight the active presentation.
@@ -43,21 +93,41 @@ struct SearchSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 // Pure search — the camera controls moved to the
                 // bottom-trailing capsule (CameraClusterCapsule), so the
                 // bar has exactly one job.
                 searchHeader
 
+                // Dismiss — only once the card is OPEN, and only in the
+                // panel. Parked, the bar is the app's resting state and
+                // there is nothing to close; in the sheet the search is
+                // persistent by design and has never worn an X. The same
+                // 44pt glass circle the detail header dismisses with, so
+                // the two cards close the same way.
+                if isPanel && stage != .bar {
+                    CircleIconButton(symbol: .xmark) { closeSearch() }
+                        .transition(.scale.combined(with: .opacity))
+                }
+
                 // Hertzsprung–Russell diagram — full-screen star chart.
 //                hrButton
             }
-                .padding(.leading, 12)
-                .padding(.trailing, 14)
-                .padding(.top, 18)
-                .padding(.bottom, 18)
+                .animation(.snappy(duration: 0.28), value: stage)
+                // PANEL: the card's own handle supplies the top air, so the
+                // field needs none, and 14 a side nests the 44pt capsule in
+                // the card's corner (22 + 14 ≈ 37, the parked radius).
+                //
+                // SHEET: the phone's insets, untouched. It has no handle of
+                // ours above the field — the SYSTEM draws the grabber — so
+                // dropping the top padding here shoved the field under it
+                // and left the trailing edge hanging.
+                .padding(.leading,  isPanel ? 14 : 12)
+                .padding(.trailing, isPanel ? 14 : 14)
+                .padding(.top,      isPanel ?  0 : 18)
+                .padding(.bottom,   isPanel ? 14 : 18)
 
-            if searchText.isEmpty && detent != Self.barDetent {
+            if searchText.isEmpty && stage != .bar {
                 // Idle browse state: favourites scroll + recents list,
                 // Apple-Maps style. Scrolls as one when the sheet is
                 // dragged up to medium / large.
@@ -95,18 +165,15 @@ struct SearchSheet: View {
         // the bar-only detent instead. Selecting an object is what hides
         // it: `detailDestination` flips non-nil and MainView's derived
         // binding dismisses this in favour of the detail sheet.
-        .presentationDetents([Self.barDetent, .medium, .large], selection: $detent)
-        .presentationDragIndicator(.visible)
-        .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-        .interactiveDismissDisabled(true)
-        // Focusing the field (keyboard up) expands the sheet so results
-        // aren't buried under the keyboard at the bar detent.
+        .modifier(SheetPresentation(active: !isPanel, detent: $detent))
+        // Focusing the field (keyboard up) expands the surface so results
+        // aren't buried under the keyboard at the bar stage.
         .onChange(of: searchFocused) { _, focused in
-            if focused, detent == Self.barDetent { detent = .large }
+            if focused, stage == .bar { setStage(.large) }
         }
-        // Typing from a parked sheet should also lift it.
+        // Typing from a parked surface should also lift it.
         .onChange(of: searchText) { _, text in
-            if !text.isEmpty, detent == Self.barDetent { detent = .medium }
+            if !text.isEmpty, stage == .bar { setStage(.medium) }
         }
         .fullScreenCover(isPresented: $showHRDiagram) {
             HRDiagramView()
@@ -146,8 +213,19 @@ struct SearchSheet: View {
         }
 //        .font(.callout)
         .padding(.horizontal, 18)
-        .frame(height: 47)
-        .glassEffect(.regular.interactive(), in: .containerRelative)
+        // The panel's 44 is load-bearing — it is what nests the capsule in
+        // the card's corner. The sheet keeps the 47 it always had.
+        // `.containerRelative` had no container shape to resolve against
+        // inside the panel and fell back to a rectangle, which is why the
+        // field was never a capsule there.
+        .frame(height: isPanel ? 44 : 47)
+        .glassEffect(.regular.interactive(), in: .capsule)
+        // Swipe the BAR to open the panel, tap it to type. Both, on the
+        // same pixels: `simultaneousGesture` leaves the field's own tap
+        // intact rather than consuming it, and the 12pt minimum keeps a
+        // slightly-imprecise tap from reading as a swipe. Panel only — in
+        // a sheet the system's detent drag owns this.
+        .simultaneousGesture(panelSwipe, isEnabled: isPanel)
     }
 
     // MARK: Favourites scroll
@@ -368,3 +446,25 @@ struct SearchSheet: View {
         .environment(AppState())
 }
 #endif
+
+// MARK: - SheetPresentation
+// The sheet-only modifiers, applied as a group so panel mode can decline
+// them wholesale. `presentationDetents` on a view that isn't a sheet's
+// root is inert at best; keeping them behind one flag is clearer than a
+// scatter of `if` in the body.
+private struct SheetPresentation: ViewModifier {
+    let active: Bool
+    @Binding var detent: PresentationDetent
+
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .presentationDetents([.height(72), .medium, .large], selection: $detent)
+                .presentationDragIndicator(.visible)
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                .interactiveDismissDisabled(true)
+        } else {
+            content
+        }
+    }
+}

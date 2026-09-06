@@ -27,6 +27,47 @@ struct OrlojFace {
     /// coherently.
     let ui:        CGFloat
 
+    /// TYPE scale — `ui` with a floor.
+    ///
+    /// `ui` shrinks every fixed dimension linearly, which is right for band
+    /// widths, marks and strokes and WRONG for glyphs. A 45mm watch is
+    /// ~198pt on its short side, so `ui` ≈ 0.58 and the Roman numerals
+    /// render at ~5pt — less than half the wrist's legibility floor. The
+    /// face was scaled as though a watch were a small widget; it isn't.
+    /// Density should fall at the small end, not letter height.
+    ///
+    /// The floor is what the CURRENT circular dial can carry: 24 numerals
+    /// on a ring of radius ~103pt gives each a ~27pt slot, and "VIII" in
+    /// 9pt serif semibold runs ~20pt wide. Going much past this needs a
+    /// bigger ring, not a bigger floor. ▼ TWEAK the smallest type here ▼
+    let type:      CGFloat
+
+    /// The WRIST face — the same instrument, reduced for a screen a third
+    /// the size. The crown, the hand and the plate clip all stay; what goes
+    /// is filigree the small screen can't spend ink on (tropic circles,
+    /// zodiac sign dividers) and 23 of the 24 numerals.
+    ///
+    /// The dial keeps ONE numeral: the hour the Sun's hand is nearest. The
+    /// crown still reads as a dial — band, ring, a numeral the hand points
+    /// at — but the ring stops being 24 competing 8pt glyphs and becomes a
+    /// single legible mark. Everything else about the crown is unchanged.
+    let wrist:     Bool
+
+    /// Tropic circles and zodiac sign dividers — two greys among the
+    /// ecliptic, the horizon and the plate edge. Dropped on the wrist.
+    var showsFiligree: Bool { !wrist }
+
+    /// The hour the Sun's hand is NEAREST — the wrist face's only numeral.
+    /// Rounded, not floored, so the numeral shown is always the closest
+    /// marker to the hand rather than the one it last passed. Same civil
+    /// clock `dialNumerals` phases the ring against.
+    var sunHour: Int {
+        let c = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
+        let civil = Double(c.hour ?? 12) + Double(c.minute ?? 0) / 60
+                  + Double(c.second ?? 0) / 3600
+        return Int(civil.rounded()) % 24
+    }
+
     /// Declination MAGNITUDE the Roman dial sits at — outside the outer
     /// tropic plate. (The Old-Bohemian ring is retired — conductor's
     /// call — so the crown carries one scale.) ▼ TWEAK ring spacing ▼
@@ -56,7 +97,9 @@ struct OrlojFace {
     }
 
     @MainActor
-    init(date: Date, origin: (latDeg: Double, lonDeg: Double)?, size: CGSize) {
+    init(date: Date, origin: (latDeg: Double, lonDeg: Double)?, size: CGSize,
+         wrist: Bool = false) {
+        self.wrist = wrist
         self.date = date
         // Prague fallback before the app has ever backgrounded — apt for
         // the one face that's explicitly styled after this city's clock.
@@ -65,7 +108,8 @@ struct OrlojFace {
         latitude  = lat
         longitude = lon
         lst = Precession.lst(for: date, longitude: lon)
-        ui  = min(1, min(size.width, size.height) / 340)   // systemLarge ≈ 1
+        ui   = min(1, min(size.width, size.height) / 340)   // systemLarge ≈ 1
+        type = max(0.92, ui)
 
         let viewpoint = Projection.Viewpoint(
             originVector: Angle.spherePoint(latitude: lat, longitude: lon),
@@ -714,6 +758,15 @@ struct GlassBand: View {
     var tint:   Color  = .white
     var tintOpacity:   Double = 0.10
     var eoFill: Bool   = false
+    /// Multiplies the band's LIT parts — sheen and rim light — leaving the
+    /// tint slab and the casing alone, so the glass gets brighter without
+    /// getting paler or losing its dark border.
+    ///
+    /// The band was the one element exempt from `brilliance`: every ink on
+    /// the face runs through `ink()`, but GlassBand's sheen and rim were
+    /// hardcoded, so the wrist's 1.9 gain never reached the glass and the
+    /// crown stayed a widget-weight smudge on a screen a third the size.
+    var glow:   Double = 1
     /// Host renders the widget as a LUMINANCE MAP (the tinted / "Clear"
     /// Home Screen themes): every fill becomes opaque white, so a stack of
     /// slab + sheen + casing + rim collapses into one fat white ring and
@@ -736,19 +789,21 @@ struct GlassBand: View {
                                       startPoint: .top, endPoint: .bottom),
                        style: style)
             // Sheen — light falling from the top.
-            shape.fill(LinearGradient(colors: [.white.opacity(0.14),
-                                               .white.opacity(0.02)],
+            shape.fill(LinearGradient(colors: [.white.opacity(min(1, 0.14 * glow)),
+                                               .white.opacity(min(1, 0.02 * glow))],
                                       startPoint: .top, endPoint: .bottom),
                        style: style)
             // Casing — the dark border every Ephoemerous badge wears
             // (poiTextBorderWidth, canvas-navy so it never goes light).
             shape.stroke(Artist.shared.canvasBackground.opacity(0.9),
                          lineWidth: Artist.shared.poiTextBorderWidth)
-            // Rim light — bright top edge, fading out below.
-            shape.stroke(LinearGradient(colors: [.white.opacity(0.45),
-                                                 .white.opacity(0.07)],
+            // Rim light — bright top edge, fading out below. On the wrist
+            // this edge is most of what says "crown": the scalloped rim is
+            // the signature, so it carries the glow and gets weight with it.
+            shape.stroke(LinearGradient(colors: [.white.opacity(min(1, 0.45 * glow)),
+                                                 .white.opacity(min(1, 0.07 * glow))],
                                         startPoint: .top, endPoint: .bottom),
-                         lineWidth: 0.8)
+                         lineWidth: 0.8 * min(1.6, glow))
         }
         .compositingGroup()
         .shadow(color: .black.opacity(0.35), radius: 3, y: 1.5)
@@ -851,6 +906,7 @@ struct OrlojFaceLayers: View {
 
     var body: some View {
         let u = face.ui
+        let t = face.type
 
         ZStack {
             // ── Tympan fields — day, twilight and night as MATERIAL,
@@ -916,14 +972,26 @@ struct OrlojFaceLayers: View {
             // ── Fixed dial band (glass) — the real clock's black
             // outer ring, smoky so the sky reads through it. One
             // shadow per slab: GlassBand carries its own, no double.
+            // Brighter on the wrist: less smoke in the slab (0.30 → 0.16)
+            // so the sky doesn't drown it, and the sheen + rim finally run
+            // through the same brilliance gain as every other ink.
+            // ▼ TWEAK the crown's presence here ▼
             GlassBand(band: face.dialBandPath(),
-                      tint: .black, tintOpacity: 0.30, eoFill: true,
+                      tint: .black,
+                      tintOpacity: face.wrist ? 0.16 : 0.30,
+                      eoFill: true,
+                      glow: face.wrist ? brilliance : 1,
                       lineArt: lineArt)
 
-            // ── Plate filigree.
-            ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
-                OrlojPath(source: plate.path)
-                    .stroke(Self.silver.opacity(ink(0.85)), lineWidth: heft(plate.width))
+            // ── Plate filigree — the tropic circles. On the wrist they go:
+            // on the wrist they're two more grey rings among the ecliptic,
+            // the horizon and the plate's own edge, and the tympan's fields
+            // already say where the plate begins and ends.
+            if face.showsFiligree {
+                ForEach(Array(face.platePaths().enumerated()), id: \.offset) { _, plate in
+                    OrlojPath(source: plate.path)
+                        .stroke(Self.silver.opacity(ink(0.85)), lineWidth: heft(plate.width))
+                }
             }
             // (The −18° twilight hairline is retired — the tympan
             // fields' own edges bound AVRORA/CREPVSCVLVM now.)
@@ -941,7 +1009,7 @@ struct OrlojFaceLayers: View {
             // the app's dark casing so they hold up at a squint.
             ForEach(face.tympanLabelChars(), id: \.id) { glyph in
                 Text(glyph.char)
-                    .font(.system(size: max(3.5, 6.5 * u), weight: .medium, design: .serif))
+                    .font(.system(size: max(3.5, 6.5 * t), weight: .medium, design: .serif))
                     .foregroundStyle(Self.silver.opacity(ink(0.8)))
                     .shadow(color: Artist.shared.canvasBackground.opacity(0.9),
                             radius: lineArt ? 0 : 1)
@@ -955,14 +1023,21 @@ struct OrlojFaceLayers: View {
             // the wall clock (see `dialNumerals`) — in TWO METALS:
             // daylit hours brass, night hours silver, same volume,
             // different temperature — the crown echoes the tympan.
-            ForEach(face.dialNumerals(), id: \.id) { numeral in
+            // On the wrist only the Sun's own hour is worn (`sunHour`), and
+            // with no neighbours to crowd it, it is drawn HALF AGAIN as
+            // large — the ring's slot no longer caps the type.
+            // ▼ TWEAK the lone numeral's size here ▼
+            let numeralSize = face.wrist ? 14 * t : 9 * t
+            ForEach(face.dialNumerals().filter {
+                        !face.wrist || $0.id == face.sunHour
+                    }, id: \.id) { numeral in
                 Group {
                     if lineArt {
                         // Fill + casing both resolve to white and merge —
                         // the numerals turn into solid blocks. Plain
                         // glyphs; night dims where metal can't speak.
                         Text(numeral.text)
-                            .font(.system(size: 9 * u, weight: .semibold,
+                            .font(.system(size: numeralSize, weight: .semibold,
                                           design: .serif))
                             .foregroundStyle(.white.opacity(numeral.isDay ? 1 : 0.65))
                     } else {
@@ -970,12 +1045,13 @@ struct OrlojFaceLayers: View {
                                      fill:      numeral.isDay ? Self.brass : Self.silver,
                                      stroke:    Artist.shared.canvasBackground,
                                      lineWidth: max(0.7, 1.2 * u),
-                                     font:      Self.numeralFont(size: 9 * u))
+                                     font:      Self.numeralFont(size: numeralSize))
                     }
                 }
                 .rotationEffect(numeral.rotation)
                 .position(numeral.position)
             }
+
             // ── Rete: the zodiac band — smoky dark glass like the
             // original's black ring, sign dividers spanning rim to
             // rim, glyphs between the rims. RING DIET: the explicit
@@ -985,11 +1061,16 @@ struct OrlojFaceLayers: View {
             GlassBand(band: face.zodiacBandPath(),
                       tint: .black, tintOpacity: 0.35, eoFill: true,
                       lineArt: lineArt)
-            OrlojPath(source: face.zodiacTicksPath())
-                .stroke(Self.silver.opacity(ink(0.6)), lineWidth: heft(0.8))
+            // Sign dividers — dropped on the wrist. The glyphs already
+            // mark where each sign starts; the ticks only added a picket
+            // fence around the one band the eye should be reading.
+            if face.showsFiligree {
+                OrlojPath(source: face.zodiacTicksPath())
+                    .stroke(Self.silver.opacity(ink(0.6)), lineWidth: heft(0.8))
+            }
             ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
                 Text(glyph.symbol)
-                    .font(.system(size: 11 * u, weight: .bold))
+                    .font(.system(size: 11 * t, weight: .bold))
                     .foregroundStyle(Self.silver)
                     .shadow(color: .black.opacity(0.9), radius: lineArt ? 0 : 1, y: lineArt ? 0 : 0.5)
                     .rotationEffect(glyph.rotation)
@@ -1043,6 +1124,7 @@ struct OrlojFaceLayers: View {
                 .overlay(Circle().stroke(markCasing, lineWidth: 1))
                 .frame(width: 6 * u, height: 6 * u)
                 .position(face.center)
+
             if let sun = face.sunPoint {
                 POILabelView(category:   .sun,
                              text:       "",

@@ -23,6 +23,10 @@ struct SkyChrome: ViewModifier {
     /// full-width search sheet.
     private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
+    /// The floating panel's inset from the screen edge — chrome on the
+    /// same edge lines up with it. Mirrors `FloatingPanel.margin`.
+    private static let padMargin: CGFloat = 20
+
     /// Bottom padding so a floating control rides the frontmost sheet's top
     /// edge (published live in `app.bottomSheetTop`), a `gap` above it.
     /// Clamped at `rest` so chrome never dips below its resting home — it
@@ -43,9 +47,12 @@ struct SkyChrome: ViewModifier {
         // bottom-trailing just above the search bar — thumb territory; the
         // transient compass rose on the OPPOSITE edge so it can appear /
         // vanish without nudging the capsule. The sky's centre stays sacred.
-        .overlay(alignment: .top) {
-            MainToolbar()
-                .padding(.horizontal, 16)
+        .overlay(alignment: isPad ? .topLeading : .top) {
+            // iPad: top-LEADING, on the panel's own margin so the two read
+            // as one column of chrome down that edge — and bigger, because
+            // the phone's 40pt bar is lost on a 13" canvas.
+            MainToolbar(barHeight: isPad ? 52 : 40)
+                .padding(.horizontal, isPad ? Self.padMargin : 16)
                 .padding(.top,        64)
         }
         .overlay(alignment: isPad ? .topTrailing : .bottomTrailing) {
@@ -74,9 +81,13 @@ struct SkyChrome: ViewModifier {
         .overlay(alignment: .bottomLeading) {
             // Compass rose — self-hides when the sky is upright; tap
             // springs back to North.
-            let roseLift = sheetLift(gap: 22, rest: 124)
-            CompassButton()
-                .padding(.leading, 16)
+            // Rest clears the floating panel (74 + its 20 margin) with air
+            // to spare on iPad; the phone keeps its sheet-relative 124.
+            let roseLift = sheetLift(gap: 22, rest: isPad ? 150 : 124)
+            CompassButton(faceSize: isPad ? 58 : 44)
+                // Same margin as the floating panel below it, so the rose
+                // sits on the card's leading edge rather than 4pt inside it.
+                .padding(.leading, isPad ? Self.padMargin : 16)
                 .padding(.bottom, roseLift)
                 // Same glide as the camera cluster — the bottom chrome
                 // moves as one when a sheet presents.

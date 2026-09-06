@@ -194,6 +194,29 @@ extension AppState {
         return (scale, CGPoint(x: puckY - h / 2, y: 0))
     }
 
+    /// Top of the band the date crown has to live in — just under the
+    /// Here/Now capsule. ▼ TWEAK the crown's headroom here ▼
+    private var crownTopYFraction:    Double { 0.17 }
+    /// Bottom of that band — just above the picker's control row.
+    private var crownBottomYFraction: Double { 0.82 }
+
+    /// Camera scale that makes the horizon circle — and so the DateCrown
+    /// resting on it — fit BETWEEN the Here/Now capsule and the picker's
+    /// controls, instead of running off both edges.
+    ///
+    /// The horizon projects as a circle of radius `2·scale` about the
+    /// zenith, so a band of height `h` wants `scale = h / 4`. Clamped so
+    /// the picker can only ever pull the sky IN, never push it out past
+    /// where it already sits.
+    func datePickerScale(screenSize size: CGSize) -> CGFloat {
+        guard size.height > 0, size.width > 0 else { return defaultScale }
+        let band = (crownBottomYFraction - crownTopYFraction) * size.height
+        // Height sets the band; WIDTH still has to hold the ring, and the
+        // scallop's bumps ride proud of it — 0.45 of the width leaves them
+        // somewhere to sit instead of clipping at both edges.
+        return Swift.min(defaultScale, band / 4, size.width * 0.225)
+    }
+
     /// Framing for compass mode on the SkyLab `SkyCamera` (the live main
     /// view). Same AR pose as `compassFraming`, expressed in that camera's
     /// terms: `SkyCamera.screen(.zero)` puts the zenith at

@@ -20,19 +20,25 @@ struct SkyLayerStack: View {
 
     var body: some View {
         ZStack {
+            // Deepens the visible sky, UNDER everything that draws on it —
+            // marks keep their brightness, only their ground goes down.
+            HorizonSkyVeil(camera: frame.camera)
+
             CelestialGridCanvas(camera: frame.camera)
                 .equatable()
 
             // "You are here" — aim cone + globe puck at the zenith.
             PuckAndConeOverlay(camera: frame.camera, pinch: frame.effPinch)
 
-            // Horizon + twilight rings, concentric about the zenith.
+            // The horizon ring, concentric about the zenith.
             EarthGridOverlay(camera: frame.camera)
 
-            // Constellation stick-figures; favourites stroke solid.
+            // Constellation stick-figures; favourites stroke solid, the rest
+            // ride in on the constellation-NAME tier (same threshold, same
+            // smoothstep) so figures and names arrive together.
             ConstellationLinesCanvas(camera: frame.camera,
-                                     favouriteTints: frame.favouriteConstellationTints)
-                .equatable()
+                                     favouriteTints: frame.favouriteConstellationTints,
+                                     reveal: ConstellationLinesCanvas.reveal(scale: frame.liveScale))
 
             StarsCanvas(camera: frame.camera,
                         stars: app.sortedStars,
@@ -50,7 +56,7 @@ struct SkyLayerStack: View {
 
             // Frosted pane over the ground below the horizon, recomputed from
             // the morphing camera so it deforms live through NorthIN↔NorthOUT.
-            // Above the star canvases (the murk frosts), below the labels
+            // Above the star canvases (the ground frosts), below the labels
             // (they stay sharp).
             HorizonBlurOverlay(camera: frame.camera)
 
