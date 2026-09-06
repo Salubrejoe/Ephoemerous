@@ -145,9 +145,12 @@ struct FloatingPanel<Content: View>: View {
         }
             .frame(width: Self.width, height: height, alignment: .top)
             .clipShape(shape)
-            // Clear interactive glass — no material, no fill. The card is a
-            // lens over the sky, the same species as the buttons it holds.
-            .glassEffect(.clear.interactive(), in: shape)
+            // REGULAR, not clear. Clear glass let the sky through so
+            // completely that the card had no edge — over a busy field of
+            // stars and grid lines there was nothing separating the two.
+            // The buttons inside stay `.clear`, so they still read as a
+            // lighter species sitting ON the card rather than in it.
+            .glassEffect(.regular.interactive(), in: shape)
             .shadow(color: .black.opacity(0.28), radius: 16, y: 5)
             .overlay(alignment: .top) {
                 if showsDragBand { dragBand }

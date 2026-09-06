@@ -114,12 +114,18 @@ struct SearchSheet: View {
 //                hrButton
             }
                 .animation(.snappy(duration: 0.28), value: stage)
-                // Matching the iPhone sheet: the handle above supplies the
-                // top air, so the field only needs its own inset. 14 a side
-                // still nests the 44pt capsule inside the card's corner
-                // (22 + 14 ≈ 37, the parked radius).
-                .padding(.horizontal, 14)
-                .padding(.bottom,     14)
+                // PANEL: the card's own handle supplies the top air, so the
+                // field needs none, and 14 a side nests the 44pt capsule in
+                // the card's corner (22 + 14 ≈ 37, the parked radius).
+                //
+                // SHEET: the phone's insets, untouched. It has no handle of
+                // ours above the field — the SYSTEM draws the grabber — so
+                // dropping the top padding here shoved the field under it
+                // and left the trailing edge hanging.
+                .padding(.leading,  isPanel ? 14 : 12)
+                .padding(.trailing, isPanel ? 14 : 14)
+                .padding(.top,      isPanel ?  0 : 18)
+                .padding(.bottom,   isPanel ? 14 : 18)
 
             if searchText.isEmpty && stage != .bar {
                 // Idle browse state: favourites scroll + recents list,
@@ -207,11 +213,12 @@ struct SearchSheet: View {
         }
 //        .font(.callout)
         .padding(.horizontal, 18)
-        // 44 in an 80pt card with an 18pt inset all round is EXACTLY
-        // concentric: the outer capsule's radius is 40, the inner's 22,
-        // and 22 + 18 = 40. `.containerRelative` had no container shape to
-        // resolve against inside the panel and fell back to a rectangle.
-        .frame(height: 44)
+        // The panel's 44 is load-bearing — it is what nests the capsule in
+        // the card's corner. The sheet keeps the 47 it always had.
+        // `.containerRelative` had no container shape to resolve against
+        // inside the panel and fell back to a rectangle, which is why the
+        // field was never a capsule there.
+        .frame(height: isPanel ? 44 : 47)
         .glassEffect(.regular.interactive(), in: .capsule)
         // Swipe the BAR to open the panel, tap it to type. Both, on the
         // same pixels: `simultaneousGesture` leaves the field's own tap

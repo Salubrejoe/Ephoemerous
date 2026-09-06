@@ -111,16 +111,6 @@ struct MainView: View {
     @State private var morphScaleFrom:  CGFloat = 0
     @State private var morphOffsetFrom: CGSize  = .zero
     
-    private var gradient: RadialGradient {
-        let backColor   = Artist.shared.canvasBackground
-        let colorEdge   = app.isNorthOut ? backColor : .black.opacity(0.01)
-        
-        return RadialGradient(stops: [
-            .init(color: backColor, location: 0.0),
-            .init(color: colorEdge, location: 1.0),
-        ], center: .center, startRadius: app.scale*3, endRadius: app.canvasSize.height)
-    }
-
     var body: some View {
       // One timeline, production's `CanvasSchedule`: ticks at 60fps ONLY
       // while an app origin/date transition is in flight (the Here / Now
@@ -198,9 +188,12 @@ struct MainView: View {
         // bright outline. Without a dark background (and dark scheme) the
         // casing is invisible and the label reads borderless. Give the lab
         // the production night sky so labels render as intended.
-      .background(
-        gradient
-      )
+      // Flat ground, no vignette. This was a RadialGradient running from
+      // `canvasBackground` at the centre to `.black.opacity(0.01)` at the
+      // rim — and a nearly-TRANSPARENT edge doesn't fade to black, it
+      // reveals whatever is behind the app, which is black. Hence the dark
+      // corners. The sky's own layers carry the depth now.
+      .background(Artist.shared.canvasBackground)
         .preferredColorScheme(.dark)
         .modifier(SkyChrome(viewSize: viewSize))
         .ignoresSafeArea()
