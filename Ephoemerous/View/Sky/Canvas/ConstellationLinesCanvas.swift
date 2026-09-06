@@ -33,6 +33,13 @@ struct ConstellationLinesCanvas: View {
     private static let textIn: Double =
         Artist.shared.poiStyle(for: .constellation).textIn
 
+    /// The neutral figures' VOLUME, on top of the tier reveal. The dotted
+    /// grey is scaffolding for reading the sky, not content: at full
+    /// strength the whole field webs over the moment the tier is crossed.
+    /// Multiplied into the reveal, so it costs nothing — same single
+    /// `.opacity` on the frozen canvas. ▼ TWEAK ▼
+    private static let neutralVolume: Double = 0.55
+
     /// The figures' share of the name tier, for the caller to pass back in.
     static func reveal(scale: CGFloat) -> Double {
         POILabelView.tierReveal(scale: scale, threshold: textIn)
@@ -42,7 +49,7 @@ struct ConstellationLinesCanvas: View {
         ZStack {
             NeutralFigures(camera: camera, tinted: Set(favouriteTints.keys))
                 .equatable()
-                .opacity(reveal)
+                .opacity(reveal * Self.neutralVolume)
 
             FavouriteFigures(camera: camera, tints: favouriteTints)
                 .equatable()
