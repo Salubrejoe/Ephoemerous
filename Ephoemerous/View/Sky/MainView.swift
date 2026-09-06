@@ -59,6 +59,19 @@ struct MainView: View {
     /// framing to freeze it into the committed camera.
     @State private var viewSize: CGSize = .zero
 
+    /// iPad / regular width takes the Apple-Maps treatment: ONE floating
+    /// card in the bottom-LEADING corner instead of a bottom sheet. Keyed
+    /// on the size class, NOT the idiom — an iPad in Slide Over or a
+    /// narrow Stage Manager window is compact, and the sheet is genuinely
+    /// the right answer there.
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var isRegular: Bool { hSize == .regular }
+
+    /// The floating panel's rest position (regular width only). Owned
+    /// here, not by the content, because ONE panel hosts both search and
+    /// the detail card and the stage has to survive the swap.
+    @State private var panelStage: PanelStage = .bar
+
 
     /// Seed / retune the camera's home + zoom floor from the visible screen
     /// size. The coordinator's built-in 90 approximates an iPhone; on iPad
@@ -240,7 +253,7 @@ struct MainView: View {
         // Apple-Maps detents, header-only fold + the default third, plus
         // `.large` for the constellation roster. Search / myth deliberately
         // left out for now. Mirrors production MainView's detail host.
-        .sheet(item: Bindable(app).detailDestination) { obj in
+        .sheet(item: detailSheetItem) { obj in
             DetailHost(obj: obj)
                 .id(obj.id)
                 .environment(\.detailCollapsed, detailDetent == detailHeaderDetent)
@@ -257,11 +270,35 @@ struct MainView: View {
         // detent whenever nothing else owns the bottom slot. Selecting an
         // object sets `detailDestination`, which flips `searchPresented`
         // false → search yields to the detail sheet. Verbatim production.
-        .sheet(isPresented: searchPresented) { SearchSheet().tracksBottomSheet() }
+        .sheet(isPresented: searchSheetPresented) { SearchSheet().tracksBottomSheet() }
+        // Regular width: the same two surfaces, placed rather than
+        // presented, sharing ONE card in the bottom-leading corner.
+        .overlay(alignment: .bottomLeading) {
+            if isRegular {
+                FloatingPanel(stage: $panelStage, available: viewSize.height) {
+                    if let obj = app.detailDestination {
+                        DetailHost(obj: obj, stacked: false)
+                            .id(obj.id)
+                            .environment(\.detailCollapsed, panelStage == .bar)
+                            .environment(\.detailInPanel,   true)
+                    } else {
+                        SearchSheet(panelStage: $panelStage)
+                    }
+                }
+                .transition(.opacity)
+            }
+        }
         // Any selection (canvas tap OR search pick) glides into the comfort
         // zone — one place, so the two paths behave identically.
         .onChange(of: app.detailDestination) { _, obj in
             if let obj { panIntoComfortZone(obj) }
+            // The card arriving in the panel should be readable without a
+            // drag; leaving it parks the panel back at the search bar.
+            if isRegular {
+                withAnimation(.snappy(duration: 0.32)) {
+                    panelStage = obj == nil ? .bar : .medium
+                }
+            }
         }
         // Leaving compass mode → freeze the live heading into the committed
         // `sky.rotation`, so the camera (which now reads `sky.rotation`
@@ -336,6 +373,22 @@ struct MainView: View {
     /// selection, no myth, neither picker, and not mid sheet-swap. Read-only
     /// (a no-op setter); `interactiveDismissDisabled` blocks manual dismiss,
     /// so only a selection / editor hides it. Mirrors production MainView.
+    /// The search SHEET is compact-width only — in regular width the same
+    /// content lives in the floating panel, so the sheet must not present
+    /// as well or the app would carry two search fields.
+    private var searchSheetPresented: Binding<Bool> {
+        Binding(get: { !isRegular && searchPresented.wrappedValue },
+                set: { _ in })
+    }
+
+    /// Likewise the detail sheet: in regular width the panel hosts the
+    /// place card, so the sheet host is starved of its item. The SETTER
+    /// stays live so dismissal still clears the selection either way.
+    private var detailSheetItem: Binding<SkyObject?> {
+        Binding(get: { isRegular ? nil : app.detailDestination },
+                set: { app.detailDestination = $0 })
+    }
+
     private var searchPresented: Binding<Bool> {
         Binding(
             get: {

@@ -31,6 +31,35 @@ struct SearchSheet: View {
     @FocusState private var searchFocused: Bool
     @State private var detent: PresentationDetent = Self.barDetent
 
+    /// PANEL mode (iPad, regular width): the host `FloatingPanel` owns the
+    /// stage, so this view drives that binding instead of its own detent
+    /// and skips every `presentation*` modifier — those belong to a sheet
+    /// and are inert (or fight the host) outside one.
+    ///
+    /// nil = sheet mode, the compact path, byte-for-byte as before.
+    var panelStage: Binding<PanelStage>? = nil
+
+    private var isPanel: Bool { panelStage != nil }
+
+    /// The current rest position, whichever presentation owns it.
+    private var stage: PanelStage {
+        if let panelStage { return panelStage.wrappedValue }
+        switch detent {
+        case Self.barDetent: return .bar
+        case .medium:        return .medium
+        default:             return .large
+        }
+    }
+
+    private func setStage(_ new: PanelStage) {
+        if let panelStage { panelStage.wrappedValue = new; return }
+        switch new {
+        case .bar:    detent = Self.barDetent
+        case .medium: detent = .medium
+        case .large:  detent = .large
+        }
+    }
+
     /// Full-screen Hertzsprung–Russell diagram. Presented from THIS
     /// sheet (not MainView) because the search sheet is always up — a
     /// cover hung off the root would fight the active presentation.
@@ -57,7 +86,7 @@ struct SearchSheet: View {
                 .padding(.top, 18)
                 .padding(.bottom, 18)
 
-            if searchText.isEmpty && detent != Self.barDetent {
+            if searchText.isEmpty && stage != .bar {
                 // Idle browse state: favourites scroll + recents list,
                 // Apple-Maps style. Scrolls as one when the sheet is
                 // dragged up to medium / large.
@@ -95,18 +124,15 @@ struct SearchSheet: View {
         // the bar-only detent instead. Selecting an object is what hides
         // it: `detailDestination` flips non-nil and MainView's derived
         // binding dismisses this in favour of the detail sheet.
-        .presentationDetents([Self.barDetent, .medium, .large], selection: $detent)
-        .presentationDragIndicator(.visible)
-        .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-        .interactiveDismissDisabled(true)
-        // Focusing the field (keyboard up) expands the sheet so results
-        // aren't buried under the keyboard at the bar detent.
+        .modifier(SheetPresentation(active: !isPanel, detent: $detent))
+        // Focusing the field (keyboard up) expands the surface so results
+        // aren't buried under the keyboard at the bar stage.
         .onChange(of: searchFocused) { _, focused in
-            if focused, detent == Self.barDetent { detent = .large }
+            if focused, stage == .bar { setStage(.large) }
         }
-        // Typing from a parked sheet should also lift it.
+        // Typing from a parked surface should also lift it.
         .onChange(of: searchText) { _, text in
-            if !text.isEmpty, detent == Self.barDetent { detent = .medium }
+            if !text.isEmpty, stage == .bar { setStage(.medium) }
         }
         .fullScreenCover(isPresented: $showHRDiagram) {
             HRDiagramView()
@@ -368,3 +394,25 @@ struct SearchSheet: View {
         .environment(AppState())
 }
 #endif
+
+// MARK: - SheetPresentation
+// The sheet-only modifiers, applied as a group so panel mode can decline
+// them wholesale. `presentationDetents` on a view that isn't a sheet's
+// root is inert at best; keeping them behind one flag is clearer than a
+// scatter of `if` in the body.
+private struct SheetPresentation: ViewModifier {
+    let active: Bool
+    @Binding var detent: PresentationDetent
+
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .presentationDetents([.height(72), .medium, .large], selection: $detent)
+                .presentationDragIndicator(.visible)
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                .interactiveDismissDisabled(true)
+        } else {
+            content
+        }
+    }
+}
