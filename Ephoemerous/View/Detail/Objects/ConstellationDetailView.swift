@@ -12,6 +12,7 @@ import LoreKit
 struct ConstellationDetailView: View {
     @Environment(AppState.self) var state
     @Environment(\.detailCollapsed) private var collapsed
+    @Environment(\.detailInPanel)   private var inPanel
     let constellation: Constellation
 
     /// On-device "how it reached the sky" storyteller. Lives for this
@@ -103,10 +104,20 @@ struct ConstellationDetailView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(stars.prefix(12)) { star in
-                    NavigationLink(value: star) {
-                        StarCard(star: star)
+                    // In a panel there is no stack to push onto, so the
+                    // roster SELECTS: the card becomes that star, and the
+                    // sky's own selection follows. See `DetailHost.stacked`.
+                    if inPanel {
+                        Button { state.focus(on: .star(star)) } label: {
+                            StarCard(star: star)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        NavigationLink(value: star) {
+                            StarCard(star: star)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 16)
