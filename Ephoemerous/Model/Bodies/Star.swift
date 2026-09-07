@@ -92,8 +92,26 @@ struct Star: Identifiable, Hashable {
         }
         return .none
     }
-    
-    
+
+    /// The Bayer letter on its own — "β" for `β Ori`, "α" for `21 α And` —
+    /// or nil for a star the catalogue only ever numbered (Flamsteed) or
+    /// couldn't designate at all.
+    ///
+    /// `name` is built by `calculateName` as `[Flamsteed] [Greek] Abbrev`
+    /// with disambiguation digits already stripped, so the letter is
+    /// whichever token is a bare Greek glyph.
+    var bayerLetter: String? {
+        name.split(separator: " ")
+            .dropLast()                       // trailing constellation token
+            .map(String.init)
+            .first { Star.greekGlyphs.contains($0) }
+    }
+
+    /// The glyphs `calculateName` can produce, as a set — derived from the
+    /// same map that writes them, so the two can never drift apart.
+    private static let greekGlyphs = Set(greekLetterMap.values)
+
+
 }
 
 private extension Star {

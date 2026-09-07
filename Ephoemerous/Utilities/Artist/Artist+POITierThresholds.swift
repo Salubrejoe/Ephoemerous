@@ -25,6 +25,24 @@ extension Artist {
     /// `northInMinScale` in MainView😇.
     var followedStarTier: POITier { POITier(badgeIn: 100, textIn: 120) }
 
+    /// Rendered scale at which a figure star's bare Bayer letter appears
+    /// (`BayerLabels`). Not a `POICategory` — there is no badge and no tap
+    /// target, only the glyph — but it belongs on this dial with the rest.
+    ///
+    /// LAST thing on the map to arrive. The named-star cascade finishes at
+    /// 640 (`namedStarTextIn` + two `namedStarTierStep`s) and the pinch
+    /// ceiling is 1200, so this sits in the final third: every star that
+    /// has a name has said it before a single Greek letter shows up.
+    ///
+    /// It was 420 first, which put the letters in the MIDDLE of that
+    /// cascade — they landed while stars were still naming themselves, and
+    /// on iPad (which rests at a higher scale than the phone, so it reaches
+    /// any absolute threshold sooner) that read as noise almost at rest.
+    ///
+    /// One flat threshold, no brightness cascade — these are all faint by
+    /// definition, so there is no headline order to stagger. ▼ TWEAK ▼
+    var bayerLetterIn: Double { 800 }
+
     /// The tier map — tweak every category's reveal timing here.
     func poiTier(for category: POICategory) -> POITier {
         switch category {
