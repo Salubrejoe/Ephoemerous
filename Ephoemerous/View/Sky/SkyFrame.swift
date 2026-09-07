@@ -19,6 +19,15 @@ struct SkyFrame {
     static let properNamedStars: [Star] =
         StarDatabase.shared.workableStars.filter { $0.properName != nil }
 
+    /// Figure stars carrying a Bayer letter and NOTHING else — no proper
+    /// name to print, so the letter is all they can be called. These get
+    /// the quiet Greek glyph (`BayerLabels`); a star with a proper name is
+    /// deliberately excluded, because it already gets a full POI label and
+    /// two marks on one star is the overlap rule broken.
+    static let bayerFigureStars: [Star] =
+        ConstellationLines.shared.figureStars
+            .filter { $0.properName == nil && $0.bayerLetter != nil }
+
     // The camera the frozen Canvases draw through.
     let camera:      SkyCamera
     let canvasSize:  CGSize
@@ -41,6 +50,9 @@ struct SkyFrame {
     let favouriteIDs: Set<String>
     let namedOnly:    [Star]
     let namedIDs:     Set<String>
+    /// Bayer-lettered figure stars minus any the user has favourited —
+    /// a favourite already wears its own badge and name.
+    let bayerOnly:    [Star]
     let favouriteConstellationTints: [Constellation: Color]
 
     @MainActor
@@ -115,6 +127,7 @@ struct SkyFrame {
         namedOnly    = Self.properNamedStars.filter { !favIDs.contains($0.id) }
         // The plain star field defers to these once their own mark takes over.
         namedIDs     = Set(namedOnly.map(\.id))
+        bayerOnly    = Self.bayerFigureStars.filter { !favIDs.contains($0.id) }
 
         // One neutral constellation colour now (the myth taxonomy is retired).
         favouriteConstellationTints = Dictionary(uniqueKeysWithValues:

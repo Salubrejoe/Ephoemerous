@@ -74,6 +74,16 @@ struct SkyLayerStack: View {
                                 rotation: frame.liveRot,
                                 selectedID: frame.selectedConsID)
 
+            // The quietest voice, so it paints FIRST and every louder label
+            // lands on top of it: bare Greek letters on the figure stars
+            // nobody ever named. Purely an annotation — no badge, no tap.
+            BayerLabels(camera: frame.camera,
+                        stars: frame.bayerOnly,
+                        pinch: frame.effPinch,
+                        scale: frame.liveScale,
+                        rotation: frame.liveRot,
+                        selectedID: frame.selectedStarID)
+
             StarLabels(camera: frame.camera,
                        stars: app.favouriteStars,
                        pinch: frame.effPinch,
