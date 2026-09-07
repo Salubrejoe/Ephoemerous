@@ -551,7 +551,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EphoemerousWatch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Stars;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephemerous;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -585,7 +585,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EphoemerousWatch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Stars;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephemerous;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -757,7 +757,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Ephoemerous/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Stars;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephemerous;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "So we can display the true horizon";
 				INFOPLIST_KEY_NSMotionUsageDescription = "For a cute parallax effect";
@@ -821,7 +821,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Ephoemerous/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Stars;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephemerous;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "So we can display the true horizon";
 				INFOPLIST_KEY_NSMotionUsageDescription = "For a cute parallax effect";
@@ -923,7 +923,7 @@
 				DEVELOPMENT_TEAM = CLM5L23Y57;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EphoemerousWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Ephoemerous;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephemerous;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -956,7 +956,7 @@
 				DEVELOPMENT_TEAM = CLM5L23Y57;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EphoemerousWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Ephoemerous;
+				INFOPLIST_KEY_CFBundleDisplayName = Ephemerous;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
