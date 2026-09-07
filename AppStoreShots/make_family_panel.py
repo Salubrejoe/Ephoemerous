@@ -27,12 +27,16 @@ GROUNDS = {
     "midnight": dict(bg="#1B3A5C", ink="#FFFFFF", stars=True),
     "dusk":     dict(bg="#2E3A63", ink="#FFFFFF", stars=True),
     "brass":    dict(bg="#D8A857", ink="#20180B", stars=False),
+    # The app icon's own gradient — see make_panels.py for the reasoning
+    # behind the dark ink.
+    "solar":    dict(bg="linear-gradient(180deg, #FFDA59 0%, #FFA900 100%)",
+                     ink="#FFFFFF", stars=False),
 }
 
-SHOT_PAD      = ROOT / "iPad-13_2064x2752" / "12_ipad_northin_105.png"
-SHOT_PAD_LAND = ROOT / "iPad-13_2064x2752" / "13_ipad_landscape_2778x1940.png"
-SHOT_PHONE = ROOT / "iPhone-6.9_1320x2868"  / "01_launch_northin.png"
-SHOT_WATCH = ROOT / "AppleWatch-Ultra_410x502" / "21_watch_orloj_105.png"
+SHOT_PAD      = ROOT / "Current" / "iPad-13" / "12_ipad_northin_105.png"
+SHOT_PAD_LAND = ROOT / "Current" / "iPad-13" / "13_ipad_landscape_2778x1940.png"
+SHOT_PHONE = ROOT / "Current" / "iPhone-6.9" / "06_home_orloj.png"
+SHOT_WATCH = ROOT / "Current" / "AppleWatch-Ultra" / "21_watch_orloj_105.png"
 
 
 def aspect(path: Path) -> float:

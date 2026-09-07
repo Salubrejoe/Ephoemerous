@@ -9,13 +9,15 @@ submission-ready with no rescaling.
     python3 make_panels.py OUTDIR [ground] [device]
     ./render.sh OUTDIR WIDTH HEIGHT
 
-    ground: canvas | midnight | dusk | brass          (default dusk)
+    ground: canvas | midnight | dusk | brass | solar   (default dusk)
     device: iphone69 | ipad13                          (default iphone69)
 """
 import base64, json, random, sys
 from pathlib import Path
 
 ROOT   = Path("/Users/licurgen/Developer/Ephoemerous/AppStoreShots")
+# Captures live under Current/<device family>; Deprecated/ holds the sets
+# from earlier versions, kept for reference and never read from here.
 OUT    = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
 GROUND = sys.argv[2] if len(sys.argv) > 2 else "dusk"
 DEVICE = sys.argv[3] if len(sys.argv) > 3 else "iphone69"
@@ -27,29 +29,49 @@ GROUNDS = {
     "midnight": dict(bg="#1B3A5C", ink="#FFFFFF", stars=True),
     "dusk":     dict(bg="#2E3A63", ink="#FFFFFF", stars=True),
     "brass":    dict(bg="#D8A857", ink="#20180B", stars=False),
+    # The app icon's own gradient, top-light to bottom-gold — the same two
+    # stops `AppIcon.icon` is built on (#FFDA59 → #FFA900), which is also
+    # where the accent colour comes from. Ink goes DARK: white on this
+    # would fail contrast at headline weight, the way it does on brass.
+    # No stars — a whisper of white specks on gold reads as dust.
+    "solar":    dict(bg="linear-gradient(180deg, #FFDA59 0%, #FFA900 100%)",
+                     ink="#FFFFFF", stars=False),
 }
 
 # Per-device store geometry. `island` draws the Dynamic Island pill — iPhone
 # only; iPad wears a uniform bezel and no cutout.
 DEVICES = {
     "iphone69": dict(
-        W=1320, H=2868, shots=ROOT / "iPhone-6.9_1320x2868",
+        W=1320, H=2868, shots=ROOT / "Current" / "iPhone-6.9",
         frame_w=1120, frame_top=600, bezel=14, island=True,
         head_size=104, head_track=-2, copy_top=172, copy_pad=80, stars_n=90,
+        # Device captures, supplied from a real iPhone — the zoomed star
+        # field and the crown are compositions the simulator can't be
+        # driven into headlessly (no pinch, no tap).
+        # The SHIPPED set is 01 + 02 here plus the family panel from
+        # make_family_panel.py. 03 stays defined so the crown panel can be
+        # regenerated, but it isn't in the current three.
         panels=[
-            ("01_hero_sky",  "01_launch_northin.png", "The sky above you.", "Right now."),
-            ("02_hero_wind", "04_datecrown.png",      "Wind time.",         "Travel anywhere."),
-            ("03_hero_keep", "03_moon_detail.png",    "Tap to know it.",    "Keep what you love."),
+            ("01_hero_sky",     "01_named_stars.png",   "Look up.",   "Enjoy what you love."),
+            ("02_hero_widgets", "05_home_widgets.png",  "Widgets.",   "For every body."),
+            ("03_hero_wind",    "04_datecrown.png",     "Wind time.", "Travel anywhere."),
         ]),
     # iPad is nearly 3:4, so everything re-proportions: a wider frame, a
     # bigger headline, more air at the top. Not a rescale of the phone.
     "ipad13": dict(
-        W=2064, H=2752, shots=ROOT / "iPad-13_2064x2752",
+        W=2064, H=2752, shots=ROOT / "Current" / "iPad-13",
         frame_w=1560, frame_top=760, bezel=22, island=False,
         head_size=140, head_track=-3, copy_top=210, copy_pad=180, stars_n=120,
+        # Matches the phone, panel for panel and line for line. The widget
+        # shot is the pre-fitted 2064x2752 build: the raw iPad portrait
+        # capture is 1940x2778 (aspect 0.698) and this frame is 0.75, so
+        # the raw one would be squashed — that file already carries the
+        # blurred side fill that squares the aspect honestly.
         panels=[
-            ("10_hero_ipad_sky",       "12_ipad_northin_105.png",  "The sky above you.", "Right now."),
-            ("11_hero_ipad_celestial", "11_ipad_northout.png", "One gesture.",       "The whole sphere."),
+            ("10_hero_ipad_sky",     "12_ipad_northin_105.png",
+             "Look up.", "Enjoy what you love."),
+            ("11_hero_ipad_widgets", "15_ipad_home_widgets_portrait_2064x2752.png",
+             "Widgets.", "For every body."),
         ]),
 }
 
@@ -79,14 +101,14 @@ def panel_html(shot_file, l1, l2, seed, ground, dev) -> str:
     frame_w, bezel = dev["frame_w"], dev["bezel"]
     img_w = frame_w - bezel * 2
     img_h = round(img_w * H / W)
-    island = ""
-    if dev["island"]:
-        isl_w, isl_h = round(img_w * 0.284), round(img_w * 0.084)
-        island = (f'<div class="island" style="width:{isl_w}px;height:{isl_h}px;'
-                  f'top:{bezel + round(img_w * 0.030)}px;'
-                  f'border-radius:{isl_h // 2}px"></div>')
-
-    frame_r = round(frame_w * (0.115 if dev["island"] else 0.045))
+    # BEZEL-LESS: no black frame, no Dynamic Island pill. The capture is
+    # the device — the store's own marketing does this now, and a bezel on
+    # a coloured ground reads as a picture of a phone rather than as the
+    # app. The screenshot keeps a device-ish corner radius and its shadow,
+    # which is what still says "screen".
+    island  = ""
+    img_w   = frame_w
+    img_h   = round(img_w * H / W)
     img_r   = round(frame_w * (0.098 if dev["island"] else 0.036))
 
     return f"""<!doctype html>
@@ -103,13 +125,11 @@ def panel_html(shot_file, l1, l2, seed, ground, dev) -> str:
   h1 {{ font-size:{dev["head_size"]}px; line-height:1.15; font-weight:700;
         letter-spacing:{dev["head_track"]}px; color:{ground["ink"]}; }}
   .device {{ position:absolute; left:50%; transform:translateX(-50%);
-             top:{dev["frame_top"]}px; width:{frame_w}px; padding:{bezel}px;
-             background:#000; border-radius:{frame_r}px;
-             box-shadow:0 44px 90px rgba(0,0,0,.42),
-                        0 0 0 2px rgba(255,255,255,.10) inset; }}
+             top:{dev["frame_top"]}px; width:{img_w}px;
+             border-radius:{img_r}px;
+             box-shadow:0 44px 90px rgba(0,0,0,.42); }}
   .device img {{ display:block; width:{img_w}px; height:{img_h}px;
                  border-radius:{img_r}px; }}
-  .island {{ position:absolute; left:50%; transform:translateX(-50%); background:#000; }}
 </style>
 <div class="panel">
   {stars}

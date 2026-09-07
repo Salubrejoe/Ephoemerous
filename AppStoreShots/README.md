@@ -4,6 +4,27 @@ Hero panels for the App Store listing, built as HTML and rendered by headless
 Chrome at exactly the store's pixel size — no image editor, no rescaling step.
 Everything is a variable, so copy and colour changes are seconds, not redraws.
 
+## Where the captures live
+
+    Current/          the shots that match the SHIPPING build
+      iPhone-6.9/       1320x2868   + heroes/ (rendered panels)
+      iPad-13/          2064x2752   + heroes/
+      AppleWatch-Ultra/ 410x502
+      Widgets/          pristine tiles from WidgetArtExporter, 4x
+    Deprecated/       earlier versions, kept for reference only
+      iPhone-6.9/  iPhone-6.5/  iPad-13/   (+ their heroes/)
+      Raw/              the phone-dump folder: photos, artwork, video
+
+A capture belongs in `Current/` only while it shows the build you would
+ship today. Two kinds can only come from a REAL DEVICE, never from this
+Mac: anything **landscape** (no Simulator.app here, and simctl has no
+orientation command) and any **Home Screen** (widgets can't be arranged
+headlessly). Both are in `Current/` now, supplied from Gidan and Lulu —
+if they ever go stale, they have to be re-shot the same way.
+
+`AppleWatch-41mm/` is a real Series 8 capture at 352x430, the store's
+41mm size; `AppleWatch-Ultra/` is the 410x502 simulator set.
+
 ## Layout
 
 - `make_panels.py` — single-device hero panels (one screenshot + headline).
