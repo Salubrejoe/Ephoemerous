@@ -226,9 +226,13 @@ struct MainView: View {
                                   : sky.defaultScale)
         }
         .fontDesign(.rounded)
+        // EVERY sheet below re-injects `app` — see the note on
+        // `environment(app)` at the bottom of this file. Without it the
+        // Mac (Designed for iPad) build traps at launch.
         // The pills raise these inline editors, same as production MainView.
         .sheet(isPresented: Bindable(app).isShowingLocationPicker) {
             LocationPickerPanel()
+                .environment(app)
                 .presentationDetents([.height(300)])
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.hidden)
@@ -253,6 +257,7 @@ struct MainView: View {
         .sheet(item: detailSheetItem) { obj in
             DetailHost(obj: obj)
                 .id(obj.id)
+                .environment(app)
                 .environment(\.detailCollapsed, detailDetent == detailHeaderDetent)
                 .animation(.snappy(duration: 0.28), value: detailDetent)
                 .presentationDetents([detailHeaderDetent, .fraction(1.0 / 3.0), .large],
@@ -267,7 +272,11 @@ struct MainView: View {
         // detent whenever nothing else owns the bottom slot. Selecting an
         // object sets `detailDestination`, which flips `searchPresented`
         // false → search yields to the detail sheet. Verbatim production.
-        .sheet(isPresented: searchSheetPresented) { SearchSheet().tracksBottomSheet() }
+        .sheet(isPresented: searchSheetPresented) {
+            SearchSheet()
+                .environment(app)
+                .tracksBottomSheet()
+        }
         // Regular width: the same two surfaces, placed rather than
         // presented, sharing ONE card in the bottom-leading corner.
         .overlay(alignment: .bottomLeading) {
@@ -418,6 +427,31 @@ struct MainView: View {
                                   || app.compassMode)
     }
 }
+
+// MARK: - Why every sheet re-injects `app`
+// A sheet is NOT part of the view tree it is declared on — SwiftUI hands
+// its content to a separate `PresentationHostingController` with its own
+// view graph, and seeds that graph's environment from the presenting host
+// at the moment of presentation.
+//
+// The search sheet is up the instant the app draws (it is the resting
+// state — see `searchSheetPresented`), so on Mac (Designed for iPad) the
+// presentation happens inside UIKit's FIRST commit, before the
+// `.environment(state)` written on the `WindowGroup` content has reached
+// the hosting view. The presented graph is built without it, the sheet
+// root reads `@Environment(AppState.self)`, and SwiftUI traps:
+//
+//   Fatal error: No Observable object of type AppState found.
+//
+// iOS gets a launch screen and lays the window out over more than one
+// pass, so the environment is in place by the time the sheet presents —
+// which is why this only ever showed up on the Mac, and why it showed up
+// EVERY launch there (hence the crash → "Reopen" → crash loop).
+//
+// Writing `.environment(app)` inside the sheet's own content closure puts
+// the value in the presented view itself, so it no longer depends on what
+// the host managed to inherit. `app` is resolved by then: MainView's body
+// has already read it to build the frame.
 
 #if DEBUG
 #Preview {
