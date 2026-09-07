@@ -27,6 +27,13 @@ final class ConstellationLines {
     /// coordinates. Empty when a constellation has no resolved segments.
     let labelAnchors: [Constellation: (ra: Angle, dec: Angle)]
 
+    /// Every star a stick-figure actually touches, deduplicated — a star
+    /// carrying two segments is one entry. This is the set the figures
+    /// DRAW, as opposed to `Constellation.stars`, which is everything the
+    /// catalogue files under that constellation whether the figure reaches
+    /// it or not. `BayerLabels` letters these and nothing else.
+    let figureStars: [Star]
+
     struct Segment {
         let a: Star
         let b: Star
@@ -36,6 +43,10 @@ final class ConstellationLines {
         let raw = Self.loadRaw()
         var resolved: [Constellation: [Segment]] = [:]
         var anchors:  [Constellation: (ra: Angle, dec: Angle)] = [:]
+        // Insertion-ordered dedupe: a star is touched by as many segments
+        // as the figure has spokes, and we want one entry per star.
+        var touched:  [String: Star] = [:]
+        var touchedOrder: [String] = []
 
         let stars = StarDatabase.shared.workableStars
         let index = Self.buildIndex(stars: stars)
@@ -57,11 +68,16 @@ final class ConstellationLines {
             guard !segs.isEmpty else { continue }
             resolved[cons] = segs
             anchors[cons]  = Self.centroid(of: figureStars)
+            for star in figureStars where touched[star.id] == nil {
+                touched[star.id] = star
+                touchedOrder.append(star.id)
+            }
         }
 
         self.segments     = resolved
         self.labelAnchors = anchors
-        Logger.constellationLines("loaded \(resolved.count) constellations, \(resolved.values.reduce(0) { $0 + $1.count }) segments")
+        self.figureStars  = touchedOrder.compactMap { touched[$0] }
+        Logger.constellationLines("loaded \(resolved.count) constellations, \(resolved.values.reduce(0) { $0 + $1.count }) segments, \(touchedOrder.count) figure stars")
     }
 
     // MARK: - Loading
