@@ -34,6 +34,12 @@ final class ConstellationLines {
     /// it or not. `BayerLabels` letters these and nothing else.
     let figureStars: [Star]
 
+    /// How many DISTINCT stars each constellation's figure draws
+    /// through. `figureStars` is the flat global set, which cannot
+    /// answer "how big is this figure?"; this can. A star carrying
+    /// several of a figure's spokes counts once.
+    let figureStarCounts: [Constellation: Int]
+
     struct Segment {
         let a: Star
         let b: Star
@@ -47,6 +53,7 @@ final class ConstellationLines {
         // as the figure has spokes, and we want one entry per star.
         var touched:  [String: Star] = [:]
         var touchedOrder: [String] = []
+        var counts:   [Constellation: Int] = [:]
 
         let stars = StarDatabase.shared.workableStars
         let index = Self.buildIndex(stars: stars)
@@ -68,16 +75,24 @@ final class ConstellationLines {
             guard !segs.isEmpty else { continue }
             resolved[cons] = segs
             anchors[cons]  = Self.centroid(of: figureStars)
+            counts[cons]   = Set(figureStars.map(\.id)).count
             for star in figureStars where touched[star.id] == nil {
                 touched[star.id] = star
                 touchedOrder.append(star.id)
             }
         }
 
-        self.segments     = resolved
-        self.labelAnchors = anchors
-        self.figureStars  = touchedOrder.compactMap { touched[$0] }
+        self.segments         = resolved
+        self.labelAnchors     = anchors
+        self.figureStars      = touchedOrder.compactMap { touched[$0] }
+        self.figureStarCounts = counts
         Logger.constellationLines("loaded \(resolved.count) constellations, \(resolved.values.reduce(0) { $0 + $1.count }) segments, \(touchedOrder.count) figure stars")
+    }
+
+    /// How many stars `cons`'s figure draws through — 0 when we hold
+    /// no line figure for it (the modern constellations mostly).
+    func figureStarCount(of cons: Constellation) -> Int {
+        figureStarCounts[cons] ?? 0
     }
 
     // MARK: - Loading
