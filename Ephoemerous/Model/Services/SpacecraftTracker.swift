@@ -36,6 +36,10 @@ final class SpacecraftTracker {
     /// SGP4 drifts by kilometres a day; past this distance from the element
     /// epoch a pin would lie about where the craft is, so it isn't drawn.
     static let orbitTrustSpan:      TimeInterval = 10 * 86_400
+    /// Redraw interval for live spacecraft marks. The ISS covers ~0.07° a
+    /// second, so 15 Hz reads as continuous motion at any zoom while
+    /// costing a fraction of a full-rate redraw.
+    static let liveFrameInterval:   TimeInterval = 1.0 / 15
     /// How far ahead pass predictions look.
     static let passHorizon:         TimeInterval = 5 * 86_400
 

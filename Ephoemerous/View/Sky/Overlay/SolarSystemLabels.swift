@@ -83,11 +83,15 @@ struct SolarSystemLabels: View {
 
     /// Spacecraft — last in the declutter order: a craft's name gives way
     /// to every natural body, and to the craft before it. Live, the layer
-    /// ticks once a second and glides between ticks; frozen, it's static.
+    /// redraws at `SpacecraftTracker.liveFrameInterval`; frozen, it's static.
+    ///
+    /// No implicit animation on purpose: a tween keyed to the clock would
+    /// also catch the gesture commit (the camera re-bases every point at
+    /// once) and send the badge sliding in from a stale spot.
     @ViewBuilder
     private func spacecraftLayer(below bodies: [CGPoint?]) -> some View {
         if spacecraftLive {
-            TimelineView(.periodic(from: .now, by: 1)) { tick in
+            TimelineView(.animation(minimumInterval: SpacecraftTracker.liveFrameInterval)) { tick in
                 spacecraftMarkers(below: bodies, liveDate: tick.date)
             }
         } else {
@@ -110,7 +114,6 @@ struct SolarSystemLabels: View {
                            suppressName: nameCollides(mark.sc,
                                                       with: bodies + craft.prefix(i).map(\.sc)))
                 }
-                .animation(.linear(duration: 1), value: liveDate)
             }
         }
     }

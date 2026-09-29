@@ -65,9 +65,8 @@ struct PromotedLabel: View {
     
     var body: some View {
         if spacecraftLive, case .spacecraft = selection {
-            // Once a second, glided — the ISS covers ~4° a minute, so a
-            // per-frame redraw would buy nothing a linear tween can't.
-            TimelineView(.periodic(from: .now, by: 1)) { tick in
+            // Redrawn, never tweened — see `SolarSystemLabels.spacecraftLayer`.
+            TimelineView(.animation(minimumInterval: SpacecraftTracker.liveFrameInterval)) { tick in
                 pin(liveDate: tick.date)
             }
         } else {
@@ -89,7 +88,6 @@ struct PromotedLabel: View {
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
-                    .animation(.linear(duration: 1), value: liveDate)
                     .id(obj.id)                      // re-spring on a new object
                     .transition(.opacity)            // soft demotion
                     .allowsHitTesting(false)
