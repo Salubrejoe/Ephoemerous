@@ -23,8 +23,12 @@ struct SpacecraftDetailView: View {
                               longitude: state.origin.longitude.radians)
     }
 
-    private var facts: SpacecraftFacts {
-        SpacecraftFacts(craft: craft, date: state.renderedObservationDate, observer: observer)
+    /// Facts for the moment the craft is drawn at — the wall clock while
+    /// the observation is live, else the sky's frozen moment.
+    private func facts(at liveDate: Date?) -> SpacecraftFacts {
+        SpacecraftFacts(craft:    craft,
+                        date:     liveDate ?? state.renderedObservationDate,
+                        observer: observer)
     }
 
     var body: some View {
@@ -40,11 +44,13 @@ struct SpacecraftDetailView: View {
             )
 
             if !collapsed {
-                List {
-                    if craft.isInEarthOrbit { passesSection }
-                    Section { statRows }
+                if state.isObservationLive {
+                    TimelineView(.periodic(from: .now, by: 1)) { tick in
+                        factList(facts(at: tick.date))
+                    }
+                } else {
+                    factList(facts(at: nil))
                 }
-                .scrollContentBackground(.hidden)
             }
             Spacer(minLength: 0)
         }
@@ -53,8 +59,16 @@ struct SpacecraftDetailView: View {
 
     // MARK: Sections
 
+    private func factList(_ facts: SpacecraftFacts) -> some View {
+        List {
+            if craft.isInEarthOrbit { passesSection(facts) }
+            Section { statRows(facts) }
+        }
+        .scrollContentBackground(.hidden)
+    }
+
     @ViewBuilder
-    private var passesSection: some View {
+    private func passesSection(_ facts: SpacecraftFacts) -> some View {
         let passes = facts.visiblePasses
         Section(String(localized: "Visible passes")) {
             if passes.isEmpty {
@@ -81,7 +95,7 @@ struct SpacecraftDetailView: View {
         .contentShape(.rect)
     }
 
-    private var statRows: some View {
+    private func statRows(_ facts: SpacecraftFacts) -> some View {
         ForEach(facts.stats) { stat in
             LabeledContent {
                 Text(stat.value)

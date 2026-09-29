@@ -29,6 +29,9 @@ struct SolarSystemLabels: View {
     /// Selected body is drawn by the promoted overlay instead — skip it
     /// here so its badge isn't drawn twice.
     var selected: SkyObject? = nil
+    /// The observation is "now" — spacecraft then ride the wall clock
+    /// while everything else holds the frozen `date`.
+    var spacecraftLive: Bool = false
 
     private var artist: Artist { .shared }
 
@@ -41,7 +44,6 @@ struct SolarSystemLabels: View {
         let sun   = sunScreen
         let moon  = moonScreen
         let marks = planetMarks
-        let craft = spacecraftMarks
         let bodies: [CGPoint?] = [sun, moon] + marks.map(\.sc)
 
         ZStack {
@@ -60,19 +62,7 @@ struct SolarSystemLabels: View {
                                                   with: [sun, moon] + marks.prefix(i).map(\.sc)))
             }
 
-            // Spacecraft — last in the declutter order: a craft's name
-            // gives way to every natural body, and to the craft before it.
-            ForEach(Array(craft.enumerated()), id: \.element.id) { i, mark in
-                if selected != .spacecraft(mark.craft) {
-                    tierDot(for: .spacecraft(mark.craft), at: mark.sc)
-                }
-                marker(for: .spacecraft(mark.craft),
-                       at: mark.sc,
-                       category: .spacecraft(mark.craft),
-                       text:     mark.craft.displayName,
-                       suppressName: nameCollides(mark.sc,
-                                                  with: bodies + craft.prefix(i).map(\.sc)))
-            }
+            spacecraftLayer(below: bodies)
 
             marker(for: .sun,
                    at: sunScreen,
@@ -86,6 +76,42 @@ struct SolarSystemLabels: View {
                    text:     Strings.Bodies.moon,
                    suppressName: nameCollides(moon, with: [sun]))
 
+        }
+    }
+
+    // MARK: Spacecraft
+
+    /// Spacecraft — last in the declutter order: a craft's name gives way
+    /// to every natural body, and to the craft before it. Live, the layer
+    /// ticks once a second and glides between ticks; frozen, it's static.
+    @ViewBuilder
+    private func spacecraftLayer(below bodies: [CGPoint?]) -> some View {
+        if spacecraftLive {
+            TimelineView(.periodic(from: .now, by: 1)) { tick in
+                spacecraftMarkers(below: bodies, liveDate: tick.date)
+            }
+        } else {
+            spacecraftMarkers(below: bodies, liveDate: nil)
+        }
+    }
+
+    private func spacecraftMarkers(below bodies: [CGPoint?], liveDate: Date?) -> some View {
+        let craft = spacecraftMarks(liveDate: liveDate)
+        return ZStack {
+            ForEach(Array(craft.enumerated()), id: \.element.id) { i, mark in
+                ZStack {
+                    if selected != .spacecraft(mark.craft) {
+                        tierDot(for: .spacecraft(mark.craft), at: mark.sc)
+                    }
+                    marker(for: .spacecraft(mark.craft),
+                           at: mark.sc,
+                           category: .spacecraft(mark.craft),
+                           text:     mark.craft.displayName,
+                           suppressName: nameCollides(mark.sc,
+                                                      with: bodies + craft.prefix(i).map(\.sc)))
+                }
+                .animation(.linear(duration: 1), value: liveDate)
+            }
         }
     }
 
@@ -175,9 +201,10 @@ struct SolarSystemLabels: View {
         var id: String { craft.rawValue }
     }
 
-    private var spacecraftMarks: [SpacecraftMark] {
+    private func spacecraftMarks(liveDate: Date?) -> [SpacecraftMark] {
         Spacecraft.allCases.compactMap { craft in
-            camera.screen(craft, at: date).map { SpacecraftMark(craft: craft, sc: $0) }
+            camera.screen(craft, skyDate: date, liveDate: liveDate)
+                .map { SpacecraftMark(craft: craft, sc: $0) }
         }
     }
 

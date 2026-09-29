@@ -27,6 +27,9 @@ struct PromotedLabel: View {
     /// Is the selected object remembered? Drives the persistent corner heart,
     /// and the false→true flip fires the celebration (burst + pop + haptic).
     var isFavourite: Bool = false
+    /// The observation is "now" — a selected spacecraft then rides the
+    /// wall clock (see `AppState.isObservationLive`).
+    var spacecraftLive: Bool = false
 
     /// The promoted badge is the BIGGEST the Moon ever draws (up to ~1.9×),
     /// so it's the one place the phase really has room to read.
@@ -61,10 +64,22 @@ struct PromotedLabel: View {
     }
     
     var body: some View {
+        if spacecraftLive, case .spacecraft = selection {
+            // Once a second, glided — the ISS covers ~4° a minute, so a
+            // per-frame redraw would buy nothing a linear tween can't.
+            TimelineView(.periodic(from: .now, by: 1)) { tick in
+                pin(liveDate: tick.date)
+            }
+        } else {
+            pin(liveDate: nil)
+        }
+    }
+
+    private func pin(liveDate: Date?) -> some View {
         ZStack {
             if let obj = selection,
                let poi = SkyLabObjects.poiMark(obj, date: date),
-               let sc  = SkyLabObjects.screen(obj, camera: camera, date: date) {
+               let sc  = SkyLabObjects.screen(obj, camera: camera, date: date, liveDate: liveDate) {
                 SkyLabPromotedPin(category: poi.category,
                                   name:     poi.name,
                                   labelStyle: labelStyle,
@@ -74,6 +89,7 @@ struct PromotedLabel: View {
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
+                    .animation(.linear(duration: 1), value: liveDate)
                     .id(obj.id)                      // re-spring on a new object
                     .transition(.opacity)            // soft demotion
                     .allowsHitTesting(false)

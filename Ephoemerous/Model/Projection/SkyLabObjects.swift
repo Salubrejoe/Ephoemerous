@@ -14,7 +14,8 @@ enum SkyLabObjects {
     /// matching projection path. `nil` when it projects behind the viewer
     /// or has no anchor. Bodies recompute from `date` so the mark tracks
     /// the moving object.
-    static func screen(_ obj: SkyObject, camera: SkyCamera, date: Date) -> CGPoint? {
+    /// `liveDate` only moves spacecraft (see `SkyCamera.screen(_:skyDate:liveDate:)`).
+    static func screen(_ obj: SkyObject, camera: SkyCamera, date: Date, liveDate: Date? = nil) -> CGPoint? {
         switch obj {
         case .star(let s):
             return camera.screen(equatorial: s.equatorialVector)
@@ -34,7 +35,7 @@ enum SkyLabObjects {
             let q = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             return camera.screen(equatorial: q)
         case .spacecraft(let c):
-            return camera.screen(c, at: date)
+            return camera.screen(c, skyDate: date, liveDate: liveDate)
         }
     }
 

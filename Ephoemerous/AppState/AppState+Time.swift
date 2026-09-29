@@ -53,6 +53,22 @@ extension AppState {
         observationDate = newDate
     }
 
+    /// True when the observation was set to "now" (launch, or the Now chip)
+    /// and no date move is in flight. The sky stays frozen at that moment
+    /// either way — stars move too slowly to matter — but spacecraft cross
+    /// the sky in minutes, so while this holds they follow the wall clock.
+    /// Same 60 s notion of "now" as the toolbar's Now pill.
+    var isObservationLive: Bool {
+        _dateTransition == nil
+            && abs(observationDate.timeIntervalSince(observationCommittedAt)) < 60
+    }
+
+    /// The instant spacecraft are drawn for: the wall clock while live,
+    /// otherwise nil (they share the sky's frozen observation moment).
+    var liveSpacecraftDate: Date? {
+        isObservationLive ? .now : nil
+    }
+
     /// Commit a date chosen in the date picker.
     /// A same-day edit (time only) animates the sky; a day change jumps
     /// (a large rotation looks wrong animated). Either way the projection is

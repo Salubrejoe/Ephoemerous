@@ -102,7 +102,11 @@ class AppState {
     var _rotationTransition: RotationTransition? = nil
 
     // MARK: - Temporal state  (logic → AppState+Time.swift)
-    var observationDate: Date   = .now  { didSet { invalidateStarCache() } }
+    var observationDate: Date   = .now  { didSet { invalidateStarCache(); observationCommittedAt = .now } }
+    /// Wall-clock moment `observationDate` was last set — tells a "now"
+    /// observation (spacecraft fly live) from a picked one (see
+    /// `isObservationLive`).
+    var observationCommittedAt: Date = .now
     var animationTime:   Double = 0.0
     var _dateTransition: DateTransition? = nil
 

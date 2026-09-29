@@ -114,7 +114,8 @@ struct SkyLayerStack: View {
                               pinch: frame.effPinch,
                               scale: frame.liveScale,
                               rotation: frame.liveRot,
-                              selected: frame.selection)
+                              selected: frame.selection,
+                              spacecraftLive: app.isObservationLive)
 
             // The selected object, forced visible at any zoom — topmost so it
             // reads above the passive labels.
@@ -123,7 +124,8 @@ struct SkyLayerStack: View {
                           date: app.renderedObservationDate,
                           pinch: frame.effPinch,
                           rotation: frame.liveRot,
-                          isFavourite: frame.selection.map(app.isFavourite) ?? false)
+                          isFavourite: frame.selection.map(app.isFavourite) ?? false,
+                          spacecraftLive: app.isObservationLive)
         }
     }
 }

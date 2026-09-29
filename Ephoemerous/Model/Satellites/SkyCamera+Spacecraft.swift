@@ -17,11 +17,23 @@ extension SkyCamera {
                                      longitude: atan2(o.y, o.x))
     }
 
-    /// Screen point for a spacecraft at `date`, or nil when it projects
-    /// behind the viewer or there's no trustworthy data for that moment.
-    func screen(_ craft: Spacecraft, at date: Date) -> CGPoint? {
-        guard let dir = SpacecraftTracker.shared.direction(of: craft, at: date, from: spacecraftObserver)
+    /// Screen point for a spacecraft, or nil when it projects behind the
+    /// viewer or there's no trustworthy data for that moment.
+    ///
+    /// `skyDate` is the moment the sky is drawn for. Pass `liveDate` (the
+    /// wall clock) while the observation is "now": the craft is then placed
+    /// where it really is against the HORIZON at that instant, even though
+    /// the stars stay frozen at `skyDate` — the horizon is what you use to
+    /// find it outside. Earth-fixed, a live direction is `R(−gmst(live))·d`;
+    /// the camera applies `R(sidereal)`, so pre-rotating by
+    /// `−sidereal − gmst(live)` lands it exactly there.
+    func screen(_ craft: Spacecraft, skyDate: Date, liveDate: Date? = nil) -> CGPoint? {
+        let when = liveDate ?? skyDate
+        guard var dir = SpacecraftTracker.shared.direction(of: craft, at: when, from: spacecraftObserver)
         else { return nil }
+        if liveDate != nil {
+            dir = SatelliteSky.rotateZ(dir, by: -sidereal.radians - SatelliteSky.gmst(when))
+        }
         return screen(equatorial: dir)
     }
 }

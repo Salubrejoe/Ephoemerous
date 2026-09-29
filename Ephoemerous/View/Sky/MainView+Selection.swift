@@ -44,11 +44,12 @@ extension MainView {
             // points are oversized → subtract `overdraw` for screen space.
             let scale = sky.scale
             let date  = app.renderedObservationDate
+            let live  = app.liveSpacecraftDate
             let a     = Artist.shared
 
             var cands: [(obj: SkyObject, screen: CGPoint)] = []
             func consider(_ obj: SkyObject, gate: Bool) {
-                guard gate, let cp = SkyLabObjects.screen(obj, camera: camera, date: date) else { return }
+                guard gate, let cp = SkyLabObjects.screen(obj, camera: camera, date: date, liveDate: live) else { return }
                 cands.append((obj, CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)))
             }
 
@@ -162,7 +163,8 @@ extension MainView {
                                   viewpoint: app.viewpoint,
                                   sidereal:  app.localSiderealOffset)
         guard let cp = SkyLabObjects.screen(obj, camera: camera,
-                                            date: app.renderedObservationDate) else { return }
+                                            date:     app.renderedObservationDate,
+                                            liveDate: app.liveSpacecraftDate) else { return }
         let objScreen = CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)
         let focus = CGPoint(x: geoSize.width / 2, y: geoSize.height / 3)
         let dx = objScreen.x - focus.x
