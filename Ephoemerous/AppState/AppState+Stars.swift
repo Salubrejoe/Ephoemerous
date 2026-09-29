@@ -129,19 +129,34 @@ extension AppState {
     }
 
     /// Seed the universal recents list (e.g. from CloudKit on launch).
+    /// Filtered on the way in as well as on the way out, so a list
+    /// stored before Sun and Moon were excluded doesn't bring them back.
     func setRecentObjects(_ objects: [SkyObject]) {
-        recentObjects = objects
+        recentObjects = objects.filter(belongsInRecents)
     }
 
     /// Push any sky object to the front of the universal recents list,
     /// deduped by id and capped at 10. Called from `focus(on:)` so every
-    /// opened object — star, sun, moon, planet, constellation — lands
-    /// here. Persists by id via CloudSync.
+    /// opened object — star, planet, constellation — lands here.
+    /// Persists by id via CloudSync.
     func recordViewed(_ object: SkyObject) {
+        guard belongsInRecents(object) else { return }
         var updated = recentObjects.filter { $0.id != object.id }
         updated.insert(object, at: 0)
         if updated.count > 10 { updated = Array(updated.prefix(10)) }
         recentObjects = updated
         CloudSync.shared.saveRecentObjects(updated)
+    }
+
+    /// Sun and Moon never enter Recents. Recents exists to get you back
+    /// to something you'd otherwise have to hunt for; those two are
+    /// always drawn, always badged, and always one tap away — recording
+    /// them only spends slots in a ten-deep list on the two objects
+    /// nobody has to find again.
+    private func belongsInRecents(_ object: SkyObject) -> Bool {
+        switch object {
+        case .sun, .moon: return false
+        default:          return true
+        }
     }
 }

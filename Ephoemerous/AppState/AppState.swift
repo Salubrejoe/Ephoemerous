@@ -161,10 +161,11 @@ class AppState {
     var recentStars: [Star]  = []
 
     /// Universal "recently viewed" list — any sky object the user has
-    /// opened (star / sun / moon / planet / constellation), most-recent
-    /// first, capped at 10. Recorded in `focus(on:)` (the one funnel
-    /// every selection passes through) and surfaced as the search
-    /// sheet's Recents section. Persisted by object id via CloudSync.
+    /// opened (star / planet / constellation), most-recent first, capped
+    /// at 10. Sun and Moon are deliberately excluded; see
+    /// `belongsInRecents`. Recorded in `focus(on:)` (the one funnel every
+    /// selection passes through) and surfaced as the search sheet's
+    /// Recents tab. Persisted by object id via CloudSync.
     var recentObjects: [SkyObject] = []
 
     var _starsCache: [Star]? = nil
