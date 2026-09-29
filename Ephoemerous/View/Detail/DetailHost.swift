@@ -42,6 +42,7 @@ struct DetailHost: View {
         case .star(let s):          StarDetailView(star: s)
         case .planet(let p):        PlanetDetailView(planet: p)
         case .constellation(let c): ConstellationDetailView(constellation: c)
+        case .spacecraft(let c):    SpacecraftDetailView(craft: c)
         }
     }
 }

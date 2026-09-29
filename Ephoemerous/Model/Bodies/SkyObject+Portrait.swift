@@ -25,6 +25,7 @@ extension SkyObject {
         case .sun:                  return String(localized: "Yellow dwarf, 1 AU away")
         case .moon:                 return String(localized: "Earth's only natural satellite")
         case .planet(let p):        return p.mythology
+        case .spacecraft(let c):    return c.portrait
         }
     }
 }
@@ -107,6 +108,21 @@ extension HRClass {
         case .K:       return String(localized: "Orange")
         case .M:       return String(localized: "Red")
         case .unknown: return String(localized: "Unclassified")
+        }
+    }
+}
+
+// MARK: - Spacecraft
+
+extension Spacecraft {
+
+    /// Where it lives, in the terms that make it findable: the two
+    /// low-orbit craft by their height, Webb by how far out it waits.
+    var portrait: String {
+        switch self {
+        case .iss:    return String(localized: "Crewed station, 420 km up")
+        case .hubble: return String(localized: "Space telescope, 530 km up")
+        case .jwst:   return String(localized: "Infrared telescope at L2")
         }
     }
 }

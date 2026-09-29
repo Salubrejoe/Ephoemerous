@@ -61,6 +61,11 @@ struct SkyObjectEntity: AppEntity {
             name       = c.localizedName
             subtitle   = String(localized: "Constellation")
             symbolName = "sparkles"
+        case .spacecraft(let c):
+            id         = "spacecraft_\(c.rawValue)"
+            name       = c.displayName
+            subtitle   = String(localized: "Spacecraft")
+            symbolName = "antenna.radiowaves.left.and.right"
         }
     }
 
@@ -95,6 +100,10 @@ struct SkyObjectEntity: AppEntity {
                 let raw = String(id.dropFirst("constellation_".count))
                 return Constellation(rawValue: raw)
                                   .map(SkyObject.constellation)
+            }
+            if id.hasPrefix("spacecraft_") {
+                return Spacecraft(rawValue: String(id.dropFirst("spacecraft_".count)))
+                                  .map(SkyObject.spacecraft)
             }
             if id.hasPrefix("star_") {
                 let name = String(id.dropFirst("star_".count))

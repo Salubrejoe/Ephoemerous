@@ -170,6 +170,10 @@ extension AppState {
             return screenPosition(of: cons)
         case .planet(let planet):
             return planetPositions[planet.name]
+        // Moves by the minute; the comfort-zone pan re-projects it through
+        // `SkyLabObjects` instead.
+        case .spacecraft:
+            return nil
         }
     }
 

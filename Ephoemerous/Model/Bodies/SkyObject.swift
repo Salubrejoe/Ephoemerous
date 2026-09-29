@@ -8,6 +8,7 @@ enum SkyObject: Identifiable, Hashable {
     case moon
     case planet(Planet)
     case constellation(Constellation)
+    case spacecraft(Spacecraft)
 
     var id: String {
         switch self {
@@ -16,6 +17,7 @@ enum SkyObject: Identifiable, Hashable {
         case .moon:                 return Strings.SearchTokens.moonToken
         case .planet(let p):        return "planet_\(p.id)"
         case .constellation(let c): return "constellation_\(c.rawValue)"
+        case .spacecraft(let c):    return "spacecraft_\(c.rawValue)"
         }
     }
 
@@ -26,6 +28,7 @@ enum SkyObject: Identifiable, Hashable {
         case .moon:                 return String(localized: "Moon")
         case .planet(let p):        return p.displayName
         case .constellation(let c): return c.localizedName
+        case .spacecraft(let c):    return c.displayName
         }
     }
 
@@ -43,6 +46,8 @@ enum SkyObject: Identifiable, Hashable {
             return "\(p.name) \(p.displayName) planet".lowercased()
         case .constellation(let c):
             return "\(c.localizedName) \(c.fullName) \(c.rawValue) constellation".lowercased()
+        case .spacecraft(let c):
+            return "\(c.displayName) \(c.fullName) \(c.rawValue) spacecraft satellite telescope station".lowercased()
         }
     }
 }

@@ -41,6 +41,8 @@ struct SolarSystemLabels: View {
         let sun   = sunScreen
         let moon  = moonScreen
         let marks = planetMarks
+        let craft = spacecraftMarks
+        let bodies: [CGPoint?] = [sun, moon] + marks.map(\.sc)
 
         ZStack {
             ForEach(Array(marks.enumerated()), id: \.element.id) { i, mark in
@@ -48,16 +50,7 @@ struct SolarSystemLabels: View {
                 // its badge tier, then crossfades into the badge. Skipped
                 // for the selected planet (the promoted pin stands in).
                 if selected != .planet(mark.planet) {
-                    let style = artist.poiStyle(for: .planet(mark.planet))
-                    let badge = POILabelView.tierReveal(scale: scale, threshold: style.badgeIn)
-                    if badge < 1 {
-                        Circle()
-                            .fill(style.gradientBottom)
-                            .frame(width: style.dotRadius * 2, height: style.dotRadius * 2)
-                            .opacity(1 - badge)
-                            .scaleEffect(1 / pinch)
-                            .position(mark.sc)
-                    }
+                    tierDot(for: .planet(mark.planet), at: mark.sc)
                 }
                 marker(for: .planet(mark.planet),
                        at: mark.sc,
@@ -65,6 +58,20 @@ struct SolarSystemLabels: View {
                        text:     mark.planet.displayName,
                        suppressName: nameCollides(mark.sc,
                                                   with: [sun, moon] + marks.prefix(i).map(\.sc)))
+            }
+
+            // Spacecraft — last in the declutter order: a craft's name
+            // gives way to every natural body, and to the craft before it.
+            ForEach(Array(craft.enumerated()), id: \.element.id) { i, mark in
+                if selected != .spacecraft(mark.craft) {
+                    tierDot(for: .spacecraft(mark.craft), at: mark.sc)
+                }
+                marker(for: .spacecraft(mark.craft),
+                       at: mark.sc,
+                       category: .spacecraft(mark.craft),
+                       text:     mark.craft.displayName,
+                       suppressName: nameCollides(mark.sc,
+                                                  with: bodies + craft.prefix(i).map(\.sc)))
             }
 
             marker(for: .sun,
@@ -79,6 +86,22 @@ struct SolarSystemLabels: View {
                    text:     Strings.Bodies.moon,
                    suppressName: nameCollides(moon, with: [sun]))
 
+        }
+    }
+
+    /// Tier-0 dot — a small tinted dot that crossfades into the badge as
+    /// the zoom reaches its tier.
+    @ViewBuilder
+    private func tierDot(for category: POICategory, at sc: CGPoint) -> some View {
+        let style = artist.poiStyle(for: category)
+        let badge = POILabelView.tierReveal(scale: scale, threshold: style.badgeIn)
+        if badge < 1 {
+            Circle()
+                .fill(style.gradientBottom)
+                .frame(width: style.dotRadius * 2, height: style.dotRadius * 2)
+                .opacity(1 - badge)
+                .scaleEffect(1 / pinch)
+                .position(sc)
         }
     }
 
@@ -144,6 +167,18 @@ struct SolarSystemLabels: View {
         let planet: Planet
         let sc:     CGPoint
         var id: String { planet.name }
+    }
+
+    private struct SpacecraftMark: Identifiable {
+        let craft: Spacecraft
+        let sc:    CGPoint
+        var id: String { craft.rawValue }
+    }
+
+    private var spacecraftMarks: [SpacecraftMark] {
+        Spacecraft.allCases.compactMap { craft in
+            camera.screen(craft, at: date).map { SpacecraftMark(craft: craft, sc: $0) }
+        }
     }
 
     private var planetMarks: [PlanetMark] {

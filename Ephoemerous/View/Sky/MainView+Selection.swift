@@ -70,6 +70,9 @@ extension MainView {
             for (planet, _, _, _) in PlanetPosition.allVectors(for: date, siderealOffset: camera.sidereal) {
                 consider(.planet(planet), gate: scale >= a.poiStyle(for: .planet(planet)).badgeIn)
             }
+            for craft in Spacecraft.allCases {
+                consider(.spacecraft(craft), gate: scale >= a.poiStyle(for: .spacecraft(craft)).badgeIn)
+            }
 
             // Constellation names — tappable once the name tier reveals.
             let consTextIn = a.poiStyle(for: .constellation).textIn

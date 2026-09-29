@@ -83,4 +83,7 @@ enum POICategory: Equatable {
     case sun
     case moon
     case planet(Planet)
+    /// A crafted thing in orbit (ISS, Hubble) or at L2 (Webb) — one steel
+    /// species, set apart from every natural body by its colour.
+    case spacecraft(Spacecraft)
 }

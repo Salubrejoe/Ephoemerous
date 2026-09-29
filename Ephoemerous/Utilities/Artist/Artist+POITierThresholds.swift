@@ -54,6 +54,9 @@ extension Artist {
         case .followedStar:   return followedStarTier
         // Planets bloom from their tier-0 dot only once zoomed in.
         case .planet:         return POITier(badgeIn: 160, textIn: 220)
+        // Spacecraft ride the planet tier — same zoom, lowest declutter
+        // priority (see `SpacecraftLabels`).
+        case .spacecraft:     return POITier(badgeIn: 160, textIn: 220)
         // Named stars cascade in brightest-first, well past
         // constellation-name territory (see `Artist+NamedStars`).
         case .namedStar(let star):

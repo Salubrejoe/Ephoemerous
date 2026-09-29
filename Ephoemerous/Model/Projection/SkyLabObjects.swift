@@ -33,6 +33,8 @@ enum SkyLabObjects {
             guard let anchor = ConstellationLines.shared.labelAnchors[c] else { return nil }
             let q = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             return camera.screen(equatorial: q)
+        case .spacecraft(let c):
+            return camera.screen(c, at: date)
         }
     }
 
@@ -56,6 +58,8 @@ enum SkyLabObjects {
             return (.planet(p), .unicode(a.planetGlyph(p)), p.displayName)
         case .constellation:
             return nil
+        case .spacecraft(let c):
+            return (.spacecraft(c), .sfSymbol("antenna.radiowaves.left.and.right"), c.displayName)
         }
     }
 }

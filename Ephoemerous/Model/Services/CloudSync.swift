@@ -76,6 +76,8 @@ final class CloudSync {
             case .planet(let p):        planetNames.append(p.name)
             case .sun:                  sunFav  = true
             case .moon:                 moonFav = true
+            // Not rememberable — the detail sheet offers no Remember.
+            case .spacecraft:           break
             }
         }
         store.set(starNames,   forKey: Key.favouriteStars)
@@ -153,6 +155,9 @@ final class CloudSync {
             } else if id.hasPrefix("constellation_") {
                 let raw = String(id.dropFirst("constellation_".count))
                 obj = Constellation(rawValue: raw).map(SkyObject.constellation)
+            } else if id.hasPrefix("spacecraft_") {
+                obj = Spacecraft(rawValue: String(id.dropFirst("spacecraft_".count)))
+                    .map(SkyObject.spacecraft)
             } else if id.hasPrefix("star_") {
                 // UUID won't match a fresh star; pull the next name-keyed
                 // recent star in order as the stand-in.

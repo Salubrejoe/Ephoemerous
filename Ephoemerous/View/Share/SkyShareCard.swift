@@ -155,6 +155,7 @@ struct SkyShareCard: View {
         case .moon:          .moon
         case .planet(let p): .planet(p)
         case .constellation: .constellation
+        case .spacecraft(let c): .spacecraft(c)
         }
     }
 

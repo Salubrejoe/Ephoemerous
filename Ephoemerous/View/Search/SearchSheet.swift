@@ -363,6 +363,13 @@ struct SearchSheet: View {
                     }
                 }
             }
+            if !spacecraftResults.isEmpty {
+                Section("Spacecraft") {
+                    ForEach(spacecraftResults) { obj in
+                        resultRow(for: obj)
+                    }
+                }
+            }
             if !constellationResults.isEmpty {
                 Section("Constellations") {
                     ForEach(constellationResults) { obj in
@@ -378,6 +385,7 @@ struct SearchSheet: View {
                 }
             }
             if solarResults.isEmpty
+                && spacecraftResults.isEmpty
                 && constellationResults.isEmpty
                 && starResults.isEmpty {
                 Section {
@@ -431,6 +439,8 @@ struct SearchSheet: View {
         case .planet(let p):
             POILabelView(category: .planet(p), text: "")
 //            POIBadgeView(category: .planet(p), size: 22)
+        case .spacecraft(let c):
+            POILabelView(category: .spacecraft(c), text: "")
         case .constellation(let c):
             Image(symbol: Artist.shared.constellationEntitySymbol(
                 Artist.shared.constellationEntity(of: c)
@@ -446,6 +456,7 @@ struct SearchSheet: View {
         case .moon:                 return String(localized: "Solar system · Moon")
         case .planet:               return String(localized: "Solar system · Planet")
         case .constellation:        return String(localized: "Constellation")
+        case .spacecraft:           return String(localized: "Spacecraft")
         }
     }
 
@@ -456,6 +467,12 @@ struct SearchSheet: View {
     private var solarResults: [SkyObject] {
         let all: [SkyObject] = [.sun, .moon] + Planet.all.map { .planet($0) }
         return all.filter { $0.searchTokens.contains(query) }
+    }
+
+    private var spacecraftResults: [SkyObject] {
+        Spacecraft.allCases
+            .map    { SkyObject.spacecraft($0) }
+            .filter { $0.searchTokens.contains(query) }
     }
 
     private var constellationResults: [SkyObject] {

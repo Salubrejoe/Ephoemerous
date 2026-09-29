@@ -57,12 +57,17 @@ struct EphoemerousApp: App {
             .task { await seedScreenshotState() }
             #endif
 
+            .task { await SpacecraftTracker.shared.refreshIfStale() }
+
             .onAppear(perform: MotionService.shared.start)
             .onChange(of: scenePhase) { _, phase in
                 // Attitude streaming is battery-cheap but pointless in
                 // the background — stop with the app, resume on return.
                 if phase == .active { MotionService.shared.start() }
                 else                { MotionService.shared.stop()  }
+                // Orbits go stale in hours — top them up on every return.
+                // A no-op while the cached sets are still fresh.
+                if phase == .active { Task { await SpacecraftTracker.shared.refreshIfStale() } }
                 // Leaving: park the observer origin for the widget process
                 // (it has no location access) and re-render the widgets so
                 // fresh favourites / origin land immediately.

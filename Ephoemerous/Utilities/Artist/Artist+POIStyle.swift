@@ -145,7 +145,28 @@ extension Artist {
                 badgeSize:      11,
                 badgeCorners:   4,
                 tier:           tier)
+
+        case .spacecraft:
+            // Brushed steel — the one badge that isn't a body's own
+            // colour. A touch smaller than a planet's: metadata ≤ data,
+            // and even the ISS is a point, not a disc.
+            let g = spacecraftGradient
+            return POICategoryStyle(
+                gradientTop:    g.top,
+                gradientBottom: g.bottom,
+                textColor:      g.bottom,
+                badgeSize:      10,
+                badgeCorners:   6,
+                tier:           tier)
         }
+    }
+
+    /// Steel for every spacecraft badge. Deliberately NOT the accent —
+    /// the accent means "live / engaged", and a spacecraft is neither by
+    /// default. ▼ TWEAK the spacecraft colour here ▼
+    var spacecraftGradient: (top: Color, bottom: Color) {
+        (Color(red: 0.92, green: 0.94, blue: 0.97),
+         Color(red: 0.56, green: 0.64, blue: 0.74))
     }
 
     /// Single neutral tint for every constellation badge. The myth-colour
