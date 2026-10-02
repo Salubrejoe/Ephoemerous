@@ -51,7 +51,8 @@ struct SkyLayerStack: View {
             NamedStarDotsCanvas(camera: frame.camera,
                                 stars: frame.namedOnly,
                                 scale: frame.liveScale,
-                                selectedID: frame.selectedStarID)
+                                selectedID: frame.selectedStarID,
+                                dotOnly: frame.starLabels.dotOnly)
                 .equatable()
 
             // Frosted pane over the ground below the horizon, recomputed from
@@ -93,7 +94,8 @@ struct SkyLayerStack: View {
                        rotation: frame.liveRot,
                        category: { .followedStar($0) },
                        selectedID: frame.selectedStarID,
-                       comfort: frame.comfort)
+                       comfort: frame.comfort,
+                       layout: frame.starLabels)
 
             // Favourite-star heart, except the selected one — the promoted
             // pin carries its own.
@@ -111,7 +113,8 @@ struct SkyLayerStack: View {
                        rotation: frame.liveRot,
                        category: { .namedStar($0) },
                        selectedID: frame.selectedStarID,
-                       comfort: frame.comfort)
+                       comfort: frame.comfort,
+                       layout: frame.starLabels)
 
             SolarSystemLabels(camera: frame.camera,
                               date: app.renderedObservationDate,

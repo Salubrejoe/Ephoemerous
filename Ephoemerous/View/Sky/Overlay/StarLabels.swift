@@ -26,6 +26,8 @@ struct StarLabels: View {
     var selectedID: String? = nil
     /// Names fade outside the calm middle of the screen; badges stay.
     var comfort: LabelComfortZone = .everywhere
+    /// Who gives way so labels never overlap — see `StarLabelLayout`.
+    var layout: StarLabelLayout = .none
 
     var body: some View {
         ZStack {
@@ -60,12 +62,14 @@ struct StarLabels: View {
         let w = camera.size.width, h = camera.size.height
         return stars.compactMap { star in
             guard star.id != selectedID else { return nil }         // promoted elsewhere
+            guard !layout.dotOnly.contains(star.id) else { return nil }   // yields to its dot
             let style = Artist.shared.poiStyle(for: category(star))
             guard scale >= style.badgeIn else { return nil }        // badge tier gate
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -40, sc.x < w + 40, sc.y > -40, sc.y < h + 40 else { return nil }
-            let nameReveal = POILabelView.tierReveal(scale: scale, threshold: style.textIn)
-                           * comfort.nameVisibility(at: sc)
+            let nameReveal = layout.hiddenNames.contains(star.id) ? 0
+                           : POILabelView.tierReveal(scale: scale, threshold: style.textIn)
+                             * comfort.nameVisibility(at: sc)
             let isDouble   = star.multiplicity?.isShowpiece == true
             return Mark(star: star, sc: sc,
                         badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),

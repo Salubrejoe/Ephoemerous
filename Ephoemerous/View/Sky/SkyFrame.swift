@@ -56,6 +56,8 @@ struct SkyFrame {
     /// a favourite already wears its own badge and name.
     let bayerOnly:    [Star]
     let favouriteConstellationTints: [Constellation: Color]
+    /// Which star labels give way so none overlap — see `StarLabelLayout`.
+    let starLabels: StarLabelLayout
 
     @MainActor
     init(app: AppState,
@@ -139,5 +141,13 @@ struct SkyFrame {
         // One neutral constellation colour now (the myth taxonomy is retired).
         favouriteConstellationTints = Dictionary(uniqueKeysWithValues:
             app.favouriteConstellations.map { ($0, Color.tertiary) })
+
+        starLabels = StarLabelLayout(camera:     camera,
+                                     scale:      liveScale,
+                                     comfort:    comfort,
+                                     date:       app.renderedObservationDate,
+                                     favourites: app.favouriteStars,
+                                     named:      namedOnly,
+                                     selection:  picked)
     }
 }

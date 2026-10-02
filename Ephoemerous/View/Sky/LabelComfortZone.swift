@@ -27,22 +27,29 @@ struct LabelComfortZone {
     static let everywhere = LabelComfortZone(pivot: .zero, visible: .infinite,
                                              pinch: 1, rotation: .zero, offset: .zero)
 
+    /// Where a canvas point lands on screen (in the canvas's own frame):
+    /// scale, then rotate, about the canvas centre, then pan — the order
+    /// MainView applies them in. Labels are drawn upright at constant size
+    /// at this point, which is what makes it the right space to compare
+    /// them in (see `StarLabelLayout`).
+    func screenPoint(_ sc: CGPoint) -> CGPoint {
+        let dx = (sc.x - pivot.x) * pinch
+        let dy = (sc.y - pivot.y) * pinch
+        let c  = cos(rotation.radians), s = sin(rotation.radians)
+        return CGPoint(x: pivot.x + dx * c - dy * s + offset.width,
+                       y: pivot.y + dx * s + dy * c + offset.height)
+    }
+
     /// 1 inside the calm middle, easing to 0 across the feathered rim.
     func nameVisibility(at sc: CGPoint) -> Double {
         guard !visible.isInfinite else { return 1 }
         let a      = Artist.shared
-        // Where the label lands on screen: scale, then rotate, about the
-        // canvas centre, then pan — the order MainView applies them in.
-        let dx     = (sc.x - pivot.x) * pinch
-        let dy     = (sc.y - pivot.y) * pinch
-        let c      = cos(rotation.radians), s = sin(rotation.radians)
-        let x      = pivot.x + dx * c - dy * s + offset.width
-        let y      = pivot.y + dx * s + dy * c + offset.height
+        let p      = screenPoint(sc)
         // Squircle distance from the window's centre, 1 at the zone's edge.
         let hw     = visible.width  * a.labelComfortWidth  / 2
         let hh     = visible.height * a.labelComfortHeight / 2
-        let u      = abs(x - visible.midX) / hw
-        let v      = abs(y - visible.midY) / hh
+        let u      = abs(p.x - visible.midX) / hw
+        let v      = abs(p.y - visible.midY) / hh
         let d      = pow(pow(u, 4) + pow(v, 4), 0.25)
         let t      = min(1, max(0, (1 - d) / a.labelComfortFeather))
         return t * t * (3 - 2 * t)

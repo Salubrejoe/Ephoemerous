@@ -22,11 +22,15 @@ struct NamedStarDotsCanvas: View, Equatable {
     let stars:      [Star]      // proper-named, favourites excluded
     let scale:      CGFloat      // live (clamped) scale
     let selectedID: String?      // promoted star is drawn by the pin instead
+    /// Stars whose badge gave way to a brighter label: they keep this dot
+    /// instead of crossfading out (see `StarLabelLayout`).
+    var dotOnly:    Set<String> = []
 
     static func == (l: Self, r: Self) -> Bool {
         l.camera == r.camera
             && l.bucket == r.bucket
             && l.selectedID == r.selectedID
+            && l.dotOnly == r.dotOnly
     }
     /// ~4-unit scale buckets — fine enough for a smooth crossfade, coarse
     /// enough not to redraw every pinch frame.
@@ -46,7 +50,7 @@ struct NamedStarDotsCanvas: View, Equatable {
                 // to their badge first).
                 let appear  = POILabelView.tierReveal(scale: scale, threshold: a.namedStarDotIn)
                 let badge   = POILabelView.tierReveal(scale: scale, threshold: style.badgeIn)
-                let opacity = appear * (1 - badge)
+                let opacity = dotOnly.contains(star.id) ? appear : appear * (1 - badge)
                 guard opacity > 0.01 else { continue }
 
                 guard let sc = camera.screen(equatorial: star.equatorialVector) else { continue }
