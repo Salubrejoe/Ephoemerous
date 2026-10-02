@@ -433,11 +433,13 @@ struct SearchSheet: View {
 //            POIBadgeView(category: .sun, size: 22)
         case .moon:
             POILabelView(category: .moon, text: "",
-                         moonPhase: MoonPosition.phase(for: state.observationDate,
+                         phase: MoonPosition.phase(for: state.observationDate,
                                                        latitude: state.origin.latitude))
 //            POIBadgeView(category: .moon, size: 22)
         case .planet(let p):
-            POILabelView(category: .planet(p), text: "")
+            POILabelView(category: .planet(p), text: "",
+                         phase: BadgePhase.of(.planet(p), date: state.observationDate,
+                                              latitude: state.origin.latitude))
 //            POIBadgeView(category: .planet(p), size: 22)
         case .spacecraft(let c):
             POILabelView(category: .spacecraft(c), text: "")

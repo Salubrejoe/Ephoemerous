@@ -169,10 +169,9 @@ struct SkyShareCard: View {
     }
 
     /// The postcard is a keepsake of one night, so the Moon on it has to be
-    /// the Moon that was actually up — phase included.
+    /// the Moon that was actually up — phase included (and Venus's too).
     private func lunarPhase(for category: POICategory) -> LunarPhase? {
-        guard case .moon = category else { return nil }
-        return MoonPosition.phase(for: date, latitude: .degrees(latDeg))
+        BadgePhase.of(category, date: date, latitude: .degrees(latDeg))
     }
 
     /// The hero badge, oversized, sitting exactly on the object's own
@@ -187,7 +186,7 @@ struct SkyShareCard: View {
                             labelStyle: labelStyle(for: category),
                             nameReveal: 0,
                             borderScaleCompensation: 1 / style,
-                            moonPhase:  lunarPhase(for: category))
+                            phase:      lunarPhase(for: category))
             .scaleEffect(style)
             .position(focus)
     }
@@ -204,7 +203,7 @@ struct SkyShareCard: View {
                                                                  threshold: style.badgeIn),
                             nameReveal:  POILabelView.tierReveal(scale: 110,
                                                                  threshold: style.textIn),
-                            moonPhase:   lunarPhase(for: category))
+                            phase:       lunarPhase(for: category))
     }
 }
 

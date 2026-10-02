@@ -416,9 +416,9 @@ struct SkyObjectWidgetView: View {
     /// mirror) when the app has never parked an origin.
     @MainActor
     private func lunarPhase(for category: POICategory?) -> LunarPhase? {
-        guard case .moon = category else { return nil }
-        return MoonPosition.phase(for: entry.date,
-                                  latitude: .degrees(entry.origin?.latDeg ?? 0))
+        guard let category else { return nil }
+        return BadgePhase.of(category, date: entry.date,
+                             latitude: .degrees(entry.origin?.latDeg ?? 0))
     }
 
     /// Stars — the Sun included — wear the pointy 5-corner squircle,
@@ -545,7 +545,7 @@ struct SkyObjectWidgetView: View {
                                                                  threshold: style.badgeIn),
                             nameReveal:  POILabelView.tierReveal(scale: 110,
                                                                  threshold: style.textIn),
-                            moonPhase:   lunarPhase(for: category))
+                            phase:       lunarPhase(for: category))
     }
 
     /// The promoted pin: the badge lifted above its precise-location dot
@@ -591,7 +591,7 @@ struct SkyObjectWidgetView: View {
                          labelStyle:  labelStyle(for: category),
                          nameReveal:  0,
                          borderScaleCompensation: 1 / scale,
-                         moonPhase:   lunarPhase(for: category))
+                         phase:       lunarPhase(for: category))
             .scaleEffect(isSun ? sunScale : isMoon ? moonScale : scale)
                 .position(Pin.badgeCentre(in: size, isLandscape: isLandscape))
 
@@ -609,7 +609,7 @@ struct SkyObjectWidgetView: View {
                              text:        "",
                              labelStyle:  labelStyle(for: category),
                              nameReveal:  0,
-                             moonPhase:   lunarPhase(for: category))
+                             phase:       lunarPhase(for: category))
             } else {
                 Image(systemName: "sparkles")
             }

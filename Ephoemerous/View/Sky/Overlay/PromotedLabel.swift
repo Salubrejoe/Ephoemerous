@@ -31,11 +31,14 @@ struct PromotedLabel: View {
     /// wall clock (see `AppState.isObservationLive`).
     var spacecraftLive: Bool = false
 
-    /// The promoted badge is the BIGGEST the Moon ever draws (up to ~2.8×),
-    /// so it's the one place the phase really has room to read.
-    private var promotedLunarPhase: LunarPhase? {
-        guard case .moon = selection else { return nil }
-        return MoonPosition.phase(for: date, latitude: camera.observerLatitude)
+    /// The promoted badge is the BIGGEST the Moon or Venus ever draws (up to
+    /// ~2.8×), so it's the one place the phase really has room to read.
+    private var promotedPhase: LunarPhase? {
+        switch selection {
+        case .moon:          BadgePhase.of(.moon,      date: date, latitude: camera.observerLatitude)
+        case .planet(let p): BadgePhase.of(.planet(p), date: date, latitude: camera.observerLatitude)
+        default:             nil
+        }
     }
 
     /// Only stars can be doubles, and only the rewarding ones are marked.
@@ -84,7 +87,7 @@ struct PromotedLabel: View {
                                   labelStyle: labelStyle,
                                   favourite: isFavourite,
                                   isDouble:  isShowpieceDouble,
-                                  moonPhase: promotedLunarPhase)
+                                  phase:     promotedPhase)
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
@@ -108,7 +111,7 @@ private struct SkyLabPromotedPin: View {
     /// canvas labels (see `StarMultiplicity.isShowpiece`).
     let isDouble:   Bool
     /// Set only for the Moon — the badge then draws its real lit face.
-    let moonPhase:  LunarPhase?
+    let phase:      LunarPhase?
 
     /// 0 = flat (badge on the point), 1 = fully promoted pin. Springs up
     /// on appear — the underdamped overshoot is the Apple-Maps pop.
@@ -175,7 +178,8 @@ private struct SkyLabPromotedPin: View {
                          nameReveal:  0,
                          borderScaleCompensation: 1 / (scale * popScale),
                          companionReveal: isDouble ? 1 : 0,
-                         moonPhase: moonPhase)
+                         phase:       phase,
+                         richDetail:  true)
                 .scaleEffect(scale * popScale)
                 .position(x: cx, y: badgeY)
 

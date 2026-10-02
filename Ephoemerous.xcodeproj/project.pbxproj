@@ -139,6 +139,7 @@
 				Utilities/Resources/Symbol.swift,
 				View/Marks/MoonPhaseShape.swift,
 				View/Marks/OutlinedText.swift,
+				View/Marks/PlanetSurface.swift,
 				View/Marks/POILabelView.swift,
 				View/Marks/SaturnRings.swift,
 			);
@@ -184,6 +185,7 @@
 				Utilities/Resources/Symbol.swift,
 				View/Marks/MoonPhaseShape.swift,
 				View/Marks/OutlinedText.swift,
+				View/Marks/PlanetSurface.swift,
 				View/Marks/POILabelView.swift,
 				View/Marks/SaturnRings.swift,
 			);

@@ -182,6 +182,55 @@ enum PlanetPosition {
     }
 }
 
+// MARK: - Venus's phase
+//
+// Venus runs through phases like the Moon — a small fat disc on the far
+// side of the Sun, a big thin crescent as it swings toward us. The lit
+// fraction comes from the phase angle at Venus between the Sun and Earth:
+//     k = (1 + cos i) / 2
+// and the lit SIDE from whether Venus is the evening star (east of the
+// Sun, lit on the sunward west limb — a waxing Moon's geometry) or the
+// morning star (west of it — waning). Reuses `LunarPhase` so the badge
+// draws it with the Moon's own shape, hemisphere flip included.
+extension PlanetPosition {
+
+    static func venusPhase(for date: Date, latitude: Angle) -> LunarPhase {
+        let T          = Precession.julianCenturies(from: date)
+        let (eL, eR)   = earth(T)
+        let v          = venus(T)
+        let venusPos   = SIMD3<Double>(v.R * cos(v.B) * cos(v.L), v.R * cos(v.B) * sin(v.L), v.R * sin(v.B))
+        let earthPos   = SIMD3<Double>(eR * cos(eL), eR * sin(eL), 0)
+        let toSun      = -venusPos
+        let toEarth    = earthPos - venusPos
+        let cosPhase   = simd_dot(toSun, toEarth) / (simd_length(toSun) * simd_length(toEarth))
+        let fraction   = (1 + cosPhase) / 2
+        // Geocentric longitudes: is Venus east of the Sun?
+        let venusLon   = atan2(toEarth.y * -1, toEarth.x * -1)
+        let sunLon     = eL + .pi
+        let isEvening  = sin(venusLon - sunLon) > 0
+        return LunarPhase(illuminatedFraction: fraction,
+                          isWaxing:            isEvening,
+                          southernView:        latitude.degrees < 0)
+    }
+}
+
+// MARK: - BadgePhase
+/// The phase a POI badge should wear, if any: the Moon's, or Venus's.
+/// One answer for every surface that draws badges (sky, promoted pin,
+/// search, share card, widgets, watch face).
+enum BadgePhase {
+    static func of(_ category: POICategory, date: Date, latitude: Angle) -> LunarPhase? {
+        switch category {
+        case .moon:
+            return MoonPosition.phase(for: date, latitude: latitude)
+        case .planet(let p) where p.name == Strings.Planets.venus:
+            return PlanetPosition.venusPhase(for: date, latitude: latitude)
+        default:
+            return nil
+        }
+    }
+}
+
 // MARK: - VSOP87D truncated series (Meeus Appendix III)
 private extension PlanetPosition {
 

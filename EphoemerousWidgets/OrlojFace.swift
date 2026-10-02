@@ -1140,7 +1140,7 @@ struct OrlojFaceLayers: View {
                              labelStyle: .planetoids,
                              nameReveal: 0,
                              borderScaleCompensation: 1 / max(0.55, u),
-                             moonPhase:  MoonPosition.phase(for: face.date,
+                             phase:      MoonPosition.phase(for: face.date,
                                                             latitude: face.latitude))
                     .scaleEffect(max(0.55, u))
                     .position(moon)

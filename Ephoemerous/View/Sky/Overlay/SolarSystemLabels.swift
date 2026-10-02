@@ -164,7 +164,7 @@ struct SolarSystemLabels: View {
                              badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
                              nameReveal:  suppressName ? 0
                                  : POILabelView.tierReveal(scale: scale, threshold: style.textIn),
-                             moonPhase:   lunarPhase(for: category))
+                             phase:       lunarPhase(for: category))
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
                     .position(sc)
@@ -172,12 +172,11 @@ struct SolarSystemLabels: View {
         }
     }
 
-    /// The Moon's badge draws its real phase; every other body ignores this.
-    /// Latitude comes off the camera (see `SkyCamera.observerLatitude`) —
-    /// the phase mirrors in the southern hemisphere.
+    /// The Moon's and Venus's badges draw their real phase; every other body
+    /// ignores this. Latitude comes off the camera (see
+    /// `SkyCamera.observerLatitude`) — the phase mirrors in the south.
     private func lunarPhase(for category: POICategory) -> LunarPhase? {
-        guard case .moon = category else { return nil }
-        return MoonPosition.phase(for: date, latitude: camera.observerLatitude)
+        BadgePhase.of(category, date: date, latitude: camera.observerLatitude)
     }
 
     // MARK: Positions

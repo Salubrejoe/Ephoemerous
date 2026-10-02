@@ -142,7 +142,7 @@ extension Artist {
                 gradientTop:    g.bottom,
                 gradientBottom: g.top,
                 textColor:      g.bottom,
-                badgeSize:      11,
+                badgeSize:      planetBadgeSize(p),
                 badgeCorners:   4,
                 tier:           tier)
 

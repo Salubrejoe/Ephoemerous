@@ -65,13 +65,15 @@ struct POILabelView: View {
     /// tier, not the badge tier — at badge tier the mark is a few points
     /// across and a pip would just fur its edge. 0 = absent.
     var companionReveal: Double = 0
-    /// The Moon's phase, when the caller knows the observation date and
-    /// where the observer is standing. Given one, the `.moon` badge draws
-    /// its real lit silhouette instead of a plain disc — the one adornment
-    /// that survives at badge size, because phase is a silhouette and the
-    /// Moon's badge is the second-largest we draw. `nil` (or any other
-    /// category) keeps the plain disc, so unwired call sites are unchanged.
-    var moonPhase: LunarPhase? = nil
+    /// The Moon's or Venus's phase, when the caller knows the observation
+    /// date and where the observer is standing (see `BadgePhase`). The
+    /// `.moon` badge then draws its real lit silhouette instead of a plain
+    /// disc; Venus keeps its circle with the night side black. `nil` (or
+    /// any other category) keeps the plain disc.
+    var phase: LunarPhase? = nil
+    /// The promoted pin's extra detail — Jupiter's thin belts, streaks and
+    /// Great Red Spot. Off on the sky, where they'd only be noise.
+    var richDetail: Bool = false
 
     /// Gap (pt) between the badge's trailing edge and the name.
     private let nameGap: CGFloat = 6
@@ -101,6 +103,18 @@ struct POILabelView: View {
     /// enough edge to keep the soft orb a bead against a busy wallpaper.
     private var casing: Color {
         isMasked ? .white.opacity(0.5) : style.border
+    }
+
+    /// Venus's night side: black, or barely-there under a masking host
+    /// (an opaque black would come back as a white slab).
+    private var venusNightFill: AnyShapeStyle {
+        isMasked ? AnyShapeStyle(Color.white.opacity(0.1)) : AnyShapeStyle(Artist.shared.venusNight)
+    }
+
+    /// Venus glows harder; every other badge keeps the standard lift.
+    private var glowBoost: CGFloat {
+        if case .planet(let p) = category { return Artist.shared.planetGlowBoost(p) }
+        return 1
     }
 
     /// Saturn wears its rings; every other badge is a bare orb.
@@ -136,8 +150,10 @@ struct POILabelView: View {
         nameReveal: Double = 1,
         borderScaleCompensation: CGFloat = 1,
         companionReveal: Double = 0,
-        moonPhase: LunarPhase? = nil
+        phase: LunarPhase? = nil,
+        richDetail: Bool = false
     ) {
+        self.richDetail = richDetail
         self.category = category
         self.text = text
         self.labelStyle = labelStyle
@@ -145,7 +161,7 @@ struct POILabelView: View {
         self.nameReveal = nameReveal
         self.borderScaleCompensation = borderScaleCompensation
         self.companionReveal = companionReveal
-        self.moonPhase = moonPhase
+        self.phase = phase
     }
 
     var body: some View {
@@ -209,24 +225,33 @@ struct POILabelView: View {
         // squircle. Erased so fill and casing trace the SAME outline —
         // casing a disc around a crescent would read as a stained full moon.
         let shape: AnyShape = {
-            if case .moon = category, let moonPhase {
-                return AnyShape(MoonPhaseShape(phase: moonPhase))
+            if case .moon = category, let phase {
+                return AnyShape(MoonPhaseShape(phase: phase))
             }
             return AnyShape(Squircle(corners: 5, bulge: bulge))
         }()
-        let isNewMoon = moonPhase?.isNew ?? false
+        let isNewMoon = phase?.isNew ?? false
+
+        let surface = Artist.shared.planetSurface(category)
 
         return ZStack {
-
-            shape
-                .fill(
-                    // New moon has no lit face — a whisper of earthshine
-                    // instead, so the badge holds its place on the sky for
-                    // the two days a month it would otherwise vanish.
-                    isNewMoon
-                    ? AnyShapeStyle(style.gradientTop.opacity(0.18))
-                    : badgeFill
-                )
+            if surface == .venusPhase, let phase {
+                // Venus keeps its full circle: lit part in its gradient,
+                // night side black (see `PlanetSurface`).
+                VenusPhaseFill(phase: phase, litFill: badgeFill, night: venusNightFill)
+            } else {
+                shape
+                    .fill(
+                        // New moon has no lit face — a whisper of earthshine
+                        // instead, so the badge holds its place on the sky for
+                        // the two days a month it would otherwise vanish.
+                        isNewMoon
+                        ? AnyShapeStyle(style.gradientTop.opacity(0.18))
+                        : badgeFill
+                    )
+            }
+            if surface == .jupiterBands, !isMasked { JupiterBands(fullDetail: richDetail) }
+            if surface == .marsCap                 { MarsPolarCap() }
         }
         .frame(width: d, height: d)
         // Saturn's far rings pass behind the globe…
@@ -270,8 +295,8 @@ struct POILabelView: View {
         // Soft drop shadow for lift (one view → cheap, unlike the Canvas
         // per-glyph blur). No glow under a masking host — it just fattens
         // the white blob.
-        .shadow(color: isMasked ? .clear : style.gradientTop.opacity(0.35),
-                radius: isMasked ? 0 : 2.5, y: isMasked ? 0 : 0.5)
+        .shadow(color: isMasked ? .clear : style.gradientTop.opacity(0.35 * glowBoost),
+                radius: isMasked ? 0 : 2.5 * glowBoost, y: isMasked ? 0 : 0.5)
     }
 }
 
