@@ -128,7 +128,7 @@ struct DetailActionRow: View {
         } label: {
             HStack {
                 Image(symbol: remembered ? .heartFill : .heart)
-                Text(remembered ? String(localized: "Remembered") : String(localized: "Remember"))
+                Text(remembered ? String(localized: "Favorited") : String(localized: "Favorite"))
             }
             .foregroundStyle(remembered ? .accent : .primary)
                 .font(.callout.weight(.semibold))

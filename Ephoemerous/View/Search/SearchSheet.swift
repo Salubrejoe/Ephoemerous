@@ -8,23 +8,26 @@ import LoreKit
 //   ┌────────────────────────────────────────────────────────┐
 //   │  🔍 Search a star, constellation…         ⓧ       ✕   │
 //   ├────────────────────────────────────────────────────────┤
-//   │  AT REST — the remembered set, A–Z, badge + portrait   │
-//   │   ☆ Betelgeuse      Red supergiant in Orion            │
-//   │   ✧ Ursa Minor      7 stars                            │
+//   │  AT REST — category chips, then that category's list   │
+//   │  [Favorites] [Stars] [Constellations] [Planets] …      │
+//   │   UP NOW                                               │
+//   │   ☆ Betelgeuse      Red supergiant in Orion      38°   │
+//   │   BELOW THE HORIZON                                    │
+//   │   ✧ Crux            4 stars                            │
 //   ├────────────────────────────────────────────────────────┤
 //   │  FIELD LIVE, still empty — recents, as plain text      │
 //   │     Betelgeuse                                         │
-//   │     Cassiopeia                                         │
 //   ├────────────────────────────────────────────────────────┤
-//   │  TEXT TYPED — results, sectioned by species            │
+//   │  TEXT TYPED — results across everything, by species    │
 //   │   • Sun                                                │
-//   │   • …                                                  │
 //   └────────────────────────────────────────────────────────┘
 //
-// Three states, one surface, no chrome to switch between them. The
-// remembered set is what the sheet IS at rest, so it wears no label
-// and has no competition. Recents surface only under a live cursor —
-// the moment they are actually useful — and stay deliberately quiet.
+// At rest the sheet browses: a row of chips picks a category, so nothing
+// ever requires typing, and every list leads with what's above the
+// horizon right now (see `SkyCatalog`). A query ignores the chips and
+// searches everything — filtering inside a chip would make "Vega" vanish
+// because you happened to be on Planets. Recents surface only under a
+// live, empty cursor, the moment they're useful.
 //
 // Tapping any row — remembered, recent or result — focuses the
 // canvas on that object and dismisses the sheet; the existing
@@ -35,6 +38,9 @@ struct SearchSheet: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocused: Bool
     @State private var detent: PresentationDetent = Self.barDetent
+    /// The chosen browse chip; nil until the user picks one, so the
+    /// sheet opens on `SkyCatalog.defaultChip`.
+    @State private var chosenChip: BrowseChip? = nil
 
     /// PANEL mode (iPad, regular width): the host `FloatingPanel` owns the
     /// stage, so this view drives that binding instead of its own detent
@@ -177,7 +183,7 @@ struct SearchSheet: View {
     private var searchHeader: some View {
         HStack(spacing: 8) {
             Image(symbol: .search)
-            TextField(String(localized: "Search, remember..."), text: $searchText)
+            TextField(String(localized: "Search the sky"), text: $searchText)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -213,52 +219,122 @@ struct SearchSheet: View {
 
     // MARK: Browse — what the sheet shows before a query
 
-    // The idle sheet has ONE list, and it is the remembered set. No tab
-    // bar, no segmented control: the thing you kept is the thing the
-    // sheet is for, so it needs no label and no competition.
-    //
-    // Recents are not gone, they are DEMOTED — they surface only once
-    // the field is live (focused, still empty), as quiet text under the
-    // cursor. That is the moment recents are actually useful ("take me
-    // back to where I was") and the only moment they earn the space;
-    // at rest they were furniture.
+    // Chips choose a category; the list below leads with what's up now.
+    // Recents take over only while the field is live and still empty.
     @ViewBuilder
     private var browseContent: some View {
         if searchFocused {
             recentSuggestions
         } else {
-            favouritesList
+            VStack(spacing: 0) {
+                chipRow
+                browseList
+            }
         }
     }
 
-    /// The remembered set, in the plain-list dress: badge + serif name,
-    /// no inset card. The sheet is already a material surface, and
-    /// `.insetGrouped` laid a SECOND card on top of it — that doubled
-    /// edge is what read heavy.
-    @ViewBuilder
-    private var favouritesList: some View {
-        if favouriteCards.isEmpty {
-            browseEmptyNote(String(localized: "Nothing remembered yet. Tap the heart on a star or a constellation to keep it."))
-        } else {
-            List(favouriteCards) { obj in
-                Button { open(obj) } label: {
-                    browseRowBody(for: obj)
+    /// Everything the browse lists know, for this moment and this place.
+    private var catalog: SkyCatalog {
+        SkyCatalog(date:       state.observationDate,
+                   observer:   SatelliteSky.Observer(latitude:  state.origin.latitude.radians,
+                                                     longitude: state.origin.longitude.radians),
+                   favourites: state.favourites)
+    }
+
+    private var activeChip: BrowseChip { chosenChip ?? catalog.defaultChip }
+
+    /// A scrolling row of capsule chips on material; the selected one is
+    /// solid white with dark ink.
+    private var chipRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(BrowseChip.allCases) { chip in
+                    chipButton(chip)
                 }
-                .buttonStyle(.plain)
-                .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
-                .listRowBackground(Color.clear)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 10)
+        }
+        .scrollClipDisabled()
+    }
+
+    private func chipButton(_ chip: BrowseChip) -> some View {
+        let selected = chip == activeChip
+        return Button { chosenChip = chip } label: {
+            Text(chip.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(selected ? Color.black : Color.primary)
+                .padding(.horizontal, 12)
+                .frame(height: 28)
+                .background {
+                    if selected { Capsule().fill(.white) }
+                    else        { Capsule().fill(.regularMaterial) }
+                }
+                .contentShape(.capsule)
+        }
+        .buttonStyle(.plain)
+        .animation(.snappy(duration: 0.2), value: selected)
+    }
+
+    /// The active chip's list: Up now, then Below the horizon.
+    @ViewBuilder
+    private var browseList: some View {
+        let listing = catalog.listing(for: activeChip)
+        if listing.isEmpty {
+            browseEmptyNote(String(localized: "No favorites yet. Tap the heart on a star or a constellation to keep it here."))
+            Spacer(minLength: 0)
+        } else {
+            List {
+                if !listing.upNow.isEmpty {
+                    Section {
+                        ForEach(listing.upNow) { browseRow($0) }
+                    } header: {
+                        sectionTitle(String(localized: "Up now"), first: true)
+                    }
+                }
+                if !listing.below.isEmpty {
+                    Section {
+                        ForEach(listing.below) { browseRow($0) }
+                    } header: {
+                        sectionTitle(String(localized: "Below the horizon"), first: listing.upNow.isEmpty)
+                    }
+                }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            // No list-owned air at the top or under headers: the chips'
+            // bottom padding + the first title's inset set the gap, so it
+            // matches the one between the search bar and the chips.
+            .contentMargins(.top, 0, for: .scrollContent)
+            .environment(\.defaultMinListHeaderHeight, 0)
+            .id(activeChip)                     // each chip starts at the top
         }
+    }
+
+    /// Section title on the rows' own 16pt inset. The first sits close
+    /// under the chips; a later one gets air above so it reads as a new
+    /// group rather than a run-on.
+    private func sectionTitle(_ text: String, first: Bool) -> some View {
+        Text(text)
+            .font(.headline)
+            .foregroundStyle(.secondary)
+            .listRowInsets(.init(top: first ? 4 : 18, leading: 16, bottom: 6, trailing: 16))
+    }
+
+    private func browseRow(_ entry: SkyCatalog.Entry) -> some View {
+        Button { open(entry.object) } label: {
+            browseRowBody(for: entry)
+        }
+        .buttonStyle(.plain)
+        .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
+        .listRowBackground(Color.clear)
     }
 
     /// Recents under a live, empty field — simple text, nothing else.
     /// No badge, no separators: this is a suggestion list the eye should
-    /// skim past on its way to typing, not content competing with the
-    /// remembered set. An empty one draws NOTHING — a "no recents yet"
-    /// note under a cursor is noise at the exact moment the user is
-    /// already busy.
+    /// skim past on its way to typing. An empty one draws NOTHING — a "no
+    /// recents yet" note under a cursor is noise at the exact moment the
+    /// user is already busy.
     @ViewBuilder
     private var recentSuggestions: some View {
         if !state.recentObjects.isEmpty {
@@ -292,61 +368,30 @@ struct SearchSheet: View {
             .padding(.top,        4)
     }
 
-    // MARK: The remembered set
-
-    /// Stars + constellations only. Those are the two species the
-    /// favourites system is for — the things that change in the sky, or
-    /// carry a story you return to. Solar-system bodies are never
-    /// favouritable (no heart on their detail views), so this filter is
-    /// belt-and-braces against anything stale in the stored set.
-    private var favouriteCards: [SkyObject] {
-        state.favourites
-            .filter(isRememberable)
-            .sorted(by: alphabetically)
-    }
-
-    private func isRememberable(_ obj: SkyObject) -> Bool {
-        switch obj {
-        case .star, .constellation: return true
-        default:                    return false
-        }
-    }
-
-    /// A to Z across the whole set, species ignored — stars and
-    /// constellations interleave. Grouping by kind would make the user
-    /// remember which bucket a name lives in before they can find it,
-    /// and the list is short enough that one run beats two.
-    /// `localizedStandardCompare` so accented names sort where a reader
-    /// expects rather than after Z.
-    private func alphabetically(_ a: SkyObject, _ b: SkyObject) -> Bool {
-        a.displayName.localizedStandardCompare(b.displayName) == .orderedAscending
-    }
-
-    /// One remembered row — badge, name, and a line that says what the
-    /// thing IS: "Red supergiant in Orion", "7 stars".
-    ///
-    /// Note this is NOT the old "STAR · ORION" caption coming back.
-    /// That one restated the badge in capitals; `portrait` carries
-    /// something the row cannot otherwise show, in a reading voice
-    /// rather than a metadata voice. Search results keep the terse
-    /// caption — there you are scanning strangers and want the species
-    /// fast; here you are picking something you already chose to keep.
-    private func browseRowBody(for obj: SkyObject) -> some View {
+    /// One browse row — badge, serif name, a line that says what the thing
+    /// IS ("Red supergiant in Orion", "7 stars", a spacecraft's next pass),
+    /// and, when it's up, how high: the figure you need to go and find it.
+    private func browseRowBody(for entry: SkyCatalog.Entry) -> some View {
         HStack(spacing: 12) {
-            resultIcon(for: obj)
+            resultIcon(for: entry.object)
                 .frame(width: 28, height: 28)
             VStack(alignment: .leading, spacing: 1) {
-                Text(obj.displayName)
+                Text(entry.object.displayName)
                     .font(.callout)
                     .fontDesign(.serif)            // sky-object name → serif
                     .foregroundStyle(.primary)
-                Text(obj.portrait)
+                Text(catalog.subtitle(for: entry.object))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
+            if let degrees = entry.altitudeDegrees {
+                Text(verbatim: "\(degrees)°")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 6)
         .contentShape(.rect)

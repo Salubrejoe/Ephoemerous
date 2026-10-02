@@ -15,8 +15,8 @@ import LoreKit
 // height + capsule shape as the paired row so the layout never twitches
 // between the two cases.
 //
-// "Remember" is the in-UI verb for what the codebase calls a favourite —
-// softer than "follow", matching the app's mnemonic voice. State-bound
+// "Favorite" is the in-UI word for what the codebase calls a favourite —
+// the platform word, matching the search sheet's Favorites chip. State-bound
 // to `AppState.isFavourite(obj)`; toggles via `toggleFavourite(obj)`.
 // Works for any SkyObject case.
 struct RememberButton: View {
@@ -35,7 +35,7 @@ struct RememberButton: View {
             HStack(spacing: 8) {
                 Image(symbol: remembered ? .heartFill : .heart)
                     .foregroundStyle(remembered ? .pink : .primary)
-                Text(remembered ? String(localized: "Remembered") : String(localized: "Remember"))
+                Text(remembered ? String(localized: "Favorited") : String(localized: "Favorite"))
                     .fontWeight(.semibold)
             }
             .font(.callout.weight(.semibold))

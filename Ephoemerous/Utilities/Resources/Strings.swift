@@ -26,7 +26,7 @@ struct Strings {
 
     // MARK: - Prompts
     struct Prompts {
-        static let searchBar   = String(localized: "Search, remember...")
+        static let searchBar   = String(localized: "Search the sky")
         static let searchBar2  = String(localized: "Name, constellation, class...")
     }
 

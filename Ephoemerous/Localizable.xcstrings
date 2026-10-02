@@ -3058,6 +3058,106 @@
           }
         }
       }
+    },
+    "Favorite" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferito"
+          }
+        }
+      }
+    },
+    "Favorited" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tra i preferiti"
+          }
+        }
+      }
+    },
+    "Favorites" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferiti"
+          }
+        }
+      }
+    },
+    "Planets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pianeti"
+          }
+        }
+      }
+    },
+    "Spacecraft" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veicoli spaziali"
+          }
+        }
+      }
+    },
+    "Up now" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visibili ora"
+          }
+        }
+      }
+    },
+    "Below the horizon" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sotto l'orizzonte"
+          }
+        }
+      }
+    },
+    "Search the sky" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca nel cielo"
+          }
+        }
+      }
+    },
+    "No favorites yet. Tap the heart on a star or a constellation to keep it here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun preferito. Tocca il cuore su una stella o una costellazione per tenerla qui."
+          }
+        }
+      }
+    },
+    "Next pass %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prossimo passaggio %@"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
