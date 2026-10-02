@@ -32,4 +32,31 @@ extension Artist {
         palette.planet(planet)
     }
 
+    // MARK: Saturn's rings  ▼ TWEAK HERE ▼
+    // See `SaturnRings`. Ellipse sizes are full width × height as fractions
+    // of the badge diameter: the outer edge spans twice the globe.
+
+    /// Does this badge wear Saturn's rings?
+    func poiHasRings(_ category: POICategory) -> Bool {
+        if case .planet(let p) = category { return p.name == Strings.Planets.saturn }
+        return false
+    }
+
+    var saturnRingOuter:   CGSize { CGSize(width: 2.0,   height: 0.764) }
+    var saturnRingInner:   CGSize { CGSize(width: 1.345, height: 0.445) }
+    var saturnCassini:     CGSize { CGSize(width: 1.736, height: 0.636) }
+    var saturnRingTilt:    Angle  { .degrees(-18) }
+    /// How far the rings reach past the badge's trailing edge, as a
+    /// fraction of its diameter — the name shifts right by this much.
+    var saturnRingOverhang: CGFloat { 0.46 }
+
+    /// Ring band: paler cream than the globe so the two separate at
+    /// badge size, brightest across the middle like sunlit ice.
+    var saturnRingGradient: LinearGradient {
+        LinearGradient(colors: [Color(red: 0.84, green: 0.75, blue: 0.55),
+                                Color(red: 0.98, green: 0.93, blue: 0.82),
+                                Color(red: 0.84, green: 0.75, blue: 0.55)],
+                       startPoint: .leading, endPoint: .trailing)
+    }
+
 }

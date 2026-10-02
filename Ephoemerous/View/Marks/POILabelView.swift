@@ -49,9 +49,9 @@ struct POILabelView: View {
     var badgeReveal: Double = 1
     var nameReveal:  Double = 1
     /// Inverse of any `.scaleEffect` a caller wraps this view in — e.g. the
-    /// promoted pin enlarges the whole badge up to ~1.9× (2.3× mid-pop).
+    /// promoted pin enlarges the whole badge up to ~2.8× (3.4× mid-pop).
     /// `.scaleEffect` scales EVERY pixel uniformly, casing stroke included,
-    /// so left at 1 the 1.7pt border would render up to ~4pt: the orb grows
+    /// so left at 1 the 1.7pt border would render up to ~6pt: the orb grows
     /// but the outline turns into a bold halo. Pass `1 / callerScale` here
     /// and the stroke pre-shrinks so the two scalings cancel — only the
     /// orb enlarges, the casing weight holds constant. Default 1 (no
@@ -102,6 +102,31 @@ struct POILabelView: View {
     private var casing: Color {
         isMasked ? .white.opacity(0.5) : style.border
     }
+
+    /// Saturn wears its rings; every other badge is a bare orb.
+    private var hasRings: Bool { Artist.shared.poiHasRings(category) }
+
+    /// Extra push for the name so it clears Saturn's rings.
+    private var ringOverhang: CGFloat {
+        hasRings ? style.badgeSize * Artist.shared.saturnRingOverhang : 0
+    }
+
+    /// Ring fill — the cream band, or the same glassy alpha-only shading
+    /// as the orb under a masking host.
+    private var ringFill: AnyShapeStyle {
+        isMasked ? badgeFill : AnyShapeStyle(Artist.shared.saturnRingGradient)
+    }
+
+    @ViewBuilder
+    private func rings(_ half: SaturnRings.Half, lineWidth: CGFloat) -> some View {
+        if hasRings {
+            SaturnRings(half:      half,
+                        diameter:  style.badgeSize,
+                        fill:      ringFill,
+                        casing:    casing,
+                        lineWidth: lineWidth)
+        }
+    }
     
     init(
         category: POICategory,
@@ -145,7 +170,7 @@ struct POILabelView: View {
                         // Overlay aligns the name's leading to the badge's
                         // leading; push it right past the badge so the text
                         // trails the symbol and never overlaps it.
-                        .offset(x: style.badgeSize + nameGap)
+                        .offset(x: style.badgeSize + nameGap + ringOverhang)
                 }
             }
     }
@@ -204,6 +229,8 @@ struct POILabelView: View {
                 )
         }
         .frame(width: d, height: d)
+        // Saturn's far rings pass behind the globe…
+        .background { rings(.back, lineWidth: bw) }
         // Casing ring — the light outline doing the legibility work.
         .overlay(
 //            Circle()
@@ -217,6 +244,8 @@ struct POILabelView: View {
                 shape.stroke(style.gradientTop, lineWidth: bw * 0.7)
             }
         }
+        // …and the near rings cross in front of it.
+        .overlay { rings(.front, lineWidth: bw) }
         // Companion pip — the same orb in miniature, at the lower-trailing
         // edge. It reads as what an eyepiece shows: one star, then a second
         // beside it. Lower-TRAILING because the favourite heart takes the

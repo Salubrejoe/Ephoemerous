@@ -140,6 +140,7 @@
 				View/Marks/MoonPhaseShape.swift,
 				View/Marks/OutlinedText.swift,
 				View/Marks/POILabelView.swift,
+				View/Marks/SaturnRings.swift,
 			);
 			target = 7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */;
 		};
@@ -184,6 +185,7 @@
 				View/Marks/MoonPhaseShape.swift,
 				View/Marks/OutlinedText.swift,
 				View/Marks/POILabelView.swift,
+				View/Marks/SaturnRings.swift,
 			);
 			target = 7C1803D5300A4F64004D9B33 /* EphoemerousWatch */;
 		};

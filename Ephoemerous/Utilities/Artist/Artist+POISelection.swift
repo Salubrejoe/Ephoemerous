@@ -14,10 +14,12 @@ import LoreKit
 extension Artist {
 
     /// Enlarged scale a fully-promoted badge settles at.
-    var poiSelectScale: CGFloat { 1.88}
+    var poiSelectScale: CGFloat { 2.8 }
     /// How far the promoted badge lifts above the dot, as a multiple
-    /// of `badgeSize`.
-    var poiSelectLiftFactor: CGFloat { 1.45 }
+    /// of `badgeSize`. Rides with `poiSelectScale`: the enlarged badge's
+    /// half-height is 1.4·badge, so 1.95 leaves the same ~6pt of air
+    /// above the dot the pin had at the old 1.88 scale.
+    var poiSelectLiftFactor: CGFloat { 1.95 }
     /// Gap between the dot and the top of the dropped-below name.
     var poiSelectNameDrop: CGFloat { 7 }
     /// Radius of the precise-location dot left under a promoted pin.

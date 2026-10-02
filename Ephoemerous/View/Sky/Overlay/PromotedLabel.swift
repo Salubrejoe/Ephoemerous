@@ -31,7 +31,7 @@ struct PromotedLabel: View {
     /// wall clock (see `AppState.isObservationLive`).
     var spacecraftLive: Bool = false
 
-    /// The promoted badge is the BIGGEST the Moon ever draws (up to ~1.9×),
+    /// The promoted badge is the BIGGEST the Moon ever draws (up to ~2.8×),
     /// so it's the one place the phase really has room to read.
     private var promotedLunarPhase: LunarPhase? {
         guard case .moon = selection else { return nil }
@@ -245,10 +245,10 @@ private struct SkyLabPromotedPin: View {
     /// voice, defined by `FavouriteHeartMark`.
     private static let heartTint = FavouriteHeartMark.bright
 
-    /// Footnote serif bold (CoreText needs a concrete UIFont) — matches the
-    /// flat label's name font.
+    /// Title-2 serif bold (CoreText needs a concrete UIFont) — the flat
+    /// label's serif voice, sized up so the selected name carries.
     private static let nameFont: UIFont = {
-        let base = UIFont.preferredFont(forTextStyle: .headline)
+        let base = UIFont.preferredFont(forTextStyle: .title2)
         var desc = base.fontDescriptor
         desc = desc.withDesign(.serif) ?? desc
         desc = desc.withSymbolicTraits(.traitBold) ?? desc
