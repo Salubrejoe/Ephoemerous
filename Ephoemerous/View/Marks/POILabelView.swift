@@ -117,6 +117,12 @@ struct POILabelView: View {
         return 1
     }
 
+    /// The craft this badge stands for, when it's a spacecraft.
+    private var craft: Spacecraft? {
+        if case .spacecraft(let c) = category { return c }
+        return nil
+    }
+
     /// Saturn wears its rings; every other badge is a bare orb.
     private var hasRings: Bool { Artist.shared.poiHasRings(category) }
 
@@ -235,7 +241,14 @@ struct POILabelView: View {
         let surface = Artist.shared.planetSurface(category)
 
         return ZStack {
-            if surface == .venusPhase, let phase {
+            if let craft {
+                // A spacecraft is its own silhouette, cased part by part.
+                SpacecraftGlyph(craft:      craft,
+                                casing:     casing,
+                                lineWidth:  bw,
+                                fullDetail: richDetail,
+                                masked:     isMasked)
+            } else if surface == .venusPhase, let phase {
                 // Venus keeps its full circle: lit part in its gradient,
                 // night side black (see `PlanetSurface`).
                 VenusPhaseFill(phase: phase, litFill: badgeFill, night: venusNightFill)
@@ -256,12 +269,11 @@ struct POILabelView: View {
         .frame(width: d, height: d)
         // Saturn's far rings pass behind the globe…
         .background { rings(.back, lineWidth: bw) }
-        // Casing ring — the light outline doing the legibility work.
-        .overlay(
-//            Circle()
-            shape
-                .stroke(casing, lineWidth: bw)
-        )
+        // Casing ring — the light outline doing the legibility work. A
+        // spacecraft cases its own silhouette instead.
+        .overlay {
+            if craft == nil { shape.stroke(casing, lineWidth: bw) }
+        }
         // The casing is near-black, which disappears on an unfilled new
         // moon against a dark sky — so that one case gets a tint ring too.
         .overlay {

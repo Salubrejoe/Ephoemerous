@@ -3,10 +3,10 @@ import Observation
 import simd
 
 // MARK: - SpacecraftTracker
-// Keeps the ISS, Hubble and JWST where they belong, and says when the two
-// low-orbit craft will next cross the observer's sky.
+// Keeps the ISS, Tiangong, Hubble and JWST where they belong, and says when
+// the three low-orbit craft will next cross the observer's sky.
 //
-// Network: two tiny CelesTrak requests (one element set each — the endpoint
+// Network: three tiny CelesTrak requests (one element set each — the endpoint
 // takes a single CATNR) and one JPL Horizons table. Both are keyless, and
 // neither is ever told where the user is: orbits are propagated and passes
 // predicted on the phone, and JWST is fetched geocentric. Responses are
@@ -59,7 +59,7 @@ final class SpacecraftTracker {
         switch craft {
         case .jwst:
             return webb?.direction(at: date, from: observer)
-        case .iss, .hubble:
+        case .iss, .hubble, .tiangong:
             guard let orbit = trustedOrbit(craft, at: date),
                   let state = try? orbit.state(at: date)
             else { return nil }

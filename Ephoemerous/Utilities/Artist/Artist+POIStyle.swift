@@ -120,7 +120,7 @@ extension Artist {
             return POICategoryStyle(
                 gradientTop:    palette.sun.bottom,
                 gradientBottom: palette.sun.top,
-                textColor:      .white,
+                textColor:      palette.sun.bottom,     // the badge's deep tone, like every body
                 badgeSize:      22,
                 badgeCorners:   12,         // near-circle
                 tier:           tier)
@@ -129,7 +129,7 @@ extension Artist {
             return POICategoryStyle(
                 gradientTop:    palette.moon.bottom,
                 gradientBottom: palette.moon.top,
-                textColor:      .white,
+                textColor:      palette.moon.bottom,    // the badge's deep tone, like every body
                 badgeSize:      18,
                 badgeCorners:   3,          // triangle
                 tier:           tier)
@@ -147,15 +147,16 @@ extension Artist {
                 tier:           tier)
 
         case .spacecraft:
-            // Brushed steel — the one badge that isn't a body's own
-            // colour. A touch smaller than a planet's: metadata ≤ data,
-            // and even the ISS is a point, not a disc.
+            // Each craft draws its own silhouette (see `SpacecraftGlyph`)
+            // on a brushed-steel base. 14 wide: a silhouette needs more
+            // room than an orb, but it's long and thin, so it weighs no
+            // more on the sky than a planet does.
             let g = spacecraftGradient
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
                 textColor:      g.bottom,
-                badgeSize:      10,
+                badgeSize:      14,
                 badgeCorners:   6,
                 tier:           tier)
         }
@@ -167,6 +168,23 @@ extension Artist {
     var spacecraftGradient: (top: Color, bottom: Color) {
         (Color(red: 0.92, green: 0.94, blue: 0.97),
          Color(red: 0.56, green: 0.64, blue: 0.74))
+    }
+
+    /// The paints a spacecraft silhouette is built from, deep → bright
+    /// (bottom → top of each part). Copper for the ISS's arrays, blue for
+    /// Hubble's, violet for Tiangong's, Webb's gold mirror and lavender
+    /// sunshield. ▼ TWEAK the spacecraft paints here ▼
+    func spacecraftPaint(_ paint: SpacecraftShapes.Paint) -> (Color, Color) {
+        func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r / 255, green: g / 255, blue: b / 255) }
+        switch paint {
+        case .steel:    return (spacecraftGradient.bottom, spacecraftGradient.top)
+        case .copper:   return (c(176, 112,  58), c(232, 178, 108))
+        case .blue:     return (c( 40,  62, 128), c( 92, 122, 196))
+        case .violet:   return (c( 70,  60, 140), c(128, 118, 206))
+        case .gold:     return (c(196, 140,  40), c(250, 214, 112))
+        case .shield:   return (c(150, 140, 178), c(226, 222, 240))
+        case .aperture: return (c( 22,  25,  33), c( 38,  42,  54))
+        }
     }
 
     /// Single neutral tint for every constellation badge. The myth-colour

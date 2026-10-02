@@ -123,6 +123,7 @@ extension Spacecraft {
         case .iss:    return String(localized: "Crewed station, 420 km up")
         case .hubble: return String(localized: "Space telescope, 530 km up")
         case .jwst:   return String(localized: "Infrared telescope at L2")
+        case .tiangong: return String(localized: "Crewed station, 390 km up")
         }
     }
 }

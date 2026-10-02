@@ -142,6 +142,7 @@
 				View/Marks/PlanetSurface.swift,
 				View/Marks/POILabelView.swift,
 				View/Marks/SaturnRings.swift,
+				View/Marks/SpacecraftGlyph.swift,
 			);
 			target = 7CF48C283007AC620087F47F /* EphoemerousWidgetsExtension */;
 		};
@@ -188,6 +189,7 @@
 				View/Marks/PlanetSurface.swift,
 				View/Marks/POILabelView.swift,
 				View/Marks/SaturnRings.swift,
+				View/Marks/SpacecraftGlyph.swift,
 			);
 			target = 7C1803D5300A4F64004D9B33 /* EphoemerousWatch */;
 		};
