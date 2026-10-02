@@ -7,7 +7,7 @@ struct ConstellationCard: View {
         
         
         HStack {
-            Image(systemName: "sparkles")
+            Artist.shared.constellationFigure(constellation)
             Text(constellation.localizedName)
                 .fontWeight(.semibold)
                 .minimumScaleFactor(0.1)

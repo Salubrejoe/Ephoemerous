@@ -442,10 +442,8 @@ struct SearchSheet: View {
         case .spacecraft(let c):
             POILabelView(category: .spacecraft(c), text: "")
         case .constellation(let c):
-            Image(symbol: Artist.shared.constellationEntitySymbol(
-                Artist.shared.constellationEntity(of: c)
-            ))
-            .foregroundStyle(.secondary)
+            Artist.shared.constellationFigure(c)
+                .foregroundStyle(.secondary)
         }
     }
 

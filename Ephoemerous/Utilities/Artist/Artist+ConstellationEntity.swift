@@ -25,6 +25,17 @@ extension Artist {
         }
     }
 
+    /// The constellation's own stick figure as a custom SF Symbol —
+    /// `Assets.xcassets/Constellations/constellation.<iau>.symbolset`,
+    /// generated from `constellationLines.json`. Takes `.font` weight and
+    /// scale like any SF Symbol; lines sit on the hierarchical secondary
+    /// layer, stars on primary. `.none` has no figure, so it keeps the
+    /// generic glyph.
+    func constellationFigure(_ cons: Constellation) -> Image {
+        guard cons != .none else { return Image(symbol: .entityFallback) }
+        return Image("constellation.\(cons.rawValue.lowercased())")
+    }
+
     /// Resolve a constellation's primary entity by reading its
     /// `types.first` from the JSON-loaded categories. Falls back
     /// to `.none` when the constellation has no `types` entry or
