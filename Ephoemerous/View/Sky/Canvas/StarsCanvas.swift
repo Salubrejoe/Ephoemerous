@@ -54,7 +54,8 @@ struct StarsCanvas: View, Equatable {
             let namedDotIn   = Artist.shared.namedStarDotIn
             let namedHandsOff = camera.scale >= namedDotIn
 
-            let glow = Self.glowAmount(scale: camera.scale)
+            let glow   = Self.glowAmount(scale: camera.scale)
+            let zenith = camera.viewpoint.originVector       // earth-fixed, same frame as the horizon
             for star in stars {
                 guard !favouriteIDs.contains(star.id) else { continue }   // drawn as a badge
                 // Named stars hand off to their own dot / badge past the tier.
@@ -69,8 +70,11 @@ struct StarsCanvas: View, Equatable {
                 // red — the way a dark sky actually shows them.
                 let color = star.spectralClass.color
                 // The brightest few glow: the cue that they're light sources,
-                // not dots. Fades out as you zoom so it never blooms to soup.
-                if star.magnitude < Self.glowBelowMagnitude, glow > 0.01 {
+                // not dots. Fades out as you zoom so it never blooms to soup,
+                // and only above the horizon — a star under the ground isn't
+                // shining on anyone.
+                if star.magnitude < Self.glowBelowMagnitude, glow > 0.01,
+                   simd_dot(star.equatorialVector.sidereallyRotated(by: camera.sidereal), zenith) > 0 {
                     let g = r * Self.glowReach
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: sc.x - g, y: sc.y - g, width: g * 2, height: g * 2)),
