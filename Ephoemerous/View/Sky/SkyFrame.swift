@@ -40,6 +40,8 @@ struct SkyFrame {
     let liveScale: CGFloat
     let liveRot:   Angle
     let applied:   CGSize
+    /// Where unpromoted names may speak — see `LabelComfortZone`.
+    let comfort:   LabelComfortZone
 
     // Who is selected — passive labels defer to the promoted pin.
     let selection:       SkyObject?
@@ -112,6 +114,11 @@ struct SkyFrame {
         effPinch  = engaging ? 1            : sky.effPinch
         liveScale = engaging ? camera.scale : sky.liveScale
         applied   = engaging ? .zero        : sky.applied
+        comfort   = LabelComfortZone(pivot:    CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2),
+                                     visible:  visibleRect,
+                                     pinch:    effPinch,
+                                     rotation: liveRot,
+                                     offset:   applied)
 
         // Source of truth is `detailDestination`, so a canvas tap, the
         // sheet's X and a swipe-away all stay in lockstep.

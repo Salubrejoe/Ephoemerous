@@ -24,6 +24,8 @@ struct StarLabels: View {
     /// The selected star is drawn by the promoted overlay instead — skip it
     /// here so its badge isn't drawn twice.
     var selectedID: String? = nil
+    /// Names fade outside the calm middle of the screen; badges stay.
+    var comfort: LabelComfortZone = .everywhere
 
     var body: some View {
         ZStack {
@@ -63,6 +65,7 @@ struct StarLabels: View {
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -40, sc.x < w + 40, sc.y > -40, sc.y < h + 40 else { return nil }
             let nameReveal = POILabelView.tierReveal(scale: scale, threshold: style.textIn)
+                           * comfort.nameVisibility(at: sc)
             let isDouble   = star.multiplicity?.isShowpiece == true
             return Mark(star: star, sc: sc,
                         badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),

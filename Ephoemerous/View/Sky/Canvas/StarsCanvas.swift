@@ -128,8 +128,18 @@ struct StarsCanvas: View, Equatable {
     /// the Canvas still redraws only on commit.
     private static func radius(forMagnitude m: Double, scale: CGFloat) -> CGFloat {
         let factor = min(zoomCap, pow(max(scale, zoomAnchor) / zoomAnchor, zoomExp))
-        return baseRadius(forMagnitude: m) * factor
+        let base   = baseRadius(forMagnitude: m)
+        // Zooming grows the field, but never past the cap: an unnamed,
+        // untappable dot must stay smaller than the named stars' pentagons
+        // and badges. A star already bigger than the cap at rest keeps its
+        // resting size (those are the bright, named ones, which hand off to
+        // their own marks as you zoom anyway).
+        return min(base * factor, max(base, fieldDotMaxRadius))
     }
+
+    /// Largest radius zoom may grow a field dot to — under the named-star
+    /// pentagon's 2.6. ▼ TWEAK ▼
+    private static let fieldDotMaxRadius: CGFloat = 1.7
     /// Faint stars dim out so the field reads as depth, not noise. The
     /// numerator sits above the 6.5 divisor so the bright end saturates
     /// early — a 1st-magnitude star is flat white, and the ramp spends its

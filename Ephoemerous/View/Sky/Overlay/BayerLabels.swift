@@ -38,6 +38,8 @@ struct BayerLabels: View {
     /// star can't be tapped, but it CAN arrive selected from search, so the
     /// guard is real.
     var selectedID: String? = nil
+    /// Letters fade outside the calm middle of the screen.
+    var comfort: LabelComfortZone = .everywhere
 
     /// One flat threshold for the whole layer — see `Artist.bayerLetterIn`.
     private static let letterIn: Double = Artist.shared.bayerLetterIn
@@ -93,7 +95,9 @@ struct BayerLabels: View {
             guard let letter = star.bayerLetter else { return nil }
             guard let sc = camera.screen(equatorial: star.equatorialVector) else { return nil }
             guard sc.x > -40, sc.x < w + 40, sc.y > -40, sc.y < h + 40 else { return nil }
-            return Mark(id: star.id, letter: letter, sc: sc, reveal: reveal)
+            let calm = comfort.nameVisibility(at: sc)
+            guard calm > 0.01 else { return nil }
+            return Mark(id: star.id, letter: letter, sc: sc, reveal: reveal * calm)
         }
     }
 }

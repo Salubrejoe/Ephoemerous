@@ -25,36 +25,33 @@ extension Artist {
     /// taps land exactly when the first badges appear.
     var namedStarTapMinScale: Double { 280 }
 
-    // MARK: - Reveal cascade (brightness tiers)
+    // MARK: - Reveal cascade (brightness ripple)
     //
-    // The named-star LABELS surface brightest-first. Three magnitude tiers,
-    // each revealing its badge + text a step later in the zoom, so the
-    // headline stars (Sirius, Vega, Arcturus…) name themselves before the
-    // fainter named stars join in — a brightness-ordered ripple as you
-    // pinch in, instead of every label popping at one threshold.
+    // The named-star LABELS surface brightest-first, each at its OWN zoom:
+    // the delay slides smoothly with magnitude, so pinching in reads as a
+    // ripple — Sirius, then Vega, then Capella… — instead of three waves of
+    // labels popping together. (It was three discrete tiers; within a tier
+    // every star still appeared at once.)
     //
-    // Only the badge/text thresholds are tiered, NOT the dot: every named
-    // star still shows its tier-0 dot together at `namedStarDotIn`, so a
-    // dimmer star just holds its dot a little longer until its badge
-    // cascades in — nothing blinks out in the gap. `poiStyle(for:)` reads
-    // these for the `.namedStar` case.
+    // Only the badge/text thresholds ripple, NOT the dot: every named star
+    // shows its tier-0 dot together at `namedStarDotIn`, so a dimmer star
+    // just holds its dot a little longer until its badge arrives — nothing
+    // blinks out in the gap. `poiTier(for:)` reads these.
 
-    /// Tier-0 (brightest) badge + text reveal scales. Dimmer tiers offset
-    /// later by `namedStarTierStep` each.
+    /// The brightest named stars' badge + text reveal scales.
     var namedStarBadgeIn:  Double { 280 }
     var namedStarTextIn:   Double { 360 }
-    /// Added to both thresholds per dimmer tier (tier index × step) — the
-    /// zoom gap between successive brightness waves.
-    var namedStarTierStep: Double { 140 }
-    /// Magnitude cuts between the three tiers (magnitude ascends ⇒ dimmer).
-    var namedStarTier1Cut: Double { 1.6 }   // tier 0 | tier 1
-    var namedStarTier2Cut: Double { 2.8 }   // tier 1 | tier 2
+    /// Magnitudes the ripple runs across: at or brighter than the first,
+    /// no delay; at or fainter than the second, the full delay.
+    var namedStarRippleBrightest: Double { 0.0 }
+    var namedStarRippleFaintest:  Double { 4.0 }
+    /// Zoom added to both thresholds at the faint end of the ripple — the
+    /// same total spread the three tiers had (2 × 140).
+    var namedStarRippleSpan:      Double { 280 }
 
-    /// Reveal tier for a named star: 0 = brightest (first), 2 = faintest
-    /// (last). Pure function of apparent magnitude.
-    func namedStarTier(magnitude: Double) -> Int {
-        if magnitude < namedStarTier1Cut { return 0 }
-        if magnitude < namedStarTier2Cut { return 1 }
-        return 2
+    /// How much later than the brightest a star of `magnitude` reveals.
+    func namedStarRevealDelay(magnitude: Double) -> Double {
+        let t = (magnitude - namedStarRippleBrightest) / (namedStarRippleFaintest - namedStarRippleBrightest)
+        return min(1, max(0, t)) * namedStarRippleSpan
     }
 }

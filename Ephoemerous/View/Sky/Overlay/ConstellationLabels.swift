@@ -24,6 +24,9 @@ struct ConstellationLabels: View {
     /// Selected constellation (rawValue) — emphasised in place (primary +
     /// crisp), the production `isSelected` treatment. No badge, no pin.
     var selectedID: String? = nil
+    /// Names fade outside the calm middle of the screen (the selected one
+    /// is exempt).
+    var comfort: LabelComfortZone = .everywhere
 
     /// Footnote serif bold, matching the POI label names.
     private static let font: UIFont = {
@@ -80,8 +83,10 @@ struct ConstellationLabels: View {
             let q = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: q) else { return nil }
             guard sc.x > -60, sc.x < w + 60, sc.y > -60, sc.y < h + 60 else { return nil }
+            let calm = selected ? 1 : comfort.nameVisibility(at: sc)
+            guard calm > 0.01 || selected else { return nil }
             return Mark(id: cons.rawValue, name: cons.localizedName,
-                        sc: sc, reveal: reveal, selected: selected)
+                        sc: sc, reveal: reveal * calm, selected: selected)
         }
     }
 }

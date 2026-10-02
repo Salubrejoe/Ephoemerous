@@ -72,7 +72,8 @@ struct SkyLayerStack: View {
                                 pinch: frame.effPinch,
                                 scale: frame.liveScale,
                                 rotation: frame.liveRot,
-                                selectedID: frame.selectedConsID)
+                                selectedID: frame.selectedConsID,
+                                comfort: frame.comfort)
 
             // The quietest voice, so it paints FIRST and every louder label
             // lands on top of it: bare Greek letters on the figure stars
@@ -82,7 +83,8 @@ struct SkyLayerStack: View {
                         pinch: frame.effPinch,
                         scale: frame.liveScale,
                         rotation: frame.liveRot,
-                        selectedID: frame.selectedStarID)
+                        selectedID: frame.selectedStarID,
+                        comfort: frame.comfort)
 
             StarLabels(camera: frame.camera,
                        stars: app.favouriteStars,
@@ -90,7 +92,8 @@ struct SkyLayerStack: View {
                        scale: frame.liveScale,
                        rotation: frame.liveRot,
                        category: { .followedStar($0) },
-                       selectedID: frame.selectedStarID)
+                       selectedID: frame.selectedStarID,
+                       comfort: frame.comfort)
 
             // Favourite-star heart, except the selected one — the promoted
             // pin carries its own.
@@ -107,7 +110,8 @@ struct SkyLayerStack: View {
                        scale: frame.liveScale,
                        rotation: frame.liveRot,
                        category: { .namedStar($0) },
-                       selectedID: frame.selectedStarID)
+                       selectedID: frame.selectedStarID,
+                       comfort: frame.comfort)
 
             SolarSystemLabels(camera: frame.camera,
                               date: app.renderedObservationDate,
@@ -115,7 +119,8 @@ struct SkyLayerStack: View {
                               scale: frame.liveScale,
                               rotation: frame.liveRot,
                               selected: frame.selection,
-                              spacecraftLive: app.isObservationLive)
+                              spacecraftLive: app.isObservationLive,
+                              comfort: frame.comfort)
 
             // The selected object, forced visible at any zoom — topmost so it
             // reads above the passive labels.

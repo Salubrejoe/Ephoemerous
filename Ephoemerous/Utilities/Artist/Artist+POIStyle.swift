@@ -112,7 +112,10 @@ extension Artist {
                 badgeCorners:   5,          // pentagon — star
                 tier:           tier,
                 dotShape:       .squircle(corners: 5, bulge: poiBadgeBulge),
-                dotRadius:      2.0)
+                // Clearly bigger than any field dot (those cap at
+                // `StarsCanvas.fieldDotMaxRadius`), so the stars you can tap
+                // and name read as a different species.
+                dotRadius:      2.6)
 
         case .sun:
             // Warm palette, near-circular badge; gradient runs deep→bright

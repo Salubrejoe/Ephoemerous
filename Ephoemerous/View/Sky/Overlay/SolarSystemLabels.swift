@@ -32,6 +32,8 @@ struct SolarSystemLabels: View {
     /// The observation is "now" — spacecraft then ride the wall clock
     /// while everything else holds the frozen `date`.
     var spacecraftLive: Bool = false
+    /// Names fade outside the calm middle of the screen; badges stay.
+    var comfort: LabelComfortZone = .everywhere
 
     private var artist: Artist { .shared }
 
@@ -163,7 +165,8 @@ struct SolarSystemLabels: View {
                              labelStyle: labelStyle,
                              badgeReveal: POILabelView.tierReveal(scale: scale, threshold: style.badgeIn),
                              nameReveal:  suppressName ? 0
-                                 : POILabelView.tierReveal(scale: scale, threshold: style.textIn),
+                                 : POILabelView.tierReveal(scale: scale, threshold: style.textIn)
+                                   * comfort.nameVisibility(at: sc),
                              phase:       lunarPhase(for: category))
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)

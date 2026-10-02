@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 // MARK: - POI tier thresholds
 // The zoom thresholds that gate every POI label — the ONE place to tune
@@ -30,7 +31,7 @@ extension Artist {
     /// target, only the glyph — but it belongs on this dial with the rest.
     ///
     /// LAST thing on the map to arrive. The named-star cascade finishes at
-    /// 640 (`namedStarTextIn` + two `namedStarTierStep`s) and the pinch
+    /// 640 (`namedStarTextIn` + `namedStarRippleSpan`) and the pinch
     /// ceiling is 1200, so this sits in the final third: every star that
     /// has a name has said it before a single Greek letter shows up.
     ///
@@ -42,6 +43,14 @@ extension Artist {
     /// One flat threshold, no brightness cascade — these are all faint by
     /// definition, so there is no headline order to stagger. ▼ TWEAK ▼
     var bayerLetterIn: Double { 800 }
+
+    // MARK: Label comfort zone  ▼ TWEAK ▼  (see `LabelComfortZone`)
+    /// The calm middle where unpromoted names may show, as a fraction of
+    /// the visible window — a squircle this wide and this tall.
+    var labelComfortWidth:   CGFloat { 0.78 }
+    var labelComfortHeight:  CGFloat { 0.72 }
+    /// The outer share of that squircle over which names fade out.
+    var labelComfortFeather: CGFloat { 0.18 }
 
     /// The tier map — tweak every category's reveal timing here.
     func poiTier(for category: POICategory) -> POITier {
@@ -57,12 +66,12 @@ extension Artist {
         // Spacecraft ride the planet tier — same zoom, lowest declutter
         // priority (see `SpacecraftLabels`).
         case .spacecraft:     return POITier(badgeIn: 160, textIn: 220)
-        // Named stars cascade in brightest-first, well past
-        // constellation-name territory (see `Artist+NamedStars`).
+        // Named stars ripple in brightest-first, each at its own zoom, well
+        // past constellation-name territory (see `Artist+NamedStars`).
         case .namedStar(let star):
-            let bump = Double(namedStarTier(magnitude: star.magnitude)) * namedStarTierStep
-            return POITier(badgeIn: namedStarBadgeIn + bump,
-                           textIn:  namedStarTextIn  + bump)
+            let delay = namedStarRevealDelay(magnitude: star.magnitude)
+            return POITier(badgeIn: namedStarBadgeIn + delay,
+                           textIn:  namedStarTextIn  + delay)
         }
     }
 }
