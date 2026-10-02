@@ -67,6 +67,8 @@ struct ConstellationDetailView: View {
                 leadingSymbol: .share,
                 onLeading:     {},
                 postcard:      state.postcard(for: .constellation(constellation)),
+                hero:          .constellation(constellation),
+                favorite:      .constellation(constellation),
                 onDismiss:     { state.dismissDetail() }
             )
             if !collapsed {
@@ -75,10 +77,6 @@ struct ConstellationDetailView: View {
                 // fold, the origin story flows below it.
                 ScrollView {
                     VStack(spacing: 0) {
-                        
-                        DetailActionRow(obj: .constellation(constellation))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
                         roster
                         storySection
                             .padding(.horizontal, 16)
@@ -144,6 +142,11 @@ struct ConstellationDetailView: View {
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
                 Spacer(minLength: 0)
+                // What the figure depicts — the header's old subtitle.
+                Text(subtitleText)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .textCase(.uppercase)
             }
 
             if MythStoryteller.isAvailable {

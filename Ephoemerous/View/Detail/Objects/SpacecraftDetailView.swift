@@ -40,6 +40,7 @@ struct SpacecraftDetailView: View {
                 icon:          { POILabelView(category: .spacecraft(craft), text: "") },
                 leadingSymbol: .resetClock,
                 onLeading:     returnToNow,
+                hero:          .spacecraft(craft),
                 onDismiss:     { state.dismissDetail() }
             )
 
@@ -95,7 +96,16 @@ struct SpacecraftDetailView: View {
         .contentShape(.rect)
     }
 
+    @ViewBuilder
     private func statRows(_ facts: SpacecraftFacts) -> some View {
+        // What it is — the header's old subtitle.
+        LabeledContent {
+            Text(craft.portrait)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+        } label: {
+            Text(String(localized: "Type"))
+        }
         ForEach(facts.stats) { stat in
             LabeledContent {
                 Text(stat.value)

@@ -3158,6 +3158,86 @@
           }
         }
       }
+    },
+    "Designation" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Designazione"
+          }
+        }
+      }
+    },
+    "Named for" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome da"
+          }
+        }
+      }
+    },
+    "Up · %lld° %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visibile · %lld° %@"
+          }
+        }
+      }
+    },
+    "Never rises here" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qui non sorge mai"
+          }
+        }
+      }
+    },
+    "sets %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tramonta %@"
+          }
+        }
+      }
+    },
+    "rises %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sorge %@"
+          }
+        }
+      }
+    },
+    "next pass %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "prossimo passaggio %@"
+          }
+        }
+      }
+    },
+    "never sets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "non tramonta mai"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

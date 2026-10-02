@@ -43,6 +43,7 @@ struct PlanetDetailView: View {
                 leadingSymbol: .share,
                 onLeading:     {},
                 postcard:      state.postcard(for: .planet(planet)),
+                hero:          .planet(planet),
                 onDismiss:     { state.dismissDetail() }
             )
             // No RememberButton — planets, sun, and moon aren't
@@ -61,6 +62,7 @@ struct PlanetDetailView: View {
                 
                 
                 DetailStatList(stats: [
+                    .init(label: String(localized: "Named for"),         value: planet.mythology),
                     .init(label: String(localized: "Distance from Sun"), value: facts?.distance ?? "—"),
                     .init(label: String(localized: "Diameter"),          value: facts?.diameter ?? "—"),
                     .init(label: String(localized: "Orbital period"),    value: facts?.period ?? "—"),

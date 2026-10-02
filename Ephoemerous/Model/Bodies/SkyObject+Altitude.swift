@@ -17,7 +17,9 @@ extension SkyObject {
         return SatelliteSky.altitude(of: direction, from: observer, date: date)
     }
 
-    private func equatorialDirection(at date: Date, from observer: SatelliteSky.Observer) -> SIMD3<Double>? {
+    /// Unit equatorial direction (not sidereally rotated) at `date`; nil when
+    /// there is nothing to place. The detail hero centres its sky on this.
+    func equatorialDirection(at date: Date, from observer: SatelliteSky.Observer) -> SIMD3<Double>? {
         switch self {
         case .star(let s):
             return s.equatorialVector

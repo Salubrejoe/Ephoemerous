@@ -52,14 +52,11 @@ struct StarDetailView: View {
                 secondaryLeadingSymbol: showsBackChevron ? .share : nil,
                 onSecondaryLeading:     showsBackChevron ? {} : nil,
                 postcard:               state.postcard(for: .star(star)),
+                hero:                   .star(star),
+                favorite:               .star(star),
                 onDismiss:              { state.dismissDetail() }
             )
             if !collapsed {
-                // Morphing Remember row — see `DetailActionRow.swift`.
-                DetailActionRow(obj: .star(star))
-                .padding(.horizontal, 16)
-                .padding(.top,        12)
-
                 DetailStatList(stats: stats)
             }
             Spacer(minLength: 0)
@@ -113,7 +110,8 @@ struct StarDetailView: View {
     /// they qualify how the star LOOKS, so they belong with brightness
     /// rather than after the positional/catalogue tail (RA, Dec, μ).
     private var stats: [DetailStat] {
-        [
+        identityStats
+        + [
             .init(label: String(localized: "Distance"),        value: distanceText),
             .init(label: String(localized: "Spectral class"),  value: star.spectralClass.rawValue),
             .init(label: String(localized: "Magnitude"),       value: magnitudeText),
@@ -124,6 +122,17 @@ struct StarDetailView: View {
             .init(label: String(localized: "Declination"),     value: decText),
             .init(label: String(localized: "Proper motion"),   value: pmText),
         ]
+    }
+
+    /// What the star IS — the header's old subtitle, now that the header
+    /// carries the live status: "Red supergiant in Orion", and the Bayer
+    /// designation for a star with a proper name ("α · Orion").
+    private var identityStats: [DetailStat] {
+        var rows: [DetailStat] = [.init(label: String(localized: "Type"), value: star.portrait)]
+        if star.properName != nil {
+            rows.append(.init(label: String(localized: "Designation"), value: subtitleText))
+        }
+        return rows
     }
 
     /// Companion rows, present ONLY when the catalogue actually knows
