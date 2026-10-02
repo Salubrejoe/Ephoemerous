@@ -8,8 +8,13 @@ import SwiftUI
 // cased silhouette, the dark outline only ever on the outside.
 //
 // Geometry lives in design units where the badge is 14 wide (see
-// `SpacecraftShapes`); the Canvas scales it to the frame. The promoted pin
+// `SpacecraftShapes`); `DesignShape` scales it to the frame. The promoted pin
 // adds fine linework (panel seams, Webb's 18 segments and struts).
+//
+// Built from Shapes, NOT a Canvas: a Canvas rasterises at the badge's tiny
+// layout size, so the sky's pinch scaling and the promoted pin's 2.8×
+// stretched that bitmap into a haze. Shapes stay vector through any
+// `.scaleEffect` and redraw crisp at the final size.
 struct SpacecraftGlyph: View {
 
     let craft:      Spacecraft
@@ -21,33 +26,46 @@ struct SpacecraftGlyph: View {
     let masked:     Bool
 
     var body: some View {
-        Canvas { ctx, size in
-            let k     = size.width / SpacecraftShapes.designWidth
-            let place = CGAffineTransform(translationX: size.width / 2, y: size.height / 2).scaledBy(x: k, y: k)
-            let parts = SpacecraftShapes.parts(of: craft).map { ($0.paint, $0.path.applying(place)) }
+        let parts = SpacecraftShapes.parts(of: craft)
+        ZStack {
             // Casing under everything: the fills then cover its inner half.
-            for (_, path) in parts {
-                ctx.stroke(path, with: .color(casing),
-                           style: StrokeStyle(lineWidth: lineWidth * 1.18, lineJoin: .round))
+            ForEach(parts.indices, id: \.self) { i in
+                DesignShape(path: parts[i].path)
+                    .stroke(casing, style: StrokeStyle(lineWidth: lineWidth * 1.18, lineJoin: .round))
             }
-            for (paint, path) in parts {
-                ctx.fill(path, with: shading(paint, in: path.boundingRect))
+            ForEach(parts.indices, id: \.self) { i in
+                DesignShape(path: parts[i].path).fill(shading(parts[i]))
             }
-            guard fullDetail, !masked else { return }
-            for line in SpacecraftShapes.detail(of: craft) {
-                ctx.stroke(line.path.applying(place), with: .color(line.color),
-                           lineWidth: lineWidth * line.weight)
+            if fullDetail, !masked {
+                let lines = SpacecraftShapes.detail(of: craft)
+                ForEach(lines.indices, id: \.self) { i in
+                    DesignShape(path: lines[i].path)
+                        .stroke(lines[i].color, lineWidth: lineWidth * lines[i].weight)
+                }
             }
         }
     }
 
-    /// Each part shades bottom (deep) → top (bright) across its own bounds.
-    private func shading(_ paint: SpacecraftShapes.Paint, in rect: CGRect) -> GraphicsContext.Shading {
+    /// Each part shades bottom (deep) → top (bright) across its OWN bounds,
+    /// expressed as unit points of the badge frame.
+    private func shading(_ part: SpacecraftShapes.Part) -> LinearGradient {
         let pair = masked ? (Color.white.opacity(0.4), Color.white.opacity(0.8))
-                          : Artist.shared.spacecraftPaint(paint)
-        return .linearGradient(Gradient(colors: [pair.0, pair.1]),
-                               startPoint: CGPoint(x: rect.midX, y: rect.maxY),
-                               endPoint:   CGPoint(x: rect.midX, y: rect.minY))
+                          : Artist.shared.spacecraftPaint(part.paint)
+        let b    = part.path.boundingRect
+        let w    = SpacecraftShapes.designWidth
+        return LinearGradient(colors:     [pair.0, pair.1],
+                              startPoint: UnitPoint(x: 0.5, y: (b.maxY + w / 2) / w),
+                              endPoint:   UnitPoint(x: 0.5, y: (b.minY + w / 2) / w))
+    }
+}
+
+/// A design-unit path (centred on 0, badge 14 wide) placed in the frame.
+private struct DesignShape: Shape {
+    let path: Path
+
+    func path(in rect: CGRect) -> Path {
+        let k = rect.width / SpacecraftShapes.designWidth
+        return path.applying(CGAffineTransform(translationX: rect.midX, y: rect.midY).scaledBy(x: k, y: k))
     }
 }
 
