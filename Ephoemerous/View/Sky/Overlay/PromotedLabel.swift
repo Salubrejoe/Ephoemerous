@@ -165,22 +165,21 @@ private struct SkyLabPromotedPin: View {
                 .allowsHitTesting(false)
 
             // Badge — reuse the POI badge styling (name off), lifted and
-            // enlarged. scaleEffect anchors on its own centre, so it grows
-            // in place at the lifted point. The extra `popScale` is the
-            // celebration squash — a quick swell that settles back.
-            // `borderScaleCompensation` pre-shrinks the casing stroke by the
-            // same factor `.scaleEffect` is about to enlarge it by, so the
-            // orb grows without the outline turning into a bold halo.
+            // enlarged. It's LAID OUT at the enlarged size (`sizeScale`), not
+            // scaled up: a scale effect stretched the badge's shadow-rendered
+            // bitmap and turned fine detail soft. It grows in place at the
+            // lifted point; the extra `popScale` is the celebration squash —
+            // a quick swell that settles back. The casing is set in points,
+            // so the orb grows without the outline turning into a bold halo.
             POILabelView(category:    category,
                          text:        "",
                          labelStyle: labelStyle,
                          badgeReveal: 1,
                          nameReveal:  0,
-                         borderScaleCompensation: 1 / (scale * popScale),
                          companionReveal: isDouble ? 1 : 0,
                          phase:       phase,
-                         richDetail:  true)
-                .scaleEffect(scale * popScale)
+                         richDetail:  true,
+                         sizeScale:   scale * popScale)
                 .position(x: cx, y: badgeY)
 
             // Corner heart — the persistent Remembered mark, springing in

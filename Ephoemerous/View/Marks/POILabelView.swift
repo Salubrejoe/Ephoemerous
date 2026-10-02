@@ -57,6 +57,13 @@ struct POILabelView: View {
     /// orb enlarges, the casing weight holds constant. Default 1 (no
     /// caller scaling) leaves every other call site untouched.
     var borderScaleCompensation: CGFloat = 1
+    /// Draw the badge this many times its style size, laid out at that size.
+    /// The promoted pin uses this instead of `.scaleEffect`: the badge's drop
+    /// shadow makes SwiftUI render it to a bitmap at its LAYOUT size, so a
+    /// scale effect only stretched that bitmap (soft spacecraft, soft rings).
+    /// Laid out big, it renders at full resolution. Casing weight is
+    /// unaffected — it's set in points, not scaled.
+    var sizeScale: CGFloat = 1
     /// 0…1 reveal for the COMPANION PIP — a second, smaller orb tucked at
     /// the badge's lower-trailing edge, marking a double you could actually
     /// split. Not "this is a binary": 83% of the stars we label are multiple
@@ -82,6 +89,9 @@ struct POILabelView: View {
     private static let badgeBlur: CGFloat = 3
 
     private var style: Artist.POICategoryStyle { Artist.shared.poiStyle(for: category) }
+
+    /// The badge's drawn diameter — its style size times `sizeScale`.
+    private var badgeDiameter: CGFloat { style.badgeSize * sizeScale }
 
     /// Badge fill. Full colour: the category's bright→deep orb gradient.
     /// A masked host keeps only alpha — the palette would flatten to a
@@ -128,7 +138,7 @@ struct POILabelView: View {
 
     /// Extra push for the name so it clears Saturn's rings.
     private var ringOverhang: CGFloat {
-        hasRings ? style.badgeSize * Artist.shared.saturnRingOverhang : 0
+        hasRings ? badgeDiameter * Artist.shared.saturnRingOverhang : 0
     }
 
     /// Ring fill — the cream band, or the same glassy alpha-only shading
@@ -141,7 +151,7 @@ struct POILabelView: View {
     private func rings(_ half: SaturnRings.Half, lineWidth: CGFloat) -> some View {
         if hasRings {
             SaturnRings(half:      half,
-                        diameter:  style.badgeSize,
+                        diameter:  badgeDiameter,
                         fill:      ringFill,
                         casing:    casing,
                         lineWidth: lineWidth)
@@ -157,8 +167,10 @@ struct POILabelView: View {
         borderScaleCompensation: CGFloat = 1,
         companionReveal: Double = 0,
         phase: LunarPhase? = nil,
-        richDetail: Bool = false
+        richDetail: Bool = false,
+        sizeScale: CGFloat = 1
     ) {
+        self.sizeScale = sizeScale
         self.richDetail = richDetail
         self.category = category
         self.text = text
@@ -192,7 +204,7 @@ struct POILabelView: View {
                         // Overlay aligns the name's leading to the badge's
                         // leading; push it right past the badge so the text
                         // trails the symbol and never overlaps it.
-                        .offset(x: style.badgeSize + nameGap + ringOverhang)
+                        .offset(x: badgeDiameter + nameGap + ringOverhang)
                 }
             }
     }
@@ -222,7 +234,7 @@ struct POILabelView: View {
     // MARK: Badge
     
     private var badge: some View {
-        let d  = style.badgeSize
+        let d  = badgeDiameter
         // Pre-shrunk so a caller's `.scaleEffect` renders it back at the
         // true casing weight — see `borderScaleCompensation`.
         let bw = Artist.shared.poiTextBorderWidth * borderScaleCompensation
@@ -308,7 +320,7 @@ struct POILabelView: View {
         // per-glyph blur). No glow under a masking host — it just fattens
         // the white blob.
         .shadow(color: isMasked ? .clear : style.gradientTop.opacity(0.35 * glowBoost),
-                radius: isMasked ? 0 : 2.5 * glowBoost, y: isMasked ? 0 : 0.5)
+                radius: isMasked ? 0 : 2.5 * glowBoost * sizeScale, y: isMasked ? 0 : 0.5 * sizeScale)
     }
 }
 

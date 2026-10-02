@@ -185,9 +185,9 @@ struct SkyShareCard: View {
                             text:       "",
                             labelStyle: labelStyle(for: category),
                             nameReveal: 0,
-                            borderScaleCompensation: 1 / style,
-                            phase:      lunarPhase(for: category))
-            .scaleEffect(style)
+                            phase:      lunarPhase(for: category),
+                            richDetail: true,
+                            sizeScale:  style)     // laid out big, not scaled — stays crisp
             .position(focus)
     }
 
