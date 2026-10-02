@@ -54,7 +54,8 @@ struct CelestialGridCanvas: View, Equatable {
         Canvas {
             ctx,
             _ in
-            let color = Artist.shared.gridColor
+            // Quieter than the shared grid colour: the stars sit on top.
+            let color = Artist.shared.gridColor.opacity(Artist.shared.celestialGridVolume)
             let width = Artist.shared.gridWidth
 
             ctx.stroke(path(parallels: Self.majorParallelsDeg,

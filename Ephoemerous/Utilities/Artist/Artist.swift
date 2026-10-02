@@ -29,6 +29,10 @@ struct Artist {
     var gridOpacity : Double { 0.55 }
     var gridColor   : Color  { palette.grid.opacity(gridOpacity) }
     var gridWidth   : Double { 0.1 }
+    /// The graticule's own extra hush, on top of `gridOpacity` — applied
+    /// in `CelestialGridCanvas` only, so the horizon and twilight labels
+    /// that share `gridColor` keep their weight. ▼ TWEAK ▼
+    var celestialGridVolume: Double { 0.6 }
     
     /// The generic star field. White in dark mode, at full strength — the
     /// per-star magnitude opacity below is the only thing that dims it.

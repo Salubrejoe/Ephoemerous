@@ -54,6 +54,7 @@ struct StarsCanvas: View, Equatable {
             let namedDotIn   = Artist.shared.namedStarDotIn
             let namedHandsOff = camera.scale >= namedDotIn
 
+            let glow = Self.glowAmount(scale: camera.scale)
             for star in stars {
                 guard !favouriteIDs.contains(star.id) else { continue }   // drawn as a badge
                 // Named stars hand off to their own dot / badge past the tier.
@@ -63,13 +64,24 @@ struct StarsCanvas: View, Equatable {
                       sc.x < size.width  + 2,
                       sc.y > -2,
                       sc.y < size.height + 2 else { continue }
-                let r = Self.radius(forMagnitude: star.magnitude, scale: camera.scale)
+                let r     = Self.radius(forMagnitude: star.magnitude, scale: camera.scale)
+                // Each star in its own colour — spectral class, O blue to M
+                // red — the way a dark sky actually shows them.
+                let color = star.spectralClass.color
+                // The brightest few glow: the cue that they're light sources,
+                // not dots. Fades out as you zoom so it never blooms to soup.
+                if star.magnitude < Self.glowBelowMagnitude, glow > 0.01 {
+                    let g = r * Self.glowReach
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(x: sc.x - g, y: sc.y - g, width: g * 2, height: g * 2)),
+                        with: .radialGradient(Gradient(colors: [color.opacity(Self.glowStrength * glow), .clear]),
+                                              center: sc, startRadius: 0, endRadius: g)
+                    )
+                }
                 ctx.fill(
                     Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
                                            width: r * 2, height: r * 2)),
-                    with: .color(
-                        Artist.shared.starColor.opacity(Self.opacity(forMagnitude: star.magnitude))
-                    )
+                    with: .color(color.opacity(Self.opacity(forMagnitude: star.magnitude)))
                 )
             }
         }
@@ -87,8 +99,24 @@ struct StarsCanvas: View, Equatable {
     private static let zoomCap:    CGFloat = 4    // clamp growth so max-zoom dots don't balloon
 
     /// Base dot size by magnitude (brighter → bigger), before the zoom factor.
+    /// The detail hero's curve: steeper than it was, so the bright stars
+    /// carry the field and the faint ones recede.
     private static func baseRadius(forMagnitude m: Double) -> CGFloat {
-        CGFloat(max(0.5, (6.0 - m) * 0.34))
+        CGFloat(max(0.5, (6.5 - m) * 0.42))
+    }
+
+    // Glow ▼ TWEAK HERE ▼
+    /// Stars brighter than this get a halo (~90 of them).
+    private static let glowBelowMagnitude: Double  = 2.5
+    /// Halo radius as a multiple of the dot's.
+    private static let glowReach:          CGFloat = 4
+    /// Halo opacity at its centre, at the default zoom.
+    private static let glowStrength:       Double  = 0.35
+
+    /// 1 at the default zoom, falling to 0 as the dots finish growing.
+    private static func glowAmount(scale: CGFloat) -> Double {
+        let factor = min(zoomCap, pow(max(scale, zoomAnchor) / zoomAnchor, zoomExp))
+        return Double(max(0, 1 - (factor - 1) / 1.5))
     }
 
     /// Dot radius = base × a sub-linear function of the committed `scale`, so
@@ -102,9 +130,9 @@ struct StarsCanvas: View, Equatable {
     /// numerator sits above the 6.5 divisor so the bright end saturates
     /// early — a 1st-magnitude star is flat white, and the ramp spends its
     /// range on the faint half where depth actually reads. ▼ TWEAK ▼
-    private static let magnitudeSpan: Double = 6.5
-    private static let brightLift:    Double = 7.2
-    private static let faintFloor:    Double = 0.45
+    private static let magnitudeSpan: Double = 4.0
+    private static let brightLift:    Double = 7.0
+    private static let faintFloor:    Double = 0.35
 
     private static func opacity(forMagnitude m: Double) -> Double {
         min(1, max(faintFloor, (brightLift - m) / magnitudeSpan))

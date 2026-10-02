@@ -38,7 +38,7 @@ struct ConstellationLinesCanvas: View {
     /// strength the whole field webs over the moment the tier is crossed.
     /// Multiplied into the reveal, so it costs nothing — same single
     /// `.opacity` on the frozen canvas. ▼ TWEAK ▼
-    private static let neutralVolume: Double = 0.55
+    private static let neutralVolume: Double = 0.40
 
     /// The figures' share of the name tier, for the caller to pass back in.
     static func reveal(scale: CGFloat) -> Double {

@@ -50,7 +50,9 @@ struct HorizonBlurOverlay: View {
     /// to ~0.45 it frosted properly, stars ghosting through, and the
     /// horizon dash had to be lifted above it to survive. It read well and
     /// was still the wrong look. Don't re-add it as a "fix" for the name.
-    private static let groundFrost: Double = 0.08
+    /// Halved from 0.08 when the night deepened: the ground follows the
+    /// sky down, staying a touch lighter so the horizon still reads.
+    private static let groundFrost: Double = 0.045
 
     var body: some View {
         HorizonRegion(camera: camera, side: .ground)
