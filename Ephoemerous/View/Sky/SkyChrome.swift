@@ -23,6 +23,12 @@ struct SkyChrome: ViewModifier {
     /// full-width search sheet.
     private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
+    /// Wide window — the floating panel replaces the bottom sheet (same key
+    /// as MainView). A narrow Stage Manager / Slide Over iPad window gets
+    /// the phone's sheet, so the pill must go back to the top with it.
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var isRegular: Bool { isPad && hSize == .regular }
+
     /// The floating panel's inset from the screen edge — chrome on the
     /// same edge lines up with it. Mirrors `FloatingPanel.margin`.
     private static let padMargin: CGFloat = 20
@@ -54,15 +60,15 @@ struct SkyChrome: ViewModifier {
         // bottom-trailing just above the search bar — thumb territory; the
         // transient compass rose on the OPPOSITE edge so it can appear /
         // vanish without nudging the capsule. The sky's centre stays sacred.
-        .overlay(alignment: isPad ? .bottomTrailing : .top) {
+        .overlay(alignment: isRegular ? .bottomTrailing : .top) {
             // iPad: bottom-TRAILING, on the panel's margin and centred on
             // its parked bar, so the two bottom corners read as one row of
             // chrome — and bigger, because the phone's 40pt bar is lost on
             // a 13" canvas.
             MainToolbar(barHeight: isPad ? Self.padBarHeight : 40)
                 .padding(.horizontal, isPad ? Self.padMargin : 16)
-                .padding(.top,        isPad ? 0 : 64)
-                .padding(.bottom,     isPad ? Self.padToolbarBottom : 0)
+                .padding(.top,        isRegular ? 0 : 64)
+                .padding(.bottom,     isRegular ? Self.padToolbarBottom : 0)
         }
         .overlay(alignment: isPad ? .topTrailing : .bottomTrailing) {
             // Hidden while a scene editor is up — camera-mode toggles are
