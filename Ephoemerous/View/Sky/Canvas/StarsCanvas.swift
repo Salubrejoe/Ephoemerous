@@ -91,9 +91,10 @@ struct StarsCanvas: View, Equatable {
                                               center: sc, startRadius: 0, endRadius: g)
                     )
                 }
+                // The pentagon squircle, same species as the named stars —
+                // a cached path, so it's no dearer than a circle.
                 ctx.fill(
-                    Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
-                                           width: r * 2, height: r * 2)),
+                    Artist.shared.starPath(at: sc, radius: r),
                     with: .color(color.opacity(Self.opacity(forMagnitude: star.magnitude) * reveal))
                 )
             }

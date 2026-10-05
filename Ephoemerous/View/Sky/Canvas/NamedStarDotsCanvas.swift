@@ -62,6 +62,8 @@ struct NamedStarDotsCanvas: View, Equatable {
                 switch style.dotShape {
                 case .circle:
                     path = Path(ellipseIn: rect)
+                case .squircle(let corners, let bulge) where a.isStarShape(corners: corners, bulge: bulge):
+                    path = a.starPath(at: sc, radius: r)        // cached — see Artist+StarShape
                 case .squircle(let corners, let bulge):
                     path = Squircle(corners: corners, bulge: bulge).path(in: rect)
                 }
