@@ -121,9 +121,16 @@ private func append(_ segs: [ConstellationLines.Segment],
     for seg in segs {
         guard let a = camera.screen(equatorial: seg.a.equatorialVector),
               let b = camera.screen(equatorial: seg.b.equatorialVector) else { continue }
+        // Back-side seam: a segment straddling the projection's far point
+        // throws one end off towards infinity. Judged against how long the
+        // segment SHOULD be at this zoom — its angle times the scale, with
+        // generous room for the projection's stretch off-centre. A fixed
+        // pixel cap dropped every honest long line once zoomed in deep.
         let dx = b.x - a.x, dy = b.y - a.y
         let d2 = dx * dx + dy * dy
-        guard d2 < 80_000 else { continue }                  // back-side seam
+        let angle  = acos(max(-1, min(1, simd_dot(seg.a.equatorialVector, seg.b.equatorialVector))))
+        let expect = CGFloat(angle) * camera.scale * 12 + 300
+        guard d2 < expect * expect else { continue }
         guard let (p, q) = Artist.shared.figureSegment(
                 from: a, to: b,
                 gapA: figureGap(seg.a, scale: camera.scale, favouriteIDs: favouriteIDs),
