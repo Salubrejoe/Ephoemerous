@@ -23,39 +23,32 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
     @ViewBuilder let actions: () -> Actions
 
     @State private var scrollPosition = ScrollPosition()
-    /// 0…1 — how far the tiles have scrolled; the header eases back with it.
-    @State private var scrolled: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
             PlaceHeader(object:    object,
                         title:     title,
                         subtitle:  subtitle,
-                        scrolled:  scrolled,
                         leading:   leading,
-                        heroScale: heroScale,
                         onDismiss: { state.dismissDetail() })
             if !collapsed {
                 ScrollView {
-                    VStack(spacing: Artist.shared.detailGridSpacing * 2) {
-                        tiles()
-                        actions()
+                    VStack(spacing: 0) {
+                        PlaceHero(object: object, scale: heroScale)
+                        VStack(spacing: Artist.shared.detailGridSpacing * 2) {
+                            tiles()
+                            actions()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
                 }
                 .scrollIndicators(.hidden)
                 // Tiles recede OUT of the scroll area as they leave (see
                 // DetailCard) — clipping its top edge sliced them flat.
                 .scrollClipDisabled()
                 .scrollPosition($scrollPosition)
-                .onScrollGeometryChange(for: CGFloat.self) { geo in
-                    geo.contentOffset.y + geo.contentInsets.top
-                } action: { _, y in
-                    let v = min(1, max(0, y / Artist.shared.placeScrollRange))
-                    if v != scrolled { scrolled = v }
-                }
                 #if DEBUG
                 // Screenshot seeding: `-detailScroll <pt>` opens the grid
                 // already scrolled (the simulator can't drag).

@@ -27,14 +27,8 @@ struct PlaceHeader: View {
     let title:     String
     /// Under the title when the sheet is open — a star's designation.
     let subtitle:  String
-    /// 0…1 — how far the sheet's body has scrolled; the header eases back
-    /// toward its resting size with it.
-    var scrolled:  CGFloat = 0
     /// The toolbar's leading button — Share by default.
     var leading:   Leading = .share
-    /// How much taller than the standard picture this object's is — a
-    /// constellation's header IS its figure, with names, so it gets room.
-    var heroScale: CGFloat = 1
     let onDismiss: () -> Void
 
     /// What sits in the toolbar's leading corner.
@@ -46,32 +40,13 @@ struct PlaceHeader: View {
     }
 
     var body: some View {
-        let a = Artist.shared
-        let e = collapsed ? 0 : state.detailSheetExpansion * (1 - min(1, max(0, scrolled)))
-        VStack(spacing: 0) {
-            toolbar(e)
-            // The picture is the FULL-SCREEN sheet's: it grows in with the
-            // drag from nothing at the resting third, fading as it comes —
-            // so the low sheets go straight from title to grid.
-            let reveal = state.detailSheetExpansion
-            let height = max(0, (a.placeHeroHeight + a.placeHeroGrowth * e) * heroScale * reveal
-                                - a.placeHeroScrollGive * min(1, max(0, scrolled)))
-            if !collapsed, height > 4 {
-                // No ground of its own — the stars sit on the sheet's sky.
-                HeroBanner(object: object,
-                           height: height,
-                           ground: false,
-                           photos: false,
-                           figureMarks: true)
-                    // Fade in at the top too, so the picture rises out of
-                    // the sheet's night instead of starting on an edge.
-                    .mask(LinearGradient(stops: [.init(color: .clear, location: 0),
-                                                 .init(color: .black, location: 0.25)],
-                                         startPoint: .top, endPoint: .bottom))
-                    .opacity(Double(reveal))
-            }
-        }
-        .padding(.bottom, collapsed ? 6 : 8)
+        // Follows the SHEET's drag only — never the scroll. A header that
+        // resized with the scroll changed the scroll view's own height
+        // under the finger: the two chased each other, worst in the bounce
+        // at the bottom, where native inertia turned into a jitter.
+        let e = collapsed ? 0 : state.detailSheetExpansion
+        toolbar(e)
+            .padding(.bottom, collapsed ? 6 : 8)
     }
 
     // MARK: Toolbar row
@@ -133,11 +108,49 @@ extension Artist {
     /// gains as the sheet rises, and what scrolling the body takes back.
     var placeHeroHeight:     CGFloat { 100 }
     var placeHeroGrowth:     CGFloat { 50 }
-    var placeHeroScrollGive: CGFloat { 50 }
     /// Remember / Find — full-width capsules at the grid's foot.
     var placeActionHeight:   CGFloat { 50 }
-    /// Scroll distance (pt) over which the header eases back.
-    var placeScrollRange:    CGFloat { 140 }
+}
+
+// MARK: - PlaceHero
+// The object's picture, at the top of the sheet's SCROLLING content — so it
+// scrolls away with native inertia instead of being resized by the scroll.
+// It's the full-screen sheet's: it grows in with the drag from nothing at
+// the resting third, fading as it comes, so the low sheets go straight from
+// title to grid.
+struct PlaceHero: View {
+
+    @Environment(AppState.self) private var state
+
+    let object: SkyObject
+    /// How much taller than the standard picture this object's is — a
+    /// constellation's header IS its figure, with names, so it gets room.
+    var scale:  CGFloat = 1
+
+    var body: some View {
+        let a      = Artist.shared
+        let reveal = state.detailSheetExpansion
+        let height = (a.placeHeroHeight + a.placeHeroGrowth * reveal) * scale * reveal
+        if height > 4 {
+            // No ground of its own — the stars sit on the sheet's sky.
+            HeroBanner(object:      object,
+                       height:      height,
+                       ground:      false,
+                       photos:      false,
+                       figureMarks: true)
+                // Fade in at the top too, so the picture rises out of the
+                // sheet's night instead of starting on an edge.
+                .mask(LinearGradient(stops: [.init(color: .clear, location: 0),
+                                             .init(color: .black, location: 0.25)],
+                                     startPoint: .top, endPoint: .bottom))
+                .opacity(Double(reveal))
+                // Fades as it scrolls off under the title — a visual
+                // transition only, so it can't push back on the scroll.
+                .scrollTransition(.interactive, axis: .vertical) { hero, phase in
+                    hero.opacity(1 + min(0, phase.value))
+                }
+        }
+    }
 }
 
 // MARK: - PlaceActions
