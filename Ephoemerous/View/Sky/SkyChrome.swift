@@ -34,11 +34,10 @@ struct SkyChrome: ViewModifier {
     private static let padMargin: CGFloat = 16
     /// The iPad's Here / Now capsule height. ▼ TWEAK ▼
     private static let padBarHeight: CGFloat = 52
-    /// Bottom inset that centres the capsule on the floating panel's
-    /// parked bar, so the two read level across the bottom edge.
-    private static var padToolbarBottom: CGFloat {
-        padMargin + (PanelStage.barHeight - padBarHeight) / 2
-    }
+    /// The capsule sits as far from the bottom edge as from the trailing
+    /// one — the same margin the panel keeps on its two edges — so the
+    /// bottom row reads as one even inset, panel and pill on one baseline.
+    private static var padToolbarBottom: CGFloat { padMargin }
 
     /// Bottom padding so a floating control rides the frontmost sheet's top
     /// edge (published live in `app.bottomSheetTop`), a `gap` above it.
