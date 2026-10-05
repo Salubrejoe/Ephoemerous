@@ -38,14 +38,28 @@ struct OrlojProvider: TimelineProvider {
         Task { @MainActor in
             let origin = FavouritesStore().observerOrigin()
             let now    = Date.now
+            let webb   = await WebbTrack.ephemeris()
             // 15-minute beats — the hands and unequal-hour arcs visibly
             // advance between refreshes, like the real clock's mechanism.
             let entries = stride(from: 0, through: 60, by: 15).map { m in
-                OrlojEntry(date: now.addingTimeInterval(Double(m) * 60), origin: origin)
+                let date = now.addingTimeInterval(Double(m) * 60)
+                return OrlojEntry(date: date, origin: origin,
+                                  jwst: Self.jwst(webb, at: date, origin: origin))
             }
             completion(Timeline(entries: entries,
                                 policy: .after(now.addingTimeInterval(75 * 60))))
         }
+    }
+}
+
+extension OrlojProvider {
+    /// The JWST's direction for an entry, seen from where the face stands
+    /// (Prague before the app has ever parked an origin, like the face).
+    static func jwst(_ webb: HorizonsEphemeris?, at date: Date,
+                     origin: (latDeg: Double, lonDeg: Double)?) -> SIMD3<Double>? {
+        let observer = SatelliteSky.Observer(latitudeDegrees:  origin?.latDeg ?? 50.09,
+                                             longitudeDegrees: origin?.lonDeg ?? 14.42)
+        return webb?.direction(at: date, from: observer)
     }
 }
 
@@ -54,6 +68,8 @@ struct OrlojEntry: TimelineEntry {
     /// Observer origin the app last parked at — nil before the app has
     /// ever backgrounded; falls back to Prague itself, fittingly.
     let origin: (latDeg: Double, lonDeg: Double)?
+    /// The JWST's direction at `date`, when its track is cached.
+    var jwst:   SIMD3<Double>? = nil
 }
 
 // MARK: - Entry view
@@ -74,8 +90,13 @@ struct OrlojWidgetView: View {
         GeometryReader { geo in
             OrlojFaceLayers(face: OrlojFace(date:   entry.date,
                                             origin: entry.origin,
-                                            size:   geo.size),
+                                            size:   geo.size,
+                                            jwst:   entry.jwst),
                             lineArt: renderingMode != .fullColor)
+                // The face is always NIGHT. `.preferredColorScheme` doesn't
+                // reach a widget's colours: on a light Home Screen the
+                // badges' asset colours resolved their LIGHT variants.
+                .environment(\.colorScheme, .dark)
         }
         .containerBackground(for: .widget) {
             Artist.shared.canvasBackground

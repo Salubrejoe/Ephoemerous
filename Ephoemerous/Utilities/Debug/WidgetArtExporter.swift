@@ -51,8 +51,12 @@ enum WidgetArtExporter {
         let now    = Date.now
 
         // ── The Orloj — the astrolabe, in the two families it supports.
+        // The JWST from the app's own tracker, so the art shows it too.
+        let webb = SpacecraftTracker.shared.direction(
+            of: .jwst, at: now,
+            from: SatelliteSky.Observer(latitudeDegrees: origin.latDeg, longitudeDegrees: origin.lonDeg))
         for f in families where f.name != "medium" {
-            let face = OrlojFace(date: now, origin: origin, size: f.size)
+            let face = OrlojFace(date: now, origin: origin, size: f.size, jwst: webb)
             write(tile(size: f.size) { OrlojFaceLayers(face: face) },
                   to: dir, name: "orloj_\(f.name).png")
         }
@@ -64,6 +68,9 @@ enum WidgetArtExporter {
             ("moon",  .moon),
             ("sun",   .sun),
             ("orion", .constellation(.Ori)),
+            // The planets — the badge with the most detail to lose.
+            ("jupiter", .planet(.jupiter)),
+            ("saturn",  .planet(.saturn)),
         ]
         for (label, obj) in pins {
             let entry = SkyObjectEntry(date:     now,
@@ -77,6 +84,16 @@ enum WidgetArtExporter {
                 write(view, to: dir, name: "postcard_\(label)_\(f.name).png")
             }
         }
+
+        // ── A light Home Screen. The app runs dark, so without this the
+        // export never shows what a light-appearance host resolves.
+        let lightEntry = SkyObjectEntry(date: now, captured: now,
+                                        entity: SkyObjectEntity(.planet(.jupiter)), origin: origin)
+        write(tile(size: families[1].size) {
+                  SkyObjectWidgetView(entry: lightEntry, familyOverride: .systemMedium)
+                      .environment(\.colorScheme, .light)
+              },
+              to: dir, name: "postcard_jupiter_medium_light.png")
 
         // ── Named stars, SMALL only — the pocket-sized species. Resolved by
         // CATALOGUE name (`α Ori`), which is what the database is keyed on;
@@ -150,6 +167,9 @@ enum WidgetArtExporter {
         let cards: [(String, SkyObject)] = [
             ("moon",  .moon),
             ("orion", .constellation(.Ori)),
+            // The planets — the badge with the most detail to lose.
+            ("jupiter", .planet(.jupiter)),
+            ("saturn",  .planet(.saturn)),
         ]
         var starCard: SkyObject?
         if let betelgeuse = StarDatabase.shared.workableStars

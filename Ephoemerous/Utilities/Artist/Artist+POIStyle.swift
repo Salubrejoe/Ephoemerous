@@ -113,7 +113,7 @@ extension Artist {
                 tier:           tier,
                 dotShape:       .squircle(corners: 5, bulge: poiBadgeBulge),
                 // Clearly bigger than any field dot (those cap at
-                // `StarsCanvas.fieldDotMaxRadius`), so the stars you can tap
+                // `Artist.fieldDotMaxRadius`), so the stars you can tap
                 // and name read as a different species.
                 dotRadius:      2.6)
 

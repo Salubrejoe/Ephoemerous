@@ -53,6 +53,37 @@ nonisolated struct HorizonsEphemeris: Sendable {
         return va + (vb - va) * f
     }
 
+    // MARK: Request
+
+    /// The Horizons query for a craft's geocentric daily track — a month
+    /// back to a year ahead at one row a day, ~400 lines, ~30 KB. Shared by
+    /// the app's tracker and the widget, so both ask exactly the same way.
+    static func requestURL(horizonsID id: String, around date: Date) -> URL? {
+        let day   = horizonsDay
+        var parts = URLComponents(string: "https://ssd.jpl.nasa.gov/api/horizons.api")
+        parts?.queryItems = [
+            .init(name: "format",      value: "text"),
+            .init(name: "COMMAND",     value: "'\(id)'"),
+            .init(name: "EPHEM_TYPE",  value: "OBSERVER"),
+            .init(name: "CENTER",      value: "'500@399'"),
+            .init(name: "START_TIME",  value: "'\(day.string(from: date.addingTimeInterval(-30 * 86_400)))'"),
+            .init(name: "STOP_TIME",   value: "'\(day.string(from: date.addingTimeInterval(365 * 86_400)))'"),
+            .init(name: "STEP_SIZE",   value: "'1 d'"),
+            .init(name: "QUANTITIES",  value: "'2,20'"),
+            .init(name: "CSV_FORMAT",  value: "YES"),
+            .init(name: "ANG_FORMAT",  value: "DEG"),
+        ]
+        return parts?.url
+    }
+
+    private static let horizonsDay: DateFormatter = {
+        let f = DateFormatter()
+        f.locale     = Locale(identifier: "en_US_POSIX")
+        f.timeZone   = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     // MARK: Parse
 
     /// Rows from a Horizons `format=text` observer table requested with

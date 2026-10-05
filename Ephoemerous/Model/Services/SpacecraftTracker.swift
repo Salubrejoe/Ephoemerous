@@ -183,24 +183,8 @@ final class SpacecraftTracker {
         return URL(string: "https://celestrak.org/NORAD/elements/gp.php?CATNR=\(id)&FORMAT=json")
     }
 
-    /// A month back to a year ahead at one row a day — ~400 lines, ~30 KB.
     private static func horizonsURL(for craft: Spacecraft, around date: Date) -> URL? {
-        guard let id = craft.horizonsID else { return nil }
-        let day   = DateFormatter.horizonsDay
-        var parts = URLComponents(string: "https://ssd.jpl.nasa.gov/api/horizons.api")
-        parts?.queryItems = [
-            .init(name: "format",      value: "text"),
-            .init(name: "COMMAND",     value: "'\(id)'"),
-            .init(name: "EPHEM_TYPE",  value: "OBSERVER"),
-            .init(name: "CENTER",      value: "'500@399'"),
-            .init(name: "START_TIME",  value: "'\(day.string(from: date.addingTimeInterval(-30 * 86_400)))'"),
-            .init(name: "STOP_TIME",   value: "'\(day.string(from: date.addingTimeInterval(365 * 86_400)))'"),
-            .init(name: "STEP_SIZE",   value: "'1 d'"),
-            .init(name: "QUANTITIES",  value: "'2,20'"),
-            .init(name: "CSV_FORMAT",  value: "YES"),
-            .init(name: "ANG_FORMAT",  value: "DEG"),
-        ]
-        return parts?.url
+        craft.horizonsID.flatMap { HorizonsEphemeris.requestURL(horizonsID: $0, around: date) }
     }
 
     private static func fetch(_ url: URL?) async -> Data? {
@@ -233,14 +217,4 @@ final class SpacecraftTracker {
         let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
         return modified.map { -$0.timeIntervalSinceNow } ?? .infinity
     }
-}
-
-private extension DateFormatter {
-    static let horizonsDay: DateFormatter = {
-        let f = DateFormatter()
-        f.locale     = Locale(identifier: "en_US_POSIX")
-        f.timeZone   = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
 }

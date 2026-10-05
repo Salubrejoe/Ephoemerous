@@ -17,6 +17,10 @@ struct OrlojFace {
 
     let camera:    SkyCamera
     let date:      Date
+    /// The JWST's direction (equatorial of date) for this instant, when the
+    /// host has its track — the one spacecraft slow enough for a clock that
+    /// steps every quarter hour. `nil` = not drawn (the watch, no data).
+    let jwst:      SIMD3<Double>?
     let lst:       Angle
     let latitude:  Angle
     let longitude: Angle
@@ -98,8 +102,9 @@ struct OrlojFace {
 
     @MainActor
     init(date: Date, origin: (latDeg: Double, lonDeg: Double)?, size: CGSize,
-         wrist: Bool = false) {
+         wrist: Bool = false, jwst: SIMD3<Double>? = nil) {
         self.wrist = wrist
+        self.jwst  = jwst
         self.date = date
         // Prague fallback before the app has ever backgrounded — apt for
         // the one face that's explicitly styled after this city's clock.
@@ -162,19 +167,31 @@ struct OrlojFace {
 
     // MARK: Star field (stays Canvas-drawn — hundreds of dots, no glass)
 
-    /// Faint naked-eye field — kept sparse (mag ≤ 3.6) so the dial
-    /// geometry stays the thing you actually read.
+    /// Faint naked-eye field — kept sparse (mag ≤ 4.6) so the dial
+    /// geometry stays the thing you actually read. Drawn in the app's own
+    /// field-star style (see `Artist+StarField`) — grey squircles, named
+    /// stars a step above the nameless, the glow — at the dial's size.
     @MainActor
     func drawStars(in ctx: inout GraphicsContext, size: CGSize, gain: Double = 1) {
         // The small tile takes a sparser field (mag 3.8) — the same dot
         // count at a quarter the area would read as fog, not sky.
         let magLimit = ui < 0.7 ? 3.8 : 4.6
+        let a        = Artist.shared
+        let zenith   = camera.viewpoint.originVector
         for star in Self.starField where star.magnitude <= magLimit {
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
-            let r = max(0.5, (1.8 - 0.35 * star.magnitude) * ui)
-            ctx.fill(circle(sc, r), with: .color(.white.opacity(min(1, 0.4 * gain))))
+            // ▼ TWEAK the dial's field: size and strength ▼
+            a.drawFieldStar(ctx,
+                            at:           sc,
+                            magnitude:    star.magnitude,
+                            named:        star.properName != nil,
+                            scale:        camera.scale,
+                            gain:         gain,
+                            sizeScale:    0.6 * ui,
+                            aboveHorizon: simd_dot(star.equatorialVector.sidereallyRotated(by: camera.sidereal),
+                                                   zenith) > 0)
         }
     }
 
@@ -430,16 +447,15 @@ struct OrlojFace {
         return out
     }
 
-    /// The seven planets in their canonical tints — riding the ecliptic
-    /// through the rete, like the wanderers they are.
+    /// The seven planets — riding the ecliptic through the rete, like the
+    /// wanderers they are — each worn as the app's own badge.
     @MainActor
-    func planetMarks() -> [(id: String, position: CGPoint, top: Color, bottom: Color)] {
-        var out: [(String, CGPoint, Color, Color)] = []
+    func planetMarks() -> [(id: String, position: CGPoint, planet: Planet)] {
+        var out: [(String, CGPoint, Planet)] = []
         for (planet, vec, _, _) in PlanetPosition.allVectors(for: date,
                                                               siderealOffset: camera.sidereal) {
             guard let sc = camera.screen(rotatedEquatorial: vec) else { continue }
-            let g = Artist.shared.planetGradient(planet)
-            out.append((planet.name, sc, g.top, g.bottom))
+            out.append((planet.name, sc, planet))
         }
         return out
     }
@@ -582,6 +598,11 @@ struct OrlojFace {
 
     @MainActor var sunPoint: CGPoint? {
         camera.screen(equatorial: .eclipticPoint(lambda: sunLambda))
+    }
+
+    /// Where the JWST sits on the face, if we know.
+    @MainActor var jwstPoint: CGPoint? {
+        jwst.flatMap { camera.screen(equatorial: $0) }
     }
 
     @MainActor var moonPoint: CGPoint? {
@@ -1077,18 +1098,30 @@ struct OrlojFaceLayers: View {
                     .position(glyph.position)
             }
 
-            // ── The wanderers — canonical-tint beads with the dark
-            // casing, right-sized as they were. No glow: the casing
-            // does the lifting, shadows are the hands' privilege.
+            // ── The wanderers — the app's own planet badges (Jupiter's
+            // bands, Saturn's rings, Mars's cap, Venus in phase), so the
+            // clock speaks the sky's language. Laid out at size, never
+            // scaled: a scale effect stretches the badge's bitmap soft.
+            // ▼ TWEAK the planets' size on the face ▼
             ForEach(face.planetMarks(), id: \.id) { mark in
-                Squircle(corners: 4, bulge: 2.0)
-                    .fill(markFill(top: mark.top, bottom: mark.bottom))
-                    .overlay(
-                        Squircle(corners: 4, bulge: 2.0)
-                            .stroke(markCasing, lineWidth: 1)
-                    )
-                    .frame(width: 7 * u, height: 7 * u)
+                POILabelView(category:   .planet(mark.planet),
+                             text:       "",
+                             labelStyle: .planetoids,
+                             nameReveal: 0,
+                             phase:      BadgePhase.of(.planet(mark.planet),
+                                                       date: face.date, latitude: face.latitude),
+                             sizeScale:  0.7 * max(0.55, u))
                     .position(mark.position)
+            }
+            // The JWST — the one craft slow enough for a face that steps
+            // every quarter hour (~2° a day at L2). The others would be a
+            // lie by the next beat.
+            if let webb = face.jwstPoint {
+                POILabelView(category:   .spacecraft(.jwst),
+                             text:       "",
+                             nameReveal: 0,
+                             sizeScale:  0.7 * max(0.55, u))
+                    .position(webb)
             }
 
 
@@ -1130,8 +1163,7 @@ struct OrlojFaceLayers: View {
                              text:       "",
                              labelStyle: .star,
                              nameReveal: 0,
-                             borderScaleCompensation: 1 / max(0.55, u))
-                    .scaleEffect(max(0.55, u))
+                             sizeScale:  max(0.55, u))
                     .position(sun)
             }
             if let moon = face.moonPoint {
@@ -1139,13 +1171,16 @@ struct OrlojFaceLayers: View {
                              text:       "",
                              labelStyle: .planetoids,
                              nameReveal: 0,
-                             borderScaleCompensation: 1 / max(0.55, u),
                              phase:      MoonPosition.phase(for: face.date,
-                                                            latitude: face.latitude))
-                    .scaleEffect(max(0.55, u))
+                                                            latitude: face.latitude),
+                             sizeScale:  max(0.55, u))
                     .position(moon)
             }
         }
         .scaleEffect(0.95)
+        // A clock face doesn't reflow: the numerals and glyphs are fixed,
+        // so the badges (which follow Text Size) must hold too, or the
+        // bodies would swell against a dial that doesn't.
+        .dynamicTypeSize(.large)
     }
 }

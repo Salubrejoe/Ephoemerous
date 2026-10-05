@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import UIKit
 import AppIntents
 import LoreKit
 import simd
@@ -277,17 +278,32 @@ struct SkySnapshot {
     /// horizon — the postcard's cartography, all through the camera.
     /// `magnitudeLimit` lets the larger family show a denser field —
     /// there's room to breathe without the map turning to noise.
+    /// Constellation names give way to anything in `avoid` (the marks the
+    /// tile draws on top — bodies, the pin, the name block) and to each
+    /// other.
     @MainActor
-    func draw(in ctx: inout GraphicsContext, size: CGSize, magnitudeLimit: Double = 4.5) {
+    func draw(in ctx: inout GraphicsContext, size: CGSize, magnitudeLimit: Double = 4.5,
+              avoid: [CGRect] = []) {
+        // The app's own field-star style (see `Artist+StarField`): grey ink,
+        // colour reserved for the marks you can tap, named stars a step
+        // above the nameless, the pentagon squircle, the glow.
+        let a      = Artist.shared
+        let zenith = camera.viewpoint.originVector
+        // A tile is small and static — it needs a firmer field than the
+        // live sky to read as stars, not haze. ▼ TWEAK the tile's field ▼
+        let gain   = 1.3
         for star in StarDatabase.shared.workableStars where star.magnitude <= magnitudeLimit {
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
-            let r = max(0.7, 2.4 - 0.4 * star.magnitude)
-            ctx.fill(Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
-                                            width: r * 2, height: r * 2)),
-                     with: .color(star.spectralClass.color.opacity(
-                        star.magnitude < 2 ? 0.95 : 0.65)))
+            a.drawFieldStar(ctx,
+                            at:           sc,
+                            magnitude:    star.magnitude,
+                            named:        star.properName != nil,
+                            scale:        camera.scale,
+                            gain:         gain,
+                            aboveHorizon: simd_dot(star.equatorialVector.sidereallyRotated(by: camera.sidereal),
+                                                   zenith) > 0)
         }
 
         // Constellation stick-figures — the app's quiet dotted grey; the
@@ -314,7 +330,7 @@ struct SkySnapshot {
             }
         }
         ctx.stroke(sticks,
-                   with: .color(.white.opacity(0.16)),
+                   with: .color(.white.opacity(0.22)),        // ▼ TWEAK the figures' ink ▼
                    style: StrokeStyle(lineWidth: 0.7, dash: [2, 3]))
         // The hero figure: a SOLID trace, like a selected constellation
         // in the app — the line IS the promoted label here.
@@ -323,18 +339,40 @@ struct SkySnapshot {
                    style: StrokeStyle(lineWidth: 1.2,
                                       lineCap: .round, lineJoin: .round))
 
-        // Constellation names at their figure centroids — faint map ink.
-        // The pinned one is skipped: the bottom-leading block names it.
-        for (cons, anchor) in ConstellationLines.shared.labelAnchors
+        // Constellation names at their figure centroids, in the app's
+        // REGION voice — spaced caps, medium, haloed in the sky's colour —
+        // sized down for the tile. Like the app's names they give way: to
+        // the marks in `avoid`, and to each other (alphabetical, so the
+        // same name wins every render). The pinned one is skipped: the
+        // bottom-leading block names it.
+        let fontSize: CGFloat = 8                      // ▼ TWEAK the tile's name size ▼
+        // The app's spacing is set for caption2 (11 pt); keep its ratio.
+        let tracking = a.regionTracking * fontSize / 11
+        let font     = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+        var placed   = avoid
+        let tile     = CGRect(origin: .zero, size: size).insetBy(dx: 4, dy: 4)
+        var names    = ctx
+        names.addFilter(.shadow(color: a.canvasBackground, radius: a.regionHalo))
+        for (cons, anchor) in ConstellationLines.shared.labelAnchors.sorted(by: { $0.key.rawValue < $1.key.rawValue })
         where cons != pinnedConstellation {
             let vec = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: vec),
                   sc.x > 10, sc.x < size.width - 10,
                   sc.y > 10, sc.y < size.height - 10 else { continue }
-            ctx.draw(Text(cons.localizedName.uppercased())
-                        .font(.system(size: 8, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.28)),
-                     at: sc)
+            let text = cons.localizedName.uppercased()
+            let w    = (text as NSString).size(withAttributes: [.font: font, .kern: tracking]).width
+            let box  = CGRect(x: sc.x - w / 2, y: sc.y - font.lineHeight / 2,
+                              width: w, height: font.lineHeight).insetBy(dx: -2, dy: -2)
+            // The WHOLE name on the tile — a word cut by the edge reads
+            // as broken — and clear of everything already placed.
+            guard tile.contains(box),
+                  !placed.contains(where: { $0.intersects(box) }) else { continue }
+            placed.append(box)
+            names.draw(Text(text)
+                         .font(.system(size: fontSize, weight: a.regionWeight))
+                         .tracking(tracking)
+                         .foregroundStyle(.secondary),
+                       at: sc)
         }
 
         // Horizon — the same dashed great circle the app draws, sampled
@@ -374,6 +412,10 @@ struct SkyObjectWidgetView: View {
     /// with some star density (the field turns to white noise there).
     @Environment(\.widgetRenderingMode) private var widgetRenderingMode
     private var isMasked: Bool { widgetRenderingMode != .fullColor }
+
+    /// The badges grow with the Text Size (see `Artist+TypeScale`), so the
+    /// footprints the constellation names give way to must too.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// Explicit family, for rendering this tile OUTSIDE a widget host —
     /// `\.widgetFamily` is read-only, so the DEBUG art exporter can't inject
@@ -457,14 +499,19 @@ struct SkyObjectWidgetView: View {
             ZStack(alignment: .topLeading) {
                 // The map: cartography canvas + flat body labels. Large
                 // has room for a denser naked-eye field.
+                Group {
+                let bodies = snapshot.bodies(excluding: entry.entity.id, in: geo.size)
                 Canvas { ctx, size in
                     // Extra large earns the densest field — panorama room.
                     snapshot.draw(in: &ctx, size: size,
                                  magnitudeLimit: isMasked                    ? 4.0
                                                : family == .systemExtraLarge ? 5.6
-                                               : isExpansive                 ? 5.2 : 4.5)
+                                               : isExpansive                 ? 5.2 : 4.5,
+                                 avoid: footprints(bodies: bodies,
+                                                   pinned: snapshot.pinnedConstellation == nil ? category : nil,
+                                                   in: size))
                 }
-                ForEach(snapshot.bodies(excluding: entry.entity.id, in: geo.size),
+                ForEach(bodies,
                         id: \.2) { category, sc, name in
                     flatLabel(category, name: name)
                         .position(sc)
@@ -480,6 +527,12 @@ struct SkyObjectWidgetView: View {
                 if let category, snapshot.pinnedConstellation == nil {
                     promotedPin(category, in: geo.size)
                 }
+                }
+                // The sky is always NIGHT. `.preferredColorScheme` doesn't
+                // reach a widget's colours, so on a light Home Screen the
+                // assets resolved their LIGHT variants — the star ink a dim
+                // warm brown, `.secondary` names a dark grey: haze on navy.
+                .environment(\.colorScheme, .dark)
 
                 // Freshness over name, hugging the corner like Find My.
                 // Large adds the altitude/bearing readout — the extra
@@ -548,55 +601,69 @@ struct SkyObjectWidgetView: View {
                             phase:       lunarPhase(for: category))
     }
 
-    /// The promoted pin: the badge lifted above its precise-location dot
-    /// — the object's projection lands ON the dot (see SkySnapshot).
-    /// The roomier families get a bigger badge — proportionate to the tile.
+    /// The promoted pin: the badge sits ON the object's projection (see
+    /// SkySnapshot), enlarged for the tile — the roomier families bigger,
+    /// proportionate to the tile. No halo behind it: the badge's own glow
+    /// is the lift, as on the app's sky.
+    ///
+    /// LAID OUT at the enlarged size (`sizeScale`), not `.scaleEffect`-ed —
+    /// a scale effect only stretches the badge's shadow-rendered bitmap
+    /// (soft rings, soft bands), the reason the app's pin stopped using it.
     @MainActor
     private func promotedPin(_ category: POICategory, in size: CGSize) -> some View {
-        let style = Artist.shared.poiStyle(for: category)
-        let isSun = category == .sun
-        let isMoon = category == .moon
-        let isSunOrMoon = isSun || isMoon
-        let dotPosition = Pin.dot(in: size, isLandscape: isLandscape)
-        let glyphPosition = Pin.badgeCentre(in: size, isLandscape: isLandscape)
-        let sunScale = family == .systemExtraLarge ? 2.6
-        : family == .systemLarge      ? 2.2 : 1.5
-        
-        let moonScale = family == .systemExtraLarge ? 2.6
-        : family == .systemLarge      ? 2.2 : 1.8
-        
-        let scale: CGFloat = family == .systemExtraLarge ? 2.6
-        : family == .systemLarge      ? 2.2 : 1.9
-        let backgroundRadius = 18 * scale
-        
-        let corners = 12
-        let bulge = 2.6
+        POILabelView(category:   category,
+                            text:       "",
+                            labelStyle: labelStyle(for: category),
+                            nameReveal: 0,
+                            phase:      lunarPhase(for: category),
+                            richDetail: true,          // big enough to carry it, like the app's pin
+                            sizeScale:  pinScale(for: category))
+            .position(Pin.badgeCentre(in: size, isLandscape: isLandscape))
+    }
 
-        return ZStack {
-            // Precise-location dot — the object itself.
-            Group {
-                Squircle(corners: corners, bulge: bulge, rotation: .pi(over: 2))
-                    .fill(style.gradientTop)
-            }
-                .opacity(isSunOrMoon ? 0.0 : 0.4)
-//                .blendMode(.luminosity)
-                .blur(radius: 1)
-//                .fill(style.gradientBottom.opacity(isSun ? 0.0 : 0.6))
-                .frame(width: backgroundRadius, height: backgroundRadius)
-                .shadow(color: .black.opacity(0.55), radius: 1.5)
-                .position(Pin.dot(in: size, isLandscape: isLandscape))
-            
-            POILabelView(category:   category,
-                         text:        "",
-                         labelStyle:  labelStyle(for: category),
-                         nameReveal:  0,
-                         borderScaleCompensation: 1 / scale,
-                         phase:       lunarPhase(for: category))
-            .scaleEffect(isSun ? sunScale : isMoon ? moonScale : scale)
-                .position(Pin.badgeCentre(in: size, isLandscape: isLandscape))
+    /// The pin's enlargement — the roomier families bigger, the Sun a
+    /// touch smaller on the pocket tiles. ▼ TWEAK the pin's size per family ▼
+    private func pinScale(for category: POICategory) -> CGFloat {
+        family == .systemExtraLarge ? 2.6
+        : family == .systemLarge    ? 2.2
+        : category == .sun          ? 1.5
+        : category == .moon         ? 1.8 : 1.9
+    }
 
-            
+    // MARK: Footprints
+    // Where the tile's marks sit, so the constellation names can give way
+    // to them — the app's rule (labels never overlap) on the postcard.
+
+    /// Each body's badge and (revealed) name, the pinned badge, and the
+    /// name block in the bottom-leading corner.
+    @MainActor
+    private func footprints(bodies: [(POICategory, CGPoint, String)],
+                            pinned: POICategory?, in size: CGSize) -> [CGRect] {
+        let a      = Artist.shared
+        let type   = a.typeScale(dynamicTypeSize)
+        let font   = a.labelFont(.footnote, size: dynamicTypeSize)
+        var rects: [CGRect] = []
+
+        for (category, p, name) in bodies {
+            let style = a.poiStyle(for: category)
+            let d     = style.badgeSize * type + a.poiTextBorderWidth * 2
+            rects.append(CGRect(x: p.x - d / 2, y: p.y - d / 2, width: d, height: d))
+            // The name trails the badge, as `POILabelView` draws it.
+            guard POILabelView.tierReveal(scale: 110, threshold: style.textIn) > 0.01 else { continue }
+            let w = (name as NSString).size(withAttributes: [.font: font]).width + 3
+            rects.append(CGRect(x: p.x + (style.badgeSize / 2 + 6) * type, y: p.y - font.lineHeight / 2,
+                                width: w, height: font.lineHeight))
         }
+        if let pinned {
+            let c = Pin.badgeCentre(in: size, isLandscape: isLandscape)
+            let d = a.poiStyle(for: pinned).badgeSize * pinScale(for: pinned) * type
+                  * (a.poiHasRings(pinned) ? a.saturnRingOuter.width : 1)
+            rects.append(CGRect(x: c.x - d / 2, y: c.y - d / 2, width: d, height: d))
+        }
+        // Freshness + name (+ altitude on the roomy tiles), bottom-leading.
+        let block: CGFloat = isExpansive ? 78 : 60
+        rects.append(CGRect(x: 0, y: size.height - block, width: size.width * 0.6, height: block))
+        return rects.map { $0.insetBy(dx: -2, dy: -2) }
     }
 
     // MARK: Accessory (lock screen)
