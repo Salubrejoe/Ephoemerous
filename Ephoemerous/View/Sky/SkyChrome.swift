@@ -31,7 +31,7 @@ struct SkyChrome: ViewModifier {
 
     /// The floating panel's inset from the screen edge — chrome on the
     /// same edge lines up with it. Mirrors `FloatingPanel.margin`.
-    private static let padMargin: CGFloat = 20
+    private static let padMargin: CGFloat = 16
     /// The iPad's Here / Now capsule height. ▼ TWEAK ▼
     private static let padBarHeight: CGFloat = 52
     /// Bottom inset that centres the capsule on the floating panel's

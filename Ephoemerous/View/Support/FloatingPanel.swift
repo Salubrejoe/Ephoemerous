@@ -20,7 +20,10 @@ enum PanelStage: CaseIterable {
     /// Parked height — one band. The search card is a 16pt handle strip
     /// above a 44pt field with 14 below; the detail card's 16 + 44 + 14
     /// header lands in the same place.
-    static let barHeight: CGFloat = 74
+    /// 16 + 44 + 16: the 44pt field inset 16 on EVERY side (the handle
+    /// band above it is 16 too), so its radius 22 + 16 = the bar's 38 —
+    /// exactly concentric. ▼ TWEAK ▼
+    static let barHeight: CGFloat = 76
 
     var isOpen: Bool { self != .bar }
 }
@@ -74,7 +77,7 @@ struct FloatingPanel<Content: View>: View {
     static var width: CGFloat { 380 }
 
     /// Inset from the screen's leading and bottom edges.
-    private static var margin: CGFloat { 20 }
+    private static var margin: CGFloat { 16 }
 
     /// How far a drag must travel before it changes stage.
     private static var dragThreshold: CGFloat { 44 }

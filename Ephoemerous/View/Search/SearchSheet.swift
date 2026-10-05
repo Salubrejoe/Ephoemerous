@@ -138,10 +138,10 @@ struct SearchSheet: View {
                 // ours above the field — the SYSTEM draws the grabber — so
                 // dropping the top padding here shoved the field under it
                 // and left the trailing edge hanging.
-                .padding(.leading,  isPanel ? 14 : 12)
-                .padding(.trailing, isPanel ? 14 : 14)
+                .padding(.leading,  isPanel ? 16 : 12)
+                .padding(.trailing, isPanel ? 16 : 14)
                 .padding(.top,      isPanel ?  0 : 18)
-                .padding(.bottom,   isPanel ? 14 : 18)
+                .padding(.bottom,   isPanel ? 16 : 18)
 
             if searchText.isEmpty && stage != .bar {
                 browseContent
