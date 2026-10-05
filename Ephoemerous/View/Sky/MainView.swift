@@ -302,7 +302,15 @@ struct MainView: View {
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.visible)
                 .tracksBottomSheet()
-                .onAppear { detailDetent = .fraction(1.0 / 3.0) }
+                .onAppear {
+                    detailDetent = .fraction(1.0 / 3.0)
+                    #if DEBUG
+                    // Screenshot seeding: `-detail large` opens the card
+                    // fully (the simulator can't drag a sheet up).
+                    if ProcessInfo.processInfo.arguments.contains("-detailLarge") { detailDetent = .large }
+                    if ProcessInfo.processInfo.arguments.contains("-detailMini") { detailDetent = detailHeaderDetent }
+                    #endif
+                }
         }
         // Persistent Apple-Maps search sheet — always up at its bar-only
         // detent whenever nothing else owns the bottom slot. Selecting an

@@ -42,7 +42,7 @@ extension Star {
 
     /// "Red supergiant" / "White star". Sentence case: this is a
     /// description, not a title.
-    private var sizeAndColour: String {
+    var sizeAndColour: String {
         "\(spectralClass.colourWord) \(luminosityWord)"
     }
 

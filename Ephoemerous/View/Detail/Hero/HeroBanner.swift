@@ -24,14 +24,18 @@ struct HeroBanner: View {
 
     private let artist = Artist.shared
     private var store:  HeroImageStore { .shared }
-    private var height: CGFloat        { artist.heroHeight }
+    /// The banner's height — `heroHeight` at rest; a sheet scrolling its
+    /// body up can pass less, so the header gives the grid more room.
+    var height: CGFloat = Artist.shared.heroHeight
+    /// See `SkyHeroView.ground`.
+    var ground: Bool = true
 
     /// The credit line the body's photograph carries, if it has one.
     var credit: String? { HeroSource.photo(for: object)?.credit }
 
     var body: some View {
         ZStack {
-            SkyHeroView(focus: focus)
+            SkyHeroView(focus: focus, ground: ground)
             subject
         }
         .frame(height: height)

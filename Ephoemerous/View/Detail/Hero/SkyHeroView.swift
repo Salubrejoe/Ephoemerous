@@ -105,9 +105,14 @@ struct SkyHeroScene {
 struct SkyHeroView: View {
 
     let scene: SkyHeroScene
+    /// Paint the hero's own night behind the stars. Off where the picture
+    /// sits on the sheet's sky instead (the place header) — a ground of its
+    /// own there boxed the figure in a rectangle of a different colour.
+    var ground: Bool = true
 
-    init(focus: SkyHeroScene.Focus) {
-        scene = SkyHeroScene(focus: focus)
+    init(focus: SkyHeroScene.Focus, ground: Bool = true) {
+        scene       = SkyHeroScene(focus: focus)
+        self.ground = ground
     }
 
     var body: some View {
@@ -138,7 +143,7 @@ struct SkyHeroView: View {
                          with: .color(dot.color.opacity(Self.opacity(for: dot.magnitude))))
             }
         }
-        .background(Artist.shared.skyHeroGround)
+        .background { if ground { Artist.shared.skyHeroGround } }
     }
 
     /// Dot radius from magnitude: the brightest stars ~3pt, the limit ~0.5pt.

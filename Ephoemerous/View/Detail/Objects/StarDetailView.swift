@@ -2,10 +2,10 @@ import SwiftUI
 import LoreKit
 
 // MARK: - StarDetailView
-// Three-tile compact star detail. Fits the bottom-third sheet detent
-// without scrolling: header + Remember button + a single HStack of
-// Class / Distance / Magnitude tiles. SF Symbols carry the meaning;
-// negative space carries the calm.
+// The star's place card: the hero sky with its name and live status, then
+// a geometric grid of frosted tiles (see `StarTiles`) — each one fact told
+// with a small picture, the Weather app's grammar — over the hero's night
+// carried on down the sheet (`DetailBackdrop`).
 
 struct StarDetailView: View {
     @Environment(AppState.self) var state
@@ -19,6 +19,9 @@ struct StarDetailView: View {
     /// open), the back chevron has nowhere to go, so the share
     /// button takes the primary-leading slot instead.
     var showsBackChevron: Bool = false
+    @State private var scrollPosition = ScrollPosition()
+    /// 0…1 — how far the tiles have scrolled; the header eases back with it.
+    @State private var scrolled: CGFloat = 0
 
     private var accent: Color { star.spectralClass.color }
 
@@ -36,30 +39,75 @@ struct StarDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            DetailHeader(
-                title:                  star.displayName,
-                subtitle:               subtitleText,
-                accent:                 accent,
-                icon:                   {
-                    POILabelView(
-                        category: .followedStar(star),
-                        text: "",
-                        labelStyle: .star
-                    )
-                },
-                leadingSymbol:          showsBackChevron ? .chevronBackward : .share,
-                onLeading:              { showsBackChevron ? dismiss() : () },
-                secondaryLeadingSymbol: showsBackChevron ? .share : nil,
-                onSecondaryLeading:     showsBackChevron ? {} : nil,
-                postcard:               state.postcard(for: .star(star)),
-                hero:                   .star(star),
-                favorite:               .star(star),
-                onDismiss:              { state.dismissDetail() }
-            )
+            // Pushed from the constellation roster, the old header's back
+            // chevron is still the way home; as a root sheet, the Maps-style
+            // place header.
+            if showsBackChevron {
+                DetailHeader(
+                    title:                  star.displayName,
+                    subtitle:               subtitleText,
+                    accent:                 accent,
+                    icon:                   { EmptyView() },
+                    leadingSymbol:          .chevronBackward,
+                    onLeading:              { dismiss() },
+                    secondaryLeadingSymbol: .share,
+                    onSecondaryLeading:     {},
+                    postcard:               state.postcard(for: .star(star)),
+                    hero:                   .star(star),
+                    favorite:               .star(star),
+                    heroSubtitle:           star.designation,
+                    onDismiss:              { state.dismissDetail() }
+                )
+            } else {
+                PlaceHeader(object:    .star(star),
+                            title:     star.displayName,
+                            subtitle:  star.designation,
+                            scrolled:  scrolled,
+                            onDismiss: { state.dismissDetail() })
+            }
             if !collapsed {
-                DetailStatList(stats: stats)
+                ScrollView {
+                    VStack(spacing: Artist.shared.detailGridSpacing * 2) {
+                        tiles
+                        PlaceActions(object: .star(star))
+                    }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
+                }
+                .scrollIndicators(.hidden)
+                // Tiles recede OUT of the scroll area as they leave (see
+                // DetailCard) — clipping its top edge sliced them flat.
+                .scrollClipDisabled()
+                .scrollPosition($scrollPosition)
+                .onScrollGeometryChange(for: CGFloat.self) { geo in
+                    geo.contentOffset.y + geo.contentInsets.top
+                } action: { _, y in
+                    let v = min(1, max(0, y / Artist.shared.placeScrollRange))
+                    if v != scrolled { scrolled = v }
+                }
+                #if DEBUG
+                // Screenshot seeding: `-detailScroll <pt>` opens the grid
+                // already scrolled (the simulator can't drag).
+                .task {
+                    let args = ProcessInfo.processInfo.arguments
+                    if let i = args.firstIndex(of: "-detailScroll"), i + 1 < args.count,
+                       let y = Double(args[i + 1]) {
+                        try? await Task.sleep(for: .seconds(2))
+                        withAnimation { scrollPosition.scrollTo(y: y) }
+                    }
+                }
+                #endif
+
             }
             Spacer(minLength: 0)
+        }
+        // The night fades in as the sheet rises — none at its resting
+        // third, the full sky at full screen.
+        .background {
+            if !collapsed {
+                DetailBackdrop().opacity(Double(state.detailSheetExpansion))
+            }
         }
         // Hide the system NavigationStack chrome on this view
         // specifically. DetailHost already hides the bar for the
@@ -74,7 +122,30 @@ struct StarDetailView: View {
         }
     }
 
-   
+    // MARK: Tiles
+
+    private var observer: SatelliteSky.Observer {
+        SatelliteSky.Observer(latitude:  state.origin.latitude.radians,
+                              longitude: state.origin.longitude.radians)
+    }
+
+    /// The grid: distance and type wide, rise & set beside brightness,
+    /// position beside proper motion.
+    private var tiles: some View {
+        let date   = state.observationDate
+        let year   = Calendar.current.component(.year, from: date)
+        let status = SkyStatus.cached(object: .star(star), date: date, observer: observer)
+        let path   = StarDayPath(object: .star(star), around: date, observer: observer)
+        return DetailGridLayout(rows: [1, 2, 1, 2]) {
+            StarDistanceTile(star: star, year: year)
+            StarRiseSetTile(star: star, status: status, path: path)
+            StarBrightnessTile(star: star)
+            StarTypeTile(star: star)
+            StarPositionTile(star: star)
+            StarProperMotionTile(star: star)
+        }
+    }
+
     private var statsRow: some View {
         HStack(spacing: 8) {
             VStack(spacing: 0) {

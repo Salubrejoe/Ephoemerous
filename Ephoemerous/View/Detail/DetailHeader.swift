@@ -55,6 +55,9 @@ struct DetailHeader<Icon: View>: View {
     /// The object the trailing heart favourites — stars and constellations
     /// only. nil draws no heart.
     let favorite:               SkyObject?
+    /// Replaces the live status under the expanded title — a star shows
+    /// its designation there, its rise/set living in the grid below.
+    let heroSubtitle:           String?
 
     init(title:                  String,
          subtitle:               String,
@@ -69,7 +72,9 @@ struct DetailHeader<Icon: View>: View {
          postcard:               SkyPostcard?      = nil,
          hero:                   SkyObject?        = nil,
          favorite:               SkyObject?        = nil,
+         heroSubtitle:           String?           = nil,
          onDismiss:              @escaping () -> Void) {
+        self.heroSubtitle           = heroSubtitle
         self.hero                   = hero
         self.favorite               = favorite
         self.postcard               = postcard
@@ -121,7 +126,14 @@ struct DetailHeader<Icon: View>: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     titleText
-                    SkyStatusLine(object: hero)
+                    if let heroSubtitle {
+                        Text(heroSubtitle)
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    } else {
+                        SkyStatusLine(object: hero)
+                    }
                 }
                 Spacer(minLength: 0)
                 if let favorite { FavoriteCircleButton(obj: favorite) }
