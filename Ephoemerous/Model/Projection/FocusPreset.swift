@@ -295,9 +295,14 @@ extension AppState {
     /// `canvasRotation`) — otherwise it would snap. Also zooms back to the
     /// default view when it was a heading-up exit.
     func resetRotationToNorth() {
-        let current = renderedRotation
+        // Wrapped into (−180°, 180°] so the spin takes the short way home —
+        // a sky twisted 350° turns 10°, not most of a revolution.
+        var current = renderedRotation.radians.truncatingRemainder(dividingBy: 2 * .pi)
+        if current >  .pi { current -= 2 * .pi }
+        if current < -.pi { current += 2 * .pi }
+        let wrapped = Angle.radians(current)
         compassMode = false
-        canvasRotation = current
+        canvasRotation = wrapped
         animateRotation(to: .zero)
         // (resetView dropped — it zoomed the production camera the SkyLab
         //  ignores; the rose's job here is purely the spin to north.)

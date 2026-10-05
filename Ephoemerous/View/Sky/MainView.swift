@@ -409,14 +409,15 @@ struct MainView: View {
         .onChange(of: sky.rotation)     { _, _ in mirrorRotationToRose() }
         .onChange(of: sky.liveRotation) { _, _ in mirrorRotationToRose() }
         // The compass rose's reset-to-north (`resetRotationToNorth` →
-        // `animateRotation`, only ever targeting zero). Spring the committed
-        // rotation to north — from the just-frozen heading if we left
-        // compass, else from where a manual twist left it.
+        // `animateRotation`, only ever targeting zero). Commit north at once;
+        // the VISIBLE spin is the clock-driven `_rotationTransition`, which
+        // `SkyFrame` feeds to the camera each tick. NOT `withAnimation`: the
+        // canvases can't animate a camera change (they snapped), while the
+        // native labels interpolated their `.position` in STRAIGHT LINES —
+        // chords across a sky that was turning round its centre.
         .onChange(of: app._rotationTransition?.to) { _, to in
             guard let to, to == .zero else { return }
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
-                sky.rotation = .zero
-            }
+            sky.rotation = .zero
         }
     }
 

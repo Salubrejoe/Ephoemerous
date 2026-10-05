@@ -86,8 +86,12 @@ struct SkyFrame {
         // `renderedRotation` is tuned for a pre-flip rotation — without it,
         // heading-up spins the wrong way (face east → west up).
         let inCompass      = app.compassMode
-        let cameraRotation = inCompass ? Angle.radians(-app.renderedRotation.radians)
-                                       : sky.rotation
+        // The rose's spin back to north runs on the canvas clock: while it's
+        // in flight the camera takes its interpolated angle, so every layer —
+        // canvases and native labels alike — reprojects on the same arc.
+        let spinning       = app._rotationTransition.map { !$0.isFinished(at: app.animationTime) } ?? false
+        let cameraRotation = (inCompass || spinning) ? Angle.radians(-app.renderedRotation.radians)
+                                                     : sky.rotation
         // The window owns the view as well — no live spin under it.
         liveRot            = (inCompass || app.lookBlend > 0) ? .zero : sky.liveRotation
 
