@@ -18,6 +18,7 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
     let title:    String
     let subtitle: String
     var leading:  PlaceHeader.Leading = .share
+    var heroScale: CGFloat = 1
     @ViewBuilder let tiles:   () -> Tiles
     @ViewBuilder let actions: () -> Actions
 
@@ -32,6 +33,7 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                         subtitle:  subtitle,
                         scrolled:  scrolled,
                         leading:   leading,
+                        heroScale: heroScale,
                         onDismiss: { state.dismissDetail() })
             if !collapsed {
                 ScrollView {

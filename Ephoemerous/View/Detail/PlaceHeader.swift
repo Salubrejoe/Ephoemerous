@@ -32,6 +32,9 @@ struct PlaceHeader: View {
     var scrolled:  CGFloat = 0
     /// The toolbar's leading button — Share by default.
     var leading:   Leading = .share
+    /// How much taller than the standard picture this object's is — a
+    /// constellation's header IS its figure, with names, so it gets room.
+    var heroScale: CGFloat = 1
     let onDismiss: () -> Void
 
     /// What sits in the toolbar's leading corner.
@@ -51,14 +54,15 @@ struct PlaceHeader: View {
             // drag from nothing at the resting third, fading as it comes —
             // so the low sheets go straight from title to grid.
             let reveal = state.detailSheetExpansion
-            let height = max(0, (a.placeHeroHeight + a.placeHeroGrowth * e) * reveal
+            let height = max(0, (a.placeHeroHeight + a.placeHeroGrowth * e) * heroScale * reveal
                                 - a.placeHeroScrollGive * min(1, max(0, scrolled)))
             if !collapsed, height > 4 {
                 // No ground of its own — the stars sit on the sheet's sky.
                 HeroBanner(object: object,
                            height: height,
                            ground: false,
-                           photos: false)
+                           photos: false,
+                           figureMarks: true)
                     // Fade in at the top too, so the picture rises out of
                     // the sheet's night instead of starting on an edge.
                     .mask(LinearGradient(stops: [.init(color: .clear, location: 0),

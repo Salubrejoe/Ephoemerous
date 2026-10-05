@@ -33,6 +33,8 @@ struct HeroBanner: View {
     /// place cards, which wear the app's own badges — prettier, and of a
     /// piece with the sky the object was tapped on.
     var photos: Bool = true
+    /// Label and link the constellation figure's stars (the place card).
+    var figureMarks: Bool = false
 
     /// The credit line the body's photograph carries, if it has one.
     var credit: String? { HeroSource.photo(for: object)?.credit }
@@ -48,6 +50,12 @@ struct HeroBanner: View {
         .mask(LinearGradient(stops: [.init(color: .black, location: 0.5),
                                      .init(color: .clear, location: 1)],
                              startPoint: .top, endPoint: .bottom))
+        // Over the fade, so the names stay legible to the bottom stars.
+        .overlay {
+            if figureMarks, case .constellation(let c) = object {
+                HeroFigureMarks(scene: SkyHeroScene(focus: .constellation(c)))
+            }
+        }
         .task(id: object.id) { if photos { await store.load(object) } }
     }
 

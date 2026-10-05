@@ -25,10 +25,15 @@ struct SkyHeroScene {
         let isFocus:   Bool
     }
 
-    struct Line { let x1, y1, x2, y2: Double }
+    /// A figure line, with its two stars' magnitudes — the view pulls each
+    /// end back by that star's drawn size (see `Artist.figureSegment`).
+    struct Line { let x1, y1, x2, y2: Double; let m1, m2: Double }
 
     let dots:   [Dot]
     let lines:  [Line]
+    /// The figure's own stars at their tangent positions — the place card
+    /// labels them and makes them tappable (`HeroFigureMarks`).
+    let figureStars: [(star: Star, x: Double, y: Double)]
     /// Half-extent the view must show, tangent units (x, y).
     let extent: (x: Double, y: Double)
 
@@ -64,9 +69,14 @@ struct SkyHeroScene {
             return Dot(x: p.x, y: p.y, magnitude: s.magnitude,
                        color: s.spectralClass.color, isFocus: s.id == focusID)
         }
+        var seen = Set<String>()
+        figureStars = figure.flatMap { [$0.a, $0.b] }
+            .filter { seen.insert($0.id).inserted }
+            .compactMap { s in project(s.equatorialVector).map { (s, $0.x, $0.y) } }
         lines = figure.compactMap { seg in
             guard let a = project(seg.a.equatorialVector), let b = project(seg.b.equatorialVector) else { return nil }
-            return Line(x1: a.x, y1: a.y, x2: b.x, y2: b.y)
+            return Line(x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+                        m1: seg.a.magnitude, m2: seg.b.magnitude)
         }
 
         // Frame the figure with a margin; a lone star gets a fixed ~24° patch,
@@ -123,11 +133,18 @@ struct SkyHeroView: View {
             func point(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: cx + x * k, y: cy - y * k) }
 
             // Figure first, so stars sit on top of their own lines.
+            // Stopping short of both stars, as on the app's sky.
+            let art = Artist.shared
             var figure = Path()
             for l in scene.lines {
-                figure.move(to: point(l.x1, l.y1)); figure.addLine(to: point(l.x2, l.y2))
+                guard let (p, q) = art.figureSegment(from: point(l.x1, l.y1), to: point(l.x2, l.y2),
+                                                     gapA: Self.radius(for: l.m1) + art.figureGapMargin,
+                                                     gapB: Self.radius(for: l.m2) + art.figureGapMargin)
+                else { continue }
+                figure.move(to: p); figure.addLine(to: q)
             }
-            ctx.stroke(figure, with: .color(.white.opacity(0.22)), lineWidth: 1)
+            ctx.stroke(figure, with: .color(.white.opacity(0.22)),
+                       style: StrokeStyle(lineWidth: art.figureLineWidth * 1.4, lineCap: .round))
 
             for dot in scene.dots {
                 let p = point(dot.x, dot.y)
@@ -146,13 +163,80 @@ struct SkyHeroView: View {
         .background { if ground { Artist.shared.skyHeroGround } }
     }
 
+    /// Where a tangent-plane point lands in a frame of `size` — the same
+    /// fit the canvas draws with, for overlays that must sit on its stars.
+    static func point(_ x: Double, _ y: Double, scene: SkyHeroScene, in size: CGSize) -> CGPoint {
+        let k = min(size.width / (2 * scene.extent.x), size.height / (2 * scene.extent.y))
+        return CGPoint(x: size.width / 2 + x * k, y: size.height / 2 - y * k)
+    }
+
     /// Dot radius from magnitude: the brightest stars ~3pt, the limit ~0.5pt.
-    private static func radius(for magnitude: Double) -> CGFloat {
+    static func radius(for magnitude: Double) -> CGFloat {
         CGFloat(max(0.5, (SkyHeroScene.limitingMagnitude + 0.5 - magnitude) * 0.42))
     }
 
     /// Faint stars fade rather than shrink below a pixel.
     private static func opacity(for magnitude: Double) -> Double {
         min(1, max(0.35, (SkyHeroScene.limitingMagnitude + 1 - magnitude) / 4))
+    }
+}
+
+// MARK: - HeroFigureMarks
+// A constellation card's header IS its figure: over the hero's sky, each
+// figure star with a proper name or Greek letter gets its label, and every
+// figure star is a tap target that opens its own card (`StarLink`).
+// Labels that would land on one already placed are dropped, brightest first.
+struct HeroFigureMarks: View {
+
+    let scene: SkyHeroScene
+
+    var body: some View {
+        GeometryReader { geo in
+            let marks = scene.figureStars
+                .sorted { $0.star.magnitude < $1.star.magnitude }
+                .map { (star: $0.star, p: SkyHeroView.point($0.x, $0.y, scene: scene, in: geo.size)) }
+                .filter { geo.frame(in: .local).insetBy(dx: -4, dy: -4).contains($0.p) }
+            let labels = Self.labels(for: marks, in: geo.size)
+            ZStack(alignment: .topLeading) {
+                ForEach(marks, id: \.star.id) { m in
+                    StarLink(star: m.star) {
+                        Color.clear.frame(width: 34, height: 34).contentShape(.circle)
+                    }
+                    .position(m.p)
+                    .accessibilityLabel(m.star.displayName)
+                }
+                ForEach(labels, id: \.text) { l in
+                    Text(l.text)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .shadow(color: Artist.shared.canvasBackground, radius: 2)
+                        .fixedSize()
+                        .position(l.p)
+                        .allowsHitTesting(false)
+                }
+            }
+        }
+    }
+
+    private static func labels(for marks: [(star: Star, p: CGPoint)], in size: CGSize) -> [(text: String, p: CGPoint)] {
+        // Each star's own drawn disc — a fixed box larger than a faint star
+        // swallowed that star's own label, which hangs just below it.
+        var placed: [CGRect] = marks.map {
+            let r = SkyHeroView.radius(for: $0.star.magnitude)
+            return CGRect(x: $0.p.x - r, y: $0.p.y - r, width: r * 2, height: r * 2)
+        }
+        var out: [(String, CGPoint)] = []
+        for m in marks {
+            guard let text = m.star.properName ?? m.star.bayerLetter else { continue }
+            let r = SkyHeroView.radius(for: m.star.magnitude)
+            let w = CGFloat(text.count) * 6 + 4
+            let p = CGPoint(x: m.p.x, y: m.p.y + r + 9)
+            let box = CGRect(x: p.x - w / 2, y: p.y - 7, width: w, height: 14)
+            guard box.minX > 0, box.maxX < size.width, box.maxY < size.height,
+                  !placed.contains(where: { $0.intersects(box) }) else { continue }
+            placed.append(box)
+            out.append((text, p))
+        }
+        return out
     }
 }

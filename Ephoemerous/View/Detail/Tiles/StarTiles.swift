@@ -128,9 +128,11 @@ enum DistanceUnit: String, CaseIterable {
 /// The line itself: the Sun at the left, ticks at 10 / 100 / 1 000 ly, the
 /// companions as quiet dots (nearest and farthest named), this star in its
 /// own colour.
-private struct DistanceLine: View {
+struct DistanceLine: View {
 
-    let star:       Star
+    /// The star the line is about — `nil` on a constellation's own card,
+    /// where every star is a companion and none leads.
+    let star:       Star?
     let companions: [Star]
 
     private static let domain = (lo: log10(3.0), hi: log10(3_000.0))
@@ -175,7 +177,7 @@ private struct DistanceLine: View {
                 ctx.fill(a.starPath(at: CGPoint(x: x(ly), y: y), radius: 2.8),
                          with: .color(s.spectralClass.color.opacity(0.75)))
             }
-            let here = star.distanceLY.map(x)
+            let here = star?.distanceLY.map(x)
             let ends = [known.min { $0.1 < $1.1 }, known.max { $0.1 < $1.1 }].compactMap { $0 }
             for (s, ly) in ends {
                 let ex = x(ly)
@@ -185,7 +187,7 @@ private struct DistanceLine: View {
             }
 
             // This star — its own colour, a touch bigger, a soft halo.
-            if let hx = here {
+            if let star, let hx = here {
                 let p = CGPoint(x: hx, y: y)
                 ctx.fill(Path(ellipseIn: CGRect(x: hx - 10, y: y - 10, width: 20, height: 20)),
                          with: .radialGradient(Gradient(colors: [star.spectralClass.color.opacity(0.5), .clear]),
