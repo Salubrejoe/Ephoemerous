@@ -354,6 +354,10 @@ class AppState {
     /// How open the iPad's floating panel is while it holds a place card,
     /// 0…1 — `nil` on the phone, where `bottomSheetTop` says it instead.
     var detailPanelExpansion:    CGFloat? = nil
+    /// Bumped when a place card is pulled down past the top of its grid —
+    /// MainView folds the card to its title (panel on iPad, sheet detent
+    /// on the phone), the way a sheet's own drag would.
+    var detailCollapseRequest:   Int      = 0
     /// Identity of the tracker that last wrote `bottomSheetTop`. Sheet
     /// swaps overlap dismissal + presentation; the outgoing tracker's
     /// `onDisappear` may only nil-clear the slot if it still owns it.

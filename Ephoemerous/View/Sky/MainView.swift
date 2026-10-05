@@ -223,6 +223,12 @@ struct MainView: View {
         // while the window still covers it, so the fold-out eases onto
         // home instead of onto wherever you'd pinched before. Rotation is
         // left as you set it.
+        // A place card pulled down past its grid's top folds to its title.
+        .onChange(of: app.detailCollapseRequest) {
+            withAnimation(.snappy(duration: 0.32)) {
+                if isRegular { panelStage = .bar } else { detailDetent = detailHeaderDetent }
+            }
+        }
         .onChange(of: app.isLooking) { _, looking in
             // Opening the window folds a detail card to its header — the
             // sky needs the screen, and the name is on the ring.

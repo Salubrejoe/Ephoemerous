@@ -110,6 +110,8 @@ extension Artist {
     var placeHeroGrowth:     CGFloat { 50 }
     /// Remember / Find — full-width capsules at the grid's foot.
     var placeActionHeight:   CGFloat { 50 }
+    /// How far past the grid's top a pull must go to fold the card. ▼ TWEAK ▼
+    var placePullToFold:     CGFloat { 70 }
 }
 
 // MARK: - PlaceHero

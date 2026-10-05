@@ -23,6 +23,8 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
     @ViewBuilder let actions: () -> Actions
 
     @State private var scrollPosition = ScrollPosition()
+    /// One fold per pull: armed again once the grid is back at rest.
+    @State private var pullArmed = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,6 +51,22 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                 // DetailCard) — clipping its top edge sliced them flat.
                 .scrollClipDisabled()
                 .scrollPosition($scrollPosition)
+                // Pull down past the top of the grid → fold the card to its
+                // title, as a sheet's drag would. The iPad panel otherwise
+                // only drags by its header band, and a swipe on the body
+                // just scrolled. Reads the overscroll; writes state ONCE per
+                // pull, so it can't fight the scroll the way a live-resizing
+                // header did.
+                .onScrollGeometryChange(for: CGFloat.self) { geo in
+                    geo.contentOffset.y + geo.contentInsets.top
+                } action: { _, y in
+                    if y < -Artist.shared.placePullToFold, pullArmed {
+                        pullArmed = false
+                        state.detailCollapseRequest &+= 1
+                    } else if y >= 0, !pullArmed {
+                        pullArmed = true
+                    }
+                }
                 #if DEBUG
                 // Screenshot seeding: `-detailScroll <pt>` opens the grid
                 // already scrolled (the simulator can't drag).
