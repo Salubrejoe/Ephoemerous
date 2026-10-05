@@ -37,6 +37,9 @@ struct Artist {
     /// The generic star field. White in dark mode, at full strength — the
     /// per-star magnitude opacity below is the only thing that dims it.
     var starColor : Color { palette.starField }
+    /// The untappable field's ink — the star colour, hushed, so the
+    /// pentagons and badges (the stars you can touch) lead. ▼ TWEAK ▼
+    var fieldStarColor: Color { starColor.opacity(0.78) }
 
     var eclColor : Color  { palette.ecliptic }
     var eclWidth : Double { 0.5 }

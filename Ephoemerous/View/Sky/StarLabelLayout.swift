@@ -13,6 +13,9 @@ import UIKit
 //   3. Named stars, brightest first. A name that would overlap drops; a
 //      BADGE that would overlap falls back to the star's tier-0 pentagon,
 //      so the star never vanishes — it just stops shouting.
+//   4. Constellation names, the whisper voice, last: one that would land
+//      on any mark above — or on another constellation's name — gives way.
+//      A selected constellation is fixed with the pin instead.
 //
 // Everything is compared where it lands ON SCREEN (`LabelComfortZone
 // .screenPoint`), because labels are drawn upright at constant size there
@@ -26,12 +29,15 @@ struct StarLabelLayout {
     let dotOnly:     Set<String>
     /// Stars whose badge shows but whose name gives way.
     let hiddenNames: Set<String>
+    /// Constellations (rawValue) whose name gives way.
+    let hiddenConstellations: Set<String>
 
-    static let none = StarLabelLayout(dotOnly: [], hiddenNames: [])
+    static let none = StarLabelLayout(dotOnly: [], hiddenNames: [], hiddenConstellations: [])
 
-    private init(dotOnly: Set<String>, hiddenNames: Set<String>) {
-        self.dotOnly     = dotOnly
-        self.hiddenNames = hiddenNames
+    private init(dotOnly: Set<String>, hiddenNames: Set<String>, hiddenConstellations: Set<String>) {
+        self.dotOnly              = dotOnly
+        self.hiddenNames          = hiddenNames
+        self.hiddenConstellations = hiddenConstellations
     }
 
     @MainActor
@@ -49,6 +55,10 @@ struct StarLabelLayout {
         // 1 · Fixed marks.
         if let selection, let sc = SkyLabObjects.screen(selection, camera: camera, date: date) {
             placed.append(contentsOf: Self.pinFootprint(selection, at: comfort.screenPoint(sc), date: date, metrics: m))
+        }
+        if case .constellation(let c) = selection, let anchor = ConstellationLines.shared.labelAnchors[c],
+           let sc = camera.screen(equatorial: Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)) {
+            placed.append(Self.regionRect(c.localizedName, at: comfort.screenPoint(sc), metrics: m))
         }
         let bodies: [SkyObject] = [.sun, .moon] + Planet.all.map { .planet($0) } + Spacecraft.allCases.map { .spacecraft($0) }
         for body in bodies where body != selection {
@@ -91,8 +101,31 @@ struct StarLabelLayout {
             }
         }
 
-        dotOnly     = dots
-        hiddenNames = names
+        // 4 · Constellation names, the whisper voice — last, so they give
+        // way to every mark above and to each other. Alphabetical, so the
+        // winner of a tie is the same every frame.
+        var regions  = Set<String>()
+        let regionIn = a.poiStyle(for: .constellation).textIn
+        if POILabelView.tierReveal(scale: scale, threshold: regionIn) > 0.01 {
+            let anchors = ConstellationLines.shared.labelAnchors.sorted { $0.key.rawValue < $1.key.rawValue }
+            for (cons, anchor) in anchors {
+                if case .constellation(let c) = selection, c == cons { continue }    // fixed with the pin
+                let q = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
+                guard let sc = camera.screen(equatorial: q),
+                      comfort.nameVisibility(at: sc) > 0.01
+                else { continue }
+                let rect = Self.regionRect(cons.localizedName, at: comfort.screenPoint(sc), metrics: m)
+                if collides(rect) {
+                    regions.insert(cons.rawValue)
+                } else {
+                    placed.append(rect)
+                }
+            }
+        }
+
+        dotOnly              = dots
+        hiddenNames          = names
+        hiddenConstellations = regions
     }
 
     // MARK: Metrics
@@ -106,6 +139,10 @@ struct StarLabelLayout {
         let nameFont: UIFont
         /// The promoted pin's name font (title 2 serif bold).
         let pinFont:  UIFont
+        /// The constellation names' region voice.
+        let regionFont:     UIFont
+        /// Their letter spacing at this size.
+        let regionTracking: CGFloat
 
         @MainActor
         init(_ size: DynamicTypeSize) {
@@ -113,6 +150,8 @@ struct StarLabelLayout {
             scale    = a.typeScale(size)
             nameFont = a.labelFont(.footnote, size: size)
             pinFont  = a.labelFont(.title2,   size: size)
+            regionFont     = a.regionFont(size: size)
+            regionTracking = a.regionTracking * scale
         }
     }
 
@@ -133,6 +172,17 @@ struct StarLabelLayout {
         let w = textWidth(text, font: m.nameFont)
         let h = m.nameFont.lineHeight
         return CGRect(x: p.x + (badge / 2 + 6) * m.scale, y: p.y - h / 2, width: w, height: h)
+            .insetBy(dx: -padding, dy: -padding)
+    }
+
+    /// A constellation name, centred on its anchor — as `ConstellationLabels`
+    /// draws it: spaced capitals in the region voice.
+    @MainActor
+    private static func regionRect(_ name: String, at p: CGPoint, metrics m: Metrics) -> CGRect {
+        let text = name.uppercased()
+        let w    = textWidth(text, font: m.regionFont, tracking: m.regionTracking)
+        let h    = m.regionFont.lineHeight
+        return CGRect(x: p.x - w / 2, y: p.y - h / 2, width: w, height: h)
             .insetBy(dx: -padding, dy: -padding)
     }
 
@@ -162,10 +212,10 @@ struct StarLabelLayout {
 
     /// Measured width plus the outline casing either side; cached per name.
     @MainActor
-    private static func textWidth(_ text: String, font: UIFont) -> CGFloat {
-        let key = "\(font.pointSize)|\(text)"
+    private static func textWidth(_ text: String, font: UIFont, tracking: CGFloat = 0) -> CGFloat {
+        let key = "\(font.fontName)|\(font.pointSize)|\(tracking)|\(text)"
         if let w = widthCache[key] { return w }
-        let w = ceil((text as NSString).size(withAttributes: [.font: font]).width) + 3
+        let w = ceil((text as NSString).size(withAttributes: [.font: font, .kern: tracking]).width) + 3
         widthCache[key] = w
         return w
     }

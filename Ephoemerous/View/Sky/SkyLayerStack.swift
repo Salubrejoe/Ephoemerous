@@ -74,7 +74,8 @@ struct SkyLayerStack: View {
                                 scale: frame.liveScale,
                                 rotation: frame.liveRot,
                                 selectedID: frame.selectedConsID,
-                                comfort: frame.comfort)
+                                comfort: frame.comfort,
+                                layout: frame.starLabels)
 
             // The quietest voice, so it paints FIRST and every louder label
             // lands on top of it: bare Greek letters on the figure stars

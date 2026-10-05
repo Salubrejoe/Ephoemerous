@@ -56,7 +56,7 @@ struct StarsCanvas: View, Equatable {
 
             let glow   = Self.glowAmount(scale: camera.scale)
             let limit  = Self.limitingMagnitude(scale: camera.scale)
-            let ink    = Artist.shared.starColor
+            let ink    = Artist.shared.fieldStarColor
             let zenith = camera.viewpoint.originVector       // earth-fixed, same frame as the horizon
             for star in stars {
                 // Brightest first, so the first star past the limit ends
@@ -71,11 +71,11 @@ struct StarsCanvas: View, Equatable {
                       sc.y > -2,
                       sc.y < size.height + 2 else { continue }
                 let r     = Self.radius(forMagnitude: star.magnitude, scale: camera.scale)
-                // Spectral colour for the bright stars only, greying out
-                // with magnitude — the way a dark sky actually shows them:
-                // faint stars reach the eye colourless.
-                let color = star.spectralClass.color
-                    .mix(with: ink, by: 1 - Self.chroma(forMagnitude: star.magnitude))
+                // Colour means "tappable": the field is one grey ink, and a
+                // star's spectral colour blooms only when its own mark (the
+                // pentagon, then the badge) takes over. Brightness reads
+                // through size and opacity alone.
+                let color = ink
                 // Stars at the edge of the limit fade in rather than pop.
                 let reveal = Self.reveal(magnitude: star.magnitude, limit: limit)
                 // The brightest few glow: the cue that they're light sources,
@@ -123,18 +123,6 @@ struct StarsCanvas: View, Equatable {
     /// 0 at the limit → 1 a `revealBand` brighter, smoothstepped.
     private static func reveal(magnitude m: Double, limit: Double) -> Double {
         let x = max(0, min(1, (limit - m) / revealBand))
-        return x * x * (3 - 2 * x)
-    }
-
-    // Colour ▼ TWEAK HERE ▼
-    /// Full spectral colour at or brighter than this…
-    private static let fullColourMagnitude: Double = 2.0
-    /// …fading to plain star ink at this.
-    private static let greyMagnitude:       Double = 4.0
-
-    /// How much of its spectral colour a star keeps, 1 → 0 with magnitude.
-    private static func chroma(forMagnitude m: Double) -> Double {
-        let x = max(0, min(1, (greyMagnitude - m) / (greyMagnitude - fullColourMagnitude)))
         return x * x * (3 - 2 * x)
     }
 

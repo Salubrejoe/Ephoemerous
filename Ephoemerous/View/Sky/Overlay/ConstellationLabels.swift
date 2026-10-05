@@ -27,6 +27,11 @@ struct ConstellationLabels: View {
     /// Names fade outside the calm middle of the screen (the selected one
     /// is exempt).
     var comfort: LabelComfortZone = .everywhere
+    /// Names that would land on a mark give way — see `StarLabelLayout`.
+    var layout: StarLabelLayout = .none
+
+    /// Tracking grows with the letters (see `Artist+TypeScale`).
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// Constellation text tier.
     private static let textIn: Double =
@@ -35,15 +40,15 @@ struct ConstellationLabels: View {
     private static let blur: CGFloat = 4
 
     var body: some View {
+        let a = Artist.shared
         ZStack {
             ForEach(marks) { mark in
-                
                 Text(mark.name.uppercased())
-                    .foregroundStyle(mark.selected ? .primary : .tertiary)
-                    .font(.footnote)
-                    .fontDesign(.serif)
+                    .font(.system(a.regionTextStyle, design: .default, weight: a.regionWeight))
+                    .tracking(a.regionTracking * a.typeScale(dynamicTypeSize))
+                    .foregroundStyle(mark.selected ? .primary : .secondary)
+                    .shadow(color: a.canvasBackground, radius: a.regionHalo)
                     .contentShape(.capsule)
-                
                     .opacity(mark.selected ? 1 : mark.reveal)
                     .blur(radius: mark.selected ? 0 : (1 - mark.reveal) * Self.blur)
                     .rotationEffect(-rotation, anchor: .center)
@@ -71,6 +76,7 @@ struct ConstellationLabels: View {
         return ConstellationLines.shared.labelAnchors.compactMap { cons, anchor in
             let selected = cons.rawValue == selectedID
             guard reveal > 0.01 || selected else { return nil }
+            guard selected || !layout.hiddenConstellations.contains(cons.rawValue) else { return nil }
             let q = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: q) else { return nil }
             guard sc.x > -60, sc.x < w + 60, sc.y > -60, sc.y < h + 60 else { return nil }

@@ -21,6 +21,29 @@ extension Artist {
     /// and sheets keep scaling all the way. ▼ TWEAK the ceiling here ▼
     var skyTypeCeiling: DynamicTypeSize { .accessibility3 }
 
+    // MARK: Region names
+    // Constellations are REGIONS, not objects, so they speak the map's
+    // region voice (Apple Maps' neighbourhoods): small spaced capitals,
+    // medium weight, a soft halo in the sky's colour to stay legible across
+    // figure lines. Spacing does the legibility work, so the name can be
+    // small — and small is what keeps it from intruding. ▼ TWEAK ▼
+
+    /// Text style of a constellation name.
+    var regionTextStyle: Font.TextStyle    { .caption2 }
+    var regionUITextStyle: UIFont.TextStyle { .caption2 }
+    var regionWeight: Font.Weight          { .medium }
+    /// Letter spacing (pt) at the default Text Size — grows with it.
+    var regionTracking: CGFloat            { 2.2 }
+    /// Halo radius (pt) in the canvas colour behind the letters.
+    var regionHalo: CGFloat                { 2 }
+
+    /// The region voice as a `UIFont`, for measuring names.
+    @MainActor
+    func regionFont(size: DynamicTypeSize) -> UIFont {
+        UIFont.systemFont(ofSize: labelFont(regionUITextStyle, design: .default, size: size).pointSize,
+                          weight: .medium)
+    }
+
     /// How much bigger than the default (Large) size a mark draws at.
     /// 1 at the default; footnote's curve, the label system's body voice.
     @MainActor
