@@ -331,7 +331,14 @@ struct MainView: View {
             if isRegular, app.detailDestination != nil || searchPresented.wrappedValue {
                 FloatingPanel(stage: $panelStage,
                               available: viewSize.height,
-                              showsDragBand: app.detailDestination != nil) {
+                              showsDragBand: app.detailDestination != nil,
+                              // The place card's two states: its title, or
+                              // the full height with the hero — Maps' card.
+                              fullHeight: app.detailDestination != nil,
+                              onExpansion: { e in
+                                  let v: CGFloat? = app.detailDestination == nil ? nil : e
+                                  if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
+                              }) {
                     if let obj = app.detailDestination {
                         DetailHost(obj: obj, stacked: false)
                             .id(obj.id)
@@ -361,8 +368,9 @@ struct MainView: View {
             // drag; leaving it parks the panel back at the search bar.
             if isRegular {
                 withAnimation(.snappy(duration: 0.32)) {
-                    panelStage = obj == nil ? .bar : .medium
+                    panelStage = obj == nil ? .bar : .large
                 }
+                if obj == nil { app.detailPanelExpansion = nil }
             }
         }
         // Leaving compass mode → freeze the live heading into the committed

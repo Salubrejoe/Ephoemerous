@@ -351,6 +351,9 @@ class AppState {
     /// SYNC with the sheet instead of a fixed offset; the same signal drives
     /// the sheet-title morph. `nil` when nothing is tracked.
     var bottomSheetTop:          CGFloat? = nil
+    /// How open the iPad's floating panel is while it holds a place card,
+    /// 0…1 — `nil` on the phone, where `bottomSheetTop` says it instead.
+    var detailPanelExpansion:    CGFloat? = nil
     /// Identity of the tracker that last wrote `bottomSheetTop`. Sheet
     /// swaps overlap dismissal + presentation; the outgoing tracker's
     /// `onDisappear` may only nil-clear the slot if it still owns it.

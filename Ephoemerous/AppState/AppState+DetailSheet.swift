@@ -9,6 +9,8 @@ extension AppState {
     /// follows it — the place header's title, the sheet's night backdrop —
     /// moves WITH the finger rather than switching at a detent.
     var detailSheetExpansion: CGFloat {
+        // The iPad's floating panel reports its own (see `FloatingPanel`).
+        if let panel = detailPanelExpansion { return panel }
         guard let top = bottomSheetTop else { return 0 }
         let h      = Self.screenHeight
         let rest   = h * 2 / 3                  // the resting third
