@@ -55,8 +55,13 @@ struct StarsCanvas: View, Equatable {
             let namedHandsOff = camera.scale >= namedDotIn
 
             let glow   = Self.glowAmount(scale: camera.scale)
+            let limit  = Self.limitingMagnitude(scale: camera.scale)
+            let ink    = Artist.shared.starColor
             let zenith = camera.viewpoint.originVector       // earth-fixed, same frame as the horizon
             for star in stars {
+                // Brightest first, so the first star past the limit ends
+                // the field — everything after it is fainter still.
+                guard star.magnitude < limit else { break }
                 guard !favouriteIDs.contains(star.id) else { continue }   // drawn as a badge
                 // Named stars hand off to their own dot / badge past the tier.
                 if namedHandsOff, namedIDs.contains(star.id) { continue }
@@ -66,9 +71,13 @@ struct StarsCanvas: View, Equatable {
                       sc.y > -2,
                       sc.y < size.height + 2 else { continue }
                 let r     = Self.radius(forMagnitude: star.magnitude, scale: camera.scale)
-                // Each star in its own colour — spectral class, O blue to M
-                // red — the way a dark sky actually shows them.
+                // Spectral colour for the bright stars only, greying out
+                // with magnitude — the way a dark sky actually shows them:
+                // faint stars reach the eye colourless.
                 let color = star.spectralClass.color
+                    .mix(with: ink, by: 1 - Self.chroma(forMagnitude: star.magnitude))
+                // Stars at the edge of the limit fade in rather than pop.
+                let reveal = Self.reveal(magnitude: star.magnitude, limit: limit)
                 // The brightest few glow: the cue that they're light sources,
                 // not dots. Fades out as you zoom so it never blooms to soup,
                 // and only above the horizon — a star under the ground isn't
@@ -85,10 +94,47 @@ struct StarsCanvas: View, Equatable {
                 ctx.fill(
                     Path(ellipseIn: CGRect(x: sc.x - r, y: sc.y - r,
                                            width: r * 2, height: r * 2)),
-                    with: .color(color.opacity(Self.opacity(forMagnitude: star.magnitude)))
+                    with: .color(color.opacity(Self.opacity(forMagnitude: star.magnitude) * reveal))
                 )
             }
         }
+    }
+
+    // Limiting magnitude ▼ TWEAK HERE ▼
+    // Pinch IS the magnitude slider: zoomed out, only the bright skeleton
+    // of the sky; each pinch in lets fainter stars through, the way raising
+    // binoculars does. Log-linear between the two anchors, so every
+    // doubling of zoom reveals the same step of depth.
+    private static let limitAtRest:  Double  = 4.5    // at the wide view
+    private static let limitAtDepth: Double  = 7.0    // at full zoom
+    private static let restScale:    CGFloat = 90
+    private static let depthScale:   CGFloat = 1200
+    /// Magnitudes over which a star at the limit fades in.
+    private static let revealBand:   Double  = 0.5
+
+    /// Faintest magnitude drawn at a committed `scale`.
+    private static func limitingMagnitude(scale: CGFloat) -> Double {
+        let t = log(Double(max(scale, restScale) / restScale))
+              / log(Double(depthScale / restScale))
+        return limitAtRest + (limitAtDepth - limitAtRest) * min(1, t)
+    }
+
+    /// 0 at the limit → 1 a `revealBand` brighter, smoothstepped.
+    private static func reveal(magnitude m: Double, limit: Double) -> Double {
+        let x = max(0, min(1, (limit - m) / revealBand))
+        return x * x * (3 - 2 * x)
+    }
+
+    // Colour ▼ TWEAK HERE ▼
+    /// Full spectral colour at or brighter than this…
+    private static let fullColourMagnitude: Double = 2.0
+    /// …fading to plain star ink at this.
+    private static let greyMagnitude:       Double = 4.0
+
+    /// How much of its spectral colour a star keeps, 1 → 0 with magnitude.
+    private static func chroma(forMagnitude m: Double) -> Double {
+        let x = max(0, min(1, (greyMagnitude - m) / (greyMagnitude - fullColourMagnitude)))
+        return x * x * (3 - 2 * x)
     }
 
     // Zoom-growth tunables ▼ TWEAK HERE ▼
