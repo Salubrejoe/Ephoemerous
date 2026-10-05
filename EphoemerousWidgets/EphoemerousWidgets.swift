@@ -308,6 +308,7 @@ struct SkySnapshot {
 
         // Constellation stick-figures — the app's quiet dotted grey; the
         // PINNED constellation is the hero and gets traced separately.
+        let a_     = Artist.shared
         var sticks = Path()
         var hero   = Path()
         for (cons, segs) in ConstellationLines.shared.segments {
@@ -320,18 +321,23 @@ struct SkySnapshot {
                     p.y > -20 && p.y < size.height + 20
                 }
                 guard onTile(a) || onTile(b) else { continue }
+                // Stopping short of both stars, as on the app's sky.
+                let gap = { (s: Star) in a_.fieldStarRadius(magnitude: s.magnitude, scale: camera.scale)
+                                         + a_.figureGapMargin }
+                guard let (p, q) = a_.figureSegment(from: a, to: b, gapA: gap(seg.a), gapB: gap(seg.b))
+                else { continue }
                 if cons == pinnedConstellation {
-                    hero.move(to: a)
-                    hero.addLine(to: b)
+                    hero.move(to: p)
+                    hero.addLine(to: q)
                 } else {
-                    sticks.move(to: a)
-                    sticks.addLine(to: b)
+                    sticks.move(to: p)
+                    sticks.addLine(to: q)
                 }
             }
         }
         ctx.stroke(sticks,
                    with: .color(.white.opacity(0.22)),        // ▼ TWEAK the figures' ink ▼
-                   style: StrokeStyle(lineWidth: 0.7, dash: [2, 3]))
+                   style: StrokeStyle(lineWidth: a_.figureLineWidth, lineCap: .round))
         // The hero figure: a SOLID trace, like a selected constellation
         // in the app — the line IS the promoted label here.
         ctx.stroke(hero,

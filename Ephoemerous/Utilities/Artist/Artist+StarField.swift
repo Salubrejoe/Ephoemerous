@@ -110,4 +110,31 @@ extension Artist {
         ctx.fill(starPath(at: point, radius: r),
                  with: .color(ink.opacity(min(1, fieldStarOpacity(magnitude: m) * reveal * gain))))
     }
+
+    // MARK: Figures
+    // Constellation lines the star-atlas way, on every surface that draws
+    // them (the sky, the postcard, the Orloj, the sheet header): each line
+    // STOPS SHORT of its stars, so stars read as nodes and lines as the
+    // connections between them — never skewered, never a blob where three
+    // meet. Solid hairlines; dotted was one more speck in a field of them.
+
+    /// ▼ TWEAK the figures ▼
+    /// Hairline weight of a figure's line.
+    var figureLineWidth:  CGFloat { 0.6 }
+    /// Sky left between a star's edge and the line that reaches for it.
+    var figureGapMargin:  CGFloat { 2.5 }
+    /// Shortest stretch of line still worth drawing between two gaps.
+    var figureMinimumRun: CGFloat { 3 }
+
+    /// The visible part of the line a → b, pulled back `gapA` from a and
+    /// `gapB` from b; `nil` when the gaps leave too little to draw.
+    func figureSegment(from a: CGPoint, to b: CGPoint,
+                       gapA: CGFloat, gapB: CGFloat) -> (CGPoint, CGPoint)? {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let length = (dx * dx + dy * dy).squareRoot()
+        guard length > gapA + gapB + figureMinimumRun else { return nil }
+        let ux = dx / length, uy = dy / length
+        return (CGPoint(x: a.x + ux * gapA, y: a.y + uy * gapA),
+                CGPoint(x: b.x - ux * gapB, y: b.y - uy * gapB))
+    }
 }

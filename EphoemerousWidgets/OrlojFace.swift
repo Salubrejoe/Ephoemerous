@@ -425,8 +425,14 @@ struct OrlojFace {
                       hypot(a.x - b.x, a.y - b.y) < clip,
                       hypot(a.x - center.x, a.y - center.y) < clip ||
                       hypot(b.x - center.x, b.y - center.y) < clip else { continue }
-                merged.move(to: a)
-                merged.addLine(to: b)
+                // Stopping short of both stars, at the dial's star size.
+                let art = Artist.shared
+                let gap = { (s: Star) in (art.fieldStarRadius(magnitude: s.magnitude, scale: self.camera.scale)
+                                          + art.figureGapMargin) * 0.6 * self.ui }
+                guard let (p, q) = art.figureSegment(from: a, to: b, gapA: gap(seg.a), gapB: gap(seg.b))
+                else { continue }
+                merged.move(to: p)
+                merged.addLine(to: q)
             }
         }
         return merged

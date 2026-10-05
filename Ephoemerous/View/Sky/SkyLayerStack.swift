@@ -38,6 +38,7 @@ struct SkyLayerStack: View {
             // smoothstep) so figures and names arrive together.
             ConstellationLinesCanvas(camera: frame.camera,
                                      favouriteTints: frame.favouriteConstellationTints,
+                                     favouriteIDs: frame.favouriteIDs,
                                      reveal: ConstellationLinesCanvas.reveal(scale: frame.liveScale))
 
             StarsCanvas(camera: frame.camera,
