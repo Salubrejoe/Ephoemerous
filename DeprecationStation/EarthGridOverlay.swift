@@ -1,6 +1,10 @@
 import SwiftUI
 import LoreKit
 
+// RETIRED (v1.5): the dashed horizon ring said twice what the sky veil and
+// the frosted ground already say once. The edge between them is the rim;
+// the horizon names sit in it, cut in sky colour (see CartographyLabels).
+
 // MARK: - SkyLabHorizonCircles
 // The horizon ring. It is drawn as a PROJECTED curve through the live
 // camera, so it MORPHS with the NorthIN↔NorthOUT transition instead of
