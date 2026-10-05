@@ -197,3 +197,38 @@ struct LunarPhase: Equatable {
         return isWaxing ? .moonWaxingGibbous : .moonWaningGibbous
     }
 }
+
+// MARK: - Distance from Earth
+extension MoonPosition {
+
+    /// Earth → Moon, km. The leading terms of Meeus's lunar distance series
+    /// (ch. 47) on the same mean elements `vector(for:)` uses — good to a
+    /// few hundred km, far finer than the label shows.
+    static func distanceKm(for date: Date) -> Double {
+        let T  = Precession.julianCenturies(from: date)
+        let AC = AstroConstants.self
+        func arg(_ base: Angle, _ rate: Double) -> Double {
+            Angle.degrees((base.degrees + rate * T).truncatingRemainder(dividingBy: 360)).radians
+        }
+        let Mm = arg(AC.moon_M_base,  AC.moon_M_c1)      // Moon's mean anomaly
+        let Ms = arg(AC.moon_Ms_base, AC.moon_Ms_c1)     // Sun's mean anomaly
+        let D  = arg(AC.moon_D_base,  AC.moon_D_c1)      // mean elongation
+        let F  = arg(AC.moon_F_base,  AC.moon_F_c1)      // argument of latitude
+
+        var r = 385_000.56
+        r -= 20_905.355 * cos(Mm)
+        r -=  3_699.111 * cos(2 * D - Mm)
+        r -=  2_955.968 * cos(2 * D)
+        r -=    569.925 * cos(2 * Mm)
+        r +=     48.888 * cos(Ms)
+        r -=      3.149 * cos(2 * F)
+        r +=    246.158 * cos(2 * D - 2 * Mm)
+        r -=    152.138 * cos(2 * D - Ms - Mm)
+        r -=    170.733 * cos(2 * D + Mm)
+        r -=    204.586 * cos(2 * D - Ms)
+        r -=    129.620 * cos(Ms - Mm)
+        r +=    108.743 * cos(D)
+        r +=    104.755 * cos(Ms + Mm)
+        return r
+    }
+}

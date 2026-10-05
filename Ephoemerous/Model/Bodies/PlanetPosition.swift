@@ -551,3 +551,38 @@ private extension PlanetPosition {
         ( 13_220.0, 3.32026422,  1.4844727  ),
     ]
 }
+
+// MARK: - Distances from Earth
+// How far each body is right now, in astronomical units — the same
+// heliocentric series the positions use, so the number agrees with where
+// the badge sits. Read by LOOK mode's crosshair when it locks.
+extension PlanetPosition {
+
+    /// Earth → `planet`, AU.
+    static func distanceAU(_ planet: Planet, date: Date) -> Double? {
+        let T = Precession.julianCenturies(from: date)
+        // Same order as `Planet.all`, as in `allVectors`.
+        guard let i = Planet.all.firstIndex(where: { $0.name == planet.name }) else { return nil }
+        let heliocentric: (L: Double, B: Double, R: Double)
+        switch i {
+        case 0:  heliocentric = mercury(T)
+        case 1:  heliocentric = venus(T)
+        case 2:  heliocentric = mars(T)
+        case 3:  heliocentric = jupiter(T)
+        case 4:  heliocentric = saturn(T)
+        case 5:  heliocentric = uranus(T)
+        default: heliocentric = neptune(T)
+        }
+        let (Ls, Rs) = earth(T)
+        let (Lp, Bp, Rp) = heliocentric
+        let x = Rp * cos(Bp) * cos(Lp) - Rs * cos(Ls)
+        let y = Rp * cos(Bp) * sin(Lp) - Rs * sin(Ls)
+        let z = Rp * sin(Bp)
+        return (x * x + y * y + z * z).squareRoot()
+    }
+
+    /// Earth → Sun, AU — Earth's own heliocentric radius.
+    static func sunDistanceAU(date: Date) -> Double {
+        earth(Precession.julianCenturies(from: date)).R
+    }
+}

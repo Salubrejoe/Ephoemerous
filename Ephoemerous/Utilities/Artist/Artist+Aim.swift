@@ -32,15 +32,29 @@ extension Artist {
 
     /// The window's vertical field of view — roughly the phone camera's.
     var lookFieldOfViewDeg:   Double  { 60 }
-    /// Crosshair ring radius (pt) — also the lock radius.
-    var crosshairRadius:      CGFloat { 26 }
-    var crosshairLineWidth:   CGFloat { 1.5 }
+    /// Crosshair ring radius (pt) at rest — also the lock radius.
+    var crosshairRadius:       CGFloat { 26 }
+    var crosshairLineWidth:    CGFloat { 1.5 }
     /// Resting ink — quiet glass, never the accent until something locks.
-    var crosshairRestOpacity: Double  { 0.55 }
+    var crosshairRestOpacity:  Double  { 0.55 }
     /// Below this much of the window, nothing locks.
-    var crosshairLockBlend:   Double  { 0.9 }
-    /// The name hangs this far under the ring.
-    var crosshairNameGap:     CGFloat { 6 }
+    var crosshairLockBlend:    Double  { 0.9 }
+
+    // Locked: the ring grows a touch and OPENS — the name written into the
+    // top of the circle, the distance into the bottom, each in the gap its
+    // own letters leave. A bezel inscription, not a caption under a ring.
+
+    /// Ring radius once locked — the floor; a long name grows it further.
+    var crosshairLockedRadius: CGFloat { 34 }
+    /// Widest arc (degrees) one inscription may take before the ring grows
+    /// to fit it instead.
+    var crosshairMaxArcDeg:    Double  { 150 }
+    /// Clear space (pt) between the letters and each cut end of the ring.
+    var crosshairArcPadding:   CGFloat { 5 }
+    /// Letter spacing (pt) of the inscriptions.
+    var crosshairTracking:     CGFloat { 1.4 }
+    /// The distance reads quieter than the name.
+    var crosshairDistanceOpacity: Double { 0.75 }
 
     /// Camera scale that fits `lookFieldOfViewDeg` into a screen this tall.
     /// Stereographic: an angle θ off-centre lands at 2·tan(θ/2)·scale.
