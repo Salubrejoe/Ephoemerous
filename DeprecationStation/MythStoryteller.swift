@@ -1,3 +1,7 @@
+// RETIRED (v1.9): the on-device Apple Intelligence retelling. The curated
+// catasterism line (ConstellationCatasterism) says it better, the same for
+// everyone, on every device.
+
 import Foundation
 import FoundationModels
 

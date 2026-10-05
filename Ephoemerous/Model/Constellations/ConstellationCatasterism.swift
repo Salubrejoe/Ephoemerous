@@ -3,15 +3,13 @@ import Foundation
 // MARK: - Constellation catasterism
 // "How it reached the sky" — the warm placement line for each storied
 // constellation, loaded from `constellation_catasterism.json` and keyed by
-// IAU abbreviation. This is the emotional grounding the myth storyteller
-// (Foundation Models) builds on: the catasterism is fed verbatim so the
-// model retells *this* placement rather than inventing one.
+// IAU abbreviation. The constellation card's "How did it get there?" tile
+// shows it verbatim.
 //
 // Coverage is the STORIED set only (Ptolemaic figures + the myth-tagged
 // ones). Modern constellations (Lacaille / Bayer / Hevelius) have no
 // sky-placement myth — `catasterism(for:)` returns nil for them, and the
-// storyteller falls back to their `origin` ("named by … to chart the
-// southern sky"). See `ConstellationCategories.origin`.
+// card says plainly that no ancient myth set them among the stars.
 //
 // PLACEHOLDER COPY: these lines are first-draft, to be curated. Keep them
 // short, warm, and accurate to the canonical catasterism.

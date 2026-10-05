@@ -35,63 +35,27 @@ struct StarLink<Label: View>: View {
 }
 
 // MARK: Story (wide, its own height)
-// "How did it get there?" — the catasterism, retold on-device in a chosen
-// voice where Apple Intelligence runs, or the curated line verbatim.
+// "How did it get there?" — the curated catasterism, how the figure was
+// set among the stars; the modern ones say plainly that no myth did.
 struct ConstellationStoryTile: View {
 
     let constellation: Constellation
-    @State private var storyteller = MythStoryteller()
-    @State private var tone: MythStoryteller.Tone = .cosy
 
     var body: some View {
         DetailCard(title: String(localized: "How did it get there?"), symbol: "book") {
-            VStack(alignment: .leading, spacing: 12) {
-                if MythStoryteller.isAvailable {
-                    Picker("Tone", selection: $tone) {
-                        ForEach(MythStoryteller.Tone.allCases) { t in Text(t.label).tag(t) }
-                    }
-                    .pickerStyle(.segmented)
-                    told
-                        .task(id: tone) { storyteller.tell(constellation, tone: tone) }
-                } else {
-                    curated
-                }
+            if let line = ConstellationCatasterism.shared.catasterism(for: constellation) {
+                Text(line)
+                    .font(.callout)
+                    .fontDesign(.serif)
+                    .lineSpacing(4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            } else {
+                Text("A modern constellation, charted to fill the gaps between the ancient figures — no ancient myth set it among the stars.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
         }
-    }
-
-    @ViewBuilder
-    private var told: some View {
-        switch storyteller.phase {
-        case .idle, .generating:
-            HStack(spacing: 10) {
-                ProgressView()
-                Text("Just a sec…").font(.callout).foregroundStyle(.secondary)
-            }
-            .padding(.vertical, 6)
-        case .ready, .fallback:
-            if storyteller.text.isEmpty { curated } else { prose(storyteller.text) }
-        }
-    }
-
-    @ViewBuilder
-    private var curated: some View {
-        if let line = ConstellationCatasterism.shared.catasterism(for: constellation) {
-            prose(line)
-        } else {
-            Text("A modern constellation, charted to fill the gaps between the ancient figures — no ancient myth set it among the stars.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func prose(_ text: String) -> some View {
-        Text(text)
-            .font(.callout)
-            .fontDesign(.serif)
-            .lineSpacing(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .textSelection(.enabled)
     }
 }
 
