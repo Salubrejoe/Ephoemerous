@@ -56,7 +56,8 @@ struct StarsCanvas: View, Equatable {
 
             let glow   = Self.glowAmount(scale: camera.scale)
             let limit  = Self.limitingMagnitude(scale: camera.scale)
-            let ink    = Artist.shared.fieldStarColor
+            let named  = Artist.shared.fieldStarColor        // tappable once zoomed in
+            let nameless = Artist.shared.anonymousStarColor  // never tappable
             let zenith = camera.viewpoint.originVector       // earth-fixed, same frame as the horizon
             for star in stars {
                 // Brightest first, so the first star past the limit ends
@@ -71,11 +72,12 @@ struct StarsCanvas: View, Equatable {
                       sc.y > -2,
                       sc.y < size.height + 2 else { continue }
                 let r     = Self.radius(forMagnitude: star.magnitude, scale: camera.scale)
-                // Colour means "tappable": the field is one grey ink, and a
+                // Colour means "tappable": the field is grey ink, and a
                 // star's spectral colour blooms only when its own mark (the
                 // pentagon, then the badge) takes over. Brightness reads
-                // through size and opacity alone.
-                let color = ink
+                // through size and opacity alone; a star no zoom will ever
+                // name sits a step quieter than one waiting for its mark.
+                let color = namedIDs.contains(star.id) ? named : nameless
                 // Stars at the edge of the limit fade in rather than pop.
                 let reveal = Self.reveal(magnitude: star.magnitude, limit: limit)
                 // The brightest few glow: the cue that they're light sources,

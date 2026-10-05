@@ -45,8 +45,14 @@ struct Artist {
     /// per-star magnitude opacity below is the only thing that dims it.
     var starColor : Color { palette.starField }
     /// The untappable field's ink — the star colour, hushed, so the
-    /// pentagons and badges (the stars you can touch) lead. ▼ TWEAK ▼
+    /// pentagons and badges (the stars you can touch) lead. This is a named
+    /// star still waiting for its own mark: tappable once you zoom in.
+    /// ▼ TWEAK ▼
     var fieldStarColor: Color { starColor.opacity(0.78) }
+    /// Stars with no name, which no zoom will ever make tappable — quieter
+    /// still, so the field recedes behind the stars that can become marks.
+    /// ▼ TWEAK ▼
+    var anonymousStarColor: Color { starColor.opacity(0.55) }
 
     var eclColor : Color  { palette.ecliptic }
     var eclWidth : Double { 0.5 }
