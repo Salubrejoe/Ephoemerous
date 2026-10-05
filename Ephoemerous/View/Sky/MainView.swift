@@ -156,6 +156,8 @@ struct MainView: View {
             // — pan / pinch / rotation / double-tap-hold-drag, driving `sky`.
             .overlay {
                 MainGestureView(coordinator: sky)
+                    // The window is steered by the hand, not the fingers.
+                    .allowsHitTesting(!app.isLooking)
                     .onAppear {
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                         sky.onTap  = makeTapHandler()
@@ -206,6 +208,22 @@ struct MainView: View {
         .preferredColorScheme(.dark)
         .modifier(SkyChrome(viewSize: viewSize))
         .ignoresSafeArea()
+        // LOOK mode: holding the phone overhead, belly down, arms it (the
+        // ring draws itself); lowering it before the ring closes cancels.
+        .onChange(of: MotionService.shared.raisedToSky) { _, raised in
+            app.raisedToSkyChanged(raised)
+        }
+        .sensoryFeedback(.impact(weight: .medium), trigger: app.isLooking)
+        // Leaving the window: reseed the chart underneath to its HOME
+        // framing — default zoom for the current projection, centred —
+        // while the window still covers it, so the fold-out eases onto
+        // home instead of onto wherever you'd pinched before. Rotation is
+        // left as you set it.
+        .onChange(of: app.isLooking) { _, looking in
+            guard !looking else { return }
+            sky.scale  = sky.defaultScale
+            sky.offset = .zero
+        }
 
 //        .alert("Return to your location?",
 //               isPresented: Bindable(app)._compassReturnHomePrompt) {
@@ -433,6 +451,7 @@ struct MainView: View {
                                   || app._originTransition           != nil
                                   || app._rotationTransition         != nil
                                   || app._perspectiveMorphTransition != nil
+                                  || app._lookTransition             != nil
                                   || app.compassMode)
     }
 }

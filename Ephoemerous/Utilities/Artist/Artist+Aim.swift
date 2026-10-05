@@ -23,4 +23,29 @@ extension Artist {
     var bezelCoreOpacity:     Double  { 0.55 }
     var bezelCoreFraction:    Double  { 0.4 }
     var bezelInk:             Color   { .primary }
+
+    // MARK: Look mode ▼ TWEAK ▼
+    // Lift the phone and the chart opens into a WINDOW: the sky centres on
+    // where the phone's back points and moves with the hand, one degree of
+    // turn for one degree of sky. A crosshair stays fixed at the centre and
+    // locks onto anything you could tap.
+
+    /// The window's vertical field of view — roughly the phone camera's.
+    var lookFieldOfViewDeg:   Double  { 60 }
+    /// Crosshair ring radius (pt) — also the lock radius.
+    var crosshairRadius:      CGFloat { 26 }
+    var crosshairLineWidth:   CGFloat { 1.5 }
+    /// Resting ink — quiet glass, never the accent until something locks.
+    var crosshairRestOpacity: Double  { 0.55 }
+    /// Below this much of the window, nothing locks.
+    var crosshairLockBlend:   Double  { 0.9 }
+    /// The name hangs this far under the ring.
+    var crosshairNameGap:     CGFloat { 6 }
+
+    /// Camera scale that fits `lookFieldOfViewDeg` into a screen this tall.
+    /// Stereographic: an angle θ off-centre lands at 2·tan(θ/2)·scale.
+    func lookScale(screenHeight h: CGFloat) -> CGFloat {
+        let half = lookFieldOfViewDeg / 2 * .pi / 180
+        return (h / 2) / CGFloat(2 * tan(half / 2))
+    }
 }

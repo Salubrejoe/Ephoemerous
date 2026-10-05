@@ -1,4 +1,5 @@
 import CoreMotion
+import simd
 import Observation
 
 // MARK: - MotionService
@@ -34,11 +35,25 @@ final class MotionService {
 
     private(set) var aim: Aim? = nil
 
-    /// True while the phone is held UP toward the sky (screen tilted to
-    /// face downward at the user). Hysteretic so it doesn't flutter at the
-    /// boundary. Drives "engage compass mode on raise" — observed in
-    /// `MainView`. `false` until the first sample / when motion is off.
+    /// True while the phone is held UP toward the sky, belly down (screen
+    /// tilted to face downward at the user). Hysteretic so it doesn't
+    /// flutter at the boundary. Arms LOOK mode — observed in `MainView`
+    /// (see `AppState+Look`). `false` until the first sample / when motion
+    /// is off.
     private(set) var raisedToSky: Bool = false
+
+    /// The phone's full pose, for LOOK mode — the window you hold up to
+    /// the sky. Two unit vectors in the local horizon frame (north, west,
+    /// up): `back`, where the back camera points (the window's line of
+    /// sight), and `up`, where the top edge points (the window's up).
+    /// Low-passed against hand tremor and only republished on a real move,
+    /// so a still hand leaves the sky parked. `nil` until the first sample.
+    struct Pose: Equatable {
+        var back: SIMD3<Double>
+        var up:   SIMD3<Double>
+    }
+
+    private(set) var pose: Pose? = nil
 
     // MARK: - Aim tuning  ▼ TWEAK HERE ▼  (device only — no gyro in the sim)
 
@@ -62,11 +77,19 @@ final class MotionService {
     private static let raiseOn  = 0.60
     private static let raiseOff = 0.40
 
+    /// Pose smoothing, 0…1 per sample: lower = steadier but laggier.
+    /// ▼ TWEAK the window's steadiness here ▼
+    private static let poseSmoothing = 0.35
+    /// Smallest move (degrees) that republishes the pose.
+    private static let poseStepDeg   = 0.08
+
     @ObservationIgnored private let manager = CMMotionManager()
     @ObservationIgnored private let queue   = OperationQueue()
 
     private init() {
-        manager.deviceMotionUpdateInterval = 1.0 / 30.0
+        // 60 Hz: LOOK mode moves the whole sky with the hand, and 30 read
+        // as judder. A still hand still publishes nothing (see `pose`).
+        manager.deviceMotionUpdateInterval = 1.0 / 60.0
         queue.name                         = "com.ephoemerous.motion"
         queue.maxConcurrentOperationCount  = 1
     }
@@ -97,6 +120,7 @@ final class MotionService {
             // 30 Hz redraw of the whole starfield.
             DispatchQueue.main.async {
                 if sample.aim != self.aim { self.aim = sample.aim }
+                if let pose = sample.pose, Self.moved(from: self.pose, to: pose) { self.pose = pose }
 
                 // Raise-to-sky with hysteresis: flip ON above `raiseOn`,
                 // back OFF below `raiseOff`. Only written on a real change.
@@ -112,6 +136,8 @@ final class MotionService {
         manager.stopDeviceMotionUpdates()
         aim = nil
         raisedToSky = false
+        pose = nil
+        queue.addOperation { Self.smoothedPose = nil }     // the motion queue owns it
     }
 
     // MARK: - Attitude → aim
@@ -153,7 +179,7 @@ final class MotionService {
     /// row 3 = (m31, m32, m33). Reference frame: X = true north, Y = west,
     /// Z = up. Returns the aim plus the raw screen-down-ness (for the
     /// raise-to-sky trigger).
-    private static func sample(from attitude: CMAttitude) -> (aim: Aim, screenDown: Double) {
+    private static func sample(from attitude: CMAttitude) -> (aim: Aim, screenDown: Double, pose: Pose?) {
         let m = attitude.rotationMatrix
 
         // Top edge (device +Y) up-component, back-camera normal (−device +Z)
@@ -181,7 +207,37 @@ final class MotionService {
         }
 
         let aim = Aim(azimuth: quantize(azimuth), altitude: quantize(altitude))
-        return (aim, screenDown)
+        return (aim, screenDown, smooth(back: SIMD3(bN, bW, bU),
+                                        up:   SIMD3(m.m21, m.m22, m.m23)))
+    }
+
+    // MARK: - Pose (LOOK mode)
+
+    /// Running low-pass of the pose. Serial motion queue only.
+    nonisolated(unsafe) private static var smoothedPose: Pose? = nil
+
+    /// Ease the raw pose toward the last one — renormalised, and `up` kept
+    /// square to `back` so the window never shears.
+    private static func smooth(back: SIMD3<Double>, up: SIMD3<Double>) -> Pose? {
+        guard let last = smoothedPose else {
+            smoothedPose = Pose(back: back, up: up)
+            return smoothedPose
+        }
+        let k = poseSmoothing
+        let b = simd_normalize(last.back + k * (back - last.back))
+        var u = last.up + k * (up - last.up)
+        u = u - simd_dot(u, b) * b
+        guard simd_length_squared(u) > 1e-12 else { return last }
+        let pose = Pose(back: b, up: simd_normalize(u))
+        smoothedPose = pose
+        return pose
+    }
+
+    /// True when the pose moved more than `poseStepDeg` on either axis.
+    private static func moved(from old: Pose?, to new: Pose) -> Bool {
+        guard let old else { return true }
+        let limit = cos(poseStepDeg * .pi / 180)
+        return simd_dot(old.back, new.back) < limit || simd_dot(old.up, new.up) < limit
     }
 
     /// Smoothstep 0→1 across [lo, hi].

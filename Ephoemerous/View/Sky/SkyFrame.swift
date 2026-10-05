@@ -35,6 +35,9 @@ struct SkyFrame {
     /// curved words against this, not against the oversized canvas.
     let visibleRect: CGRect
 
+    /// How far the sky has opened into LOOK mode, 0 = chart, 1 = window.
+    let lookBlend: Double
+
     // Live gesture transform. `applied` is the parent `.offset`.
     let effPinch:  CGFloat
     let liveScale: CGFloat
@@ -85,7 +88,8 @@ struct SkyFrame {
         let inCompass      = app.compassMode
         let cameraRotation = inCompass ? Angle.radians(-app.renderedRotation.radians)
                                        : sky.rotation
-        liveRot            = inCompass ? .zero : sky.liveRotation
+        // The window owns the view as well — no live spin under it.
+        liveRot            = (inCompass || app.lookBlend > 0) ? .zero : sky.liveRotation
 
         // Compass mode ROTATES the sky and nothing else. It used to reframe
         // as well — puck low, horizon high, an AR-ish pose — which meant
@@ -103,20 +107,34 @@ struct SkyFrame {
         let baseOffW  = morphOffsetFrom.width  + (sky.offset.width  - morphOffsetFrom.width)  * mp
         let baseOffH  = morphOffsetFrom.height + (sky.offset.height - morphOffsetFrom.height) * mp
 
+        // LOOK mode: as the phone lifts, the chart opens into a window. The
+        // projection slides its line of sight to the phone's (see
+        // `Projection.Viewpoint.look`); here the framing follows — zoom
+        // eases (in log space, so it feels even) to the window's field of
+        // view, the pan and the chart rotation ease out. At blend 0 every
+        // value below is exactly the chart's.
+        let viewpoint = app.viewpoint
+        let look      = viewpoint.look?.blend ?? 0
+        lookBlend     = look
+        let lookScale = Artist.shared.lookScale(screenHeight: geoSize.height)
+        let scale     = look > 0 ? exp(log(baseScale) + (log(lookScale) - log(baseScale)) * look) : baseScale
+
         camera = SkyCamera(
-            scale:     baseScale,
-            offset:    CGSize(width: baseOffW, height: baseOffH),
-            rotation:  cameraRotation,
+            scale:     scale,
+            offset:    CGSize(width: baseOffW * (1 - look), height: baseOffH * (1 - look)),
+            rotation:  .radians(cameraRotation.radians * (1 - look)),
             size:      canvasSize,
-            viewpoint: app.viewpoint,
+            viewpoint: viewpoint,
             sidereal:  app.localSiderealOffset)
 
-        // While the compass framing is in play it is baked into the camera
-        // and touch is off, so the live transform is identity — labels take
-        // the camera scale for their tiers and stay put (no counter-drift).
-        effPinch  = engaging ? 1            : sky.effPinch
-        liveScale = engaging ? camera.scale : sky.liveScale
-        applied   = engaging ? .zero        : sky.applied
+        // While the compass framing — or the window — is in play it is
+        // baked into the camera and touch is off, so the live transform is
+        // identity — labels take the camera scale for their tiers and stay
+        // put (no counter-drift).
+        let baked = engaging || look > 0
+        effPinch  = baked ? 1            : sky.effPinch
+        liveScale = baked ? camera.scale : sky.liveScale
+        applied   = baked ? .zero        : sky.applied
         comfort   = LabelComfortZone(pivot:    CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2),
                                      visible:  visibleRect,
                                      pinch:    effPinch,

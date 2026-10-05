@@ -26,8 +26,10 @@ extension AppState {
         // drives the projection (0 = NorthIN, 1 = NorthOUT).
         Projection.Viewpoint(originVector: originVector,
                               planeVector:  planeVector,
-                              morph:        compassMode ? 0 : perspectiveMorph)
+                              morph:        compassMode ? 0 : perspectiveMorph,
+                              look:         look)
     }
+
 
     /// Effective sky perspective. Compass mode is intrinsically observer/AR,
     /// so it forces `.northIn` regardless of the toggle (they're mutually

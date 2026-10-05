@@ -81,6 +81,18 @@ class AppState {
     /// resting value is then `isNorthOut ? 1 : 0`. Read via the pure
     /// `perspectiveMorph` / `perspectiveMorphProgress` getters.
     var _perspectiveMorphTransition: MorphTransition? = nil
+    /// LOOK mode — the phone held up as a window onto the sky (see
+    /// `AppState+Look`). Entered by holding the phone overhead, belly down;
+    /// left ONLY by the projection button, so you can look at the horizon
+    /// and under it without the mode dropping out from under you.
+    var isLooking: Bool = false
+    /// True while the overhead pose is being HELD to arm look mode — the
+    /// arming ring draws itself for exactly this window.
+    var isArmingLook: Bool = false
+    /// In-flight chart ↔ window transition, advanced by the canvas clock.
+    /// `nil` at rest; the resting value is then `isLooking ? 1 : 0`.
+    var _lookTransition: MorphTransition? = nil
+    @ObservationIgnored var _lookArmTask: Task<Void, Never>? = nil
     /// Smoothed heading rotation (radians) while in compass mode — the
     /// low-pass `renderedRotation` eases toward `−aim.azimuth` each frame.
     /// `nil` when not in compass mode (re-entry snaps fresh to the live

@@ -12,7 +12,8 @@ import SwiftUI
 //
 // Order matters and is the whole composition:
 //   grid → facing bezel → figures → star field → named dots
-//   → frosted ground → cartography → labels → the promoted pin on top.
+//   → frosted ground → cartography → labels → look crosshair → the
+//   promoted pin on top.
 struct SkyLayerStack: View {
 
     @Environment(AppState.self) private var app
@@ -30,6 +31,7 @@ struct SkyLayerStack: View {
             // Where you face — a softly lit stretch of the horizon rim
             // (see `Artist+Aim`).
             FacingBezel(camera: frame.camera)
+                .opacity(1 - frame.lookBlend)       // the window needs no bezel
 
             // Constellation stick-figures; favourites stroke solid, the rest
             // ride in on the constellation-NAME tier (same threshold, same
@@ -123,6 +125,13 @@ struct SkyLayerStack: View {
                               selected: frame.selection,
                               spacecraftLive: app.isObservationLive,
                               comfort: frame.comfort)
+
+            // LOOK mode's sight — fixed at the screen's centre while the sky
+            // moves under it. Above the labels, below the pin.
+            LookCrosshair(camera: frame.camera,
+                          date: app.renderedObservationDate,
+                          centre: CGPoint(x: frame.visibleRect.midX, y: frame.visibleRect.midY),
+                          blend: frame.lookBlend)
 
             // The selected object, forced visible at any zoom — topmost so it
             // reads above the passive labels.

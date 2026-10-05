@@ -41,6 +41,22 @@ enum Projection {
         /// slerps between them — a smooth, always-conformal transition that
         /// rolls the view from the observer dome to the pole-centred sky.
         var morph: Double = 0
+        /// LOOK mode — the phone held up as a window onto the sky. When set
+        /// with `blend > 0`, the projection's line of sight slides from the
+        /// chart's (zenith or pole, per `morph`) toward where the phone's
+        /// back points, and screen-up toward its top edge. `nil` = the chart.
+        var look: Look? = nil
+
+        /// The window's pose, in the same earth-fixed frame as
+        /// `originVector`.
+        struct Look: Equatable {
+            /// Line of sight — where the phone's back camera points.
+            var direction: SIMD3<Double>
+            /// Screen up — where the phone's top edge points (⟂ direction).
+            var up:        SIMD3<Double>
+            /// 0 = chart, 1 = fully the window.
+            var blend:     Double
+        }
 
         /// Returns a 3-D point on the observer's local sky at the given
         /// altitude above the horizon, parametrised by `t ∈ 0...1`
@@ -156,6 +172,22 @@ enum Projection {
         let minusEast = simd_length_squared(h) > 1e-18 ? simd_normalize(h)
                                                        : SIMD3(0, -1, 0)
         let e1 = simd_normalize(simd_cross(minusEast, plane))
+
+        // LOOK: slide the line of sight (`plane` is where the screen centre
+        // looks) and screen-up toward the phone's. Stereographic from the
+        // antipode stays conformal throughout, so the chart opens into the
+        // window without tearing. Right is always `sight × up`, the same
+        // handedness the chart's (north, west) basis has.
+        if let look = viewpoint.look, look.blend > 0 {
+            let b     = Swift.min(1, look.blend)
+            let sight = slerp(plane, look.direction, b)
+            var up    = e1 + b * (look.up - e1)
+            up        = up - simd_dot(up, sight) * sight
+            guard simd_length_squared(up) > 1e-12 else { return nil }
+            up        = simd_normalize(up)
+            return project(Q, origin: -sight, plane: sight,
+                           basis: (up, simd_cross(sight, up)))
+        }
         return project(Q, origin: eye, plane: plane, basis: (e1, minusEast))
     }
 

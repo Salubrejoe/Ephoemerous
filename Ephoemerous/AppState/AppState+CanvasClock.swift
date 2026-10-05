@@ -103,6 +103,7 @@ extension AppState {
         if let t = _rotationTransition,         t.isFinished(at: time) { _rotationTransition         = nil }
         if let t = _dateTransition,             t.isFinished(at: time) { _dateTransition             = nil }
         if let t = _perspectiveMorphTransition, t.isFinished(at: time) { _perspectiveMorphTransition = nil }
+        if let t = _lookTransition,             t.isFinished(at: time) { _lookTransition             = nil }
 
         advanceInertiaTransition(at: time)
         advanceOriginTransition(at:  time)
