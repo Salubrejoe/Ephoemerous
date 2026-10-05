@@ -39,6 +39,30 @@ enum SkyLabObjects {
         }
     }
 
+    /// The object's direction in the projection's sidereally-rotated frame —
+    /// the frame `camera.viewpoint.originVector` (the zenith) lives in, so a
+    /// dot product with it is the sine of the object's altitude. `nil` for
+    /// spacecraft, which project through their own pipeline.
+    static func rotatedVector(_ obj: SkyObject, camera: SkyCamera, date: Date) -> SIMD3<Double>? {
+        switch obj {
+        case .star(let s):
+            return s.equatorialVector.sidereallyRotated(by: camera.sidereal)
+        case .sun:
+            let lambda = SunPosition.eclipticLongitude(for: date)
+            return SIMD3<Double>.eclipticPoint(lambda: lambda).sidereallyRotated(by: camera.sidereal)
+        case .moon:
+            return MoonPosition.vector(for: date, siderealOffset: camera.sidereal).vec
+        case .planet(let p):
+            return PlanetPosition.allVectors(for: date, siderealOffset: camera.sidereal)
+                .first(where: { $0.planet.name == p.name })?.vec
+        case .constellation(let c):
+            guard let anchor = ConstellationLines.shared.labelAnchors[c] else { return nil }
+            return Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec).sidereallyRotated(by: camera.sidereal)
+        case .spacecraft:
+            return nil
+        }
+    }
+
     /// POI descriptor (category + glyph + name) for the badge-style objects.
     /// `nil` for constellations — they promote as an emphasised NAME in
     /// place (no badge), like production's `isSelected` label.

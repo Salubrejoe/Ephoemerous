@@ -56,6 +56,15 @@ extension Artist {
     /// The distance reads quieter than the name.
     var crosshairDistanceOpacity: Double { 0.75 }
 
+    // Find: hunting a selected object.
+
+    /// The target's name while it's still being looked for — quiet ink; the
+    /// accent waits for the catch.
+    var crosshairHuntOpacity:  Double  { 0.8 }
+    /// Guidance arrow — glyph size (pt) and how far outside the ring.
+    var crosshairArrowSize:    CGFloat { 10 }
+    var crosshairArrowInset:   CGFloat { 13 }
+
     /// Camera scale that fits `lookFieldOfViewDeg` into a screen this tall.
     /// Stereographic: an angle θ off-centre lands at 2·tan(θ/2)·scale.
     func lookScale(screenHeight h: CGFloat) -> CGFloat {

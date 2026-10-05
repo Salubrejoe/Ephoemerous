@@ -220,7 +220,12 @@ struct MainView: View {
         // home instead of onto wherever you'd pinched before. Rotation is
         // left as you set it.
         .onChange(of: app.isLooking) { _, looking in
-            guard !looking else { return }
+            // Opening the window folds a detail card to its header — the
+            // sky needs the screen, and the name is on the ring.
+            if looking {
+                if app.detailDestination != nil { detailDetent = detailHeaderDetent }
+                return
+            }
             sky.scale  = sky.defaultScale
             sky.offset = .zero
         }

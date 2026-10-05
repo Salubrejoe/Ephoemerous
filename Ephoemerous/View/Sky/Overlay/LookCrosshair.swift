@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import simd
 import LoreKit
 
 // MARK: - LookCrosshair
@@ -11,6 +12,12 @@ import LoreKit
 // touch and OPENS — the name written into the top of the circle, the
 // distance (when we know it) into the bottom, each sitting in the gap its
 // own letters leave. A bezel inscription rather than a caption under a ring.
+//
+// FIND: with an object selected, the ring hunts for it instead. Other
+// stars stop stealing the lock; the target's name sits quietly in the top
+// of the ring, the turn still to go (or "below horizon") in the bottom,
+// and an accent arrow on the rim points the way. It locks — with a
+// success tap — only when the target itself slides inside.
 //
 // Fades in with the window; locks only once the window is nearly open, so
 // the sweep through the transition doesn't tick at every star it passes.
@@ -24,6 +31,8 @@ struct LookCrosshair: View {
     let centre: CGPoint
     /// How open the window is, 0…1.
     let blend:  Double
+    /// The selected object — the one to FIND. `nil` = free looking.
+    var target: SkyObject? = nil
     @Environment(AppState.self) private var app
     /// Ring and letters grow with the Text Size (see `Artist+TypeScale`).
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -37,15 +46,21 @@ struct LookCrosshair: View {
         if blend > 0.01 {
             let a      = Artist.shared
             let type   = a.typeScale(dynamicTypeSize)
-            let locked = blend >= a.crosshairLockBlend ? lock() : nil
+            let ready  = blend >= a.crosshairLockBlend
+            let hunt   = ready ? target.flatMap(hunt(for:)) : nil
+            // Hunting: only the target may lock. Free: the nearest tappable.
+            let locked = !ready ? nil : target == nil ? lock() : (hunt?.found == true ? target : nil)
             let font   = UIFont.systemFont(ofSize: a.labelFont(.caption2, design: .default, size: dynamicTypeSize).pointSize,
                                            weight: .semibold)
-            let ring   = Inscription(name:     locked?.displayName,
-                                     distance: locked?.distanceLabel(at: date),
+            let seeking = hunt != nil && locked == nil
+            let ring   = Inscription(name:     (locked ?? (seeking ? target : nil))?.displayName,
+                                     distance: seeking ? hunt?.remaining : locked?.distanceLabel(at: date),
                                      font:     font,
                                      tracking: a.crosshairTracking * type,
-                                     radius:   (locked == nil ? a.crosshairRadius : a.crosshairLockedRadius) * type)
+                                     radius:   (locked == nil && !seeking ? a.crosshairRadius : a.crosshairLockedRadius) * type)
             let ink    = locked == nil ? Color.primary.opacity(a.crosshairRestOpacity) : Color.accentColor
+            // Seeking, the words are the destination, not a catch: quiet ink.
+            let words  = locked == nil ? Color.primary.opacity(a.crosshairHuntOpacity) : Color.accentColor
 
             ZStack {
                 GappedRing(radius:    ring.radius,
@@ -56,29 +71,73 @@ struct LookCrosshair: View {
                 if let name = ring.name {
                     ArcText(text: name, font: font, tracking: ring.tracking,
                             radius: ring.radius, placement: .top)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(words)
                         .id(name)
                         .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
                 if let distance = ring.distance {
                     ArcText(text: distance, font: font, tracking: ring.tracking,
                             radius: ring.radius, placement: .bottom)
-                        .foregroundStyle(Color.accentColor.opacity(a.crosshairDistanceOpacity))
-                        .id(distance)
-                        .transition(.opacity)
+                        .foregroundStyle(words.opacity(a.crosshairDistanceOpacity))
+                }
+                if seeking, let bearing = hunt?.bearing {
+                    // The way to turn — on the rim, outside the letters.
+                    let r = ring.radius + a.crosshairArrowInset * type
+                    Image(systemName: "arrowtriangle.up.fill")
+                        .font(.system(size: a.crosshairArrowSize * type))
+                        .foregroundStyle(Color.accentColor)
+                        .rotationEffect(.radians(bearing + .pi / 2))
+                        .offset(x: r * CGFloat(cos(bearing)), y: r * CGFloat(sin(bearing)))
                 }
             }
             // Sized to the ring plus room for the letters — not the whole
             // canvas, which a bare Shape would claim (and shadow).
-            .frame(width: (ring.radius + 16) * 2, height: (ring.radius + 16) * 2)
+            .frame(width: (ring.radius + 24) * 2, height: (ring.radius + 24) * 2)
             .shadow(color: a.canvasBackground, radius: 2)
             // The ring opens from the top, the letters appearing in the gap.
             .animation(.snappy(duration: 0.35), value: locked?.id)
+            .animation(.snappy(duration: 0.35), value: seeking)
             .position(centre)
             .opacity(blend)
-            .sensoryFeedback(.selection, trigger: locked?.id) { _, new in new != nil }
+            // A tick for a passing catch; a success tap for the one you hunted.
+            .sensoryFeedback(.selection, trigger: locked?.id) { _, new in new != nil && target == nil }
+            .sensoryFeedback(.success,   trigger: locked?.id) { _, new in new != nil && target != nil }
             .allowsHitTesting(false)
         }
+    }
+
+    // MARK: Find
+
+    private struct Hunt {
+        /// Inside the ring.
+        let found:     Bool
+        /// Screen bearing from the centre to the target (radians, y down) —
+        /// on a window centred on your line of sight, exactly the way to turn.
+        let bearing:   Double?
+        /// What's left, for the bottom of the ring: degrees to turn, or
+        /// "below horizon" when no turning will bring it into the sky.
+        let remaining: String
+    }
+
+    /// Where the target is relative to the sight. The window is an
+    /// azimuthal projection centred on the line of sight, so the screen
+    /// direction to the target IS the direction to turn, and its distance
+    /// from centre gives the angle left (ρ = 2·tan(θ/2)).
+    private func hunt(for target: SkyObject) -> Hunt? {
+        let radius = Artist.shared.crosshairRadius * Artist.shared.typeScale(dynamicTypeSize)
+        let below  = SkyLabObjects.rotatedVector(target, camera: camera, date: date)
+            .map { simd_dot($0, camera.viewpoint.originVector) < 0 } ?? false
+
+        guard let p = SkyLabObjects.screen(target, camera: camera, date: date) else {
+            // Dead behind you — the one point the window can't place.
+            return Hunt(found: false, bearing: nil, remaining: "180°")
+        }
+        let dx = p.x - centre.x, dy = p.y - centre.y
+        let d  = hypot(dx, dy)
+        let degrees = Int((2 * atan(Double(d / camera.scale) / 2) * 180 / .pi).rounded())
+        return Hunt(found:     d <= radius,
+                    bearing:   d > 0.5 ? atan2(Double(dy), Double(dx)) : nil,
+                    remaining: below ? String(localized: "Below horizon") : "\(degrees)°")
     }
 
     // MARK: Lock

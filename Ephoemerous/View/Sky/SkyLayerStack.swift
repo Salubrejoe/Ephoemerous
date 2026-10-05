@@ -127,11 +127,13 @@ struct SkyLayerStack: View {
                               comfort: frame.comfort)
 
             // LOOK mode's sight — fixed at the screen's centre while the sky
-            // moves under it. Above the labels, below the pin.
+            // moves under it; with something selected, it hunts for it.
+            // Above the labels, below the pin.
             LookCrosshair(camera: frame.camera,
                           date: app.renderedObservationDate,
                           centre: CGPoint(x: frame.visibleRect.midX, y: frame.visibleRect.midY),
-                          blend: frame.lookBlend)
+                          blend: frame.lookBlend,
+                          target: frame.selection)
 
             // The selected object, forced visible at any zoom — topmost so it
             // reads above the passive labels.
