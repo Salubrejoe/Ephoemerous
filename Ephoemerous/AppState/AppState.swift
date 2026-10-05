@@ -92,6 +92,10 @@ class AppState {
     /// In-flight chart ↔ window transition, advanced by the canvas clock.
     /// `nil` at rest; the resting value is then `isLooking ? 1 : 0`.
     var _lookTransition: MorphTransition? = nil
+    /// Which device edge is on top of the interface. The window's screen-up
+    /// must be THAT edge — the iPad rotates its interface; the device's own
+    /// top edge stays where it is. Kept current by MainView.
+    var interfaceOrientation: UIInterfaceOrientation = .portrait
     @ObservationIgnored var _lookArmTask: Task<Void, Never>? = nil
     /// Smoothed heading rotation (radians) while in compass mode — the
     /// low-pass `renderedRotation` eases toward `−aim.azimuth` each frame.

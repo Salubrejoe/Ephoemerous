@@ -159,6 +159,7 @@ struct MainView: View {
                     // The window is steered by the hand, not the fingers.
                     .allowsHitTesting(!app.isLooking)
                     .onAppear {
+                        app.syncInterfaceOrientation()
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                         sky.onTap  = makeTapHandler()
                         viewSize   = geo.size
@@ -173,6 +174,9 @@ struct MainView: View {
                         }
                     }
                     .onChange(of: geo.size) {
+                        // A rotation reshapes the canvas — the window's
+                        // screen-up has to follow the new top edge.
+                        app.syncInterfaceOrientation()
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                         viewSize   = geo.size
                         seedCameraHome(for: geo.size)

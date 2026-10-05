@@ -55,7 +55,36 @@ extension AppState {
         func earth(_ v: SIMD3<Double>) -> SIMD3<Double> {
             v.x * north + v.y * west + v.z * originVector
         }
-        return .init(direction: earth(pose.back), up: earth(pose.up), blend: blend)
+        return .init(direction: earth(pose.back), up: earth(screenUp(pose)), blend: blend)
+    }
+
+    /// Re-read which way the interface is turned — on appear, on every
+    /// canvas resize (a rotation reshapes it), and as the window opens.
+    /// Prefers the foreground scene; at launch it may not be active yet, so
+    /// any window scene beats guessing portrait.
+    func syncInterfaceOrientation() {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene  = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        guard let orientation = scene?.effectiveGeometry.interfaceOrientation,
+              orientation != .unknown, orientation != interfaceOrientation
+        else { return }
+        interfaceOrientation = orientation
+    }
+
+    /// The device axis pointing at the TOP of the interface, in the pose's
+    /// local frame. `pose.up` is the device's own top edge (+Y); its side
+    /// edge (+X) is `back × up` (device X = Y × Z, and back = −Z). Interface
+    /// landscape-left has the home side on the left — the device turned
+    /// clockwise — so its left edge (−X) is on top; landscape-right the
+    /// reverse. The phone is portrait-only, so it always takes +Y.
+    private func screenUp(_ pose: MotionService.Pose) -> SIMD3<Double> {
+        let side = simd_cross(pose.back, pose.up)                 // device +X
+        switch interfaceOrientation {
+        case .portraitUpsideDown: return -pose.up
+        case .landscapeLeft:      return -side
+        case .landscapeRight:     return  side
+        default:                  return  pose.up
+        }
     }
 
     // MARK: In / out
@@ -68,6 +97,7 @@ extension AppState {
     func enterLook() {
         guard !isLooking, canLook else { return }
         cancelLookArming()
+        syncInterfaceOrientation()
         animateLook(to: 1)
         isLooking = true
     }
