@@ -200,9 +200,9 @@ private struct DistanceLine: View {
 // MARK: Rise & set
 // Weather's sunset tile for any star: its height across the day as a
 // curve, the horizon as a line, a dot for now.
-struct StarRiseSetTile: View {
+/// Shared by every place sheet — stars, Sun, Moon, planets.
+struct RiseSetTile: View {
 
-    let star:     Star
     let status:   SkyStatus?
     let path:     StarDayPath
 
@@ -305,9 +305,10 @@ private struct DayCurve: View {
 
 // MARK: Brightness
 // Magnitude on the eye's own scale, Sirius to the naked-eye limit.
-struct StarBrightnessTile: View {
+/// Shared by stars and planets.
+struct BrightnessTile: View {
 
-    let star: Star
+    let magnitude: Double
 
     private static let brightest = -1.5     // Sirius
     private static let faintest  =  6.5     // the naked-eye limit
@@ -316,7 +317,7 @@ struct StarBrightnessTile: View {
         DetailCard(title: String(localized: "Brightness"), symbol: "sparkle") {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(star.magnitude.formatted(.number.precision(.fractionLength(1))))
+                    Text(magnitude.formatted(.number.precision(.fractionLength(1))))
                         .font(.tileValue)
                         .monospacedDigit()
                     Text("mag").font(.caption).foregroundStyle(.secondary)
@@ -324,7 +325,7 @@ struct StarBrightnessTile: View {
                 scale
                     .frame(height: 30)
                 Spacer(minLength: 0)
-                Text(star.brightnessPhrase)
+                Text(Star.brightnessPhrase(for: magnitude))
                     .font(.tileLine)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -340,7 +341,7 @@ struct StarBrightnessTile: View {
                      with: .linearGradient(Gradient(colors: [.white, .white.opacity(0.08)]),
                                            startPoint: CGPoint(x: bar.minX, y: 0),
                                            endPoint:   CGPoint(x: bar.maxX, y: 0)))
-            let t  = (star.magnitude - Self.brightest) / (Self.faintest - Self.brightest)
+            let t  = (magnitude - Self.brightest) / (Self.faintest - Self.brightest)
             let x  = CGFloat(max(0, min(1, t))) * size.width
             let p  = CGPoint(x: x, y: bar.midY)
             ctx.fill(Path(ellipseIn: CGRect(x: x - 6, y: p.y - 6, width: 12, height: 12)),
@@ -377,9 +378,10 @@ struct StarTypeTile: View {
     }
 }
 
-private struct MiniHRDiagram: View {
+struct MiniHRDiagram: View {
 
-    let star: Star
+    /// The star to place; `nil` puts the SUN in the spotlight (its sheet).
+    let star: Star?
 
     /// O → M, hot to cool — the classic HR abscissa.
     private static let classes: [HRClass] = [.O, .B, .A, .F, .G, .K, .M]
@@ -421,14 +423,23 @@ private struct MiniHRDiagram: View {
                          at: CGPoint(x: plot.minX + (CGFloat(i) + 0.5) / CGFloat(Self.classes.count) * plot.width,
                                      y: size.height), anchor: .bottom)
             }
-            // The Sun — a G dwarf, for scale.
+            // The Sun — a G dwarf, for scale; the subject on its own sheet.
             let sun = p(Dot(x: Double(Self.classes.firstIndex(of: .G)!) + 0.5, y: Self.sunAbsMag, color: .white))
-            ctx.stroke(Path(ellipseIn: CGRect(x: sun.x - 3, y: sun.y - 3, width: 6, height: 6)),
-                       with: .color(.white.opacity(0.7)), lineWidth: 1)
+            if star == nil {
+                let gold = Artist.shared.poiStyle(for: .sun).gradientTop
+                ctx.fill(Path(ellipseIn: CGRect(x: sun.x - 10, y: sun.y - 10, width: 20, height: 20)),
+                         with: .radialGradient(Gradient(colors: [gold.opacity(0.6), .clear]),
+                                               center: sun, startRadius: 0, endRadius: 10))
+                ctx.fill(a.starPath(at: sun, radius: 5), with: .color(gold))
+                ctx.stroke(a.starPath(at: sun, radius: 5), with: .color(a.poiBadgeCasing), lineWidth: 1)
+            } else {
+                ctx.stroke(Path(ellipseIn: CGRect(x: sun.x - 3, y: sun.y - 3, width: 6, height: 6)),
+                           with: .color(.white.opacity(0.7)), lineWidth: 1)
+            }
             ctx.draw(Text("Sun").font(.tileTick).foregroundStyle(.tertiary),
-                     at: CGPoint(x: sun.x + 6, y: sun.y), anchor: .leading)
+                     at: CGPoint(x: sun.x + (star == nil ? 9 : 6), y: sun.y), anchor: .leading)
             // This star.
-            if let d = Self.place(star) {
+            if let star, let d = Self.place(star) {
                 let q = p(d)
                 ctx.fill(Path(ellipseIn: CGRect(x: q.x - 9, y: q.y - 9, width: 18, height: 18)),
                          with: .radialGradient(Gradient(colors: [star.spectralClass.color.opacity(0.5), .clear]),
@@ -443,13 +454,16 @@ private struct MiniHRDiagram: View {
 // MARK: Position
 // Right ascension IS measured in hours, so it gets a clock hand; declination
 // is a latitude on the sky, so it gets a meridian arc.
-struct StarPositionTile: View {
+/// Shared by every place sheet with a fixed-sky position.
+struct PositionTile: View {
 
-    let star: Star
+    /// Right ascension in hours, declination in degrees.
+    let raHours:    Double
+    let decDegrees: Double
 
     var body: some View {
-        let hours = star.rightAscension.degrees / 15
-        let dec   = star.declination.degrees
+        let hours = raHours
+        let dec   = decDegrees
         DetailCard(title: String(localized: "Position"), symbol: "scope") {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 10) {

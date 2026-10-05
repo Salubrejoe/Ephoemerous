@@ -1,3 +1,6 @@
+// RETIRED (v1.9): the hour-comb "ruler" on the Sun, Moon and planet sheets —
+// redundant beside the place cards' Rise & set tile.
+
 import SwiftUI
 import UIKit
 import LoreKit

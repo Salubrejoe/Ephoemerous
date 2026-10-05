@@ -29,6 +29,10 @@ struct HeroBanner: View {
     var height: CGFloat = Artist.shared.heroHeight
     /// See `SkyHeroView.ground`.
     var ground: Bool = true
+    /// Show the real photographs of the planets, Sun and Moon. Off on the
+    /// place cards, which wear the app's own badges — prettier, and of a
+    /// piece with the sky the object was tapped on.
+    var photos: Bool = true
 
     /// The credit line the body's photograph carries, if it has one.
     var credit: String? { HeroSource.photo(for: object)?.credit }
@@ -44,7 +48,7 @@ struct HeroBanner: View {
         .mask(LinearGradient(stops: [.init(color: .black, location: 0.5),
                                      .init(color: .clear, location: 1)],
                              startPoint: .top, endPoint: .bottom))
-        .task(id: object.id) { await store.load(object) }
+        .task(id: object.id) { if photos { await store.load(object) } }
     }
 
     // MARK: Sky
@@ -133,7 +137,7 @@ struct HeroBanner: View {
     private func planetPhoto(_ planet: Planet) -> some View {
         let category = POICategory.planet(planet)
         let diameter = artist.poiStyle(for: category).badgeSize * artist.poiSelectScale
-        if case .ready(let image) = store.status(for: object), let source = HeroSource.photo(for: object) {
+        if photos, case .ready(let image) = store.status(for: object), let source = HeroSource.photo(for: object) {
             switch source.fit {
             case .disc(let fraction):
                 Image(uiImage: image).resizable().scaledToFill()
@@ -157,12 +161,15 @@ struct HeroBanner: View {
         ZStack {
             if object == .sun {
                 // The Sun's glare, so a half-degree disc still reads as THE Sun.
+                // Sized to the picture, so it fades out before the frame's
+                // edge instead of being clipped flat by it.
+                let glow = min(diameter * 5, height * 0.95)
                 Circle()
                     .fill(RadialGradient(colors: [artist.palette.sun.top.opacity(0.45), .clear],
-                                         center: .center, startRadius: 0, endRadius: diameter * 2.5))
-                    .frame(width: diameter * 5, height: diameter * 5)
+                                         center: .center, startRadius: 0, endRadius: glow / 2))
+                    .frame(width: glow, height: glow)
             }
-            if case .ready(let image) = store.status(for: object),
+            if photos, case .ready(let image) = store.status(for: object),
                case .disc(let fraction) = HeroSource.photo(for: object)?.fit {
                 let photo = Image(uiImage: image).resizable().scaledToFill()
                     .frame(width: diameter / fraction, height: diameter / fraction)
@@ -183,6 +190,8 @@ struct HeroBanner: View {
     private func badge(_ category: POICategory, sizeScale: CGFloat) -> some View {
         POILabelView(category:   category,
                      text:       "",
+                     // The Sun wears the star's pentagon squircle, as on the sky.
+                     labelStyle: category == .sun ? .star : .planetoids,
                      nameReveal: 0,
                      phase:      BadgePhase.of(category, date: state.observationDate,
                                                latitude: state.origin.latitude),

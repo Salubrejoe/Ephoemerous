@@ -30,25 +30,41 @@ struct PlaceHeader: View {
     /// 0…1 — how far the sheet's body has scrolled; the header eases back
     /// toward its resting size with it.
     var scrolled:  CGFloat = 0
+    /// The toolbar's leading button — Share by default.
+    var leading:   Leading = .share
     let onDismiss: () -> Void
+
+    /// What sits in the toolbar's leading corner.
+    enum Leading {
+        /// The object's postcard.
+        case share
+        /// Any other one-tap job — back to the roster, back to now.
+        case button(LoreSymbol, () -> Void)
+    }
 
     var body: some View {
         let a = Artist.shared
         let e = collapsed ? 0 : state.detailSheetExpansion * (1 - min(1, max(0, scrolled)))
         VStack(spacing: 0) {
             toolbar(e)
-            if !collapsed {
-                // No ground of its own — the stars sit on the sheet's sky
-                // (glass when it's low, the night when it's raised).
+            // The picture is the FULL-SCREEN sheet's: it grows in with the
+            // drag from nothing at the resting third, fading as it comes —
+            // so the low sheets go straight from title to grid.
+            let reveal = state.detailSheetExpansion
+            let height = max(0, (a.placeHeroHeight + a.placeHeroGrowth * e) * reveal
+                                - a.placeHeroScrollGive * min(1, max(0, scrolled)))
+            if !collapsed, height > 4 {
+                // No ground of its own — the stars sit on the sheet's sky.
                 HeroBanner(object: object,
-                           height: a.placeHeroHeight + a.placeHeroGrowth * e
-                                 - a.placeHeroScrollGive * min(1, max(0, scrolled)),
-                           ground: false)
+                           height: height,
+                           ground: false,
+                           photos: false)
                     // Fade in at the top too, so the picture rises out of
                     // the sheet's night instead of starting on an edge.
                     .mask(LinearGradient(stops: [.init(color: .clear, location: 0),
                                                  .init(color: .black, location: 0.25)],
                                          startPoint: .top, endPoint: .bottom))
+                    .opacity(Double(reveal))
             }
         }
         .padding(.bottom, collapsed ? 6 : 8)
@@ -64,7 +80,10 @@ struct PlaceHeader: View {
                              : a.placeTitleSize.lowerBound
                                + (a.placeTitleSize.upperBound - a.placeTitleSize.lowerBound) * e
         return HStack(alignment: .top) {
-            share
+            switch leading {
+            case .share:                     share
+            case .button(let symbol, let action): CircleIconButton(symbol: symbol, action: action)
+            }
             VStack(spacing: 2) {
                 Text(title)
                     .font(.system(size: size, weight: .bold))
@@ -129,11 +148,16 @@ struct PlaceActions: View {
 
     @Environment(AppState.self) private var state
     let object: SkyObject
+    /// Stars only — the Sun, Moon and planets aren't favourited.
+    var remember: Bool = true
+    /// Not for the Sun — no one should go hunting it through a phone.
+    var find:     Bool = true
 
     var body: some View {
         let remembered = state.isFavourite(object)
         GlassEffectContainer(spacing: Artist.shared.detailGridSpacing) {
             VStack(spacing: Artist.shared.detailGridSpacing) {
+                if remember {
                 capsule {
                     state.toggleFavourite(object)
                 } label: {
@@ -143,8 +167,9 @@ struct PlaceActions: View {
                         .contentTransition(.symbolEffect(.replace.downUp))
                 }
                 .sensoryFeedback(.success, trigger: remembered) { _, now in now }
+                }
 
-                if state.canLook {
+                if find, state.canLook {
                     capsule {
                         state.enterLook()
                     } label: {

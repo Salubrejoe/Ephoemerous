@@ -2,102 +2,59 @@ import SwiftUI
 import LoreKit
 
 // MARK: - SunDetailView
-// Sun detail. DetailHeader on top, a single horizontal scroll of
-// 100pt-tall fact cards below — no RememberButton (sun isn't
-// favouritable). Mirrors the constellation roster's card shape so
-// the family of detail views shares one rhythm:
+// The Sun's place card (see `PlaceSheet`):
 //
-//   • event cards (civil dawn → civil dusk) tint yellow
-//   • physical + coordinate cards stay neutral
-
+//   [        DISTANCE  (wide)        ]   today, between perihelion and aphelion
+//   [ RISE & SET   ][   DAYLIGHT     ]
+//   [          TYPE  (wide)          ]   the HR diagram, the Sun in the spotlight
+//   [  POSITION    ][     SIZE       ]
+//
+// No Remember (the Sun isn't favourited) and no Find — no one should go
+// hunting the Sun through a phone.
 struct SunDetailView: View {
     @Environment(AppState.self) var state
-    @Environment(\.detailCollapsed) private var collapsed
-
-    private var lambda: Angle { SunPosition.eclipticLongitude(for: state.observationDate) }
-    private var coords: (ra: Angle, dec: Angle) { SunPosition.equatorialCoords(lambda: lambda) }
-
-    private let accent = Color.yellow
-
-    /// Civil-twilight anchors for the current observation date +
-    /// observer latitude — re-evaluated whenever either changes, so
-    /// the capsule's gradient stretches the bright zone for summer
-    /// and narrows it for winter.
-    private var anchors: SunDayAnchors {
-        SunPosition.dayAnchors(
-            for: state.observationDate,
-            latitude: state.origin.latitude.degrees
-        )
-    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            DetailHeader(
-                title:         Strings.Bodies.sun,
-                subtitle:      String(localized: "G-type star"),
-                accent:        accent,
-                icon:          {
-                    POILabelView(
-                        category: .sun,
-                        text: "",
-                        labelStyle: .star
-                    )
-                },
-                leadingSymbol: .share,
-                onLeading:     {},
-                postcard:      state.postcard(for: .sun),
-                hero:          .sun,
-                onDismiss:     { state.dismissDetail() }
-            )
-            
-            if !collapsed {
-                DayCapsule(
-                    tint:      accent,
-                    knobGlyph: .symbol(.sunMaxFill),
-                    knobDate:  Bindable(state).observationDate
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                
-                DetailStatList(stats: [
-                    .init(label: String(localized: "Type"),            value: String(localized: "G-type star")),
-                    .init(label: String(localized: "Right ascension"), value: raString),
-                    .init(label: String(localized: "Declination"),     value: decString),
-                    .init(label: String(localized: "Distance"),        value: "1 AU (149.6M km)"),
-                    .init(label: String(localized: "Diameter"),        value: "1,391,000 km"),
-                    .init(label: String(localized: "Apparent magnitude"), value: "−26.7"),
-                ])
-                    .padding(.top, 16)
-            }
-            Spacer(minLength: 0)
+        PlaceSheet(object:   .sun,
+                   title:    Strings.Bodies.sun,
+                   subtitle: String(localized: "Our star · a yellow dwarf")) {
+            tiles
+        } actions: {
+            EmptyView()
         }
     }
 
-    // MARK: Coord formatting
-
-    /// RA → "Hh MMm" (round, no seconds — the bottom-third detent
-    /// doesn't have room for HH:MM:SS in a 110pt card).
-    private var raString: String {
-        let hours = coords.ra.degrees / 15
-        let h = Int(hours)
-        let m = Int((hours - Double(h)) * 60)
-        return String(format: "%dh%02dm", h, m)
-    }
-
-    /// Dec → "DD°" (round, no minutes/seconds).
-    private var decString: String {
-        let d = Int(coords.dec.degrees.rounded())
-        return "\(d)°"
+    private var tiles: some View {
+        let date   = state.observationDate
+        let lambda = SunPosition.eclipticLongitude(for: date)
+        let coords = SunPosition.equatorialCoords(lambda: lambda)
+        let status = SkyStatus.cached(object: .sun, date: date, observer: state.placeObserver)
+        let path   = StarDayPath(object: .sun, around: date, observer: state.placeObserver)
+        let facts  = BodyFacts.sun
+        return DetailGridLayout(rows: [1, 2, 1, 2]) {
+            BodyDistanceTile(currentKm: PlanetPosition.sunDistanceAU(date: date) * BodyFacts.kmPerAU,
+                             range:     facts.nearestKm ... facts.farthestKm)
+            RiseSetTile(status: status, path: path)
+            DaylightTile(path: path)
+            DetailCard(title: String(localized: "Type"), symbol: "thermometer.medium") {
+                VStack(alignment: .leading, spacing: 4) {
+                    MiniHRDiagram(star: nil).frame(maxHeight: .infinity)
+                    Text("A G-type main-sequence star — an ordinary one")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            }
+            PositionTile(raHours: coords.ra.degrees / 15, decDegrees: coords.dec.degrees)
+            SizeTile(facts: facts, color: Artist.shared.poiStyle(for: .sun).gradientTop)
+        }
     }
 }
 
-// MARK: - Preview
-
 #if DEBUG
 #Preview {
-    NavigationStack {
-        SunDetailView()
-    }
-    .environment(AppState())
+    NavigationStack { SunDetailView() }
+        .environment(AppState())
 }
 #endif

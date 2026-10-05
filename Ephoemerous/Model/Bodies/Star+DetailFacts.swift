@@ -57,7 +57,10 @@ extension Star {
     // MARK: Brightness
 
     /// How the eye meets this magnitude, in plain words.
-    var brightnessPhrase: String {
+    var brightnessPhrase: String { Self.brightnessPhrase(for: magnitude) }
+
+    /// The same, for any magnitude — planets share the tile.
+    static func brightnessPhrase(for magnitude: Double) -> String {
         switch magnitude {
         case ..<1.0:  String(localized: "One of the brightest in the sky")
         case ..<2.5:  String(localized: "Easy to see, even from a city")

@@ -586,3 +586,31 @@ extension PlanetPosition {
         earth(Precession.julianCenturies(from: date)).R
     }
 }
+
+// MARK: - Around the Sun
+// Where a planet and the Earth sit on their orbits, for the planet sheet's
+// orbit picture: heliocentric ecliptic longitude (radians) and distance
+// from the Sun (AU), from the same series the sky positions use.
+extension PlanetPosition {
+
+    static func heliocentric(_ planet: Planet, date: Date) -> (longitude: Double, radius: Double)? {
+        let T = Precession.julianCenturies(from: date)
+        guard let i = Planet.all.firstIndex(where: { $0.name == planet.name }) else { return nil }
+        let h: (L: Double, B: Double, R: Double)
+        switch i {
+        case 0:  h = mercury(T)
+        case 1:  h = venus(T)
+        case 2:  h = mars(T)
+        case 3:  h = jupiter(T)
+        case 4:  h = saturn(T)
+        case 5:  h = uranus(T)
+        default: h = neptune(T)
+        }
+        return (h.L, h.R)
+    }
+
+    static func earthHeliocentric(date: Date) -> (longitude: Double, radius: Double) {
+        let e = earth(Precession.julianCenturies(from: date))
+        return (e.L, e.R)
+    }
+}
