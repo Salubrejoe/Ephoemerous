@@ -17,6 +17,14 @@ import UIKit
 // Physics ported from production: rubberScale (progressive log-space
 // spring, never a wall), recenter-on-zoom-out (offset homes below
 // defaultScale), inertia (pan fling glides on).
+//
+// STEPPED REFRESH: a long pinch no longer waits for the release to look
+// right. Each time the live zoom crosses `refreshStep` away from the
+// committed camera, the live state folds into the camera MID-GESTURE
+// (`commitLive`, jump-free by construction) and the gesture re-bases on
+// it — so the frozen Canvases redraw crisp at the new zoom, with the right
+// dot sizes and the fainter stars let in, a few times per pinch instead of
+// once at the end. The way Maps steps through its tile levels.
 @Observable
 final class MainGestureCoordinator {
 
@@ -61,6 +69,20 @@ final class MainGestureCoordinator {
     @ObservationIgnored private var holdAnchor = CGPoint.zero
     @ObservationIgnored private var flingVel   = CGSize.zero
     @ObservationIgnored private var releaseID  = 0     // invalidates a superseded completion
+
+    // Stepped refresh (see the header). The recognisers report CUMULATIVE
+    // values since the gesture began; after a mid-gesture fold these are
+    // what the next values are measured from.
+    /// Zoom ratio, live against committed, that triggers a refresh. ▼ TWEAK ▼
+    private let refreshStep: CGFloat = 1.35
+    @ObservationIgnored private var pinchBase:      CGFloat = 1
+    @ObservationIgnored private var lastPinchScale: CGFloat = 1
+    @ObservationIgnored private var lastCentroid:   CGPoint = .zero
+    @ObservationIgnored private var rotationBase:   Double  = 0
+    @ObservationIgnored private var lastRotation:   Double  = 0
+    @ObservationIgnored private var holdBase:       CGFloat = 0
+    @ObservationIgnored private var lastHoldY:      CGFloat = 0
+    @ObservationIgnored private var holding = false
 
     // North detent — within ±threshold of north the rotation sticks to 0
     // with one haptic tick on entry (production's "realign right").
@@ -114,22 +136,30 @@ final class MainGestureCoordinator {
     func panChanged(_ t: CGSize) { drag = t; pinch = 1; homeBlend = homedFraction(scale) }
     func panEnded(velocity v: CGSize) { flingVel = v; endOne() }
 
-    func pinchBegan(centroid c: CGPoint) { begin(); pinchStart = c; focal = c }
+    func pinchBegan(centroid c: CGPoint) {
+        begin(); pinchStart = c; focal = c
+        pinchBase = 1; lastPinchScale = 1; lastCentroid = c
+    }
     func pinchChanged(scale s: CGFloat, centroid c: CGPoint) {
-        pinch = s
+        lastPinchScale = s; lastCentroid = c
+        pinch = s / pinchBase
         focal = pinchStart
         drag  = CGSize(width: c.x - pinchStart.x, height: c.y - pinchStart.y)
-        homeBlend = homedFraction(scale * s)
+        homeBlend = homedFraction(scale * pinch)
+        refreshIfStepped()
     }
     func pinchEnded() { endOne() }
 
     func rotationBegan() {
         begin()
+        rotationBase = 0; lastRotation = 0
         // Don't re-tick if we START already aligned with north.
         northEngaged = abs(Self.wrapPi(rotation.radians)) <= northSnap
         rotationHaptic.prepare()
     }
-    func rotationChanged(_ radians: Double) {
+    func rotationChanged(_ cumulative: Double) {
+        lastRotation = cumulative
+        let radians  = cumulative - rotationBase
         // Total displayed rotation if we applied the raw delta.
         let total = Self.wrapPi(rotation.radians + radians)
         if abs(total) <= northSnap {
@@ -152,14 +182,20 @@ final class MainGestureCoordinator {
         return x
     }
 
-    func holdBegan(at p: CGPoint) { begin(); holdAnchor = p; focal = p }
+    func holdBegan(at p: CGPoint) {
+        begin(); holdAnchor = p; focal = p
+        holdBase = 0; lastHoldY = 0; holding = true
+    }
     func holdChanged(_ t: CGSize) {
+        lastHoldY = t.height
         focal = holdAnchor
-        pinch = CGFloat(exp(-Double(t.height) * zoomDragSensitivity))
+        pinch = CGFloat(exp(-Double(t.height - holdBase) * zoomDragSensitivity))
         drag  = .zero
         homeBlend = homedFraction(scale * pinch)
+        refreshIfStepped()
     }
     func holdEnded(wasTap: Bool) {
+        holding = false
         active -= 1
         guard active <= 0 else { return }
         active = 0
@@ -283,6 +319,28 @@ final class MainGestureCoordinator {
             homeBlend = targetHome
             // drag / liveRotation are already committed-relative; leave them.
         } completion: { if self.releaseID == id { self.commitLive() } }
+    }
+
+    // MARK: Stepped refresh
+
+    /// Mid-gesture, fold the live zoom into the camera once it has drifted
+    /// `refreshStep` from it, then re-base the gesture so it carries on
+    /// seamlessly from the folded state. Skipped while the scale is in its
+    /// rubber band or homing — there the live transform is doing physics
+    /// the camera must not bake in.
+    private func refreshIfStepped() {
+        guard active > 0, homeBlend == 0 else { return }
+        let raw = scale * pinch
+        guard raw >= floorScale, raw <= maxScale,
+              pinch >= refreshStep || pinch <= 1 / refreshStep else { return }
+        commitLive()
+        // The folded state is now the camera; measure what comes next from
+        // the recognisers' current cumulative values.
+        pinchBase    = lastPinchScale
+        pinchStart   = lastCentroid
+        focal        = lastCentroid
+        rotationBase = lastRotation
+        if holding { holdBase = lastHoldY; focal = holdAnchor }
     }
 
     /// Quick double-tap → animated step zoom toward the tap (live pinch).
