@@ -5,7 +5,7 @@ import SwiftUI
 // top, the camera-family capsule, and the transient compass rose.
 //
 // Chrome grammar (current-Maps layout): the context capsule ALONE at
-// top-centre; the camera capsule bottom-trailing just above the search bar,
+// top-centre (iPad: bottom-trailing, level with the floating panel); the camera capsule bottom-trailing just above the search bar,
 // in thumb territory; the compass rose on the OPPOSITE edge so it can appear
 // and vanish without nudging the capsule. The sky's centre stays sacred.
 //
@@ -26,6 +26,13 @@ struct SkyChrome: ViewModifier {
     /// The floating panel's inset from the screen edge — chrome on the
     /// same edge lines up with it. Mirrors `FloatingPanel.margin`.
     private static let padMargin: CGFloat = 20
+    /// The iPad's Here / Now capsule height. ▼ TWEAK ▼
+    private static let padBarHeight: CGFloat = 52
+    /// Bottom inset that centres the capsule on the floating panel's
+    /// parked bar, so the two read level across the bottom edge.
+    private static var padToolbarBottom: CGFloat {
+        padMargin + (PanelStage.barHeight - padBarHeight) / 2
+    }
 
     /// Bottom padding so a floating control rides the frontmost sheet's top
     /// edge (published live in `app.bottomSheetTop`), a `gap` above it.
@@ -47,13 +54,15 @@ struct SkyChrome: ViewModifier {
         // bottom-trailing just above the search bar — thumb territory; the
         // transient compass rose on the OPPOSITE edge so it can appear /
         // vanish without nudging the capsule. The sky's centre stays sacred.
-        .overlay(alignment: isPad ? .topLeading : .top) {
-            // iPad: top-LEADING, on the panel's own margin so the two read
-            // as one column of chrome down that edge — and bigger, because
-            // the phone's 40pt bar is lost on a 13" canvas.
-            MainToolbar(barHeight: isPad ? 52 : 40)
+        .overlay(alignment: isPad ? .bottomTrailing : .top) {
+            // iPad: bottom-TRAILING, on the panel's margin and centred on
+            // its parked bar, so the two bottom corners read as one row of
+            // chrome — and bigger, because the phone's 40pt bar is lost on
+            // a 13" canvas.
+            MainToolbar(barHeight: isPad ? Self.padBarHeight : 40)
                 .padding(.horizontal, isPad ? Self.padMargin : 16)
-                .padding(.top,        64)
+                .padding(.top,        isPad ? 0 : 64)
+                .padding(.bottom,     isPad ? Self.padToolbarBottom : 0)
         }
         .overlay(alignment: isPad ? .topTrailing : .bottomTrailing) {
             // Hidden while a scene editor is up — camera-mode toggles are
@@ -63,8 +72,8 @@ struct SkyChrome: ViewModifier {
                 let lift = sheetLift(gap: 12, rest: 114)
                 CameraClusterCapsule()
                     .padding(.trailing, 16)
-                    // iPad: top-trailing, level with the context capsule
-                    // (same 64pt top inset as MainToolbar). iPhone: rides
+                    // iPad: top-trailing, 64pt down — the corner the
+                    // context capsule left for the bottom edge. iPhone: rides
                     // the frontmost sheet's top edge — rests above the
                     // search bar (114) and rises 1:1 as the sheet expands.
                     // ▼ TWEAK the rest / gap here ▼
