@@ -21,6 +21,13 @@ struct Artist {
     let palette = Palette()
     
     var canvasBackground : Color { palette.canvasBackground }
+
+    /// How far the visible sky sits below `canvasBackground` — the veil
+    /// inside the horizon. ▼ TWEAK the sky's depth here ▼
+    var skyDepth : Double { 0.10 }
+    /// The visible sky's own colour: the canvas, veiled. Anything drawn
+    /// "in sky colour" on the ground reads as a window back onto it.
+    var skyColor : Color  { canvasBackground.mix(with: .black, by: skyDepth) }
     
     /// The equatorial graticule is scaffolding, not sky — it should read as
     /// a whisper beneath the stars. Dimmed HERE rather than in the asset

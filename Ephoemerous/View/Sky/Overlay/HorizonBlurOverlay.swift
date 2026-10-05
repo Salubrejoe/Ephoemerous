@@ -79,13 +79,9 @@ struct HorizonSkyVeil: View {
 
     let camera: SkyCamera
 
-    /// How far the visible sky sits below `canvasBackground`.
-    /// ▼ TWEAK the sky's depth here ▼
-    private static let skyDepth: Double = 0.10
-
     var body: some View {
         HorizonRegion(camera: camera, side: .sky)
-            .fill(Color.black.opacity(Self.skyDepth),
+            .fill(Color.black.opacity(Artist.shared.skyDepth),     // see `Artist.skyColor`
                   style: FillStyle(eoFill: true))
             .allowsHitTesting(false)
     }

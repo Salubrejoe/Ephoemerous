@@ -3,8 +3,9 @@ import simd
 import LoreKit
 
 // MARK: - SkyLabCartographyLabels
-// The curved cartographic labels — EASTERN / WESTERN HORIZON riding the
-// alt = 0 rim, and the four colure names (VERNAL EQUINOX … WINTER
+// The curved cartographic labels — EASTERN / WESTERN HORIZON just below
+// the alt = 0 rim, cut into the ground in the sky's colour (no drawn ring:
+// the veil/frost edge IS the horizon), and the four colure names (VERNAL EQUINOX … WINTER
 // SOLSTICE) riding their constant-RA meridians. Curved text is genuine
 // Canvas work (each glyph projected + rotated along the curve), so this
 // stays a Canvas — but `.equatable()` on the frozen camera means it only
@@ -30,6 +31,9 @@ struct CartographyLabels: View, Equatable {
     }
 
     private struct Colure { let ra: Angle; let centreDec: Double; let text: String }
+    /// Which side of its line a word floats on: toward the zenith (the sky)
+    /// or away from it (the ground).
+    private enum Side { case sky, ground }
     private struct Band   { let altitude: Angle; let rising: String; let setting: String }
 
     // Whisper-tier zoom gates. At the default view (~90) fourteen
@@ -50,7 +54,9 @@ struct CartographyLabels: View, Equatable {
         Canvas { ctx, _ in
             let artist = Artist.shared
             let zenith = camera.screen(.zero)
-            let horizonFont   = Font.caption2.weight(.light)
+            // Horizon names sit on the GROUND, bold, in the sky's own
+            // colour — letters cut through the frost back to the sky.
+            let horizonFont   = Font.caption2.weight(.bold)
 //            let horizonFont   = Font.system(size: 10, weight: .regular)
             let twilightFont  = Font.caption2.weight(.ultraLight)
 //            let twilightFont  = Font.system(size: 6,  weight: .regular)
@@ -58,15 +64,17 @@ struct CartographyLabels: View, Equatable {
 //            let merdianF      = Font.system(size: 6,  weight: .regular)
             // Match each label's weight to its line: horizon labels to the
             // bolder horizon ring, colure labels to the faint grid meridians.
-            let horizonColor  = artist.gridColor
+            let horizonColor  = artist.skyColor
 //            let horizonColor  = Color.secondary.opacity(0.7)
             let meridianColor = artist.gridColor
 
             // Horizon rim (alt = 0). t: 0 = N, 0.25 = W, 0.5 = S, 0.75 = E.
             drawCurved(String(localized: "EASTERN HORIZON"), centre: 0.75, probe: 0.01,
-                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont, type: type, ctx)
+                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont,
+                       side: .ground, type: type, ctx)
             drawCurved(String(localized: "WESTERN HORIZON"), centre: 0.25, probe: 0.01,
-                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont, type: type, ctx)
+                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont,
+                       side: .ground, type: type, ctx)
 
             // Colures — constant-RA meridians through the equinox/solstice
             // points. Tiered: reveal past `colureTextIn`.
@@ -179,6 +187,7 @@ struct CartographyLabels: View, Equatable {
                             color: Color,
                             font: Font,
                             opacity: Double = 1,
+                            side: Side = .sky,
                             type: CGFloat,
                             _ ctx: GraphicsContext) {
         let chars = Array(text)
@@ -232,8 +241,9 @@ struct CartographyLabels: View, Equatable {
         // local +Y (perpendicular to the tangent), which after the flip
         // always faces the zenith — so the text floats beside its line
         // instead of sitting on it (and crossing the other labels at the
-        // intersections).
-        let sideInset: CGFloat = 6 * type
+        // intersections). `.ground` flips it to the far side, a touch
+        // further out so the letter tops clear the edge. ▼ TWEAK ▼
+        let sideInset: CGFloat = (side == .sky ? 6 : -8) * type
 
         for (i, ch) in ordered.enumerated() {
             let p = centre - half + delta * Double(i)
