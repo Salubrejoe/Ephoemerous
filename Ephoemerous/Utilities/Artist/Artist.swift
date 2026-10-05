@@ -55,7 +55,8 @@ struct Artist {
 
     // MARK: - User location (puck + aim cone)
     // Live constants consolidated here from Artist+UserLocation (the draw
-    // half of which is deprecated). Read by PuckAndConeOverlay.
+    // half of which is deprecated). The puck and cone themselves are retired
+    // (DeprecationStation/PuckAndConeOverlay) — see `Artist+Aim`.
     var userPuckSize            : CGFloat { 22 }
     var userPuckConeColor       : Color   { palette.userPuckCone }
     var userPuckConeRadius      : CGFloat { 90 }

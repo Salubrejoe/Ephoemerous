@@ -8,6 +8,10 @@ import LoreKit
 // beta doesn't, which is how it reached CI unnoticed.
 import CoreLocation
 
+// RETIRED (v1.6): the dot-and-cone was the Maps metaphor — you HERE on the
+// ground, facing THAT way. Under the sky what matters is where you look:
+// replaced by `FacingBezel` (at rest) and `AimReticle` (raised).
+
 // MARK: - SkyLabUserLocationOverlay
 // The "you are here" cluster — aim cone + globe puck — anchored at the
 // zenith (`camera.screen(.zero)`). Native port of production's

@@ -11,7 +11,7 @@ import SwiftUI
 // overlays move together in one CoreAnimation commit and cannot desync.
 //
 // Order matters and is the whole composition:
-//   grid → puck → figures → star field → named dots
+//   grid → facing bezel → figures → star field → named dots
 //   → frosted ground → cartography → labels → the promoted pin on top.
 struct SkyLayerStack: View {
 
@@ -27,8 +27,9 @@ struct SkyLayerStack: View {
             CelestialGridCanvas(camera: frame.camera)
                 .equatable()
 
-            // "You are here" — aim cone + globe puck at the zenith.
-            PuckAndConeOverlay(camera: frame.camera, pinch: frame.effPinch)
+            // Where you face — a softly lit stretch of the horizon rim
+            // (see `Artist+Aim`).
+            FacingBezel(camera: frame.camera)
 
             // Constellation stick-figures; favourites stroke solid, the rest
             // ride in on the constellation-NAME tier (same threshold, same
