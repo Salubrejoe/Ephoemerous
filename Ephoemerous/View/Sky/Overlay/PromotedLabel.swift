@@ -124,6 +124,9 @@ private struct SkyLabPromotedPin: View {
     @State private var pop:   Bool   = false
     @State private var popBack: Task<Void, Never>? = nil
 
+    /// The system Text Size — badge, heart, gaps and name all grow with it.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// Fixed local canvas; centre == the precise location (the object).
     private let box = CGSize(width: 220, height: 140)
 
@@ -131,10 +134,12 @@ private struct SkyLabPromotedPin: View {
 
     var body: some View {
         let a        = Artist.shared
-        let badge    = style.badgeSize
+        let type     = a.typeScale(dynamicTypeSize)                   // Text Size growth
+        let badge    = style.badgeSize * type                         // as POILabelView draws it
         let lift     = promo * a.poiSelectLiftFactor * badge          // badge rises
         let scale    = 1 + promo * (a.poiSelectScale - 1)             // badge enlarges
-        let nameDrop = a.poiSelectNameDrop
+        let nameDrop = a.poiSelectNameDrop * type
+        let nameFont = a.labelFont(.title2, size: dynamicTypeSize)
         let r        = a.poiSelectDotRadius
         let cx       = box.width / 2
         let cy       = box.height / 2
@@ -185,7 +190,7 @@ private struct SkyLabPromotedPin: View {
             // Corner heart — the persistent Remembered mark, springing in
             // on the flip and riding the badge's top-trailing corner (matches
             // the field hearts, one pink voice everywhere).
-            FavouriteHeartMark(size: 13,
+            FavouriteHeartMark(size: 13 * type,
                                borderScaleCompensation: 1 / max(popScale, 0.2))
                 .scaleEffect(favourite ? popScale : 0.2)
                 .opacity(favourite ? 1 : 0)
@@ -200,10 +205,12 @@ private struct SkyLabPromotedPin: View {
                          fill:      .primary,
                          stroke:    style.border,
                          lineWidth: 1.5,
-                         font:      Self.nameFont)
+                         font:      nameFont)
                 .fixedSize()
                 .opacity(promo)
-                .position(x: cx, y: cy + nameDrop + Self.nameHalfHeight)
+                // `.position` places the centre; half a line down lands the
+                // name's TOP at `cy + nameDrop`, hanging below the dot.
+                .position(x: cx, y: cy + nameDrop + nameFont.lineHeight / 2)
         }
         .frame(width: box.width, height: box.height)
         .onAppear {
@@ -247,20 +254,6 @@ private struct SkyLabPromotedPin: View {
     /// The celebration burst rides the heart's own colour — one pink
     /// voice, defined by `FavouriteHeartMark`.
     private static let heartTint = FavouriteHeartMark.bright
-
-    /// Title-2 serif bold (CoreText needs a concrete UIFont) — the flat
-    /// label's serif voice, sized up so the selected name carries.
-    private static let nameFont: UIFont = {
-        let base = UIFont.preferredFont(forTextStyle: .title2)
-        var desc = base.fontDescriptor
-        desc = desc.withDesign(.serif) ?? desc
-        desc = desc.withSymbolicTraits(.traitBold) ?? desc
-        return UIFont(descriptor: desc, size: base.pointSize)
-    }()
-
-    /// Rough half-height of the name, so `.position` lands its TOP at
-    /// `cy + nameDrop` (the text hangs just below the precise dot).
-    private static let nameHalfHeight: CGFloat = nameFont.lineHeight / 2
 }
 
 #if DEBUG

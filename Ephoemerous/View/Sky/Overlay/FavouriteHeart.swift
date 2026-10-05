@@ -33,17 +33,21 @@ struct FavouriteHeart: View {
     /// so a highlighted favourite isn't drawn twice (pin + heart).
     var selectedID: String? = nil
 
+    /// The heart grows with the badge it rides (see `Artist+TypeScale`).
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
+        let type = Artist.shared.typeScale(dynamicTypeSize)
         ZStack {
             ForEach(marks) { mark in
                 if mark.badged {
-                    FavouriteHeartMark(size: 9,
+                    FavouriteHeartMark(size: 9 * type,
                                        borderScaleCompensation: pinch)
                         .rotationEffect(-rotation, anchor: .center)
                         .scaleEffect(1 / pinch)
                         // Top-leading of the star so it reads as a corner
                         // mark on the badge.
-                        .position(x: mark.sc.x - 5, y: mark.sc.y - 5)
+                        .position(x: mark.sc.x - 5 * type, y: mark.sc.y - 5 * type)
                 } else {
                     // Tier-0 pentagon dot in the star's spectral rim colour —
                     // the followed-star mark the style system already defines.

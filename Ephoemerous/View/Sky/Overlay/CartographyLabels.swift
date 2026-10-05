@@ -40,7 +40,13 @@ struct CartographyLabels: View, Equatable {
     private static let colureTextIn:   Double = 120
     private static let twilightTextIn: Double = 150
 
+    /// The glyphs are `.caption2`, so they follow the Text Size by
+    /// themselves; their spacing along the curve has to follow too. Read
+    /// here (not off the Canvas) so a size change redraws past `==`.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
+        let type = Artist.shared.typeScale(dynamicTypeSize)
         Canvas { ctx, _ in
             let artist = Artist.shared
             let zenith = camera.screen(.zero)
@@ -58,9 +64,9 @@ struct CartographyLabels: View, Equatable {
 
             // Horizon rim (alt = 0). t: 0 = N, 0.25 = W, 0.5 = S, 0.75 = E.
             drawCurved(String(localized: "EASTERN HORIZON"), centre: 0.75, probe: 0.01,
-                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont, ctx)
+                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont, type: type, ctx)
             drawCurved(String(localized: "WESTERN HORIZON"), centre: 0.25, probe: 0.01,
-                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont, ctx)
+                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont, type: type, ctx)
 
             // Colures — constant-RA meridians through the equinox/solstice
             // points. Tiered: reveal past `colureTextIn`.
@@ -78,7 +84,7 @@ struct CartographyLabels: View, Equatable {
                     drawCurved(c.text, centre: c.centreDec, probe: 0.0017,   // 0.5° in radians
                                point: { meridianPoint(ra: c.ra, dec: $0) },
                                zenith: zenith, color: meridianColor, font: merdianF,
-                               opacity: colureReveal, ctx)
+                               opacity: colureReveal, type: type, ctx)
                 }
             }
 
@@ -114,11 +120,11 @@ struct CartographyLabels: View, Equatable {
                     drawCurved(band.rising,  centre: azimuthToT(riseAz),
                                probe: 0.01, point: point, zenith: zenith,
                                color: twilightColor, font: twilightFont,
-                               opacity: twilightReveal, ctx)
+                               opacity: twilightReveal, type: type, ctx)
                     drawCurved(band.setting, centre: azimuthToT(2 * .pi - riseAz),
                                probe: 0.01, point: point, zenith: zenith,
                                color: twilightColor, font: twilightFont,
-                               opacity: twilightReveal, ctx)
+                               opacity: twilightReveal, type: type, ctx)
                 }
             }
         }
@@ -173,6 +179,7 @@ struct CartographyLabels: View, Equatable {
                             color: Color,
                             font: Font,
                             opacity: Double = 1,
+                            type: CGFloat,
                             _ ctx: GraphicsContext) {
         let chars = Array(text)
         let n = chars.count
@@ -183,7 +190,7 @@ struct CartographyLabels: View, Equatable {
         guard let a = point(centre - probe), let b = point(centre + probe) else { return }
         let perParam = hypot(b.x - a.x, b.y - a.y) / (2 * probe)
         guard perParam > 0.0001 else { return }
-        let spacing: CGFloat = 9
+        let spacing: CGFloat = 9 * type
         let delta = Double(spacing) / Double(perParam)
         let half  = delta * Double(n - 1) / 2
 
@@ -226,7 +233,7 @@ struct CartographyLabels: View, Equatable {
         // always faces the zenith — so the text floats beside its line
         // instead of sitting on it (and crossing the other labels at the
         // intersections).
-        let sideInset: CGFloat = 6
+        let sideInset: CGFloat = 6 * type
 
         for (i, ch) in ordered.enumerated() {
             let p = centre - half + delta * Double(i)

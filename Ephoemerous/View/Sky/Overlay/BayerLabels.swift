@@ -53,7 +53,11 @@ struct BayerLabels: View {
     /// space, the way `FavouriteHeart` corners its heart. ▼ TWEAK ▼
     private static let corner = CGPoint(x: 7, y: -7)
 
+    /// The letter grows with the Text Size, so its corner offset does too.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
+        let type = Artist.shared.typeScale(dynamicTypeSize)
         ZStack {
             ForEach(marks) { mark in
                 // Bayer designations are set in italic serif by every star
@@ -67,8 +71,8 @@ struct BayerLabels: View {
                     .blur(radius: (1 - mark.reveal) * Self.blur)
                     .rotationEffect(-rotation, anchor: .center)
                     .scaleEffect(1 / pinch)
-                    .position(x: mark.sc.x + Self.corner.x,
-                              y: mark.sc.y + Self.corner.y)
+                    .position(x: mark.sc.x + Self.corner.x * type,
+                              y: mark.sc.y + Self.corner.y * type)
             }
         }
         // Annotation, not a target. See the note above.

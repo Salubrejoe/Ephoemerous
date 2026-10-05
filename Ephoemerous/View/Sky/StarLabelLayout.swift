@@ -17,7 +17,9 @@ import UIKit
 // Everything is compared where it lands ON SCREEN (`LabelComfortZone
 // .screenPoint`), because labels are drawn upright at constant size there
 // whatever the live pinch and rotation. Name widths are measured with the
-// label's own font. One pass per frame; the layers just read the result.
+// label's own font, and every footprint grows with the Text Size exactly as
+// the marks do (see `Artist+TypeScale`). One pass per frame; the layers just
+// read the result.
 struct StarLabelLayout {
 
     /// Named stars drawn as their pentagon dot instead of a badge.
@@ -34,8 +36,10 @@ struct StarLabelLayout {
 
     @MainActor
     init(camera: SkyCamera, scale: CGFloat, comfort: LabelComfortZone, date: Date,
-         favourites: [Star], named: [Star], selection: SkyObject?) {
+         favourites: [Star], named: [Star], selection: SkyObject?,
+         typeSize: DynamicTypeSize) {
         let a = Artist.shared
+        let m = Metrics(typeSize)
         var placed: [CGRect] = []
         var dots   = Set<String>()
         var names  = Set<String>()
@@ -44,7 +48,7 @@ struct StarLabelLayout {
 
         // 1 · Fixed marks.
         if let selection, let sc = SkyLabObjects.screen(selection, camera: camera, date: date) {
-            placed.append(contentsOf: Self.pinFootprint(selection, at: comfort.screenPoint(sc), date: date))
+            placed.append(contentsOf: Self.pinFootprint(selection, at: comfort.screenPoint(sc), date: date, metrics: m))
         }
         let bodies: [SkyObject] = [.sun, .moon] + Planet.all.map { .planet($0) } + Spacecraft.allCases.map { .spacecraft($0) }
         for body in bodies where body != selection {
@@ -54,9 +58,9 @@ struct StarLabelLayout {
             let style = a.poiStyle(for: category)
             guard scale >= style.badgeIn else { continue }
             let p = comfort.screenPoint(sc)
-            placed.append(Self.badgeRect(at: p, size: style.badgeSize))
+            placed.append(Self.badgeRect(at: p, size: style.badgeSize, metrics: m))
             if scale >= style.textIn, comfort.nameVisibility(at: sc) > 0.01, let name = SkyLabObjects.poiMark(body, date: date)?.name {
-                placed.append(Self.nameRect(name, at: p, badge: style.badgeSize))
+                placed.append(Self.nameRect(name, at: p, badge: style.badgeSize, metrics: m))
             }
         }
 
@@ -71,7 +75,7 @@ struct StarLabelLayout {
                   let sc = camera.screen(equatorial: star.equatorialVector)
             else { continue }
             let p     = comfort.screenPoint(sc)
-            let badge = Self.badgeRect(at: p, size: style.badgeSize)
+            let badge = Self.badgeRect(at: p, size: style.badgeSize, metrics: m)
             if collides(badge) && !isFavourite {
                 dots.insert(star.id)
                 continue
@@ -79,7 +83,7 @@ struct StarLabelLayout {
             placed.append(badge)
             let speaks = scale >= style.textIn && comfort.nameVisibility(at: sc) > 0.01
             guard speaks else { continue }
-            let name = Self.nameRect(star.displayName, at: p, badge: style.badgeSize)
+            let name = Self.nameRect(star.displayName, at: p, badge: style.badgeSize, metrics: m)
             if collides(name) {
                 names.insert(star.id)
             } else {
@@ -91,63 +95,74 @@ struct StarLabelLayout {
         hiddenNames = names
     }
 
+    // MARK: Metrics
+
+    /// The marks' sizes at one Text Size — what `POILabelView` and
+    /// `PromotedLabel` draw at, so the footprints match the ink.
+    private struct Metrics {
+        /// Badge / gap growth — 1 at the default size.
+        let scale:    CGFloat
+        /// The flat label's name font (footnote serif bold).
+        let nameFont: UIFont
+        /// The promoted pin's name font (title 2 serif bold).
+        let pinFont:  UIFont
+
+        @MainActor
+        init(_ size: DynamicTypeSize) {
+            let a    = Artist.shared
+            scale    = a.typeScale(size)
+            nameFont = a.labelFont(.footnote, size: size)
+            pinFont  = a.labelFont(.title2,   size: size)
+        }
+    }
+
     // MARK: Footprints (screen space)
 
     /// Breathing room around every mark, so labels don't kiss.
     private static let padding: CGFloat = 2
 
-    private static func badgeRect(at p: CGPoint, size: CGFloat) -> CGRect {
-        let d = size + Artist.shared.poiTextBorderWidth * 2
+    private static func badgeRect(at p: CGPoint, size: CGFloat, metrics m: Metrics) -> CGRect {
+        let d = size * m.scale + Artist.shared.poiTextBorderWidth * 2
         return CGRect(x: p.x - d / 2, y: p.y - d / 2, width: d, height: d).insetBy(dx: -padding, dy: -padding)
     }
 
     /// The name trails the badge: leading edge a gap past the badge, centred
     /// on its row — exactly where `POILabelView` draws it.
-    private static func nameRect(_ text: String, at p: CGPoint, badge: CGFloat) -> CGRect {
-        let w = textWidth(text)
-        let h = nameFont.lineHeight
-        return CGRect(x: p.x + badge / 2 + 6, y: p.y - h / 2, width: w, height: h)
+    @MainActor
+    private static func nameRect(_ text: String, at p: CGPoint, badge: CGFloat, metrics m: Metrics) -> CGRect {
+        let w = textWidth(text, font: m.nameFont)
+        let h = m.nameFont.lineHeight
+        return CGRect(x: p.x + (badge / 2 + 6) * m.scale, y: p.y - h / 2, width: w, height: h)
             .insetBy(dx: -padding, dy: -padding)
     }
 
     /// The promoted pin: its lifted, enlarged badge and the name hung under
     /// the precise dot.
     @MainActor
-    private static func pinFootprint(_ object: SkyObject, at p: CGPoint, date: Date) -> [CGRect] {
+    private static func pinFootprint(_ object: SkyObject, at p: CGPoint, date: Date, metrics m: Metrics) -> [CGRect] {
         let a = Artist.shared
         guard let mark = SkyLabObjects.poiMark(object, date: date) else {
             // A selected constellation is emphasised in place, not pinned.
             return []
         }
         let style = a.poiStyle(for: mark.category)
-        let d     = style.badgeSize * a.poiSelectScale * (a.poiHasRings(mark.category) ? a.saturnRingOuter.width : 1)
-        let lift  = a.poiSelectLiftFactor * style.badgeSize
+        let size  = style.badgeSize * m.scale
+        let d     = size * a.poiSelectScale * (a.poiHasRings(mark.category) ? a.saturnRingOuter.width : 1)
+        let lift  = a.poiSelectLiftFactor * size
         let badge = CGRect(x: p.x - d / 2, y: p.y - lift - d / 2, width: d, height: d)
-        let w     = textWidth(mark.name, font: pinFont)
-        let name  = CGRect(x: p.x - w / 2, y: p.y + a.poiSelectNameDrop, width: w, height: pinFont.lineHeight)
+        let w     = textWidth(mark.name, font: m.pinFont)
+        let name  = CGRect(x: p.x - w / 2, y: p.y + a.poiSelectNameDrop * m.scale,
+                           width: w, height: m.pinFont.lineHeight)
         return [badge.insetBy(dx: -padding, dy: -padding), name.insetBy(dx: -padding, dy: -padding)]
     }
 
     // MARK: Text metrics
 
-    /// The flat label's name font (footnote serif bold) — see `POILabelView`.
-    private static let nameFont: UIFont = font(.footnote)
-    /// The promoted pin's name font (title 2 serif bold) — see `PromotedLabel`.
-    private static let pinFont:  UIFont = font(.title2)
-
-    private static func font(_ style: UIFont.TextStyle) -> UIFont {
-        let base = UIFont.preferredFont(forTextStyle: style)
-        var desc = base.fontDescriptor
-        desc = desc.withDesign(.serif) ?? desc
-        desc = desc.withSymbolicTraits(.traitBold) ?? desc
-        return UIFont(descriptor: desc, size: base.pointSize)
-    }
-
     @MainActor private static var widthCache: [String: CGFloat] = [:]
 
     /// Measured width plus the outline casing either side; cached per name.
     @MainActor
-    private static func textWidth(_ text: String, font: UIFont = nameFont) -> CGFloat {
+    private static func textWidth(_ text: String, font: UIFont) -> CGFloat {
         let key = "\(font.pointSize)|\(text)"
         if let w = widthCache[key] { return w }
         let w = ceil((text as NSString).size(withAttributes: [.font: font]).width) + 3

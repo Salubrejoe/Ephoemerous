@@ -66,7 +66,8 @@ struct SkyFrame {
          overdraw: CGFloat,
          compassEngage: Double,
          morphScaleFrom: CGFloat,
-         morphOffsetFrom: CGSize) {
+         morphOffsetFrom: CGSize,
+         typeSize: DynamicTypeSize = .large) {
 
         // The canvas is drawn OVERSIZE — the screen plus `overdraw` on every
         // edge — and centred. A SwiftUI Canvas clips to its own frame, so a
@@ -148,6 +149,7 @@ struct SkyFrame {
                                      date:       app.renderedObservationDate,
                                      favourites: app.favouriteStars,
                                      named:      namedOnly,
-                                     selection:  picked)
+                                     selection:  picked,
+                                     typeSize:   typeSize)
     }
 }

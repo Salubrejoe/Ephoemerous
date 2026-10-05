@@ -37,6 +37,9 @@ struct SolarSystemLabels: View {
 
     private var artist: Artist { .shared }
 
+    /// The marks grow with the Text Size, so the declutter box does too.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         // Declutter: labels never overlap. Priority runs Sun > Moon >
         // planets (catalogue order among planets) — a lower body whose
@@ -138,11 +141,13 @@ struct SolarSystemLabels: View {
 
     /// True when a body's label box would overlap a higher-priority
     /// body's. Labels extend trailing of the badge, so the box is generous
-    /// horizontally, tight vertically. ▼ TWEAK the collision box here ▼
+    /// horizontally, tight vertically — at the default Text Size, grown
+    /// with it. ▼ TWEAK the collision box here ▼
     private func nameCollides(_ sc: CGPoint?, with higher: [CGPoint?]) -> Bool {
         guard let sc else { return false }
+        let type = artist.typeScale(dynamicTypeSize)
         return higher.compactMap { $0 }.contains {
-            abs(sc.x - $0.x) < 110 && abs(sc.y - $0.y) < 22
+            abs(sc.x - $0.x) < 110 * type && abs(sc.y - $0.y) < 22 * type
         }
     }
 

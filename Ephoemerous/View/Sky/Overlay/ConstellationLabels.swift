@@ -28,15 +28,6 @@ struct ConstellationLabels: View {
     /// is exempt).
     var comfort: LabelComfortZone = .everywhere
 
-    /// Footnote serif bold, matching the POI label names.
-    private static let font: UIFont = {
-        let base = UIFont.preferredFont(forTextStyle: .footnote)
-        var d = base.fontDescriptor
-        d = d.withDesign(.rounded) ?? d
-        d = d.withSymbolicTraits(.traitBold) ?? d
-        return UIFont(descriptor: d, size: base.pointSize)
-    }()
-
     /// Constellation text tier.
     private static let textIn: Double =
         Artist.shared.poiStyle(for: .constellation).textIn

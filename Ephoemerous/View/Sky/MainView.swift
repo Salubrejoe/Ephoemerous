@@ -67,6 +67,11 @@ struct MainView: View {
     @Environment(\.horizontalSizeClass) private var hSize
     private var isRegular: Bool { hSize == .regular }
 
+    /// The system Text Size, held to the sky's ceiling — the label
+    /// collision pass and the marks it lays out must agree on one size.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    private var skyTypeSize: DynamicTypeSize { min(dynamicTypeSize, Artist.shared.skyTypeCeiling) }
+
     /// The floating panel's rest position (regular width only). Owned
     /// here, not by the content, because ONE panel hosts both search and
     /// the detail card and the stage has to survive the swap.
@@ -128,9 +133,13 @@ struct MainView: View {
                                  overdraw: overdraw,
                                  compassEngage: compassEngage,
                                  morphScaleFrom: morphScaleFrom,
-                                 morphOffsetFrom: morphOffsetFrom)
+                                 morphOffsetFrom: morphOffsetFrom,
+                                 typeSize: skyTypeSize)
 
             SkyLayerStack(frame: frame)
+                // Every mark on the sky follows Text Size up to the ceiling
+                // — see `Artist+TypeScale`.
+                .dynamicTypeSize(...Artist.shared.skyTypeCeiling)
             
             .frame(width: frame.canvasSize.width, height: frame.canvasSize.height)
             // THE shared parent transform — scale + rotation about centre,

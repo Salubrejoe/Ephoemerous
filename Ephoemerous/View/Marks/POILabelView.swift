@@ -35,6 +35,10 @@ struct POILabelView: View {
     @Environment(\.widgetRenderingMode) private var widgetRenderingMode
     private var isMasked: Bool { widgetRenderingMode != .fullColor }
 
+    /// The system Text Size — the name AND the badge grow with it, so the
+    /// mark keeps its proportions at every size (see `Artist+TypeScale`).
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     enum LabelStyle {
         case star, planetoids
     }
@@ -82,16 +86,25 @@ struct POILabelView: View {
     /// Great Red Spot. Off on the sky, where they'd only be noise.
     var richDetail: Bool = false
 
-    /// Gap (pt) between the badge's trailing edge and the name.
-    private let nameGap: CGFloat = 6
+    /// Gap (pt) between the badge's trailing edge and the name, at the
+    /// default Text Size.
+    private var nameGap: CGFloat { 6 * typeScale }
     /// Max blur (pt) at reveal 0 — the mark resolves out of a soft haze.
     private static let nameBlur:  CGFloat = 4
     private static let badgeBlur: CGFloat = 3
 
     private var style: Artist.POICategoryStyle { Artist.shared.poiStyle(for: category) }
 
-    /// The badge's drawn diameter — its style size times `sizeScale`.
-    private var badgeDiameter: CGFloat { style.badgeSize * sizeScale }
+    /// How much the Text Size grows the mark — 1 at the default.
+    private var typeScale: CGFloat { Artist.shared.typeScale(dynamicTypeSize) }
+
+    /// The badge's drawn diameter — its style size times `sizeScale`,
+    /// grown with the Text Size.
+    private var badgeDiameter: CGFloat { style.badgeSize * sizeScale * typeScale }
+
+    /// Footnote serif bold at the current Text Size, as a `UIFont`
+    /// (CoreText needs a concrete font to lay out glyph paths).
+    private var nameFont: UIFont { Artist.shared.labelFont(.footnote, size: dynamicTypeSize) }
 
     /// Badge fill. Full colour: the category's bright→deep orb gradient.
     /// A masked host keeps only alpha — the palette would flatten to a
@@ -198,7 +211,7 @@ struct POILabelView: View {
                                  fill:      style.textColor,
                                  stroke:    style.border,
                                  lineWidth: 2.5,
-                                 font:      Self.nameFont)
+                                 font:      nameFont)
                         .opacity(nameReveal)
                         .blur(radius: (1 - nameReveal) * Self.nameBlur)
                         // Overlay aligns the name's leading to the badge's
@@ -219,18 +232,7 @@ struct POILabelView: View {
         return x * x * (3 - 2 * x)
     }
 
-    /// Footnote serif bold, as a `UIFont` (CoreText needs a concrete font
-    /// to lay out glyph paths). `preferredFont` keeps Dynamic Type.
-    private static let nameFont: UIFont = {
-        let base = UIFont.preferredFont(forTextStyle: .footnote)
-        var desc = base.fontDescriptor
-        desc = desc.withDesign(.serif) ?? desc
-        desc = desc.withSymbolicTraits(.traitBold) ?? desc
-        return UIFont(descriptor: desc, size: base.pointSize)
-    }()
-    
-    
-    
+
     // MARK: Badge
     
     private var badge: some View {
