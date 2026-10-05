@@ -78,9 +78,9 @@ struct POILabelView: View {
     var companionReveal: Double = 0
     /// The Moon's or Venus's phase, when the caller knows the observation
     /// date and where the observer is standing (see `BadgePhase`). The
-    /// `.moon` badge then draws its real lit silhouette instead of a plain
-    /// disc; Venus keeps its circle with the night side black. `nil` (or
-    /// any other category) keeps the plain disc.
+    /// Moon and Venus then keep their full circle with the night side
+    /// black, the lit part in their gradient. `nil` (or any other
+    /// category) keeps the plain disc.
     var phase: LunarPhase? = nil
     /// The promoted pin's extra detail — Jupiter's thin belts, streaks and
     /// Great Red Spot. Off on the sky, where they'd only be noise.
@@ -241,15 +241,13 @@ struct POILabelView: View {
         // true casing weight — see `borderScaleCompensation`.
         let bw = Artist.shared.poiTextBorderWidth * borderScaleCompensation
         let bulge = labelStyle == .planetoids ? 2.0 : 5.0
-        // The Moon wears its real lit silhouette; everything else keeps the
-        // squircle. Erased so fill and casing trace the SAME outline —
-        // casing a disc around a crescent would read as a stained full moon.
-        let shape: AnyShape = {
-            if case .moon = category, let phase {
-                return AnyShape(MoonPhaseShape(phase: phase))
-            }
-            return AnyShape(Squircle(corners: 5, bulge: bulge))
-        }()
+        // Every badge keeps its squircle outline — the Moon included. It
+        // used to wear only its lit silhouette, cased round the crescent,
+        // and a thin toenail all but vanished; now it keeps the full disc
+        // with the night side in black, like Venus, so the phase reads
+        // at any size.
+        let shape = AnyShape(Squircle(corners: 5, bulge: bulge))
+        let isMoon: Bool = { if case .moon = category { return true }; return false }()
         let isNewMoon = phase?.isNew ?? false
 
         let surface = Artist.shared.planetSurface(category)
@@ -262,9 +260,9 @@ struct POILabelView: View {
                                 lineWidth:  bw,
                                 fullDetail: richDetail,
                                 masked:     isMasked)
-            } else if surface == .venusPhase, let phase {
-                // Venus keeps its full circle: lit part in its gradient,
-                // night side black (see `PlanetSurface`).
+            } else if surface == .venusPhase || (isMoon && !isNewMoon), let phase {
+                // Venus and the Moon keep their full circle: lit part in its
+                // gradient, night side black (see `PlanetSurface`).
                 VenusPhaseFill(phase: phase, litFill: badgeFill, night: venusNightFill)
             } else {
                 shape
