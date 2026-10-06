@@ -63,7 +63,14 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                     // header and the row.
                     .scrollClipDisabled()
                     .scrollPosition($scrollPosition)
-                    .mask { StickyMask(scroll: scroll, heroHeight: heroH, rowHeight: rowHeight) }
+                    // The mask must reach the screen's bottom edge too: on the
+                    // phone the scroll content runs under the home indicator,
+                    // and a mask kept inside the safe area cut the tiles flat
+                    // above it.
+                    .mask {
+                        StickyMask(scroll: scroll, heroHeight: heroH, rowHeight: rowHeight)
+                            .ignoresSafeArea(.container, edges: .bottom)
+                    }
                     // Pull down past the top of the grid → fold the card to its
                     // title, as a sheet's drag would. The iPad panel otherwise
                     // only drags by its header band, and a swipe on the body
