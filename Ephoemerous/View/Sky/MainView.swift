@@ -164,6 +164,20 @@ struct MainView: View {
                         sky.onTap  = makeTapHandler()
                         viewSize   = geo.size
                         seedCameraHome(for: geo.size)
+                        #if DEBUG
+                        // Screenshot seeding: `-skyScale <n>` opens the sky already
+                        // zoomed (a device can't be pinched from the command line).
+                        let args = ProcessInfo.processInfo.arguments
+                        if let i = args.firstIndex(of: "-skyScale"), i + 1 < args.count,
+                           let z = Double(args[i + 1]) {
+                            // After the camera has seeded its home (and any
+                            // NorthIN reframe), or it would put it back.
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(2))
+                                sky.scale = CGFloat(z)
+                            }
+                        }
+                        #endif
                         // Grabbing the canvas drops compass mode (heading no
                         // longer owns the view) — but the zoom/framing stays
                         // put (frozen in the `compassMode` exit handler), so

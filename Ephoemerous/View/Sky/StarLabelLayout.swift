@@ -90,14 +90,26 @@ struct StarLabelLayout {
                 dots.insert(star.id)
                 continue
             }
-            placed.append(badge)
             let speaks = scale >= style.textIn && comfort.nameVisibility(at: sc) > 0.01
-            guard speaks else { continue }
-            let name = Self.nameRect(star.displayName, at: p, badge: style.badgeSize, metrics: m)
-            if collides(name) {
-                names.insert(star.id)
-            } else {
-                placed.append(name)
+            // The name is tested BEFORE the star's own badge goes down: it
+            // trails that badge with only a few points between them, which
+            // at a Text Size a notch below the default is less than the
+            // padding — so a name that collides with its OWN badge would be
+            // hidden every time, at any zoom.
+            var name: CGRect?
+            var nameCollides = false
+            if speaks {
+                let r = Self.nameRect(star.displayName, at: p, badge: style.badgeSize, metrics: m)
+                name = r
+                nameCollides = collides(r)
+            }
+            placed.append(badge)
+            if let name {
+                if nameCollides {
+                    names.insert(star.id)
+                } else {
+                    placed.append(name)
+                }
             }
         }
 
