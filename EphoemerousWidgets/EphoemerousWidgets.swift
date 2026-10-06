@@ -281,9 +281,16 @@ struct SkySnapshot {
     /// Constellation names give way to anything in `avoid` (the marks the
     /// tile draws on top — bodies, the pin, the name block) and to each
     /// other.
+    ///
+    /// `figures` narrows the map to the constellations you follow: only
+    /// those are traced (solid); the pinned one's stars also wear their
+    /// spectral colour — the rest of the sky stays field and quiet. `nil` draws every
+    /// figure, as the share card does. `maxNames` caps the constellation
+    /// names — followed ones first, then the biggest — so a tile reads as a
+    /// few landmarks, not a gazetteer.
     @MainActor
     func draw(in ctx: inout GraphicsContext, size: CGSize, magnitudeLimit: Double = 4.5,
-              avoid: [CGRect] = []) {
+              avoid: [CGRect] = [], figures: Set<Constellation>? = nil, maxNames: Int? = nil) {
         // The app's own field-star style (see `Artist+StarField`): grey ink,
         // colour reserved for the marks you can tap, named stars a step
         // above the nameless, the pentagon squircle, the glow.
@@ -292,7 +299,23 @@ struct SkySnapshot {
         // A tile is small and static — it needs a firmer field than the
         // live sky to read as stars, not haze. ▼ TWEAK the tile's field ▼
         let gain   = 1.3
+
+        // The traced figures' stars, by name. Every one must be drawn (even
+        // past the field's depth limit: a line has to end on a star); only
+        // the PINNED constellation's wear their spectral colour — the
+        // others are plain field, just joined up.
+        var figureStars: [String: Star] = [:]
+        var tinted = Set<String>()
+        if let figures {
+            for (cons, segs) in ConstellationLines.shared.segments where figures.contains(cons) {
+                for seg in segs {
+                    figureStars[seg.a.id] = seg.a; figureStars[seg.b.id] = seg.b
+                    if cons == pinnedConstellation { tinted.insert(seg.a.id); tinted.insert(seg.b.id) }
+                }
+            }
+        }
         for star in StarDatabase.shared.workableStars where star.magnitude <= magnitudeLimit {
+            guard !tinted.contains(star.id) else { continue }
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
@@ -306,12 +329,35 @@ struct SkySnapshot {
                                                    zenith) > 0)
         }
 
+        // The pinned figure's stars: the class's deep tone (the pale centre
+        // tint is too faint at a dot's size), a step larger than the field.
+        // Other followed figures' stars below the field's depth are drawn
+        // plain. ▼ TWEAK the figure stars here ▼
+        for star in figureStars.values {
+            let colour = tinted.contains(star.id)
+            guard colour || star.magnitude > magnitudeLimit else { continue }
+            guard let sc = camera.screen(equatorial: star.equatorialVector),
+                  sc.x > -4, sc.x < size.width + 4,
+                  sc.y > -4, sc.y < size.height + 4 else { continue }
+            a.drawFieldStar(ctx,
+                            at:           sc,
+                            magnitude:    min(star.magnitude, 4.5),
+                            named:        true,
+                            scale:        camera.scale,
+                            gain:         gain,
+                            sizeScale:    colour ? 1.35 : 1,
+                            ink:          colour ? a.palette.spectralDeep(star.spectralClass) : nil,
+                            aboveHorizon: simd_dot(star.equatorialVector.sidereallyRotated(by: camera.sidereal),
+                                                   zenith) > 0)
+        }
+
         // Constellation stick-figures — the app's quiet dotted grey; the
         // PINNED constellation is the hero and gets traced separately.
         let a_     = Artist.shared
         var sticks = Path()
         var hero   = Path()
         for (cons, segs) in ConstellationLines.shared.segments {
+            if let figures, !figures.contains(cons) { continue }
             for seg in segs {
                 guard let a = camera.screen(equatorial: seg.a.equatorialVector),
                       let b = camera.screen(equatorial: seg.b.equatorialVector),
@@ -335,9 +381,11 @@ struct SkySnapshot {
                 }
             }
         }
+        // Followed figures are the point of the tile, so they trace firmer
+        // than the all-figures map's whisper.
         ctx.stroke(sticks,
-                   with: .color(.white.opacity(0.22)),        // ▼ TWEAK the figures' ink ▼
-                   style: StrokeStyle(lineWidth: a_.figureLineWidth, lineCap: .round))
+                   with: .color(.white.opacity(figures == nil ? 0.22 : 0.55)),   // ▼ TWEAK the figures' ink ▼
+                   style: StrokeStyle(lineWidth: figures == nil ? a_.figureLineWidth : 1.0, lineCap: .round))
         // The hero figure: a SOLID trace, like a selected constellation
         // in the app — the line IS the promoted label here.
         ctx.stroke(hero,
@@ -359,8 +407,20 @@ struct SkySnapshot {
         let tile     = CGRect(origin: .zero, size: size).insetBy(dx: 4, dy: 4)
         var names    = ctx
         names.addFilter(.shadow(color: a.canvasBackground, radius: a.regionHalo))
-        for (cons, anchor) in ConstellationLines.shared.labelAnchors.sorted(by: { $0.key.rawValue < $1.key.rawValue })
+        var named = 0
+        let followedFirst = figures != nil || maxNames != nil
+        let order = ConstellationLines.shared.labelAnchors.sorted(by: { l, r -> Bool in
+            guard followedFirst else { return l.key.rawValue < r.key.rawValue }
+            let lf = figures?.contains(l.key) ?? false
+            let rf = figures?.contains(r.key) ?? false
+            if lf != rf { return lf }
+            let lr = l.key.sizeRank ?? Int.max
+            let rr = r.key.sizeRank ?? Int.max
+            return lr != rr ? lr < rr : l.key.rawValue < r.key.rawValue
+        })
+        for (cons, anchor) in order
         where cons != pinnedConstellation {
+            if let maxNames, named >= maxNames { break }
             let vec = Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
             guard let sc = camera.screen(equatorial: vec),
                   sc.x > 10, sc.x < size.width - 10,
@@ -374,6 +434,7 @@ struct SkySnapshot {
             guard tile.contains(box),
                   !placed.contains(where: { $0.intersects(box) }) else { continue }
             placed.append(box)
+            named += 1
             names.draw(Text(text)
                          .font(.system(size: fontSize, weight: a.regionWeight))
                          .tracking(tracking)
@@ -506,7 +567,9 @@ struct SkyObjectWidgetView: View {
                 // The map: cartography canvas + flat body labels. Large
                 // has room for a denser naked-eye field.
                 Group {
-                let bodies = snapshot.bodies(excluding: entry.entity.id, in: geo.size)
+                let bodies   = snapshot.bodies(excluding: entry.entity.id, in: geo.size)
+                let followed = Set(FavouritesStore().constellations())
+                                 .union(snapshot.pinnedConstellation.map { [$0] } ?? [])
                 Canvas { ctx, size in
                     // Extra large earns the densest field — panorama room.
                     snapshot.draw(in: &ctx, size: size,
@@ -515,7 +578,11 @@ struct SkyObjectWidgetView: View {
                                                : isExpansive                 ? 5.2 : 4.5,
                                  avoid: footprints(bodies: bodies,
                                                    pinned: snapshot.pinnedConstellation == nil ? category : nil,
-                                                   in: size))
+                                                   in: size),
+                                 // Only what you follow gets a figure — the rest is
+                                 // field. Three names at most.
+                                 figures:  followed,
+                                 maxNames: 3)
                 }
                 ForEach(bodies,
                         id: \.2) { category, sc, name in

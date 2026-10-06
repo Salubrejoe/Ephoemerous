@@ -116,6 +116,7 @@
 				Model/Bodies/SunPosition.swift,
 				Model/Constellations/Constellation.swift,
 				Model/Constellations/ConstellationLines.swift,
+				"Model/Constellations/Constellation+Size.swift",
 				Model/Constellations/ZodiacSign.swift,
 				Model/JSONModel/StarData.swift,
 				Model/JSONModel/StarDatabase.swift,

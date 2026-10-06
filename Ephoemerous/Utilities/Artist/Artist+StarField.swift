@@ -87,6 +87,8 @@ extension Artist {
     /// than the live sky to read as anything but haze. `sizeScale` shrinks
     /// it for a surface whose field is scenery (the Orloj's dial).
     /// `aboveHorizon` is only evaluated for the few bright enough to glow.
+    /// `ink` overrides the grey field ink — a surface that colours the stars
+    /// of a figure it is tracing (the widgets' followed constellation).
     func drawFieldStar(_ ctx: GraphicsContext,
                        at point:              CGPoint,
                        magnitude m:           Double,
@@ -95,9 +97,10 @@ extension Artist {
                        reveal:                Double = 1,
                        gain:                  Double = 1,
                        sizeScale:             CGFloat = 1,
+                       ink override:          Color? = nil,
                        aboveHorizon:          @autoclosure () -> Bool) {
         let r   = fieldStarRadius(magnitude: m, scale: scale) * sizeScale
-        let ink = fieldStarInk(named: named)
+        let ink = override ?? fieldStarInk(named: named)
         if m < starGlowBelowMagnitude {
             let glow = fieldStarGlow(scale: scale)
             if glow > 0.01, aboveHorizon() {
