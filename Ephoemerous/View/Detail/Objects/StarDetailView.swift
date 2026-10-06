@@ -10,7 +10,7 @@ import LoreKit
 //   [          TYPE  (wide)          ]
 //   [  POSITION    ][ PROPER MOTION  ]
 //
-// — and Remember / Find in the sky at its foot.
+// — under a Pin / Find / Constellation row at its head.
 struct StarDetailView: View {
     @Environment(AppState.self) var state
     @Environment(\.dismiss) var dismiss
@@ -26,7 +26,15 @@ struct StarDetailView: View {
                    leading:  showsBackChevron ? .button(.chevronBackward, { dismiss() }) : .share) {
             tiles
         } actions: {
-            PlaceActions(object: .star(star))
+            PlaceActionRow {
+                PinAction(object: .star(star))
+                FindAction()
+                ConstellationAction(constellation: star.constellation,
+                                    cameFromConstellation: showsBackChevron)
+            }
+        }
+        .navigationDestination(for: Constellation.self) { c in
+            ConstellationDetailView(constellation: c, showsBackChevron: true)
         }
         .onAppear {
             // Universal Recents entry — covers the push-from-constellation

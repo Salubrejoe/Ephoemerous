@@ -31,7 +31,7 @@ struct SpacecraftDetailView: View {
                 tiles(at: nil)
             }
         } actions: {
-            PlaceActions(object: .spacecraft(craft), remember: false)
+            PlaceActionRow { FindAction(solo: true) }
         }
         .task(id: passRequest) { tracker.updatePasses(for: state.placeObserver, from: state.observationDate) }
     }

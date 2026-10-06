@@ -16,8 +16,8 @@ import LoreKit
 // header-only detent it's the first row alone, the title over the live
 // status line ("● Up · 31° NW · never sets").
 //
-// Share keeps the toolbar's leading corner; Remember and Find live at the
-// foot of the sheet's grid (`PlaceActions`), out of the content's way.
+// Share keeps the toolbar's leading corner; the action row (`PlaceActionRow`)
+// heads the sheet's grid, the way Apple Maps lays out a place's buttons.
 struct PlaceHeader: View {
 
     @Environment(AppState.self)  private var state
@@ -108,8 +108,16 @@ extension Artist {
     /// gains as the sheet rises, and what scrolling the body takes back.
     var placeHeroHeight:     CGFloat { 100 }
     var placeHeroGrowth:     CGFloat { 50 }
-    /// Remember / Find — full-width capsules at the grid's foot.
-    var placeActionHeight:   CGFloat { 50 }
+    /// The height of the object's picture at a given sheet expansion — 0 once
+    /// it's too small to show. `PlaceHero` draws to it; the sticky action row
+    /// rises to meet it.
+    func placeHeroBlockHeight(reveal: CGFloat, scale: CGFloat) -> CGFloat {
+        let h = (placeHeroHeight + placeHeroGrowth * reveal) * scale * reveal
+        return h > 4 ? h : 0
+    }
+    /// The action row at the grid's head — Pin / Find / …, icon over label.
+    var placeActionHeight:   CGFloat { 62 }
+    var placeActionRadius:   CGFloat { 20 }
     /// How far past the grid's top a pull must go to fold the card. ▼ TWEAK ▼
     var placePullToFold:     CGFloat { 70 }
 }
@@ -132,8 +140,8 @@ struct PlaceHero: View {
     var body: some View {
         let a      = Artist.shared
         let reveal = state.detailSheetExpansion
-        let height = (a.placeHeroHeight + a.placeHeroGrowth * reveal) * scale * reveal
-        if height > 4 {
+        let height = a.placeHeroBlockHeight(reveal: reveal, scale: scale)
+        if height > 0 {
             // No ground of its own — the stars sit on the sheet's sky.
             HeroBanner(object:      object,
                        height:      height,
@@ -152,65 +160,5 @@ struct PlaceHero: View {
                     hero.opacity(1 + min(0, phase.value))
                 }
         }
-    }
-}
-
-// MARK: - PlaceActions
-// The sheet's two actions, at the foot of its grid — full width, stacked,
-// out of the content's path:
-//   Remember — the heart, pink once remembered (the app's one favourite
-//              colour), a success tap on the way in.
-//   Find     — the window, hunting this object (it's already the
-//              selection). Only shown when the window can open: where you
-//              stand, with a gyro to steer.
-struct PlaceActions: View {
-
-    @Environment(AppState.self) private var state
-    let object: SkyObject
-    /// Stars only — the Sun, Moon and planets aren't favourited.
-    var remember: Bool = true
-    /// Not for the Sun — no one should go hunting it through a phone.
-    var find:     Bool = true
-
-    var body: some View {
-        let remembered = state.isFavourite(object)
-        GlassEffectContainer(spacing: Artist.shared.detailGridSpacing) {
-            VStack(spacing: Artist.shared.detailGridSpacing) {
-                if remember {
-                capsule {
-                    state.toggleFavourite(object)
-                } label: {
-                    Label(remembered ? String(localized: "Remembered") : String(localized: "Remember"),
-                          systemImage: remembered ? "heart.fill" : "heart")
-                        .foregroundStyle(remembered ? Color.pink : .primary)
-                        .contentTransition(.symbolEffect(.replace.downUp))
-                }
-                .sensoryFeedback(.success, trigger: remembered) { _, now in now }
-                }
-
-                if find, state.canLook {
-                    capsule {
-                        state.enterLook()
-                    } label: {
-                        Label(String(localized: "Find in the sky"), systemImage: "scope")
-                    }
-                }
-            }
-        }
-        .animation(.bouncy, value: remembered)
-    }
-
-    private func capsule<L: View>(_ action: @escaping () -> Void,
-                                  @ViewBuilder label: () -> L) -> some View {
-        Button(action: action) {
-            label()
-                .font(.body.weight(.semibold))
-                .labelStyle(.titleAndIcon)
-                .frame(maxWidth: .infinity)
-                .frame(height: Artist.shared.placeActionHeight)
-                .contentShape(.capsule)
-        }
-        .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .capsule)
     }
 }

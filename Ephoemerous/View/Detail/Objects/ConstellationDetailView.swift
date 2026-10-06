@@ -6,7 +6,7 @@ import LoreKit
 // a drawing, a story and a region. The drawing is the header itself: the
 // figure, its stars named and tappable (`HeroFigureMarks`). Then the tiles:
 //
-//   [         STORY       (wide)       ]   how it got there
+//   [         STORY       (wide)       ]   how it got there — only once asked
 //   [ RISE & SET     ][    SEASON      ]   the figure's centre · evenings
 //   [         DEPTH       (wide)       ]   its stars at their real distances
 //   [ BRIGHTEST      ][    SIZE        ]   its lead star · IAU area, rank
@@ -16,7 +16,14 @@ import LoreKit
 // panel, with no stack — by selection (`StarLink`).
 struct ConstellationDetailView: View {
     @Environment(AppState.self) var state
+    @Environment(\.dismiss) var dismiss
     let constellation: Constellation
+    /// `true` when pushed from a star's card — the header's leading corner
+    /// becomes the way back instead of Share.
+    var showsBackChevron: Bool = false
+
+    /// The catasterism tile is opt-in: off until the Story button asks.
+    @State private var showStory = false
 
     /// What it depicts and its IAU abbreviation — "Hero · Ori".
     private var subtitle: String {
@@ -28,11 +35,17 @@ struct ConstellationDetailView: View {
         PlaceSheet(object:   .constellation(constellation),
                    title:    constellation.localizedName,
                    subtitle: subtitle,
+                   leading:  showsBackChevron ? .button(.chevronBackward, { dismiss() }) : .share,
                    heroScale: Artist.shared.constellationHeroScale) {
             tiles
         } actions: {
-            PlaceActions(object: .constellation(constellation))
+            PlaceActionRow {
+                PinAction(object: .constellation(constellation))
+                FindAction()
+                StoryAction(isOn: $showStory)
+            }
         }
+        .animation(.smooth, value: showStory)
         .navigationDestination(for: Star.self) { s in
             StarDetailView(star: s, showsBackChevron: true)
         }
@@ -47,7 +60,10 @@ struct ConstellationDetailView: View {
         let path   = StarDayPath(object: object, around: date, observer: state.placeObserver)
         let stars  = constellation.catalogueStars
         return VStack(spacing: a.detailGridSpacing) {
-            ConstellationStoryTile(constellation: constellation)
+            if showStory {
+                ConstellationStoryTile(constellation: constellation)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+            }
             DetailGridLayout(rows: [2, 1, 2]) {
                 RiseSetTile(status: status, path: path)
                 ConstellationSeasonTile(

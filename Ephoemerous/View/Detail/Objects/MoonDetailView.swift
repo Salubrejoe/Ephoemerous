@@ -22,7 +22,7 @@ struct MoonDetailView: View {
                    subtitle: phase.name) {
             tiles
         } actions: {
-            PlaceActions(object: .moon, remember: false)
+            PlaceActionRow { FindAction(solo: true) }
         }
     }
 

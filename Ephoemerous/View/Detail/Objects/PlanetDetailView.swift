@@ -20,7 +20,7 @@ struct PlanetDetailView: View {
                    subtitle: planet.mythology) {
             tiles
         } actions: {
-            PlaceActions(object: .planet(planet), remember: false)
+            PlaceActionRow { FindAction(solo: true) }
         }
     }
 

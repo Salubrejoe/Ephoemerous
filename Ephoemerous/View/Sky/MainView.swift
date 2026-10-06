@@ -363,6 +363,11 @@ struct MainView: View {
                 // TOP, and focusing raises the stage to `.large`, so the
                 // field and the first results stay clear.
                 .ignoresSafeArea(.keyboard, edges: .bottom)
+                // The card keeps its 16pt from the screen's REAL bottom edge,
+                // like the Here / Now pill beside it (which is laid out
+                // edge-to-edge) — otherwise it floats a home-indicator higher
+                // and the two corners no longer share a baseline.
+                .ignoresSafeArea(.container, edges: .bottom)
                 .transition(.opacity)
             }
         }
