@@ -22,7 +22,7 @@ extension Artist {
     var bezelOpacity:         Double  { 0.28 }
     var bezelCoreOpacity:     Double  { 0.55 }
     var bezelCoreFraction:    Double  { 0.4 }
-    var bezelInk:             Color   { .primary }
+    var bezelInk:             Color   { ink }
 
     // MARK: Look mode ▼ TWEAK ▼
     // Lift the phone and the chart opens into a WINDOW: the sky centres on

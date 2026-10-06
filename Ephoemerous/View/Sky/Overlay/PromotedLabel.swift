@@ -202,7 +202,7 @@ private struct SkyLabPromotedPin: View {
             // Name — centred below the dot, primary ink, real outline
             // casing (same OutlinedText the flat label uses).
             OutlinedText(text:      name,
-                         fill:      .primary,
+                         fill:      Artist.shared.ink,
                          stroke:    style.border,
                          lineWidth: 1.5,
                          font:      nameFont)

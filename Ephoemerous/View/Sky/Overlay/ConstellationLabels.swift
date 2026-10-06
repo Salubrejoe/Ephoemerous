@@ -46,7 +46,7 @@ struct ConstellationLabels: View {
                 Text(mark.name.uppercased())
                     .font(.system(a.regionTextStyle, design: .default, weight: a.regionWeight))
                     .tracking(a.regionTracking * a.typeScale(dynamicTypeSize))
-                    .foregroundStyle(mark.selected ? .primary : .secondary)
+                    .foregroundStyle(mark.selected ? a.ink : a.inkSecondary)
                     .shadow(color: a.canvasBackground, radius: a.regionHalo)
                     .contentShape(.capsule)
                     .opacity(mark.selected ? 1 : mark.reveal)

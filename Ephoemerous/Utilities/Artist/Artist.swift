@@ -41,6 +41,16 @@ struct Artist {
     /// that share `gridColor` keep their weight. ▼ TWEAK ▼
     var celestialGridVolume: Double { 0.6 }
     
+    /// The one ink the sky writes in — stars, graticule, constellation
+    /// names, Bayer letters, figure lines. A cool near-white (OKLCH L .985,
+    /// C .006, h 262: the A-class white of the star ramp), so nothing on the
+    /// map is the hue-less pure white that sits apart from the navy. The text
+    /// and line ladders are the system's own alphas (.60 / .30), kept so
+    /// contrast is unchanged — only the hue is ours.
+    var ink          : Color { palette.starField }
+    var inkSecondary : Color { ink.opacity(0.60) }
+    var inkTertiary  : Color { ink.opacity(0.30) }
+
     /// The generic star field. White in dark mode, at full strength — the
     /// per-star magnitude opacity below is the only thing that dims it.
     var starColor : Color { palette.starField }

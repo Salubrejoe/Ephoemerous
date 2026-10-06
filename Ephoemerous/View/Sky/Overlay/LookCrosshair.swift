@@ -58,9 +58,9 @@ struct LookCrosshair: View {
                                      font:     font,
                                      tracking: a.crosshairTracking * type,
                                      radius:   (locked == nil && !seeking ? a.crosshairRadius : a.crosshairLockedRadius) * type)
-            let ink    = locked == nil ? Color.primary.opacity(a.crosshairRestOpacity) : Color.accentColor
+            let ink    = locked == nil ? a.ink.opacity(a.crosshairRestOpacity) : Color.accentColor
             // Seeking, the words are the destination, not a catch: quiet ink.
-            let words  = locked == nil ? Color.primary.opacity(a.crosshairHuntOpacity) : Color.accentColor
+            let words  = locked == nil ? a.ink.opacity(a.crosshairHuntOpacity) : Color.accentColor
 
             ZStack {
                 GappedRing(radius:    ring.radius,

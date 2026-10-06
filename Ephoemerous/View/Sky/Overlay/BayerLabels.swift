@@ -66,7 +66,7 @@ struct BayerLabels: View {
                     .font(.caption2)
                     .fontDesign(.serif)
                     .italic()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Artist.shared.inkSecondary)
                     .opacity(mark.reveal)
                     .blur(radius: (1 - mark.reveal) * Self.blur)
                     .rotationEffect(-rotation, anchor: .center)

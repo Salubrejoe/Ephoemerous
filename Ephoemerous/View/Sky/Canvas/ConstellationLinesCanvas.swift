@@ -82,7 +82,7 @@ private struct NeutralFigures: View, Equatable {
                 append(segs, to: &path, camera: camera, favouriteIDs: favouriteIDs)
             }
             ctx.stroke(path,
-                       with: .color(.tertiary),
+                       with: .color(Artist.shared.inkTertiary),
                        style: StrokeStyle(lineWidth: Artist.shared.figureLineWidth, lineCap: .round))
         }
     }

@@ -163,7 +163,7 @@ struct SkyFrame {
 
         // One neutral constellation colour now (the myth taxonomy is retired).
         favouriteConstellationTints = Dictionary(uniqueKeysWithValues:
-            app.favouriteConstellations.map { ($0, Color.tertiary) })
+            app.favouriteConstellations.map { ($0, Artist.shared.inkTertiary) })
 
         starLabels = StarLabelLayout(camera:     camera,
                                      scale:      liveScale,
