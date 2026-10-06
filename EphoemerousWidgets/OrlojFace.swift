@@ -439,7 +439,7 @@ struct OrlojFace {
     }
 
     /// Remembered stars as the app's tier-0 mark: the tiny SPECTRAL
-    /// PENTAGON squircle (FavouriteHeart's below-badge-tier form).
+    /// PENTAGON squircle (PinnedStarDots' below-badge-tier form).
     @MainActor
     func favouriteStarMarks() -> [(id: String, position: CGPoint, top: Color, bottom: Color)] {
         let clip = radiusForDeclination(romanDialDec) + 3

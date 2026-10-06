@@ -10,7 +10,7 @@ enum BrowseChip: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .favorites:      return String(localized: "Favorites")
+        case .favorites:      return String(localized: "Pins")
         case .stars:          return String(localized: "Stars")
         case .constellations: return String(localized: "Constellations")
         case .planets:        return String(localized: "Planets")

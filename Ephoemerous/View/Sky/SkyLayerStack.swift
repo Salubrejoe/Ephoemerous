@@ -99,9 +99,9 @@ struct SkyLayerStack: View {
                        comfort: frame.comfort,
                        layout: frame.starLabels)
 
-            // Favourite-star heart, except the selected one — the promoted
-            // pin carries its own.
-            FavouriteHeart(camera: frame.camera,
+            // Pinned stars' tier-0 dots, except the selected one — the
+            // promoted pin carries its own.
+            PinnedStarDots(camera: frame.camera,
                            stars: app.favouriteStars,
                            pinch: frame.effPinch,
                            scale: frame.liveScale,

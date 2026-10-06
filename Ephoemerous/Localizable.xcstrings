@@ -984,17 +984,6 @@
         }
       }
     },
-    "Favourites" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preferiti"
-          }
-        }
-      }
-    },
     "Fetching..." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1002,6 +991,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Acchiappando…"
+          }
+        }
+      }
+    },
+    "Find" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trova"
           }
         }
       }
@@ -1638,17 +1637,6 @@
         }
       }
     },
-    "No favourites yet. Tap the heart on a star or constellation to add it." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ancora nessun preferito. Tocca il cuore su una stella o una costellazione per aggiungerlo."
-          }
-        }
-      }
-    },
     "No matches for \"%@\"." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1682,6 +1670,16 @@
         }
       },
       "shouldTranslate" : false
+    },
+    "Nothing pinned yet. Tap Pin on a star or a constellation to keep it here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nulla di fissato. Tocca Fissa su una stella o una costellazione per tenerla qui."
+          }
+        }
+      }
     },
     "Now" : {
       "extractionState" : "manual",
@@ -1892,6 +1890,36 @@
         }
       }
     },
+    "Pin" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fissa"
+          }
+        }
+      }
+    },
+    "Pinned" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fissata"
+          }
+        }
+      }
+    },
+    "Pins" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fissati"
+          }
+        }
+      }
+    },
     "Pisces" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2009,28 +2037,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recenti"
-          }
-        }
-      }
-    },
-    "Remember" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ricorda"
-          }
-        }
-      }
-    },
-    "Remembered" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ricordata"
           }
         }
       }
@@ -2174,17 +2180,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerca, ricorda,.."
-          }
-        }
-      }
-    },
-    "Search, remember..." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cerca, ricorda…"
           }
         }
       }
@@ -2772,6 +2767,26 @@
         }
       }
     },
+    "Trace" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traccia"
+          }
+        }
+      }
+    },
+    "Traced" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tracciata"
+          }
+        }
+      }
+    },
     "Track Moon" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3059,36 +3074,6 @@
         }
       }
     },
-    "Favorite" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preferito"
-          }
-        }
-      }
-    },
-    "Favorited" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tra i preferiti"
-          }
-        }
-      }
-    },
-    "Favorites" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preferiti"
-          }
-        }
-      }
-    },
     "Planets" : {
       "localizations" : {
         "it" : {
@@ -3135,16 +3120,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerca nel cielo"
-          }
-        }
-      }
-    },
-    "No favorites yet. Tap the heart on a star or a constellation to keep it here." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessun preferito. Tocca il cuore su una stella o una costellazione per tenerla qui."
           }
         }
       }

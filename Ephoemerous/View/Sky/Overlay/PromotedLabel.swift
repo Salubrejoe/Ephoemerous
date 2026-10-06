@@ -157,12 +157,12 @@ private struct SkyLabPromotedPin: View {
                 .opacity(promo)
                 .position(x: cx, y: cy)
 
-            // Sonar burst — a pink ring that springs off the badge on the
-            // moment of Remember and fades as it grows. THE attention-grab:
+            // Sonar burst — an accent ring that springs off the badge on the
+            // moment of Pin and fades as it grows. THE attention-grab:
             // the canvas is static, so this radiating pulse pulls the eye
             // straight to the object you just saved.
             Circle()
-                .stroke(Self.heartTint, lineWidth: 2.5 * (1 - burst))
+                .stroke(Self.burstTint, lineWidth: 2.5 * (1 - burst))
                 .frame(width: onScreen, height: onScreen)
                 .scaleEffect(0.6 + burst * 1.9)
                 .opacity((1 - burst) * 0.9)
@@ -186,18 +186,6 @@ private struct SkyLabPromotedPin: View {
                          richDetail:  true,
                          sizeScale:   scale * popScale)
                 .position(x: cx, y: badgeY)
-
-            // Corner heart — the persistent Remembered mark, springing in
-            // on the flip and riding the badge's top-trailing corner (matches
-            // the field hearts, one pink voice everywhere).
-            FavouriteHeartMark(size: 13 * type,
-                               borderScaleCompensation: 1 / max(popScale, 0.2))
-                .scaleEffect(favourite ? popScale : 0.2)
-                .opacity(favourite ? 1 : 0)
-                .position(x: cx + onScreen * 0.42,
-                          y: badgeY - onScreen * 0.42)
-                .animation(.spring(response: 0.3, dampingFraction: 0.5),
-                           value: favourite)
 
             // Name — centred below the dot, primary ink, real outline
             // casing (same OutlinedText the flat label uses).
@@ -249,11 +237,8 @@ private struct SkyLabPromotedPin: View {
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
     }
 
-    /// One favourite tint everywhere — matches `FavouriteHeart` and the
-    /// search sheet's REMEMBERED header.
-    /// The celebration burst rides the heart's own colour — one pink
-    /// voice, defined by `FavouriteHeartMark`.
-    private static let heartTint = FavouriteHeartMark.bright
+    /// The Pin burst rides the accent — "engaged", the app's one live colour.
+    private static let burstTint = Color.accentColor
 }
 
 #if DEBUG

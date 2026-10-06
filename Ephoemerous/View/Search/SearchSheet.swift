@@ -281,7 +281,7 @@ struct SearchSheet: View {
     private var browseList: some View {
         let listing = catalog.listing(for: activeChip)
         if listing.isEmpty {
-            browseEmptyNote(String(localized: "No favorites yet. Tap the heart on a star or a constellation to keep it here."))
+            browseEmptyNote(String(localized: "Nothing pinned yet. Tap Pin on a star or a constellation to keep it here."))
             Spacer(minLength: 0)
         } else {
             List {

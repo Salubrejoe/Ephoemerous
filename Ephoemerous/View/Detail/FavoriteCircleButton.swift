@@ -2,10 +2,10 @@ import SwiftUI
 import LoreKit
 
 // MARK: - FavoriteCircleButton
-// The favourite toggle at the trailing end of a star's or constellation's
-// title: a material circle holding just the heart. Empty, it's quiet ink;
-// tapped, the symbol swaps to the filled heart and bounces, turning
-// systemPink, with a success tap under the finger.
+// The Pin toggle at the trailing end of a star's or constellation's title:
+// a material circle holding just the pin. Unpinned, it's quiet ink; tapped,
+// the symbol swaps to the filled pin and bounces, turning the accent — the
+// app's one "engaged" colour — with a success tap under the finger.
 struct FavoriteCircleButton: View {
 
     @Environment(AppState.self) private var state
@@ -18,9 +18,9 @@ struct FavoriteCircleButton: View {
 
     var body: some View {
         Button { state.toggleFavourite(obj) } label: {
-            Image(symbol: isFavorite ? .heartFill : .heart)
+            Image(systemName: isFavorite ? "pin.fill" : "pin")
                 .font(.body.weight(.semibold))
-                .foregroundStyle(isFavorite ? Color.pink : .primary)            // systemPink
+                .foregroundStyle(isFavorite ? Color.accentColor : .primary)
                 .contentTransition(.symbolEffect(.replace.downUp))
                 .symbolEffect(.bounce, value: isFavorite)
                 .frame(width: diameter, height: diameter)
@@ -29,6 +29,6 @@ struct FavoriteCircleButton: View {
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.success, trigger: isFavorite) { _, now in now }
-        .accessibilityLabel(isFavorite ? String(localized: "Favorited") : String(localized: "Favorite"))
+        .accessibilityLabel(isFavorite ? String(localized: "Pinned") : String(localized: "Pin"))
     }
 }
