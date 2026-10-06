@@ -114,7 +114,7 @@ struct MoonPhaseShape: Shape {
     }
 
     return ZStack {
-        Color(red: 0.05, green: 0.08, blue: 0.16)
+        Artist.shared.canvasBackground
         VStack(alignment: .leading, spacing: 20) {
             Text("18pt — actual badge size")
                 .font(.caption2).foregroundStyle(.secondary)
