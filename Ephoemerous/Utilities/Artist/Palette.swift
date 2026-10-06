@@ -47,7 +47,9 @@ struct Palette {
 
     // MARK: Solar-system gradients
 
-    let sun     : Gradient = (Color("bodySunTop"),     Color("bodySunBottom"))
+    /// The Sun is a G2 star — it wears the G class like any other, with no
+    /// colours of its own.
+    var sun     : Gradient { spectralGradient(.G) }
     let moon    : Gradient = (Color("bodyMoonTop"),    Color("bodyMoonBottom"))
     let mercury : Gradient = (Color("bodyMercuryTop"), Color("bodyMercuryBottom"))
     let venus   : Gradient = (Color("bodyVenusTop"),   Color("bodyVenusBottom"))
@@ -80,19 +82,26 @@ struct Palette {
         }
     }
 
-    /// How much darker the followed-star badge's bottom stop sits below
-    /// its top — a mix toward black. Replaces the old "dark colour on
-    /// top, light colour on bottom" trick with a single hue that ramps
-    /// pale→deep, so the badge reads as one species in either appearance.
-    var spectralGradientDarken: Double { 0.92 }
+    /// Spectral class → its deep rim colour: the same hue, lower and richer
+    /// — the way a planet's rim sits below its top. A blackbody ramp, blue
+    /// (O) → white (A) → gold (G) → amber (M); see the catalog's `…Deep`.
+    func spectralDeep(_ cls: HRClass) -> Color {
+        switch cls {
+        case .O:       return Color("spectralODeep")
+        case .B:       return Color("spectralBDeep")
+        case .A:       return Color("spectralADeep")
+        case .F:       return Color("spectralFDeep")
+        case .G:       return Color("spectralGDeep")
+        case .K:       return Color("spectralKDeep")
+        case .M:       return Color("spectralMDeep")
+        case .unknown: return Color("spectralUnknownDeep")
+        }
+    }
 
-    /// Spectral class → followed-star badge gradient. Top is the
-    /// adaptive class colour; bottom is the same colour mixed toward
-    /// black so it reads as a lit sphere rather than two stacked tints.
+    /// Spectral class → followed-star badge gradient: the class colour for
+    /// the bright centre, its deep tone for the rim (and the name below).
     func spectralGradient(_ cls: HRClass) -> Gradient {
-        let bottom = spectral(cls)
-        let top    = Color.bodySunTop
-        return (top, bottom)
+        (spectral(cls), spectralDeep(cls))
     }
 
     // MARK: Spectral back-compat accessors

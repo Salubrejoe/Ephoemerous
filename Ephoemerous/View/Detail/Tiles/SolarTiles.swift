@@ -167,7 +167,7 @@ struct DaylightTile: View {
             let n = path.samples.count
             guard n > 1 else { return }
             let w = size.width / CGFloat(n)
-            let gold = Artist.shared.poiStyle(for: .sun).gradientTop
+            let gold = Artist.shared.palette.sun.bottom
             for (i, s) in path.samples.enumerated() {
                 let a = max(0, min(1, (s.altitude * 180 / .pi + 6) / 12))   // dusk blends over twilight
                 ctx.fill(Path(CGRect(x: CGFloat(i) * w, y: 0, width: w + 0.5, height: size.height)),
@@ -299,7 +299,7 @@ private struct OrbitDiagram: View {
                 ctx.stroke(Path(ellipseIn: CGRect(x: p.x - d / 2, y: p.y - d / 2, width: d, height: d)),
                            with: .color(Artist.shared.poiBadgeCasing), lineWidth: 1)
             }
-            let gold = Artist.shared.poiStyle(for: .sun).gradientTop
+            let gold = Artist.shared.palette.sun.bottom
             ring(r(1), 0.25)
             ring(r(a), 0.45)
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - 4, y: c.y - 4, width: 8, height: 8)), with: .color(gold))

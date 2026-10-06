@@ -428,7 +428,7 @@ struct MiniHRDiagram: View {
             // The Sun — a G dwarf, for scale; the subject on its own sheet.
             let sun = p(Dot(x: Double(Self.classes.firstIndex(of: .G)!) + 0.5, y: Self.sunAbsMag, color: .white))
             if star == nil {
-                let gold = Artist.shared.poiStyle(for: .sun).gradientTop
+                let gold = Artist.shared.palette.sun.bottom
                 ctx.fill(Path(ellipseIn: CGRect(x: sun.x - 10, y: sun.y - 10, width: 20, height: 20)),
                          with: .radialGradient(Gradient(colors: [gold.opacity(0.6), .clear]),
                                                center: sun, startRadius: 0, endRadius: 10))

@@ -118,11 +118,11 @@ extension Artist {
                 dotRadius:      2.6)
 
         case .sun:
-            // Warm palette, near-circular badge; gradient runs deep→bright
-            // (top/bottom swapped) so the centre glows.
+            // A star like any other — the G class's gradient, just bigger and
+            // near-circular.
             return POICategoryStyle(
-                gradientTop:    palette.sun.bottom,
-                gradientBottom: palette.sun.top,
+                gradientTop:    palette.sun.top,
+                gradientBottom: palette.sun.bottom,
                 textColor:      palette.sun.bottom,     // the badge's deep tone, like every body
                 badgeSize:      22,
                 badgeCorners:   12,         // near-circle

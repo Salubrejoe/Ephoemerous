@@ -47,7 +47,7 @@ struct SunDetailView: View {
                 }
             }
             PositionTile(raHours: coords.ra.degrees / 15, decDegrees: coords.dec.degrees)
-            SizeTile(facts: facts, color: Artist.shared.poiStyle(for: .sun).gradientTop)
+            SizeTile(facts: facts, color: Artist.shared.palette.sun.bottom)
         }
     }
 }
