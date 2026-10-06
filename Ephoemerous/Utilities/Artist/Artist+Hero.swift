@@ -20,11 +20,13 @@ extension Artist {
     var sunAngularDiameter:  Double { 0.533 * .pi / 180 }
     var moonAngularDiameter: Double { 0.518 * .pi / 180 }
 
-    /// The night behind every rendered sky hero: deep navy at the top,
-    /// warming to dusk violet at the foot.
+    /// The night behind every rendered sky hero: the app's own sky at the
+    /// top (the hero is a window onto it), warming a notch toward dusk at
+    /// the foot — the same graphite-blue family, hue turned ~14° and a
+    /// little lifted, not the old saturated violet. ▼ TWEAK the dusk here ▼
     var skyHeroGround: LinearGradient {
-        LinearGradient(colors: [Color(red: 0.03, green: 0.04, blue: 0.10),
-                                Color(red: 0.09, green: 0.07, blue: 0.20)],
+        LinearGradient(colors: [skyColor,
+                                Color(.displayP3, red: 0.104, green: 0.121, blue: 0.200)],   // OKLCH L .245  C .042  h 272
                        startPoint: .top, endPoint: .bottom)
     }
 }
