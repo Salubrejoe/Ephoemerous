@@ -258,7 +258,6 @@ struct POILabelView: View {
                 SpacecraftGlyph(craft:      craft,
                                 casing:     casing,
                                 lineWidth:  bw,
-                                fullDetail: richDetail,
                                 masked:     isMasked)
             } else if surface == .venusPhase || (isMoon && !isNewMoon), let phase {
                 // Venus and the Moon keep their full circle: lit part in its

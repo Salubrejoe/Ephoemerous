@@ -116,7 +116,6 @@ struct HeroBanner: View {
                 SpacecraftGlyph(craft:      craft,
                                 casing:     artist.poiBadgeCasing,
                                 lineWidth:  artist.poiTextBorderWidth,
-                                fullDetail: true,
                                 masked:     false)
                     .frame(width: size, height: size)
             }

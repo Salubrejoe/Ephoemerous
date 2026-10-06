@@ -168,16 +168,16 @@ extension Artist {
 
         case .spacecraft:
             // Each craft draws its own silhouette (see `SpacecraftGlyph`)
-            // on a brushed-steel base. 14 wide: a silhouette needs more
-            // room than an orb, but it's long and thin, so it weighs no
-            // more on the sky than a planet does.
+            // as a bold, thickly-cased silhouette. 16 wide, casing included: a
+            // silhouette needs more room than an orb, but it's long and thin,
+            // so it weighs no more on the sky than a planet does.
             let g = spacecraftGradient
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
                 shading:        (top: g.top, bottom: g.bottom),
                 textColor:      g.bottom,
-                badgeSize:      14,
+                badgeSize:      16,
                 badgeCorners:   6,
                 tier:           tier)
         }
@@ -209,24 +209,26 @@ extension Artist {
     /// the accent means "live / engaged", and a spacecraft is neither by
     /// default. ▼ TWEAK the spacecraft colour here ▼
     var spacecraftGradient: (top: Color, bottom: Color) {
-        (Color(red: 0.92, green: 0.94, blue: 0.97),
-         Color(red: 0.56, green: 0.64, blue: 0.74))
+        (Color(.displayP3, red: 0.919, green: 0.937, blue: 0.964),     // OKLCH L .95  C .012  h 255
+         Color(.displayP3, red: 0.530, green: 0.577, blue: 0.651))     //       L .66  C .035  h 255
     }
 
     /// The paints a spacecraft silhouette is built from, deep → bright
-    /// (bottom → top of each part). Copper for the ISS's arrays, blue for
-    /// Hubble's, violet for Tiangong's, Webb's gold mirror and lavender
-    /// sunshield. ▼ TWEAK the spacecraft paints here ▼
+    /// (bottom → top of each part — every part is lit from above): a cool
+    /// silver for structure, bronze for the ISS's wings, blue for Hubble's
+    /// panels, Webb's gold mirror and lilac sunshield, violet for Tiangong's.
+    /// Bold and clean on purpose — a badge, not a replica. All sit in the
+    /// navy/amber family of the rest of the sky.
+    /// ▼ TWEAK the spacecraft paints here ▼
     func spacecraftPaint(_ paint: SpacecraftShapes.Paint) -> (Color, Color) {
-        func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r / 255, green: g / 255, blue: b / 255) }
+        func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(.displayP3, red: r, green: g, blue: b) }
         switch paint {
         case .steel:    return (spacecraftGradient.bottom, spacecraftGradient.top)
-        case .copper:   return (c(176, 112,  58), c(232, 178, 108))
-        case .blue:     return (c( 40,  62, 128), c( 92, 122, 196))
-        case .violet:   return (c( 70,  60, 140), c(128, 118, 206))
-        case .gold:     return (c(196, 140,  40), c(250, 214, 112))
-        case .shield:   return (c(150, 140, 178), c(226, 222, 240))
-        case .aperture: return (c( 22,  25,  33), c( 38,  42,  54))
+        case .copper:   return (c(0.662, 0.397, 0.223), c(0.951, 0.748, 0.502))   // OKLCH L .58→.84  C .125→.115  h 50→68
+        case .blue:     return (c(0.197, 0.321, 0.635), c(0.494, 0.674, 0.961))   // L .46→.74  C .145→.130  h 262→255
+        case .violet:   return (c(0.396, 0.291, 0.589), c(0.718, 0.638, 0.899))   // L .48→.76  C .130→.105  h 300
+        case .gold:     return (c(0.772, 0.576, 0.292), c(1.000, 0.888, 0.549))   // L .70→.92  C .125  h 72→90
+        case .shield:   return (c(0.635, 0.589, 0.746), c(0.941, 0.920, 0.998))   // L .70→.95  C .065→.030  h 300
         }
     }
 
