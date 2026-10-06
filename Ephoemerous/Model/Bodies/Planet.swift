@@ -4,7 +4,6 @@ import SwiftUI
 
 struct Planet: Identifiable, Hashable {
     let name:          String
-    let color:         Color
     /// Approximate visual magnitude at mean distance
     let baseMagnitude: Double
     /// SF Symbol name for list display
@@ -36,13 +35,13 @@ struct Planet: Identifiable, Hashable {
     static func == (lhs: Planet, rhs: Planet) -> Bool { lhs.name == rhs.name }
 
     // MARK: - All 7 planets (canonical, shared by layer + list)
-    static let mercury = Planet(name: Strings.Planets.mercury, color: .gray,                             baseMagnitude: -0.5)
-    static let venus   = Planet(name: Strings.Planets.venus,   color: Color(red:1,   green:0.97, blue:0.85), baseMagnitude: -4.0)
-    static let mars    = Planet(name: Strings.Planets.mars,    color: Color(red:1,   green:0.35, blue:0.2),  baseMagnitude: -2.0)
-    static let jupiter = Planet(name: Strings.Planets.jupiter, color: Color(red:1,   green:0.87, blue:0.7),  baseMagnitude: -2.5)
-    static let saturn  = Planet(name: Strings.Planets.saturn,  color: Color(red:0.95,green:0.87, blue:0.6),  baseMagnitude:  0.7)
-    static let uranus  = Planet(name: Strings.Planets.uranus,  color: Color(red:0.6, green:0.9,  blue:0.95), baseMagnitude:  5.7)
-    static let neptune = Planet(name: Strings.Planets.neptune, color: Color(red:0.4, green:0.55, blue:1.0),  baseMagnitude:  8.0)
+    static let mercury = Planet(name: Strings.Planets.mercury, baseMagnitude: -0.5)
+    static let venus   = Planet(name: Strings.Planets.venus,   baseMagnitude: -4.0)
+    static let mars    = Planet(name: Strings.Planets.mars,    baseMagnitude: -2.0)
+    static let jupiter = Planet(name: Strings.Planets.jupiter, baseMagnitude: -2.5)
+    static let saturn  = Planet(name: Strings.Planets.saturn,  baseMagnitude:  0.7)
+    static let uranus  = Planet(name: Strings.Planets.uranus,  baseMagnitude:  5.7)
+    static let neptune = Planet(name: Strings.Planets.neptune, baseMagnitude:  8.0)
 
     static let all: [Planet] = [mercury, venus, mars, jupiter, saturn, uranus, neptune]
 }

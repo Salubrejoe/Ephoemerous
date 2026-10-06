@@ -54,32 +54,9 @@ struct Artist {
     /// ▼ TWEAK ▼
     var anonymousStarColor: Color { starColor.opacity(0.55) }
 
-    var eclColor : Color  { palette.ecliptic }
-    var eclWidth : Double { 0.5 }
-    
-    var horizonFillColor   : Color  { palette.horizonFill }
-
-    // MARK: - User location (puck + aim cone)
-    // Live constants consolidated here from Artist+UserLocation (the draw
-    // half of which is deprecated). The puck and cone themselves are retired
-    // (DeprecationStation/PuckAndConeOverlay) — see `Artist+Aim`.
-    var userPuckSize            : CGFloat { 22 }
-    var userPuckConeColor       : Color   { palette.userPuckCone }
-    var userPuckConeRadius      : CGFloat { 90 }
-    /// Hushed — "you are here" is ambient whisper-tier, and the cone was the
-    /// loudest shape on the canvas (metadata louder than the stars it points
-    /// at). Length stays honest (tip on the aimed point); only the volume
-    /// drops. ▼ TWEAK ▼
-    var userPuckConeOpacity     : Double  { 0.16 }
-    var userPuckConeMinHalfAngle: Double  { 8 }    // degrees
-    var userPuckConeMaxHalfAngle: Double  { 60 }   // degrees
-    /// Pitch→length honesty for the aim cone (1 = tip on the aimed point).
-    var aimConeLengthGain       : Double  { 1.0 }
-    /// Clamp display altitude off the zenith (where azimuth spins).
-    var aimConeMaxAltitudeDeg   : Double  { 86 }
-    /// Floor at the horizon so the tip doesn't shoot past the rim.
-    var aimConeMinAltitudeDeg   : Double  { 0 }
-
+    // MARK: - User location
+    // The puck and aim cone are retired (DeprecationStation/PuckAndConeOverlay);
+    // their constants went with them — see `PaletteRetired`.
     /// Apple hemisphere globe SF Symbol matched to the observer's longitude
     /// so the puck wears the continent it sits on.
     func userLocationGlobeSymbol(forLongitude lon: Double) -> Symbol {
