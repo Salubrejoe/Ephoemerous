@@ -88,34 +88,37 @@ extension Artist {
             // Tinted to the star's spectral class (O blue … M red) — the
             // two-mode pair on `HRClass` gives a light→deep ramp. Dot is a
             // tiny pentagon so the silhouette already reads as a star.
-            let g = star.spectralClass.badgeGradient
+            let g    = star.spectralClass.badgeGradient
+            let size = starBadgeSize(magnitude: star.magnitude, followed: true)
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
                 textColor:      g.bottom,
-                badgeSize:      12,
+                badgeSize:      size,
                 badgeCorners:   5,          // pentagon — star
                 tier:           tier,
-                dotShape:       .squircle(corners: 5, bulge: poiBadgeBulge))
+                dotShape:       .squircle(corners: 5, bulge: poiBadgeBulge),
+                dotRadius:      size * starDotPerBadge)
 
         case .namedStar(let star):
             // Same pentagon + spectral palette as a followed star (reads as
             // the same species), just a slightly smaller dot. Its late
             // thresholds live in the tier map. Selecting one promotes it to
             // `.followedStar`.
-            let g = star.spectralClass.badgeGradient
+            let g    = star.spectralClass.badgeGradient
+            let size = starBadgeSize(magnitude: star.magnitude, followed: false)
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
                 textColor:      g.bottom,
-                badgeSize:      12,
+                badgeSize:      size,
                 badgeCorners:   5,          // pentagon — star
                 tier:           tier,
                 dotShape:       .squircle(corners: 5, bulge: poiBadgeBulge),
                 // Clearly bigger than any field dot (those cap at
                 // `Artist.fieldDotMaxRadius`), so the stars you can tap
                 // and name read as a different species.
-                dotRadius:      2.6)
+                dotRadius:      size * starDotPerBadge)
 
         case .sun:
             // A star like any other — the G class's gradient, just bigger and
@@ -163,6 +166,28 @@ extension Artist {
                 badgeCorners:   6,
                 tier:           tier)
         }
+    }
+
+    // MARK: Star badge size  ▼ TWEAK HERE ▼
+    // A star's badge scales with its brightness, the way its field dot does
+    // — Sirius reads bigger than a fourth-magnitude name. Capped under the
+    // planets (Venus and Jupiter, 13) so a star never outranks a wanderer.
+    /// Badge diameter (pt) at `starBadgeBrightMag` and brighter.
+    var starBadgeLargest:  CGFloat { 13 }
+    /// … and at `starBadgeFaintMag` and fainter.
+    var starBadgeSmallest: CGFloat { 9.5 }
+    var starBadgeBrightMag: Double { 0 }
+    var starBadgeFaintMag:  Double { 4 }
+    /// A star you follow never shrinks below this — it's yours.
+    var starBadgeFollowedFloor: CGFloat { 10.5 }
+    /// Tier-0 dot radius as a share of the badge diameter, so the dot and
+    /// the badge it becomes scale together.
+    var starDotPerBadge:   CGFloat { 0.22 }
+
+    func starBadgeSize(magnitude m: Double, followed: Bool) -> CGFloat {
+        let t    = min(1, max(0, (m - starBadgeBrightMag) / (starBadgeFaintMag - starBadgeBrightMag)))
+        let size = starBadgeLargest + (starBadgeSmallest - starBadgeLargest) * CGFloat(t)
+        return followed ? max(size, starBadgeFollowedFloor) : size
     }
 
     /// Steel for every spacecraft badge. Deliberately NOT the accent —
