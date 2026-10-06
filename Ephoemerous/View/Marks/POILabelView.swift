@@ -116,8 +116,8 @@ struct POILabelView: View {
         ? AnyShapeStyle(LinearGradient(colors: [.white.opacity(0.78),
                                                 .white.opacity(0.38)],
                                        startPoint: .bottom, endPoint: .top))
-        : AnyShapeStyle(LinearGradient(colors: [style.gradientTop,
-                                                style.gradientBottom],
+        : AnyShapeStyle(LinearGradient(colors: [style.shading.bottom,
+                                                style.shading.top],
                                        startPoint: .bottom, endPoint: .top))
     }
 

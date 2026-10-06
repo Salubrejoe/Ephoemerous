@@ -17,6 +17,14 @@ extension Artist {
         /// rim (`gradientBottom`), so the pill reads as a little orb.
         let gradientTop:    Color
         let gradientBottom: Color
+        /// How the badge face is shaded, light from ABOVE: the colour at its
+        /// top edge, then at its bottom edge. The two gradient colours mean
+        /// different things per category (a planet's `gradientTop` is its
+        /// deep tone, a star's is its bright one — the dots, glow and heart
+        /// each lean on that), so the shading is spelled out rather than
+        /// inferred. Defaults to the planets' order: `gradientBottom` is the
+        /// bright end.
+        let shading:        (top: Color, bottom: Color)
         /// Colour of the name label below the badge.
         let textColor:      Color
         /// Badge diameter (pt).
@@ -45,6 +53,7 @@ extension Artist {
 
         init(gradientTop:    Color,
              gradientBottom: Color,
+             shading:        (top: Color, bottom: Color)? = nil,
              textColor:      Color,
              badgeSize:      CGFloat,
              badgeCorners:   Int,
@@ -53,6 +62,7 @@ extension Artist {
              dotRadius:      CGFloat     = 2.5) {
             self.gradientTop    = gradientTop
             self.gradientBottom = gradientBottom
+            self.shading        = shading ?? (top: gradientBottom, bottom: gradientTop)
             self.textColor      = textColor
             self.badgeSize      = badgeSize
             self.badgeCorners   = badgeCorners
@@ -78,6 +88,7 @@ extension Artist {
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
+                shading:        (top: g.top, bottom: g.bottom),
                 textColor:      .primary,
                 badgeSize:      10,
                 badgeCorners:   4,          // rounded square
@@ -93,6 +104,7 @@ extension Artist {
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
+                shading:        (top: g.top, bottom: g.bottom),
                 textColor:      g.bottom,
                 badgeSize:      size,
                 badgeCorners:   5,          // pentagon — star
@@ -110,6 +122,7 @@ extension Artist {
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
+                shading:        (top: g.top, bottom: g.bottom),
                 textColor:      g.bottom,
                 badgeSize:      size,
                 badgeCorners:   5,          // pentagon — star
@@ -126,6 +139,7 @@ extension Artist {
             return POICategoryStyle(
                 gradientTop:    palette.sun.top,
                 gradientBottom: palette.sun.bottom,
+                shading:        (top: palette.sun.top, bottom: palette.sun.bottom),
                 textColor:      palette.sun.bottom,     // the badge's deep tone, like every body
                 badgeSize:      22,
                 badgeCorners:   12,         // near-circle
@@ -161,6 +175,7 @@ extension Artist {
             return POICategoryStyle(
                 gradientTop:    g.top,
                 gradientBottom: g.bottom,
+                shading:        (top: g.top, bottom: g.bottom),
                 textColor:      g.bottom,
                 badgeSize:      14,
                 badgeCorners:   6,
