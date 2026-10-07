@@ -58,6 +58,13 @@ struct OrlojFace {
     /// single legible mark. Everything else about the crown is unchanged.
     let wrist:     Bool
 
+    /// Radius of the ring the Roman numerals' centres sit on.
+    let numeralRadius: CGFloat
+
+    /// Which ring of hours the glass face wears (see `NumeralRing`).
+    /// ▼ TWEAK the default here ▼
+    var numeralRing: NumeralRing = .roman
+
     /// Tropic circles and zodiac sign dividers — two greys among the
     /// ecliptic, the horizon and the plate edge. Dropped on the wrist.
     var showsFiligree: Bool { !wrist }
@@ -133,7 +140,18 @@ struct OrlojFace {
         // The magnitude is hemisphere-invariant: the dial dec mirrors AND
         // the projection mirrors, so the radius comes out identical.
         let romanRho = 2 * tan(.pi / 4 + Self.romanDialBase.radians / 2)
-        let scale = targetOuterRadius / CGFloat(romanRho)
+        // The numerals keep their ring. The wrist sizes the projection to
+        // the Roman dial; the glass face sizes it so the outer tropic —
+        // the plate's edge — stops just short of the numerals' feet.
+        numeralRadius = 0.81 * targetOuterRadius + 11 * ui
+        let scale: CGFloat
+        if wrist {
+            scale = targetOuterRadius / CGFloat(romanRho)
+        } else {
+            let plateEdge = numeralRadius - 0.36 * Self.glassNumeralSize(ui: ui, type: type)
+                          - Self.plateNumeralGap * ui
+            scale = plateEdge / CGFloat(Self.tropicRho)
+        }
 
         // The face must stand STILL — meridian vertical, noon at top,
         // the sky rotating over it (dial fixed, rete turns — the real
@@ -367,27 +385,86 @@ struct OrlojFace {
     /// on all three plate circles. Merged into one path — one stroke.
     @MainActor
     func unequalHoursPath() -> Path {
-        let decs: [Angle] = [AstroConstants.tropicCancer, .zero, AstroConstants.tropicCapricorn]
         var merged = Path()
         for k in 0...12 {
-            let frac = Double(k) / 12
-            var pts: [CGPoint] = []
-            for dec in decs {
-                guard let hSet = Self.sunsetHourAngle(declination: dec, latitude: latitude)
-                else { continue }
-                let H = -hSet + frac * 2 * hSet
-                if let sc = ringPoint(hourAngle: H, declination: dec) { pts.append(sc) }
-            }
-            guard pts.count >= 2 else { continue }
-            if pts.count == 3, let cir = Self.circle(through: pts[0], pts[1], pts[2]) {
-                merged.addPath(Self.arcPolyline(centre: cir.centre, radius: cir.radius,
-                                               from: pts[0], through: pts[1], to: pts[2]))
-            } else {
-                merged.move(to: pts.first!)
-                merged.addLine(to: pts.last!)
-            }
+            merged.addLines(unequalHourLine(Double(k) / 12, from: innerTropic, to: outerTropic))
         }
         return merged
+    }
+
+    /// The day's twelve unequal hours as fillable sections, the first hour
+    /// first: the sky between two hour lines, from the inner tropic out
+    /// past the widget's corners (the plate's clip trims them). The first
+    /// and last lines ARE the horizon, so the sections tile the day.
+    @MainActor
+    func unequalHourSections() -> [Path] {
+        let beyond = Angle.radians(hemi * Self.sectionReach.radians)
+        return (0..<12).map { k in
+            let from = Double(k) / 12, to = Double(k + 1) / 12
+            var section = Path()
+            section.addLines(unequalHourLine(from, from: innerTropic, to: beyond)
+                           + unequalDayParallel(beyond, from: from, to: to)
+                           + unequalHourLine(to, from: innerTropic, to: beyond).reversed()
+                           + unequalDayParallel(innerTropic, from: to, to: from))
+            section.closeSubpath()
+            return section
+        }
+    }
+
+    /// How far out the sections run — a declination whose circle clears
+    /// the widget's corners. ▼ TWEAK ▼
+    private static let sectionReach = Angle.degrees(60)
+
+    /// The inner tropic under the current projection — Capricorn in the
+    /// north, Cancer in the south: the edge of the Earth's disc.
+    private var innerTropic: Angle {
+        .radians(hemi * AstroConstants.tropicCapricorn.radians)
+    }
+
+    /// The tropics and the equator as thin rings, for glass: each parallel
+    /// stroked into a band `width` wide. ▼ TWEAK the width ▼
+    @MainActor
+    func plateRingPaths() -> [Path] {
+        let width = 1.6 * ui + 0.6
+        return [AstroConstants.tropicCapricorn, .zero, AstroConstants.tropicCancer].map { dec in
+            var parallel = sampledParallel(declination: dec, steps: 240)
+            parallel.closeSubpath()
+            return parallel.strokedPath(StrokeStyle(lineWidth: width))
+        }
+    }
+
+    /// The Earth's disc at the centre of the plate — everything inside
+    /// the inner tropic, as on the original.
+    @MainActor
+    func earthDiscPath() -> Path {
+        var disc = sampledParallel(declination: innerTropic)
+        disc.closeSubpath()
+        return disc
+    }
+
+    /// One unequal hour line, `frac` of the way through the day, walked
+    /// across declinations: at each, the same fraction of that parallel's
+    /// day arc. Where a parallel never sets (or never rises) the arc is
+    /// all of it (or none).
+    @MainActor
+    private func unequalHourLine(_ frac: Double, from a: Angle, to b: Angle,
+                                 steps: Int = 48) -> [CGPoint] {
+        (0...steps).compactMap { i in
+            let dec = Angle.radians(a.radians + (b.radians - a.radians) * Double(i) / Double(steps))
+            let hSet = Self.daySemiArc(declination: dec, latitude: latitude)
+            return ringPoint(hourAngle: -hSet + frac * 2 * hSet, declination: dec)
+        }
+    }
+
+    /// Along one parallel's day arc between two fractions of the day.
+    @MainActor
+    private func unequalDayParallel(_ dec: Angle, from a: Double, to b: Double,
+                                    steps: Int = 12) -> [CGPoint] {
+        let hSet = Self.daySemiArc(declination: dec, latitude: latitude)
+        return (0...steps).compactMap { i in
+            let frac = a + (b - a) * Double(i) / Double(steps)
+            return ringPoint(hourAngle: -hSet + frac * 2 * hSet, declination: dec)
+        }
     }
 
     // MARK: Dial rings (fixed)
@@ -490,7 +567,7 @@ struct OrlojFace {
     @MainActor
     func dialNumerals()
         -> [(id: Int, text: String, position: CGPoint, rotation: Angle, isDay: Bool)] {
-        let r = radiusForDeclination(romanDialDec) + 11 * ui
+        let r = numeralRadius
         let sunVec   = SIMD3<Double>.eclipticPoint(lambda: sunLambda)
         let sunDec   = Angle.radians(asin(max(-1, min(1, sunVec.z))))
         let hSet     = Self.sunsetHourAngle(declination: sunDec, latitude: latitude)
@@ -673,15 +750,65 @@ struct OrlojFace {
     // rete fused into one piece, and every hand as a filled blade so it
     // can take glass.
 
+    /// The rings of hours the glass face can wear.
+    enum NumeralRing {
+        /// The glass crown — a band whose outer edge is the scalloped
+        /// squircle — carrying the Roman numerals, each its own glass.
+        case crown
+        /// The Roman numerals alone, in glass round the plate's edge.
+        case roman
+        /// Arabic even hours along the widget's edge, Contour-style; the
+        /// plate fills the widget.
+        case contour
+    }
+
     /// Radius of the plate — the fields' clip, inside the crown.
     var plateRadius: CGFloat { radiusForDeclination(romanDialDec) + 3 * ui }
 
-    /// How far a hand reaches along `u`: to just short of the Contour
-    /// numeral it points at — the track's distance in that direction, less
-    /// that numeral's depth (it swells near now) and a breath of gap.
-    /// ▼ TWEAK the gap ▼
+    /// ρ of the outer tropic in projection units — 2·tan(45° + ε/2),
+    /// the same magnitude in either hemisphere.
+    private static let tropicRho = 2 * tan(.pi / 4 + AstroConstants.tropicCancer.radians / 2)
+
+    /// The Roman numerals' size on the glass face. ▼ TWEAK ▼
+    static func glassNumeralSize(ui: CGFloat, type: CGFloat) -> CGFloat {
+        (ui >= 0.7 ? 15 : 10.5) * type
+    }
+
+    /// Gap between the plate's edge and the numerals' feet, × ui. ▼ TWEAK ▼
+    private static let plateNumeralGap: CGFloat = 3
+
+    /// The glass plate's edge: the outer tropic, as on the original.
+    var plateEdgeRadius: CGFloat { camera.scale * CGFloat(Self.tropicRho) }
+
+    /// Where the plate's light reaches: the outer tropic under the Roman
+    /// numerals, inside the crown's band, or the whole widget under the
+    /// Contour ring.
+    @MainActor
+    func plateFillPath() -> Path {
+        switch numeralRing {
+        case .roman:   return circle(center, plateEdgeRadius)
+        case .crown:   return plateDiscPath()
+        case .contour: return Path(CGRect(origin: .zero, size: camera.size))
+        }
+    }
+
+    /// How far a hand reaches along `u`: just past the plate's edge
+    /// toward its numeral, touching the crown, or — on the Contour ring —
+    /// to the numeral it points at. ▼ TWEAK ▼
     @MainActor
     func handReach(toward u: CGVector) -> CGFloat {
+        switch numeralRing {
+        case .roman:   return plateEdgeRadius + 2 * ui
+        case .crown:   return plateRadius + 3 * ui
+        case .contour: return contourReach(toward: u)
+        }
+    }
+
+    /// The Contour hand's reach: to just short of the numeral it points
+    /// at — the track's distance in that direction, less that numeral's
+    /// depth (it swells near now) and a breath of gap. ▼ TWEAK the gap ▼
+    @MainActor
+    private func contourReach(toward u: CGVector) -> CGFloat {
         let track   = contourTrack
         let station = track.arcLength(towards: u, from: center, samples: track.samples(count: 720))
         let edge    = track.point(at: station)
@@ -807,6 +934,24 @@ struct OrlojFace {
 
     /// Where the cross's arms meet the band — the equinoxes and solstices.
     static let reteArmLongitudes: [Double] = [0, 90, 180, 270]
+
+    /// The Roman numerals as glass: each hour's numeral outlined in the
+    /// dial's serif, centred on its ring point, feet to the centre.
+    /// `isDay` lets the face frost the daylit hours.
+    @MainActor
+    func numeralGlassPaths() -> [(path: Path, isDay: Bool)] {
+        // ▼ TWEAK the numerals' size ▼
+        let size = Self.glassNumeralSize(ui: ui, type: type)
+        return dialNumerals().compactMap { numeral in
+            guard let outline = Self.romanOutlines[numeral.text] else { return nil }
+            let box   = outline.boundingRect
+            let place = CGAffineTransform(translationX: numeral.position.x, y: numeral.position.y)
+                .rotated(by: numeral.rotation.radians)
+                .scaledBy(x: size / 100, y: -size / 100)        // CoreText is y-up
+                .translatedBy(x: -box.midX, y: -box.midY)
+            return (outline.applying(place), numeral.isDay)
+        }
+    }
 
     // MARK: Contour numerals (2.0)
     // The hours laid along the widget's edge the way the Watch's Contour
@@ -1207,6 +1352,19 @@ struct OrlojFace {
         tag.utf8.reduce(0) { $0 << 8 | Int($1) }
     }
 
+    /// The Roman numerals' outlines at 100 pt, in the serif-semibold voice
+    /// the labels use, built once per process.
+    private static let romanOutlines: [String: Path] = Dictionary(
+        uniqueKeysWithValues: romanTexts.compactMap { text in
+            glyphOutline(text, font: romanFont).map { (text, $0.path) }
+        })
+
+    private static let romanFont: CTFont = {
+        var descriptor = UIFont.systemFont(ofSize: 100, weight: .semibold).fontDescriptor
+        descriptor     = descriptor.withDesign(.serif) ?? descriptor
+        return UIFont(descriptor: descriptor, size: 100) as CTFont
+    }()
+
     private static let symbolFont: CTFont =
         CTFontCreateUIFontForLanguage(.system, 100, nil)
         ?? CTFontCreateWithName("Helvetica" as CFString, 100, nil)
@@ -1476,6 +1634,12 @@ struct OrlojFace {
         return acos(c)
     }
 
+    /// Half the day arc of a parallel — `sunsetHourAngle`, run to π where
+    /// it never sets and to 0 where it never rises.
+    private static func daySemiArc(declination dec: Angle, latitude lat: Angle) -> Double {
+        acos(min(max(-tan(lat.radians) * tan(dec.radians), -1), 1))
+    }
+
     /// Circle through three points, or nil if (near) collinear.
     private static func circle(through a: CGPoint, _ b: CGPoint, _ c: CGPoint)
         -> (centre: CGPoint, radius: CGFloat)? {
@@ -1488,31 +1652,6 @@ struct OrlojFace {
         let uy = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d
         let centre = CGPoint(x: ux, y: uy)
         return (centre, hypot(a.x - ux, a.y - uy))
-    }
-
-    /// Polyline along the circle arc from `a` to `b`, taking the side
-    /// that passes through `mid`.
-    private static func arcPolyline(centre o: CGPoint, radius r: CGFloat,
-                                    from a: CGPoint, through mid: CGPoint,
-                                    to b: CGPoint) -> Path {
-        func angle(_ p: CGPoint) -> Double { atan2(Double(p.y - o.y), Double(p.x - o.x)) }
-        func norm(_ x: Double) -> Double {
-            let t = x.truncatingRemainder(dividingBy: 2 * .pi)
-            return t < 0 ? t + 2 * .pi : t
-        }
-        let aA = angle(a), aM = angle(mid), aB = angle(b)
-        var sweep = norm(aB - aA)
-        let toMid = norm(aM - aA)
-        if toMid > sweep { sweep -= 2 * .pi }
-
-        var path = Path()
-        let steps = 24
-        for i in 0...steps {
-            let t = aA + sweep * Double(i) / Double(steps)
-            let p = CGPoint(x: o.x + r * CGFloat(cos(t)), y: o.y + r * CGFloat(sin(t)))
-            i == 0 ? path.move(to: p) : path.addLine(to: p)
-        }
-        return path
     }
 
     private func circle(_ centre: CGPoint, _ radius: CGFloat) -> Path {

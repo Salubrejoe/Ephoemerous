@@ -6,8 +6,8 @@ import LoreKit
 //
 // The PLATE is light — fixed altitude fields (day, civil, nautical,
 // astronomical, night) in flat colour. They never change colour; the Sun
-// hand moves through them. Every other part — the Contour numerals, the
-// rete (band, cross, star hand), its glyphs, the hands — is a lens over
+// hand moves through them. Every other part — the crown and its numerals,
+// the rete (band, cross, star hand), its glyphs, the hands — is a lens over
 // that light: the plate blurred and lifted inside the part's outline, a
 // body of ink, a rim lit from above.
 //
@@ -33,13 +33,17 @@ struct OrlojGlassLayers: View {
                 OrlojPlateLight(face: face, palette: palette)
             }
             OrlojPlateLines(face: face, palette: palette, showsHours: isLarge)
+            OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette)
 
-            if Self.numeralsInGlass {
+            if face.numeralRing == .crown {
+                OrlojGlassPieces(pieces: [crownGlass], face: face, palette: palette)
+            }
+            if face.numeralRing == .contour && !Self.contourInGlass {
+                OrlojFlatNumerals(face: face, palette: palette)
+            } else {
                 OrlojGlassPieces(pieces: numeralGlass(daylit: false), face: face, palette: palette)
                 OrlojGlassPieces(pieces: numeralGlass(daylit: true),  face: face, palette: palette,
                                  variant: .regular)
-            } else {
-                OrlojFlatNumerals(face: face, palette: palette)
             }
 
             OrlojGlassPieces(pieces: [reteGlass], face: face, palette: palette)
@@ -50,17 +54,32 @@ struct OrlojGlassLayers: View {
             OrlojGlassPieces(pieces: handGlass, face: face, palette: palette)
             OrlojHubEarth(face: face, palette: palette)
         }
+        // A round dial keeps a breath of the widget's ground round it.
+        .scaleEffect(face.numeralRing == .contour ? 1 : 0.95)
         .dynamicTypeSize(.large)
     }
 
-    /// Glass numerals, or flat ink while their layout is being tuned.
-    /// ▼ TWEAK ▼
-    private static let numeralsInGlass = false
+    /// The Contour numerals in glass, or flat ink while their layout is
+    /// being tuned. The Roman rings are always glass. ▼ TWEAK ▼
+    private static let contourInGlass = false
 
-    /// The hours in glass, along the widget's edge: daylit hours frosted
-    /// (regular), night hours clear — the ring echoes the plate.
+    /// The tropics and the equator — thin rings of clear glass on the plate.
+    private var plateRingGlass: [OrlojGlassPiece] {
+        face.plateRingPaths().map { OrlojGlassPiece(path: $0) }
+    }
+
+    /// The crown band — even-odd, so the plate shows through its middle.
+    private var crownGlass: OrlojGlassPiece {
+        OrlojGlassPiece(path: face.dialBandPath(), eoFill: true)
+    }
+
+    /// The hours in glass: daylit hours frosted (regular), night hours
+    /// clear — the ring echoes the plate.
     private func numeralGlass(daylit: Bool) -> [OrlojGlassPiece] {
-        face.contourNumerals()
+        let numerals = face.numeralRing == .contour
+            ? face.contourNumerals().map { (path: $0.path, isDay: $0.isDay) }
+            : face.numeralGlassPaths()
+        return numerals
             .filter { $0.isDay == daylit }
             .map    { OrlojGlassPiece(path: $0.path) }
     }
@@ -88,9 +107,9 @@ struct OrlojGlassLayers: View {
 // Every colour is derived in OKLCH from the app's anchors and fitted to
 // Display P3 (values checked in-gamut):
 //   • night       = the canvas sky (canvas L .20 C .034 h 258, −10% black)
-//   • the fields climb in L and swing in hue from the navy toward the
-//     star ramp's amber: indigo → mulberry → K-class amber → sky blue,
-//     each a single flat colour
+//   • Prague's plate: night navy under the twilight line, one orange for
+//     AVRORA and CREPVSCVLVM, and the day in twelve light blues — one per
+//     unequal hour, gaining colour toward noon — round the Earth's disc
 //   • glass ink   = `Artist.ink`, the cool near-white; never pure white
 //   • the Sun     = a G-class star, like any other (`palette.sun`)
 struct OrlojGlassPalette {
@@ -104,18 +123,26 @@ struct OrlojGlassPalette {
 
     /// Field colour for the sky BELOW `altitude` (inside its circle).
     func field(below altitude: Angle) -> Color {
-        switch Int(altitude.degrees.rounded()) {
-        case   0: return Self.civil
-        case  -6: return Self.nautical
-        case -12: return Self.astronomical
-        default:  return night
-        }
+        altitude.degrees > -18 ? Self.aurora : night
     }
 
+    /// The `k`th unequal hour's blue (0 = the first after sunrise): palest
+    /// at the horizons, richest at noon.
+    static func hour(_ k: Int) -> Color {
+        hourBlues[min(k, 11 - k)]
+    }
 
-    static let astronomical = Color(.displayP3, red: 0.175, green: 0.143, blue: 0.321)   // OKLCH L .30  C .085  h 290
-    static let nautical     = Color(.displayP3, red: 0.442, green: 0.236, blue: 0.445)   //       L .45  C .120  h 330
-    static let civil        = Color(.displayP3, red: 0.853, green: 0.604, blue: 0.352)   //       L .74  C .130  h  62
+    static let aurora       = Color(.displayP3, red: 0.844, green: 0.569, blue: 0.304)   // OKLCH L .72  C .140  h  60
+    static let earth        = Color(.displayP3, red: 0.530, green: 0.737, blue: 0.802)   //       L .76  C .075  h 215
+    /// ▼ TWEAK the day's blues — horizon first, noon last ▼
+    static let hourBlues: [Color] = [
+        Color(.displayP3, red: 0.725, green: 0.812, blue: 0.857),                       //       L .84  C .035  h 225
+        Color(.displayP3, red: 0.657, green: 0.781, blue: 0.846),                       //       L .81  C .050  h 226
+        Color(.displayP3, red: 0.590, green: 0.748, blue: 0.838),                       //       L .78  C .065  h 228
+        Color(.displayP3, red: 0.524, green: 0.714, blue: 0.830),                       //       L .75  C .080  h 230
+        Color(.displayP3, red: 0.457, green: 0.680, blue: 0.824),                       //       L .72  C .095  h 232
+        Color(.displayP3, red: 0.391, green: 0.644, blue: 0.818),                       //       L .69  C .110  h 234
+    ]
     static let dayLight     = Color(.displayP3, red: 0.351, green: 0.554, blue: 0.774)   //       L .63  C .115  h 246
     static let earthHigh    = Color(.displayP3, red: 0.414, green: 0.673, blue: 0.733)   //       L .70  C .090  h 210
     static let earthLow     = Color(.displayP3, red: 0.097, green: 0.213, blue: 0.294)   //       L .32  C .060  h 235
@@ -204,7 +231,8 @@ struct OrlojGlassPieces: View {
 // MARK: - Plate
 
 /// The plate's light: day, then each altitude field painted over the
-/// last down to night, filling the whole widget. Flat colour, crisp edges.
+/// last down to night — inside the crown, or filling the whole widget
+/// under the Contour ring. Flat colour, crisp edges.
 struct OrlojPlateLight: View {
     let face:    OrlojFace
     let palette: OrlojGlassPalette
@@ -212,10 +240,15 @@ struct OrlojPlateLight: View {
     var body: some View {
         ZStack {
             Rectangle().fill(palette.day)
+            ForEach(Array(face.unequalHourSections().enumerated()), id: \.offset) { k, section in
+                OrlojPath(source: section).fill(OrlojGlassPalette.hour(k))
+            }
             ForEach(face.altitudeFields(), id: \.altitude) { field in
                 OrlojPath(source: field.path).fill(palette.field(below: field.altitude))
             }
+            OrlojPath(source: face.earthDiscPath()).fill(OrlojGlassPalette.earth)
         }
+        .clipShape(OrlojPath(source: face.plateFillPath()))
     }
 }
 
@@ -232,12 +265,16 @@ struct OrlojPlateLines: View {
                 OrlojPath(source: face.unequalHoursPath())
                     .stroke(palette.ink.opacity(0.14), lineWidth: 0.5)
             }
-            ForEach(face.altitudeFields(), id: \.altitude) { field in
+            // The horizon and the twilight line; the orange runs unbroken between.
+            ForEach(face.altitudeFields().filter { $0.altitude.degrees.truncatingRemainder(dividingBy: 18) == 0 },
+                    id: \.altitude) { field in
                 OrlojPath(source: field.path)
                     .stroke(palette.ink.opacity(field.altitude == .zero ? 0.6 : 0.18),
                             lineWidth: field.altitude == .zero ? 0.9 * face.ui + 0.1 : 0.5)
             }
         }
+        // The Earth's disc is painted over the lines, as on the original.
+        .clipShape(OrlojPath(source: face.plateFillPath().subtracting(face.earthDiscPath())))
     }
 }
 

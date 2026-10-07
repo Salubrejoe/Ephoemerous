@@ -70,6 +70,15 @@ enum WidgetArtExporter {
                       to: dir, name: "orlojglass_\(f.name)_\(label).png")
             }
         }
+        // Every ring the glass face can wear, side by side.
+        for ring in [OrlojFace.NumeralRing.crown, .roman, .contour] {
+            for f in families where f.name != "medium" {
+                var face = OrlojFace(date: now, origin: origin, size: f.size)
+                face.numeralRing = ring
+                write(tile(size: f.size) { OrlojGlassLayers(face: face) },
+                      to: dir, name: "orlojglass_\(f.name)_ring_\(ring).png")
+            }
+        }
         let sydney = OrlojFace(date: now, origin: (latDeg: -33.87, lonDeg: 151.21),
                                size: families[2].size)
         write(tile(size: families[2].size) { OrlojGlassLayers(face: sydney) },
