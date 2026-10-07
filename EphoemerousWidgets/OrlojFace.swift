@@ -1578,6 +1578,13 @@ struct OrlojFace {
             .subtracting(axleHole)
     }
 
+    /// The Sun's colour, inset in its badge so a thin rim of clear glass
+    /// shows round it (see `OrlojTintedGlass`). ▼ TWEAK the rim ▼
+    @MainActor
+    func sunBadgePath() -> Path? {
+        sunPoint.map { pentagonBadge(at: $0, size: sunBadgeSize - 2 * 1.8 * ui) }
+    }
+
     /// The Moon's hand — as long as the Sun's, slimmer, its round badge
     /// fused on where the Moon stands (the phase is laid over it apart,
     /// see `moonLitPath`).

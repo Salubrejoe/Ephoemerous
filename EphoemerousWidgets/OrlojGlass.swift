@@ -58,10 +58,10 @@ struct OrlojGlassLayers: View {
             // The hands, the Moon's below the Sun's; its lit part frosted.
             OrlojGlassPieces(pieces: piece(face.moonCapsulePath()), face: face, palette: palette,
                              material: material)
-            OrlojGlassPieces(pieces: piece(face.moonLitPath()), face: face, palette: palette,
-                             variant: .regular, material: material)
+            OrlojTintedGlass(path: face.moonLitPath(), tint: moonTint, face: face, palette: palette)
             OrlojGlassPieces(pieces: piece(face.sunCapsulePath()), face: face, palette: palette,
                              material: material)
+            OrlojTintedGlass(path: face.sunBadgePath(), tint: sunTint, face: face, palette: palette)
         }
         // A round dial keeps a breath of the widget's ground round it.
         .scaleEffect(face.numeralRing == .contour ? 1 : 0.95)
@@ -99,6 +99,13 @@ struct OrlojGlassLayers: View {
         OrlojGlassPiece(path: face.reteGlassPath(withStarHand: isLarge, carvesGlyphs: isLarge))
     }
 
+    /// The badges' colours — the app's own: the Sun a G-class star, the
+    /// Moon's lit face in its silver (the app paints it bottom-lit).
+    private var sunTint:  (top: Color, bottom: Color) { Artist.shared.palette.sun }
+    private var moonTint: (top: Color, bottom: Color) {
+        (Artist.shared.palette.moon.bottom, Artist.shared.palette.moon.top)
+    }
+
     /// A single optional path as a pass of glass.
     private func piece(_ path: Path?) -> [OrlojGlassPiece] {
         path.map { [OrlojGlassPiece(path: $0)] } ?? []
@@ -109,8 +116,8 @@ struct OrlojGlassLayers: View {
 // Every colour is derived in OKLCH from the app's anchors and fitted to
 // Display P3 (values checked in-gamut):
 //   • night       = the canvas sky (canvas L .20 C .034 h 258, −10% black)
-//   • Prague's plate: night navy under the twilight line, one orange for
-//     AVRORA and CREPVSCVLVM, and the day in twelve light blues — one per
+//   • Prague's plate: night navy under the twilight line, the palest blue
+//     for AVRORA and CREPVSCVLVM, and the day in twelve light blues — one per
 //     unequal hour, gaining colour toward noon — round the Earth's disc
 //   • glass ink   = `Artist.ink`, the cool near-white; never pure white
 //   • the Sun     = a G-class star, like any other (`palette.sun`)
@@ -134,8 +141,8 @@ struct OrlojGlassPalette {
         hourBlues[min(k, 11 - k)]
     }
 
-    static let aurora       = Color(.displayP3, red: 0.844, green: 0.569, blue: 0.304)   // OKLCH L .72  C .140  h  60
-    static let earth        = Color(.displayP3, red: 0.530, green: 0.737, blue: 0.802)   //       L .76  C .075  h 215
+    /// AVRORA and CREPVSCVLVM: one step paler than the palest hour.
+    static let aurora       = Color(.displayP3, red: 0.792, green: 0.843, blue: 0.867)   // OKLCH L .87  C .020  h 224
     /// ▼ TWEAK the day's blues — horizon first, noon last ▼
     static let hourBlues: [Color] = [
         Color(.displayP3, red: 0.725, green: 0.812, blue: 0.857),                       //       L .84  C .035  h 225
@@ -387,6 +394,46 @@ struct OrlojMetal {
     static let tiEngraved   = Color(.displayP3, red: 0.266, green: 0.283, blue: 0.304)   //       L .40  C .012 h 250
 }
 
+// MARK: - Tinted glass
+
+/// A badge in coloured glass: its colour run top to bottom across the
+/// badge itself, a specular bloom at the top left, the rim light — so it
+/// reads as glass that has colour, not paint on glass.
+struct OrlojTintedGlass: View {
+    let path:    Path?
+    let tint:    (top: Color, bottom: Color)
+    let face:    OrlojFace
+    let palette: OrlojGlassPalette
+
+    /// How much of the colour the glass carries. ▼ TWEAK ▼
+    private static let density: Double = 0.88
+
+    var body: some View {
+        if let path, !palette.lineArt {
+            let box = path.boundingRect
+            ZStack {
+                OrlojPath(source: path)
+                    .fill(LinearGradient(colors: [tint.top, tint.bottom],
+                                         startPoint: unit(box.midX, box.minY),
+                                         endPoint:   unit(box.midX, box.maxY)))
+                    .opacity(Self.density)
+                OrlojPath(source: path)
+                    .fill(RadialGradient(colors: [palette.ink.opacity(0.55), .clear],
+                                         center: unit(box.minX + box.width * 0.32,
+                                                      box.minY + box.height * 0.28),
+                                         startRadius: 0, endRadius: box.width * 0.45))
+                OrlojPath(source: path).stroke(palette.rim, lineWidth: 0.9)
+            }
+        }
+    }
+
+    /// A point on the face as a unit point of the widget.
+    private func unit(_ x: CGFloat, _ y: CGFloat) -> UnitPoint {
+        UnitPoint(x: x / max(face.camera.size.width,  1),
+                  y: y / max(face.camera.size.height, 1))
+    }
+}
+
 // MARK: - Plate
 
 /// The plate's light: day, then each altitude field painted over the
@@ -410,7 +457,9 @@ struct OrlojPlateLight: View {
                 OrlojPath(source: field.path).fill(palette.field(below: field.altitude))
                     .shadow(color: layerShadow, radius: 3 * face.ui, y: 2 * face.ui)
             }
-            OrlojPath(source: face.earthDiscPath()).fill(OrlojGlassPalette.earth)
+            // The centre is open: the widget's own ground, as if the plate
+            // were cut away inside the inner tropic.
+            OrlojPath(source: face.earthDiscPath()).fill(Artist.shared.canvasBackground)
                 .shadow(color: layerShadow, radius: 3 * face.ui, y: 2 * face.ui)
         }
         .clipShape(OrlojPath(source: face.plateFillPath()))
