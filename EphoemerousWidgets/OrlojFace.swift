@@ -676,9 +676,37 @@ struct OrlojFace {
     /// Radius of the plate — the fields' clip, inside the crown.
     var plateRadius: CGFloat { radiusForDeclination(romanDialDec) + 3 * ui }
 
-    /// How far every hand reaches — Sun, Moon and the star arm alike: just
-    /// past the plate's edge, touching the crown. ▼ TWEAK ▼
-    var handReach: CGFloat { plateRadius + 3 * ui }
+    /// How far a hand reaches along `u`: to just short of the Contour
+    /// numeral it points at — the track's distance in that direction, less
+    /// that numeral's depth (it swells near now) and a breath of gap.
+    /// ▼ TWEAK the gap ▼
+    @MainActor
+    func handReach(toward u: CGVector) -> CGFloat {
+        let track   = contourTrack
+        let station = track.arcLength(towards: u, from: center, samples: track.samples(count: 720))
+        let edge    = track.point(at: station)
+        let toEdge  = hypot(edge.point.x - center.x, edge.point.y - center.y)
+        // The numeral's depth runs along the track's normal, not the ray.
+        let slant   = max(-(u.dx * edge.inward.dx + u.dy * edge.inward.dy), 0.5)
+        let depth   = contourDepth(emphasis: emphasisOfNumeral(toward: u))
+        return toEdge - depth / slant - 3 * ui
+    }
+
+    /// The emphasis of the numeral nearest a direction from the axle.
+    @MainActor
+    private func emphasisOfNumeral(toward u: CGVector) -> Double {
+        let target = atan2(u.dy, u.dx)
+        let civil  = civilHourNow
+        let nearest = dialNumerals().min { a, b in
+            func gap(_ p: CGPoint) -> CGFloat {
+                let d = atan2(p.y - center.y, p.x - center.x) - target
+                return abs(atan2(sin(d), cos(d)))
+            }
+            return gap(a.position) < gap(b.position)
+        }
+        return nearest.map { contourEmphasis(hour: $0.id, now: civil) } ?? 0
+    }
+
 
     /// Radius of the axle — the Earth, seen from above the pole.
     var hubRadius: CGFloat { 9 * ui }
@@ -780,22 +808,196 @@ struct OrlojFace {
     /// Where the cross's arms meet the band — the equinoxes and solstices.
     static let reteArmLongitudes: [Double] = [0, 90, 180, 270]
 
-    /// The Roman numerals as glass: each hour's numeral outlined in the
-    /// dial's serif, centred on its ring point, feet to the centre.
-    /// `isDay` lets the face frost the daylit hours.
+    // MARK: Contour numerals (2.0)
+    // The hours laid along the widget's edge the way the Watch's Contour
+    // face lays its digits: each numeral sits where its hour's direction
+    // from the axle meets a rounded-rectangle track, and is STRETCHED to
+    // fill its slot — along the track to its neighbours, inward to its
+    // depth. The hour that has begun is the deepest and heaviest; the
+    // hours just gone taper away behind it; the hours to come rest thin
+    // until the hand reaches them.
+    //
+    // ORIENTATION is Contour's too, and it is decided by shape, not by
+    // place: a numeral is never upside down — it either STANDS upright or
+    // LIES on its side (a quarter turn), whichever fits its slot better
+    // once SF Pro's width axis has done what it can (see `contourCut`). Slots on the top and bottom edges are long and
+    // shallow, so a tall single digit lies down there and stands up on
+    // the sides; a wide "12" stands at the top; a narrow "11" lies like a
+    // single digit. A lying numeral's top points away from the face's
+    // vertical centre line, so the two halves mirror.
+
+    /// One numeral, stretched into the track.
+    struct ContourNumeral {
+        let path:     Path
+        let isDay:    Bool
+        /// 1 for the hour that has begun, tapering to 0 along the tail.
+        let emphasis: Double
+    }
+
+    /// ▼ TWEAK the Contour track here ▼
+    /// Gap between the widget's edge and the numerals' tops.
+    var contourMargin:       CGFloat { 5 * ui + 1 }
+    /// Corner radius of the track — at least the deepest numeral, or the
+    /// corners would fold the glyphs over themselves.
+    var contourCornerRadius: CGFloat { contourDepth(emphasis: 1) + 4 * ui }
+    /// How much of its slot a numeral fills along the track.
+    static let contourSlotFill:  CGFloat = 0.92
+    /// How many hours the tail trails behind the current one.
+    static let contourTailHours: Double  = 6
+    /// How much a numeral prefers SF's standard width when two cuts both
+    /// fit — 0 lets the width axis roam freely.
+    static let contourWidthPreference: CGFloat = 0.6
+    /// What lying costs over standing: a numeral only turns on its side
+    /// when standing clearly fits worse — upright reads without a tilt.
+    static let contourLyingPenalty:    CGFloat = 0.45
+    /// How far a numeral may be stretched along the track past its own
+    /// proportions. Beyond this it keeps its shape and leaves its slot
+    /// part-empty — a lying "1" stays a "1", and a corner numeral no
+    /// longer wraps all the way round the bend.
+    static let contourMaxStretch: CGFloat = 2.5
+
+    /// Depth of a numeral into the widget, from its emphasis.
+    func contourDepth(emphasis e: Double) -> CGFloat {
+        let base = max(9,  12 * ui)
+        let peak = max(20, 34 * ui)
+        return base + (peak - base) * CGFloat(e)
+    }
+
+    /// The track itself.
+    var contourTrack: OrlojContour {
+        OrlojContour(rect:   CGRect(origin: .zero, size: camera.size)
+                                 .insetBy(dx: contourMargin, dy: contourMargin),
+                     radius: contourCornerRadius)
+    }
+
     @MainActor
-    func numeralGlassPaths() -> [(path: Path, isDay: Bool)] {
-        // ▼ TWEAK the numerals' size ▼
-        let size: CGFloat = (ui >= 0.7 ? 12 : 8.5) * type
-        return dialNumerals().compactMap { numeral in
-            guard let outline = Self.romanOutlines[numeral.text] else { return nil }
-            let box   = outline.boundingRect
-            let place = CGAffineTransform(translationX: numeral.position.x, y: numeral.position.y)
-                .rotated(by: numeral.rotation.radians)
-                .scaledBy(x: size / 100, y: -size / 100)        // CoreText is y-up
-                .translatedBy(x: -box.midX, y: -box.midY)
-            return (outline.applying(place), numeral.isDay)
+    func contourNumerals() -> [ContourNumeral] {
+        let track    = contourTrack
+        let samples  = track.samples(count: 1440)
+        let numerals = dialNumerals()
+        let civilNow = civilHourNow
+        // Where each hour's direction meets the track.
+        let stations = numerals.map { numeral in
+            track.arcLength(towards: CGVector(dx: numeral.position.x - center.x,
+                                              dy: numeral.position.y - center.y),
+                            from: center, samples: samples)
         }
+        return numerals.indices.compactMap { i in
+            let numeral  = numerals[i]
+            let emphasis = contourEmphasis(hour: numeral.id, now: civilNow)
+            // The numeral's slot: halfway to each neighbour along the track.
+            let previous = stations[(i + numerals.count - 1) % numerals.count]
+            let next     = stations[(i + 1) % numerals.count]
+            let slot     = (track.forward(from: previous, to: stations[i])
+                          + track.forward(from: stations[i], to: next)) / 2
+            let fill     = slot * Self.contourSlotFill
+            let depth    = contourDepth(emphasis: emphasis)
+            guard let cut = balancedCut(Self.stickOnes(Self.arabicText(hour: numeral.id)),
+                                        stroke:  numeralStroke(emphasis: emphasis),
+                                        nominal: nominalWeight(emphasis: emphasis),
+                                        at: stations[i], on: track, fill: fill, depth: depth)
+            else { return nil }
+            let path     = track.stretch(cut.glyph.path,
+                                         box:   cut.glyph.box,
+                                         at:    stations[i],
+                                         width: cut.along,
+                                         depth: depth,
+                                         up:    cut.up)
+            return ContourNumeral(path: path, isDay: numeral.isDay, emphasis: emphasis)
+        }
+    }
+
+    /// A numeral cut so its strokes come out `stroke` points thick on
+    /// screen, whatever its orientation or slot: a lying numeral runs its
+    /// height along the track and is set far larger than a standing one,
+    /// so the same `wght` would read heavier.
+    ///
+    /// Orientation is a matter of SHAPE, so it's settled once, at the
+    /// `nominal` weight. Within it the width is fitted, the scale measured,
+    /// the weight solved for the stroke — and round again, since the weight
+    /// nudges the fit.
+    @MainActor
+    private func balancedCut(_ text: String, stroke: CGFloat, nominal: Double,
+                             at station: CGFloat, on track: OrlojContour,
+                             fill: CGFloat, depth: CGFloat)
+        -> (glyph: NumeralGlyph, up: CGVector, along: CGFloat)? {
+        guard let settled = contourCut(text, weight: nominal, at: station, on: track,
+                                       along: fill, depth: depth)
+        else { return nil }
+        var weight = nominal
+        var result: (glyph: NumeralGlyph, up: CGVector, along: CGFloat)?
+        for _ in 0..<3 {
+            guard let cut = contourCut(text, weight: weight, at: station, on: track,
+                                       along: fill, depth: depth, only: settled.up)
+            else { return result }
+            // Whatever the width axis couldn't absorb is stretched, up to the cap.
+            let heightAlong = track.runsAlong(cut.up, at: station)
+            let box         = cut.glyph.box
+            let natural     = heightAlong ? box.height / box.width : box.width / box.height
+            let along       = min(fill, depth * natural * Self.contourMaxStretch)
+            result          = (cut.glyph, cut.up, along)
+            // Points per font unit, across and up the glyph.
+            let scaleX      = (heightAlong ? depth : along) / box.width
+            let scaleY      = (heightAlong ? along : depth) / box.height
+            let scale       = sqrt(scaleX * scaleY)
+            weight          = Self.weight(forStem: stroke / scale, width: cut.width)
+        }
+        return result
+    }
+
+    /// How a numeral is cut and set in its slot: which way its top points
+    /// on screen — standing, or lying with its top away from the vertical
+    /// centre line — and at which SF Pro width. Each orientation gets the
+    /// width whose ink best matches the slot; the one left with less
+    /// stretch wins, and between two that both fit, the one nearer SF's
+    /// standard width.
+    @MainActor
+    private func contourCut(_ text: String, weight: Double, at station: CGFloat,
+                            on track: OrlojContour, along: CGFloat, depth: CGFloat,
+                            only fixed: CGVector? = nil)
+        -> (glyph: NumeralGlyph, up: CGVector, width: Double)? {
+        let edge     = track.point(at: station).point
+        let standing = CGVector(dx: 0, dy: -1)
+        let lying    = CGVector(dx: edge.x >= center.x ? 1 : -1, dy: 0)
+        let cuts = (fixed.map { [$0] } ?? [standing, lying]).compactMap {
+            up -> (glyph: NumeralGlyph, up: CGVector, width: Double, cost: CGFloat)? in
+            // When the glyph's height runs along the track, its ink width runs across it.
+            let target = track.runsAlong(up, at: station) ? depth / along : along / depth
+            guard let fit = Self.fittedNumeral(text, weight: weight, aspect: target)
+            else { return nil }
+            let offStandard = abs(CGFloat(log(fit.width / 100)))
+            let lyingCost   = up == standing ? 0 : Self.contourLyingPenalty
+            return (fit.glyph, up, fit.width,
+                    fit.miss + Self.contourWidthPreference * offStandard + lyingCost)
+        }
+        return cuts.min { $0.cost < $1.cost }.map { ($0.glyph, $0.up, $0.width) }
+    }
+
+    /// 1–24 once round the day: noon is 12, midnight 24.
+    private static func arabicText(hour: Int) -> String {
+        hour % 24 == 0 ? "24" : "\(hour % 24)"
+    }
+
+    /// The digit 1 drawn as a plain stick — SF's capital I, the same height
+    /// and stem as the figures, without the flag that turns strange when a
+    /// "1" is stretched or laid on its side.
+    private static func stickOnes(_ text: String) -> String {
+        text.replacingOccurrences(of: "1", with: "I")
+    }
+
+    /// The wall clock as a fractional hour — the same clock `dialNumerals`
+    /// phases the ring against.
+    private var civilHourNow: Double {
+        let c = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
+        return Double(c.hour ?? 12) + Double(c.minute ?? 0) / 60 + Double(c.second ?? 0) / 3600
+    }
+
+    /// The Contour swell: full for the hour that has begun, tapering over
+    /// `contourTailHours` behind it, nothing ahead.
+    private func contourEmphasis(hour: Int, now: Double) -> Double {
+        let current = Int(now.rounded(.down)) % 24
+        let behind  = Double(((current - hour) % 24 + 24) % 24)     // 0 = the hour that has begun
+        return pow(max(0, 1 - behind / Self.contourTailHours), 1.3)
     }
 
     /// The twelve sign glyphs, each warped into its cell: tops toward the
@@ -885,29 +1087,122 @@ struct OrlojFace {
     /// once per process. CoreText picks whichever font draws the sign
     /// (the variation selector asks for the text form, not the emoji).
     private static let zodiacOutlines: [Path?] = ZodiacSign.zodiac.map {
-        glyphOutline($0.symbol, font: symbolFont)
+        glyphOutline($0.symbol, font: symbolFont)?.path
     }
 
-    /// The numerals' outlines at 100 pt, in the serif-semibold voice the
-    /// labels use, built once per process.
-    private static let romanOutlines: [String: Path] = Dictionary(
-        uniqueKeysWithValues: romanTexts.compactMap { text in
-            glyphOutline(text, font: romanFont).map { (text, $0) }
-        })
+    // MARK: Numeral type
+    // SF Pro is a variable font: weight AND width are continuous axes. Each
+    // numeral is cut at the weight its emphasis asks for and at the width
+    // that fits its slot, so the stretch left over is small and the strokes
+    // keep their even thickness — Contour's own trick.
+
+    /// A numeral's outline at 100 pt and its box: the ink's bounds, padded
+    /// across to `numeralMinAspect` for a numeral that's all stem.
+    typealias NumeralGlyph = (path: Path, box: CGRect)
+
+    /// ▼ TWEAK the numerals' type ▼
+    /// Stroke thickness ON SCREEN (pt), at rest → the hour that has begun.
+    /// The weight is solved per numeral to hit it (see `balancedCut`).
+    var numeralStrokeRange: ClosedRange<CGFloat> { (0.9 * ui + 0.2)...(7 * ui) }
+    /// The `wght` a numeral may be cut at — SF Pro's whole axis.
+    static let numeralWeightLimits: ClosedRange<Double> = 1...1000
+    /// The `wght` orientation is judged at, at rest → the hour that has
+    /// begun: bold figures are wider, so emphasis may tip a numeral upright.
+    static let numeralNominalWeights: ClosedRange<Double> = 120...900
+    /// The narrowest a numeral's box may be (width ÷ height). A stick "1"
+    /// is nothing but a stem; padded out to a digit's proportions it sits
+    /// thin in its slot instead of being stretched into a slab.
+    static let numeralMinAspect: CGFloat = 0.5
+    /// `wdth`, compressed → expanded. SF's axis runs from 30, but its
+    /// extra-compressed end turns unreadable at light weights.
+    static let numeralWidthRange:  ClosedRange<Double> = 50...150
+
+    func nominalWeight(emphasis e: Double) -> Double {
+        let r = Self.numeralNominalWeights
+        return r.lowerBound + (r.upperBound - r.lowerBound) * e
+    }
+
+    /// A numeral's stroke for its emphasis — geometric between the ends,
+    /// so equal steps of emphasis read as equal steps of weight.
+    func numeralStroke(emphasis e: Double) -> CGFloat {
+        let r = numeralStrokeRange
+        return r.lowerBound * pow(r.upperBound / r.lowerBound, CGFloat(e))
+    }
+
+    /// The `wght` whose stem is `stem` font units thick at this `wdth` —
+    /// measured on SF's capital I, which is nothing but a stem. Bisected:
+    /// stem thickness only grows with weight.
+    @MainActor
+    private static func weight(forStem stem: CGFloat, width: Double) -> Double {
+        var low  = numeralWeightLimits.lowerBound
+        var high = numeralWeightLimits.upperBound
+        for _ in 0..<7 {
+            let mid = (low + high) / 2
+            guard let stick = numeralGlyph("I", weight: mid, width: width) else { return mid }
+            if stick.path.boundingRect.width < stem { low = mid } else { high = mid }
+        }
+        return (low + high) / 2
+    }
+
+    /// The SF width whose ink comes closest to `target` (ink width ÷
+    /// height), and how far off it lands (log ratio). Ink width grows
+    /// almost linearly along the axis, so the two ends pin it.
+    @MainActor
+    private static func fittedNumeral(_ text: String, weight: Double, aspect target: CGFloat)
+        -> (glyph: NumeralGlyph, width: Double, miss: CGFloat)? {
+        let range = numeralWidthRange
+        guard let narrow = numeralGlyph(text, weight: weight, width: range.lowerBound),
+              let wide   = numeralGlyph(text, weight: weight, width: range.upperBound)
+        else { return nil }
+        let narrowAspect = narrow.box.width / narrow.box.height
+        let wideAspect   = wide.box.width   / wide.box.height
+        let t            = min(max((target - narrowAspect) / max(wideAspect - narrowAspect, 0.0001), 0), 1)
+        let width        = range.lowerBound + (range.upperBound - range.lowerBound) * Double(t)
+        guard let glyph  = numeralGlyph(text, weight: weight, width: width) else { return nil }
+        return (glyph, width, abs(log(target / (glyph.box.width / glyph.box.height))))
+    }
+
+    /// Outlines cut so far, keyed by text, weight and width (rounded, so
+    /// the cache stays small across a timeline's renders).
+    @MainActor private static var numeralCache: [String: NumeralGlyph] = [:]
+
+    @MainActor
+    private static func numeralGlyph(_ text: String, weight: Double, width: Double) -> NumeralGlyph? {
+        let weight = (weight / 20).rounded() * 20
+        let width  = (width  / 2).rounded()  * 2
+        let key    = "\(text)|\(weight)|\(width)"
+        if let hit = numeralCache[key] { return hit }
+        guard let outline = glyphOutline(text, font: numeralFont(weight: weight, width: width))
+        else { return nil }
+        let ink   = outline.path.boundingRect
+        let pad   = max(0, ink.height * numeralMinAspect - ink.width) / 2
+        let glyph: NumeralGlyph = (outline.path, ink.insetBy(dx: -pad, dy: 0))
+        numeralCache[key] = glyph
+        return glyph
+    }
+
+    private static let numeralBase: CTFont = UIFont.systemFont(ofSize: 100) as CTFont
+
+    /// SF Pro at an exact point on its weight and width axes.
+    private static func numeralFont(weight: Double, width: Double) -> CTFont {
+        let variations: [Int: Double] = [fourCC("wght"): weight, fourCC("wdth"): width]
+        let descriptor = CTFontDescriptorCreateWithAttributes(
+            [kCTFontVariationAttribute: variations] as CFDictionary)
+        return CTFontCreateCopyWithAttributes(numeralBase, 100, nil, descriptor)
+    }
+
+    /// An OpenType axis tag as CoreText wants it.
+    private static func fourCC(_ tag: String) -> Int {
+        tag.utf8.reduce(0) { $0 << 8 | Int($1) }
+    }
 
     private static let symbolFont: CTFont =
         CTFontCreateUIFontForLanguage(.system, 100, nil)
         ?? CTFontCreateWithName("Helvetica" as CFString, 100, nil)
 
-    private static let romanFont: CTFont = {
-        var descriptor = UIFont.systemFont(ofSize: 100, weight: .semibold).fontDescriptor
-        descriptor     = descriptor.withDesign(.serif) ?? descriptor
-        return UIFont(descriptor: descriptor, size: 100) as CTFont
-    }()
-
-    /// A string's outline at its font's size (CoreText units, y up),
-    /// whichever fonts CoreText falls back to for its characters.
-    private static func glyphOutline(_ text: String, font: CTFont) -> Path? {
+    /// A string's outline at its font's size (CoreText units, y up) and
+    /// its advance, whichever fonts CoreText falls back to for its characters.
+    private static func glyphOutline(_ text: String, font: CTFont) -> (path: Path, advance: CGFloat)? {
         let attributed = NSAttributedString(string: text,
                                             attributes: [.init(kCTFontAttributeName as String): font])
         let line       = CTLineCreateWithAttributedString(attributed)
@@ -927,7 +1222,8 @@ struct OrlojFace {
                                                                    y: position.y))
             }
         }
-        return outline.isEmpty ? nil : Path(outline)
+        guard !outline.isEmpty else { return nil }
+        return (Path(outline), CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil)))
     }
 
     /// The star hand's arm: the λ 0° spoke continued from inside the band
@@ -942,10 +1238,10 @@ struct OrlojFace {
         let width = 3 * ui
         guard let reach = rayToCircle(from: center, toward: u,
                                       centre: ringCentre, radius: outerRim),
-              handReach > reach + 6 * ui
+              handReach(toward: u) > reach + 6 * ui
         else { return nil }
         let start = along(u, reach - bandSink)
-        let tip   = along(u, handReach - width / 2)
+        let tip   = along(u, handReach(toward: u) - width / 2)
         let n     = CGVector(dx: -u.dy, dy: u.dx)
         let bar   = taperedBar(from: start, to: tip, startWidth: width, endWidth: width)
             .union(circle(tip, width / 2))
@@ -1046,7 +1342,7 @@ struct OrlojFace {
     func sunCapsulePath() -> Path? {
         guard let p = sunPoint else { return nil }
         return capsuleHand(toward: unitVector(to: p),
-                           length: handReach,
+                           length: handReach(toward: unitVector(to: p)),
                            tail:   12 * ui,
                            width:  3.6 * ui)
     }
@@ -1056,7 +1352,7 @@ struct OrlojFace {
     func moonCapsulePath() -> Path? {
         guard let p = moonPoint else { return nil }
         return capsuleHand(toward: unitVector(to: p),
-                           length: handReach,
+                           length: handReach(toward: unitVector(to: p)),
                            tail:   9 * ui,
                            width:  2.8 * ui)
     }
@@ -1211,6 +1507,136 @@ struct OrlojFace {
     private func circle(_ centre: CGPoint, _ radius: CGFloat) -> Path {
         Path(ellipseIn: CGRect(x: centre.x - radius, y: centre.y - radius,
                               width: radius * 2, height: radius * 2))
+    }
+}
+
+// MARK: - OrlojContour
+// A rounded rectangle walked by arc length, clockwise from top-centre,
+// with the inward normal at every point: the track the Contour numerals
+// are laid along. Straight sides and circular corners, so the normal
+// turns smoothly and a glyph bends round a corner instead of creasing.
+struct OrlojContour {
+    let rect:   CGRect
+    let radius: CGFloat
+
+    private var straightWidth:  CGFloat { max(rect.width  - 2 * radius, 0) }
+    private var straightHeight: CGFloat { max(rect.height - 2 * radius, 0) }
+    private var quarter:        CGFloat { .pi / 2 * radius }
+
+    var length: CGFloat { 2 * (straightWidth + straightHeight) + 4 * quarter }
+
+    /// The track's point and inward unit normal at arc length `s` (wraps).
+    func point(at s: CGFloat) -> (point: CGPoint, inward: CGVector) {
+        var t = s.truncatingRemainder(dividingBy: length)
+        if t < 0 { t += length }
+        let r = radius
+        let segments: [CGFloat] = [straightWidth / 2, quarter, straightHeight, quarter,
+                                   straightWidth,     quarter, straightHeight, quarter,
+                                   straightWidth / 2]
+        var index = 0
+        while index < segments.count - 1, t > segments[index] {
+            t     -= segments[index]
+            index += 1
+        }
+        func corner(_ c: CGPoint, from start: CGFloat) -> (CGPoint, CGVector) {
+            let phi = start + t / r
+            return (CGPoint(x: c.x + r * cos(phi), y: c.y + r * sin(phi)),
+                    CGVector(dx: -cos(phi), dy: -sin(phi)))
+        }
+        switch index {
+        case 0:  return (CGPoint(x: rect.midX + t, y: rect.minY), CGVector(dx: 0, dy: 1))
+        case 1:  return corner(CGPoint(x: rect.maxX - r, y: rect.minY + r), from: -.pi / 2)
+        case 2:  return (CGPoint(x: rect.maxX, y: rect.minY + r + t), CGVector(dx: -1, dy: 0))
+        case 3:  return corner(CGPoint(x: rect.maxX - r, y: rect.maxY - r), from: 0)
+        case 4:  return (CGPoint(x: rect.maxX - r - t, y: rect.maxY), CGVector(dx: 0, dy: -1))
+        case 5:  return corner(CGPoint(x: rect.minX + r, y: rect.maxY - r), from: .pi / 2)
+        case 6:  return (CGPoint(x: rect.minX, y: rect.maxY - r - t), CGVector(dx: 1, dy: 0))
+        case 7:  return corner(CGPoint(x: rect.minX + r, y: rect.minY + r), from: .pi)
+        default: return (CGPoint(x: rect.minX + r + t, y: rect.minY), CGVector(dx: 0, dy: 1))
+        }
+    }
+
+    /// Evenly spaced points round the track, for direction lookups.
+    func samples(count: Int) -> [(s: CGFloat, point: CGPoint)] {
+        (0..<count).map { i in
+            let s = length * CGFloat(i) / CGFloat(count)
+            return (s, point(at: s).point)
+        }
+    }
+
+    /// Arc length where the ray from `origin` along `direction` meets the
+    /// track (nearest sample by angle).
+    func arcLength(towards direction: CGVector, from origin: CGPoint,
+                   samples: [(s: CGFloat, point: CGPoint)]) -> CGFloat {
+        let target = atan2(direction.dy, direction.dx)
+        func gap(_ p: CGPoint) -> CGFloat {
+            let a = atan2(p.y - origin.y, p.x - origin.x) - target
+            return abs(atan2(sin(a), cos(a)))
+        }
+        return samples.min { gap($0.point) < gap($1.point) }?.s ?? 0
+    }
+
+    /// Distance going clockwise from `a` to `b`.
+    func forward(from a: CGFloat, to b: CGFloat) -> CGFloat {
+        let d = (b - a).truncatingRemainder(dividingBy: length)
+        return d < 0 ? d + length : d
+    }
+
+    /// The track's tangent (clockwise) and outward normal at `s`.
+    private func frame(at s: CGFloat) -> (along: CGVector, outward: CGVector) {
+        let n = point(at: s).inward
+        return (CGVector(dx: n.dy, dy: -n.dx), CGVector(dx: -n.dx, dy: -n.dy))
+    }
+
+    /// A screen direction snapped to the track's frame at `s`: ±1 along
+    /// the track or ±1 outward, whichever it is nearer.
+    private func snapped(_ v: CGVector, at s: CGFloat) -> (along: CGFloat, outward: CGFloat) {
+        let f = frame(at: s)
+        let a = v.dx * f.along.dx   + v.dy * f.along.dy
+        let o = v.dx * f.outward.dx + v.dy * f.outward.dy
+        return abs(a) >= abs(o) ? (a < 0 ? -1 : 1, 0) : (0, o < 0 ? -1 : 1)
+    }
+
+    /// Whether a glyph whose top points `up` on screen lies with its HEIGHT
+    /// along the track at `s` (rather than across it).
+    func runsAlong(_ up: CGVector, at s: CGFloat) -> Bool {
+        snapped(up, at: s).along != 0
+    }
+
+    /// Stretches a glyph outline (CoreText units, y up) into a slot of the
+    /// track centred on arc length `s`, its top pointing `up` on screen
+    /// (snapped to the track's frame, so upright on a side means height
+    /// along the track). `box` fills `width` along the track and `depth`
+    /// inward. Every point is placed by the track, so the glyph bends
+    /// round corners.
+    func stretch(_ glyph: Path, box: CGRect, at s: CGFloat,
+                 width: CGFloat, depth: CGFloat, up: CGVector) -> Path {
+        guard box.width > 0, box.height > 0 else { return Path() }
+        let top   = snapped(up, at: s)
+        // The glyph's right is its up turned a quarter clockwise on screen.
+        let right = snapped(CGVector(dx: -up.dy, dy: up.dx), at: s)
+        func place(_ p: CGPoint) -> CGPoint {
+            let gx    = (p.x - box.midX) / box.width        // −½ … ½, rightward
+            let gy    = (p.y - box.midY) / box.height       // −½ … ½, upward
+            let along = (gx * right.along   + gy * top.along)   * width
+            let out   =  gx * right.outward + gy * top.outward  // −½ … ½
+            let down  = (0.5 - out) * depth
+            let edge  = point(at: s + along)
+            return CGPoint(x: edge.point.x + edge.inward.dx * down,
+                           y: edge.point.y + edge.inward.dy * down)
+        }
+        var out = Path()
+        glyph.forEach { element in
+            switch element {
+            case .move(let to):                  out.move(to: place(to))
+            case .line(let to):                  out.addLine(to: place(to))
+            case .quadCurve(let to, let c):      out.addQuadCurve(to: place(to), control: place(c))
+            case .curve(let to, let c1, let c2): out.addCurve(to: place(to), control1: place(c1),
+                                                              control2: place(c2))
+            case .closeSubpath:                  out.closeSubpath()
+            }
+        }
+        return out
     }
 }
 

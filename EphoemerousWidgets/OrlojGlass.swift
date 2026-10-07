@@ -6,7 +6,7 @@ import LoreKit
 //
 // The PLATE is light — fixed altitude fields (day, civil, nautical,
 // astronomical, night) in flat colour. They never change colour; the Sun
-// hand moves through them. Every other part — the Roman numerals, the
+// hand moves through them. Every other part — the Contour numerals, the
 // rete (band, cross, star hand), its glyphs, the hands — is a lens over
 // that light: the plate blurred and lifted inside the part's outline, a
 // body of ink, a rim lit from above.
@@ -34,9 +34,13 @@ struct OrlojGlassLayers: View {
             }
             OrlojPlateLines(face: face, palette: palette, showsHours: isLarge)
 
-            OrlojGlassPieces(pieces: numeralGlass(daylit: false), face: face, palette: palette)
-            OrlojGlassPieces(pieces: numeralGlass(daylit: true),  face: face, palette: palette,
-                             variant: .regular)
+            if Self.numeralsInGlass {
+                OrlojGlassPieces(pieces: numeralGlass(daylit: false), face: face, palette: palette)
+                OrlojGlassPieces(pieces: numeralGlass(daylit: true),  face: face, palette: palette,
+                                 variant: .regular)
+            } else {
+                OrlojFlatNumerals(face: face, palette: palette)
+            }
 
             OrlojGlassPieces(pieces: [reteGlass], face: face, palette: palette)
             if isLarge {
@@ -46,14 +50,17 @@ struct OrlojGlassLayers: View {
             OrlojGlassPieces(pieces: handGlass, face: face, palette: palette)
             OrlojHubEarth(face: face, palette: palette)
         }
-        .scaleEffect(0.95)
         .dynamicTypeSize(.large)
     }
 
-    /// The Roman numerals in glass: daylit hours frosted (regular), night
-    /// hours clear — the ring echoes the plate.
+    /// Glass numerals, or flat ink while their layout is being tuned.
+    /// ▼ TWEAK ▼
+    private static let numeralsInGlass = false
+
+    /// The hours in glass, along the widget's edge: daylit hours frosted
+    /// (regular), night hours clear — the ring echoes the plate.
     private func numeralGlass(daylit: Bool) -> [OrlojGlassPiece] {
-        face.numeralGlassPaths()
+        face.contourNumerals()
             .filter { $0.isDay == daylit }
             .map    { OrlojGlassPiece(path: $0.path) }
     }
@@ -197,7 +204,7 @@ struct OrlojGlassPieces: View {
 // MARK: - Plate
 
 /// The plate's light: day, then each altitude field painted over the
-/// last down to night, clipped to the plate. Flat colour, crisp edges.
+/// last down to night, filling the whole widget. Flat colour, crisp edges.
 struct OrlojPlateLight: View {
     let face:    OrlojFace
     let palette: OrlojGlassPalette
@@ -209,7 +216,6 @@ struct OrlojPlateLight: View {
                 OrlojPath(source: field.path).fill(palette.field(below: field.altitude))
             }
         }
-        .clipShape(OrlojPath(source: face.plateDiscPath()))
     }
 }
 
@@ -232,7 +238,20 @@ struct OrlojPlateLines: View {
                             lineWidth: field.altitude == .zero ? 0.9 * face.ui + 0.1 : 0.5)
             }
         }
-        .clipShape(OrlojPath(source: face.plateDiscPath()))
+    }
+}
+
+// MARK: - Numerals
+
+/// The Contour numerals as flat ink — no glass — for judging their layout.
+struct OrlojFlatNumerals: View {
+    let face:    OrlojFace
+    let palette: OrlojGlassPalette
+
+    var body: some View {
+        ForEach(Array(face.contourNumerals().enumerated()), id: \.offset) { _, numeral in
+            OrlojPath(source: numeral.path).fill(palette.ink)
+        }
     }
 }
 
