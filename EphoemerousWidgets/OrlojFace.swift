@@ -697,7 +697,7 @@ struct OrlojFace {
     private func emphasisOfNumeral(toward u: CGVector) -> Double {
         let target = atan2(u.dy, u.dx)
         let civil  = civilHourNow
-        let nearest = dialNumerals().min { a, b in
+        let nearest = contourDialNumerals().min { a, b in
             func gap(_ p: CGPoint) -> CGFloat {
                 let d = atan2(p.y - center.y, p.x - center.x) - target
                 return abs(atan2(sin(d), cos(d)))
@@ -842,8 +842,11 @@ struct OrlojFace {
     var contourCornerRadius: CGFloat { contourDepth(emphasis: 1) + 4 * ui }
     /// How much of its slot a numeral fills along the track.
     static let contourSlotFill:  CGFloat = 0.92
+    /// Which hours carry a numeral: every `contourHourStep`-th — 2 gives
+    /// twelve (2, 4 … 24), each with twice the room of a full ring.
+    static let contourHourStep:  Int     = 2
     /// How many hours the tail trails behind the current one.
-    static let contourTailHours: Double  = 6
+    static let contourTailHours: Double  = 8
     /// How much a numeral prefers SF's standard width when two cuts both
     /// fit — 0 lets the width axis roam freely.
     static let contourWidthPreference: CGFloat = 0.6
@@ -874,7 +877,7 @@ struct OrlojFace {
     func contourNumerals() -> [ContourNumeral] {
         let track    = contourTrack
         let samples  = track.samples(count: 1440)
-        let numerals = dialNumerals()
+        let numerals = contourDialNumerals()
         let civilNow = civilHourNow
         // Where each hour's direction meets the track.
         let stations = numerals.map { numeral in
@@ -985,6 +988,13 @@ struct OrlojFace {
         text.replacingOccurrences(of: "1", with: "I")
     }
 
+    /// The dial's hours that carry a Contour numeral.
+    @MainActor
+    func contourDialNumerals()
+        -> [(id: Int, text: String, position: CGPoint, rotation: Angle, isDay: Bool)] {
+        dialNumerals().filter { $0.id % Self.contourHourStep == 0 }
+    }
+
     /// The wall clock as a fractional hour — the same clock `dialNumerals`
     /// phases the ring against.
     private var civilHourNow: Double {
@@ -995,8 +1005,9 @@ struct OrlojFace {
     /// The Contour swell: full for the hour that has begun, tapering over
     /// `contourTailHours` behind it, nothing ahead.
     private func contourEmphasis(hour: Int, now: Double) -> Double {
-        let current = Int(now.rounded(.down)) % 24
-        let behind  = Double(((current - hour) % 24 + 24) % 24)     // 0 = the hour that has begun
+        let step    = Self.contourHourStep
+        let current = (Int(now.rounded(.down)) / step * step) % 24   // the numeral whose span has begun
+        let behind  = Double(((current - hour) % 24 + 24) % 24)     // 0 = that numeral
         return pow(max(0, 1 - behind / Self.contourTailHours), 1.3)
     }
 
