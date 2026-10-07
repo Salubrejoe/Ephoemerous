@@ -61,6 +61,33 @@ enum WidgetArtExporter {
                   to: dir, name: "orloj_\(f.name).png")
         }
 
+        // ── The 2.0 glass Orloj — now, and six hours on (the rete turns,
+        // the Sun moves into another field), plus the Clear simulation.
+        for (label, offset) in [("now", 0.0), ("plus6h", 6 * 3600.0)] {
+            for f in families where f.name != "medium" {
+                let face = OrlojFace(date: now.addingTimeInterval(offset), origin: origin, size: f.size)
+                write(tile(size: f.size) { OrlojGlassLayers(face: face) },
+                      to: dir, name: "orlojglass_\(f.name)_\(label).png")
+            }
+        }
+        let sydney = OrlojFace(date: now, origin: (latDeg: -33.87, lonDeg: 151.21),
+                               size: families[2].size)
+        write(tile(size: families[2].size) { OrlojGlassLayers(face: sydney) },
+              to: dir, name: "orlojglass_large_sydney.png")
+        do {
+            let size = CGSize(width: 364, height: 382)
+            let face = OrlojFace(date: now, origin: origin, size: size)
+            let view = ZStack {
+                LinearGradient(colors: [Color(red: 0.33, green: 0.47, blue: 0.66),
+                                        Color(red: 0.52, green: 0.46, blue: 0.30)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                Color.white.opacity(0.92).mask { OrlojGlassLayers(face: face, lineArt: true) }
+            }
+            .frame(width: size.width, height: size.height)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            write(view, to: dir, name: "orlojglass_clear.png")
+        }
+
         // ── The postcard — one tile per pinned object, at every family's
         // proportions AND its true treatment (`familyOverride`, since
         // `\.widgetFamily` can't be injected outside a widget host).

@@ -216,6 +216,7 @@
 			membershipExceptions = (
 				EphoemerousWidgets.swift,
 				OrlojFace.swift,
+				OrlojGlass.swift,
 			);
 			target = 7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */;
 		};

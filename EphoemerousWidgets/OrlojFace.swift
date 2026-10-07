@@ -667,6 +667,258 @@ struct OrlojFace {
         return tip
     }
 
+    // MARK: Glass instrument (2.0)
+    // The parts the glass face adds: altitude FIELDS as exact circles, the
+    // rete fused into one piece, and every hand as a filled blade so it
+    // can take glass.
+
+    /// Radius of the plate — the fields' clip, inside the crown.
+    var plateRadius: CGFloat { radiusForDeclination(romanDialDec) + 3 * ui }
+
+    /// How far every hand reaches — Sun, Moon and the star arm alike: just
+    /// past the plate's edge, touching the crown. ▼ TWEAK ▼
+    var handReach: CGFloat { plateRadius + 3 * ui }
+
+    /// Radius of the axle — the Earth, seen from above the pole.
+    var hubRadius: CGFloat { 9 * ui }
+
+    /// The four altitude circles, largest first: 0°, −6°, −12°, −18°.
+    /// Each circle holds the sky BELOW its altitude (the night side sits
+    /// inside, Prague's black disc), so painted in this order over a day
+    /// plate they step it civil → nautical → astronomical → night.
+    @MainActor
+    func altitudeFields() -> [(altitude: Angle, path: Path)] {
+        [Angle.zero, .degrees(-6), .degrees(-12), .degrees(-18)].compactMap { alt in
+            guard let c = almucantarCircle(altitude: alt) else { return nil }
+            return (alt, circle(c.centre, c.radius))
+        }
+    }
+
+    /// The rete as ONE piece of glass: the zodiac band, the four spokes of
+    /// its cross and the hub, fused into a single outline. Every junction
+    /// is swept by a fillet, so the arms flow into the band and out of the
+    /// hub instead of ending under them.
+    ///
+    /// `withStarHand`: the λ 0° spoke runs on through the band to the
+    /// plate's edge. It points at the first point of Aries, so its angle
+    /// IS sidereal time — the star hand, cast in the rete itself.
+    /// ▼ TWEAK the fillets and spoke weight here ▼
+    @MainActor
+    func reteGlassPath(withStarHand: Bool) -> Path {
+        guard let ring = eclipticCircle() else { return Path() }
+        let innerRim:   CGFloat = ring.radius - zodiacBandWidth / 2
+        let outerRim:   CGFloat = ring.radius + zodiacBandWidth / 2
+        let bandFillet: CGFloat = 7 * ui
+        let hubFillet:  CGFloat = 4 * ui
+
+        var rete = circle(ring.centre, outerRim).subtracting(circle(ring.centre, innerRim))
+        rete     = rete.union(circle(center, hubRadius))
+        for spoke in reteSpokes(innerRim: innerRim, ringCentre: ring.centre) {
+            rete = rete.union(spoke.bar)
+            for side in spoke.sides {
+                if let web = filletWeb(along: side, circleCentre: ring.centre, radius: innerRim,
+                                       fillet: bandFillet, insideCircle: true,
+                                       depth: zodiacBandWidth / 2) {
+                    rete = rete.union(web)
+                }
+                if let web = filletWeb(along: side, circleCentre: center, radius: hubRadius,
+                                       fillet: hubFillet, insideCircle: false,
+                                       depth: hubRadius / 2) {
+                    rete = rete.union(web)
+                }
+            }
+        }
+        if withStarHand, let star = starArm(outerRim: outerRim, ringCentre: ring.centre) {
+            rete = rete.union(star.bar)
+            for side in star.sides {
+                if let web = filletWeb(along: side, circleCentre: ring.centre, radius: outerRim,
+                                       fillet: bandFillet, insideCircle: false,
+                                       depth: zodiacBandWidth / 2) {
+                    rete = rete.union(web)
+                }
+            }
+        }
+        return rete
+    }
+
+    /// The star hand's arm: the λ 0° spoke continued from inside the band
+    /// out to the crown, as wide as the spoke ends and round at the tip.
+    /// Nil when the band already reaches the crown.
+    @MainActor
+    private func starArm(outerRim: CGFloat, ringCentre: CGPoint)
+        -> (bar: Path, sides: [SpokeSide])? {
+        guard let aries = camera.screen(equatorial: .eclipticPoint(lambda: .zero))
+        else { return nil }
+        let u     = unitVector(to: aries)
+        let width = 3 * ui
+        guard let reach = rayToCircle(from: center, toward: u,
+                                      centre: ringCentre, radius: outerRim),
+              handReach > reach + 6 * ui
+        else { return nil }
+        let start = along(u, reach - zodiacBandWidth * 0.45)
+        let tip   = along(u, handReach - width / 2)
+        let n     = CGVector(dx: -u.dy, dy: u.dx)
+        let bar   = taperedBar(from: start, to: tip, startWidth: width, endWidth: width)
+            .union(circle(tip, width / 2))
+        let sides = [n, CGVector(dx: -n.dx, dy: -n.dy)].map { normal in
+            SpokeSide(point:     CGPoint(x: start.x + normal.dx * width / 2,
+                                         y: start.y + normal.dy * width / 2),
+                      direction: u,
+                      normal:    normal)
+        }
+        return (bar, sides)
+    }
+
+    /// One edge of a spoke: a point on it, its direction outward from the
+    /// axle, and the normal pointing AWAY from the spoke's body.
+    private struct SpokeSide {
+        let point:     CGPoint
+        let direction: CGVector
+        let normal:    CGVector
+    }
+
+    /// The four spokes of the cross, at the equinoxes and solstices
+    /// (λ 0°, 90°, 180°, 270°), each reaching into the band. The band is
+    /// off-centre, so they come out in four different lengths.
+    @MainActor
+    private func reteSpokes(innerRim: CGFloat, ringCentre: CGPoint)
+        -> [(bar: Path, sides: [SpokeSide])] {
+        [0.0, 90, 180, 270].compactMap { lambda in
+            guard let p = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(lambda)))
+            else { return nil }
+            let u = unitVector(to: p)
+            guard let reach = rayToCircle(from: center, toward: u,
+                                          centre: ringCentre, radius: innerRim)
+            else { return nil }
+            let start      = along(u, hubRadius * 0.6)
+            let end        = along(u, reach + zodiacBandWidth * 0.45)
+            let startWidth = 4 * ui
+            let endWidth   = 3 * ui
+            let n          = CGVector(dx: -u.dy, dy: u.dx)
+            let sides = [1.0, -1.0].map { (sign: CGFloat) -> SpokeSide in
+                let a = CGPoint(x: start.x + n.dx * sign * startWidth / 2,
+                                y: start.y + n.dy * sign * startWidth / 2)
+                let b = CGPoint(x: end.x + n.dx * sign * endWidth / 2,
+                                y: end.y + n.dy * sign * endWidth / 2)
+                let d = unit(CGVector(dx: b.x - a.x, dy: b.y - a.y))
+                var normal = CGVector(dx: -d.dy, dy: d.dx)
+                if normal.dx * n.dx * sign + normal.dy * n.dy * sign < 0 {
+                    normal = CGVector(dx: -normal.dx, dy: -normal.dy)
+                }
+                return SpokeSide(point: a, direction: d, normal: normal)
+            }
+            return (taperedBar(from: start, to: end, startWidth: startWidth, endWidth: endWidth),
+                    sides)
+        }
+    }
+
+    /// The web of glass that fills the corner where a spoke edge meets a
+    /// circle (the band's inner rim, or the hub), cut by a fillet circle
+    /// tangent to both. `insideCircle`: the spoke runs inside the circle
+    /// (the band's rim) rather than out of it (the hub). `depth` sinks the
+    /// web's far edge into the solid it joins, so the union has no seam.
+    private func filletWeb(along side: SpokeSide, circleCentre c: CGPoint, radius r: CGFloat,
+                           fillet f: CGFloat, insideCircle: Bool, depth: CGFloat) -> Path? {
+        let d = side.direction, n = side.normal
+        // Fillet centre: on the edge's offset line, at r ∓ f from the circle's centre.
+        let offset = CGPoint(x: side.point.x + n.dx * f, y: side.point.y + n.dy * f)
+        guard let t = rayToCircle(from: offset, toward: d, centre: c,
+                                  radius: insideCircle ? r - f : r + f),
+              let s = rayToCircle(from: side.point, toward: d, centre: c, radius: r)
+        else { return nil }
+        let fc      = CGPoint(x: offset.x + d.dx * t, y: offset.y + d.dy * t)
+        let radial  = unit(CGVector(dx: fc.x - c.x, dy: fc.y - c.y))
+        let corner  = CGPoint(x: side.point.x + d.dx * s, y: side.point.y + d.dy * s)
+        let toEdge  = CGPoint(x: fc.x - n.dx * f, y: fc.y - n.dy * f)          // tangent on the spoke
+        let toRim   = CGPoint(x: c.x + radial.dx * r, y: c.y + radial.dy * r)  // tangent on the circle
+        let sunk    = insideCircle ? r + depth : r - depth
+        let cornerU = unit(CGVector(dx: corner.x - c.x, dy: corner.y - c.y))
+        var web = Path()
+        web.addLines([toEdge,
+                      corner,
+                      CGPoint(x: c.x + cornerU.dx * sunk, y: c.y + cornerU.dy * sunk),
+                      CGPoint(x: c.x + radial.dx  * sunk, y: c.y + radial.dy  * sunk),
+                      toRim])
+        web.closeSubpath()
+        return web.subtracting(circle(fc, f))
+    }
+
+    /// The Sun's hand — a thin glass capsule from a short tail behind the
+    /// axle out to the crown.
+    /// ▼ TWEAK the hands' proportions here ▼
+    @MainActor
+    func sunCapsulePath() -> Path? {
+        guard let p = sunPoint else { return nil }
+        return capsuleHand(toward: unitVector(to: p),
+                           length: handReach,
+                           tail:   12 * ui,
+                           width:  3.6 * ui)
+    }
+
+    /// The Moon's hand — as long as the Sun's, slimmer.
+    @MainActor
+    func moonCapsulePath() -> Path? {
+        guard let p = moonPoint else { return nil }
+        return capsuleHand(toward: unitVector(to: p),
+                           length: handReach,
+                           tail:   9 * ui,
+                           width:  2.8 * ui)
+    }
+
+    // MARK: Glass helpers
+
+    private func unit(_ v: CGVector) -> CGVector {
+        let d = max(hypot(v.dx, v.dy), 0.0001)
+        return CGVector(dx: v.dx / d, dy: v.dy / d)
+    }
+
+    private func unitVector(to p: CGPoint) -> CGVector {
+        let dx = p.x - center.x, dy = p.y - center.y
+        let d  = max(hypot(dx, dy), 0.0001)
+        return CGVector(dx: dx / d, dy: dy / d)
+    }
+
+    private func along(_ u: CGVector, _ r: CGFloat) -> CGPoint {
+        CGPoint(x: center.x + u.dx * r, y: center.y + u.dy * r)
+    }
+
+    /// Distance along a ray from `origin` to where it leaves a circle
+    /// that contains the origin; nil if the ray misses.
+    private func rayToCircle(from origin: CGPoint, toward u: CGVector,
+                             centre: CGPoint, radius: CGFloat) -> CGFloat? {
+        let ox   = origin.x - centre.x, oy = origin.y - centre.y
+        let b    = u.dx * ox + u.dy * oy
+        let disc = b * b - (ox * ox + oy * oy - radius * radius)
+        guard disc >= 0 else { return nil }
+        return -b + sqrt(disc)
+    }
+
+    /// A hand: a capsule along `u`, from `tail` behind the axle to `length`
+    /// in front of it, round at both ends.
+    private func capsuleHand(toward u: CGVector, length: CGFloat,
+                             tail: CGFloat, width: CGFloat) -> Path {
+        let rect  = CGRect(x: -tail, y: -width / 2, width: length + tail, height: width)
+        let place = CGAffineTransform(translationX: center.x, y: center.y)
+            .rotated(by: atan2(u.dy, u.dx))
+        return Path(roundedRect: rect, cornerRadius: width / 2, style: .circular)
+            .applying(place)
+    }
+
+    /// A straight bar tapering from `startWidth` to `endWidth`.
+    private func taperedBar(from a: CGPoint, to b: CGPoint,
+                            startWidth: CGFloat, endWidth: CGFloat) -> Path {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let d  = max(hypot(dx, dy), 0.0001)
+        let nx = -dy / d, ny = dx / d
+        var path = Path()
+        path.addLines([CGPoint(x: a.x + nx * startWidth / 2, y: a.y + ny * startWidth / 2),
+                       CGPoint(x: b.x + nx * endWidth   / 2, y: b.y + ny * endWidth   / 2),
+                       CGPoint(x: b.x - nx * endWidth   / 2, y: b.y - ny * endWidth   / 2),
+                       CGPoint(x: a.x - nx * startWidth / 2, y: a.y - ny * startWidth / 2)])
+        path.closeSubpath()
+        return path
+    }
+
     // MARK: Sun helpers
 
     private var sunLambda: Angle { SunPosition.eclipticLongitude(for: date) }

@@ -88,11 +88,11 @@ struct OrlojWidgetView: View {
 
     var body: some View {
         GeometryReader { geo in
-            OrlojFaceLayers(face: OrlojFace(date:   entry.date,
-                                            origin: entry.origin,
-                                            size:   geo.size,
-                                            jwst:   entry.jwst),
-                            lineArt: renderingMode != .fullColor)
+            OrlojGlassLayers(face: OrlojFace(date:   entry.date,
+                                             origin: entry.origin,
+                                             size:   geo.size,
+                                             jwst:   entry.jwst),
+                             lineArt: renderingMode != .fullColor)
                 // The face is always NIGHT. `.preferredColorScheme` doesn't
                 // reach a widget's colours: on a light Home Screen the
                 // badges' asset colours resolved their LIGHT variants.
