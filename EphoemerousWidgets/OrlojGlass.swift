@@ -5,11 +5,11 @@ import LoreKit
 // The 2.0 face: the Prague mechanism, cast in glass.
 //
 // The PLATE is light — fixed altitude fields (day, civil, nautical,
-// astronomical, night) softened like light behind frosted glass. They
-// never change colour; the Sun hand moves through them. Every MOVING
-// part — crown, zodiac band, the rete's cross, the three hands, the axle —
-// is a lens over that light: the plate blurred and lifted inside the
-// part's outline, a whisper of body, a rim lit from above.
+// astronomical, night) in flat colour. They never change colour; the Sun
+// hand moves through them. Every other part — the Roman numerals, the
+// rete (band, cross, star hand), its glyphs, the hands — is a lens over
+// that light: the plate blurred and lifted inside the part's outline, a
+// body of ink, a rim lit from above.
 //
 // `.glassEffect` doesn't render in the widget process, so the glass is
 // built from parts that rasterise anywhere (see `OrlojGlassPiece`).
@@ -34,9 +34,14 @@ struct OrlojGlassLayers: View {
             }
             OrlojPlateLines(face: face, palette: palette, showsHours: isLarge)
 
-            OrlojGlassPieces(pieces: reteGlass, face: face, palette: palette)
-            OrlojCrownNumerals(face: face, palette: palette)
-            OrlojZodiacMarks(face: face, palette: palette, showsGlyphs: false)
+            OrlojGlassPieces(pieces: numeralGlass(daylit: false), face: face, palette: palette)
+            OrlojGlassPieces(pieces: numeralGlass(daylit: true),  face: face, palette: palette,
+                             variant: .regular)
+
+            OrlojGlassPieces(pieces: [reteGlass], face: face, palette: palette)
+            if isLarge {
+                OrlojGlassPieces(pieces: glyphGlass, face: face, palette: palette, variant: .regular)
+            }
 
             OrlojGlassPieces(pieces: handGlass, face: face, palette: palette)
             OrlojHubEarth(face: face, palette: palette)
@@ -45,11 +50,24 @@ struct OrlojGlassLayers: View {
         .dynamicTypeSize(.large)
     }
 
-    /// The crown, and the rete — band, cross, hub and (large only) the
-    /// star hand as one piece of glass.
-    private var reteGlass: [OrlojGlassPiece] {
-        [OrlojGlassPiece(path: face.dialBandPath(), eoFill: true),
-         OrlojGlassPiece(path: face.reteGlassPath(withStarHand: isLarge))]
+    /// The Roman numerals in glass: daylit hours frosted (regular), night
+    /// hours clear — the ring echoes the plate.
+    private func numeralGlass(daylit: Bool) -> [OrlojGlassPiece] {
+        face.numeralGlassPaths()
+            .filter { $0.isDay == daylit }
+            .map    { OrlojGlassPiece(path: $0.path) }
+    }
+
+    /// The rete — band, cross, hub and (large only) the star hand as one
+    /// piece of glass.
+    private var reteGlass: OrlojGlassPiece {
+        OrlojGlassPiece(path: face.reteGlassPath(withStarHand: isLarge))
+    }
+
+    /// The sign glyphs, warped into the band — regular glass on the
+    /// band's clear glass, so they read.
+    private var glyphGlass: [OrlojGlassPiece] {
+        face.zodiacGlyphPaths().map { OrlojGlassPiece(path: $0) }
     }
 
     /// The Sun and Moon hands, front of the stack — plain glass.
@@ -64,7 +82,8 @@ struct OrlojGlassLayers: View {
 // Display P3 (values checked in-gamut):
 //   • night       = the canvas sky (canvas L .20 C .034 h 258, −10% black)
 //   • the fields climb in L and swing in hue from the navy toward the
-//     star ramp's amber: indigo → mulberry → K-class amber → sky blue
+//     star ramp's amber: indigo → mulberry → K-class amber → sky blue,
+//     each a single flat colour
 //   • glass ink   = `Artist.ink`, the cool near-white; never pure white
 //   • the Sun     = a G-class star, like any other (`palette.sun`)
 struct OrlojGlassPalette {
@@ -74,9 +93,7 @@ struct OrlojGlassPalette {
     var night: Color { Artist.shared.skyColor }
 
     /// The day — the plate's ground, everything above the horizon.
-    var day: LinearGradient {
-        LinearGradient(colors: [Self.dayHigh, Self.dayLow], startPoint: .top, endPoint: .bottom)
-    }
+    var day: Color { Self.dayLight }
 
     /// Field colour for the sky BELOW `altitude` (inside its circle).
     func field(below altitude: Angle) -> Color {
@@ -92,17 +109,23 @@ struct OrlojGlassPalette {
     static let astronomical = Color(.displayP3, red: 0.175, green: 0.143, blue: 0.321)   // OKLCH L .30  C .085  h 290
     static let nautical     = Color(.displayP3, red: 0.442, green: 0.236, blue: 0.445)   //       L .45  C .120  h 330
     static let civil        = Color(.displayP3, red: 0.853, green: 0.604, blue: 0.352)   //       L .74  C .130  h  62
-    static let dayHigh      = Color(.displayP3, red: 0.463, green: 0.700, blue: 0.891)   //       L .74  C .110  h 238
-    static let dayLow       = Color(.displayP3, red: 0.257, green: 0.410, blue: 0.656)   //       L .52  C .120  h 255
+    static let dayLight     = Color(.displayP3, red: 0.351, green: 0.554, blue: 0.774)   //       L .63  C .115  h 246
     static let earthHigh    = Color(.displayP3, red: 0.414, green: 0.673, blue: 0.733)   //       L .70  C .090  h 210
     static let earthLow     = Color(.displayP3, red: 0.097, green: 0.213, blue: 0.294)   //       L .32  C .060  h 235
 
     // ▼ TWEAK the glass recipe here ▼
-    var plateSoftness:  CGFloat { 3.5 }     // pt of blur on the light, × ui
     var frostBlur:      CGFloat { 5 }       // pt of extra blur inside a lens, × ui
     var frostSaturation: Double { 1.15 }
     var frostLift:       Double { 0.06 }
-    var bodyOpacity:     Double { lineArt ? 0.10 : 0.07 }
+
+    /// The body of a lens: a whisper on clear glass; on regular glass a
+    /// frosted veil of ink, so a glyph reads against the glass behind it.
+    func bodyOpacity(_ variant: OrlojGlassVariant) -> Double {
+        switch variant {
+        case .clear:   return lineArt ? 0.10 : 0.07
+        case .regular: return lineArt ? 0.45 : 0.42
+        }
+    }
 
     /// Rim light — bright top-left, dim across the middle, a bounce at
     /// the bottom-right. The badges' "lit from above".
@@ -116,6 +139,14 @@ struct OrlojGlassPalette {
 
 // MARK: - Glass
 
+/// Liquid Glass's two variants, hand-rolled: `.clear` lets the plate's
+/// light through almost untouched; `.regular` is frosted, for marks that
+/// must read on top of other glass.
+enum OrlojGlassVariant {
+    case clear
+    case regular
+}
+
 struct OrlojGlassPiece {
     let path:   Path
     var eoFill: Bool = false
@@ -128,6 +159,7 @@ struct OrlojGlassPieces: View {
     let pieces:  [OrlojGlassPiece]
     let face:    OrlojFace
     let palette: OrlojGlassPalette
+    var variant: OrlojGlassVariant = .clear
 
     var body: some View {
         ZStack {
@@ -138,7 +170,7 @@ struct OrlojGlassPieces: View {
                         .saturation(palette.frostSaturation)
                         .brightness(palette.frostLift)
                 }
-                palette.ink.opacity(palette.bodyOpacity)
+                palette.ink.opacity(palette.bodyOpacity(variant))
             }
             .mask { silhouette }
             .compositingGroup()
@@ -165,7 +197,7 @@ struct OrlojGlassPieces: View {
 // MARK: - Plate
 
 /// The plate's light: day, then each altitude field painted over the
-/// last down to night, clipped to the plate and softened.
+/// last down to night, clipped to the plate. Flat colour, crisp edges.
 struct OrlojPlateLight: View {
     let face:    OrlojFace
     let palette: OrlojGlassPalette
@@ -178,7 +210,6 @@ struct OrlojPlateLight: View {
             }
         }
         .clipShape(OrlojPath(source: face.plateDiscPath()))
-        .blur(radius: palette.plateSoftness * face.ui)
     }
 }
 
@@ -205,48 +236,7 @@ struct OrlojPlateLines: View {
     }
 }
 
-// MARK: - Crown & rete marks
-
-/// Roman numerals on the glass crown. Daylit hours in full ink, night
-/// hours dimmer: the crown echoes the plate.
-struct OrlojCrownNumerals: View {
-    let face:    OrlojFace
-    let palette: OrlojGlassPalette
-
-    var body: some View {
-        ForEach(face.dialNumerals(), id: \.id) { numeral in
-            Text(numeral.text)
-                .font(.system(size: 9 * face.type, weight: .semibold, design: .serif))
-                .foregroundStyle(palette.ink.opacity(numeral.isDay ? 0.95 : 0.55))
-                .shadow(color: .black.opacity(palette.lineArt ? 0 : 0.35), radius: 1)
-                .rotationEffect(numeral.rotation)
-                .position(numeral.position)
-        }
-    }
-}
-
-/// Sign dividers and glyphs on the zodiac band.
-struct OrlojZodiacMarks: View {
-    let face:        OrlojFace
-    let palette:     OrlojGlassPalette
-    let showsGlyphs: Bool
-
-    var body: some View {
-        ZStack {
-            OrlojPath(source: face.zodiacTicksPath())
-                .stroke(palette.ink.opacity(0.55), lineWidth: 0.7)
-            if showsGlyphs {
-                ForEach(face.zodiacGlyphs(), id: \.id) { glyph in
-                    Text(glyph.symbol)
-                        .font(.system(size: 10 * face.type, weight: .semibold))
-                        .foregroundStyle(palette.ink.opacity(0.85))
-                        .rotationEffect(glyph.rotation)
-                        .position(glyph.position)
-                }
-            }
-        }
-    }
-}
+// MARK: - Bodies on the band
 
 /// The five naked-eye planets as glowing beads, in their own colours.
 struct OrlojPlanetBeads: View {

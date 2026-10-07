@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreText
 import LoreKit
 import simd
 
@@ -705,20 +706,20 @@ struct OrlojFace {
     /// ▼ TWEAK the fillets and spoke weight here ▼
     @MainActor
     func reteGlassPath(withStarHand: Bool) -> Path {
-        guard let ring = eclipticCircle() else { return Path() }
-        let innerRim:   CGFloat = ring.radius - zodiacBandWidth / 2
-        let outerRim:   CGFloat = ring.radius + zodiacBandWidth / 2
+        guard let rims = zodiacRims() else { return Path() }
         let bandFillet: CGFloat = 7 * ui
         let hubFillet:  CGFloat = 4 * ui
 
-        var rete = circle(ring.centre, outerRim).subtracting(circle(ring.centre, innerRim))
+        var rete = circle(rims.outer.centre, rims.outer.radius)
+            .subtracting(circle(rims.inner.centre, rims.inner.radius))
         rete     = rete.union(circle(center, hubRadius))
-        for spoke in reteSpokes(innerRim: innerRim, ringCentre: ring.centre) {
+        for spoke in reteSpokes(innerRim: rims.inner.radius, ringCentre: rims.inner.centre) {
             rete = rete.union(spoke.bar)
             for side in spoke.sides {
-                if let web = filletWeb(along: side, circleCentre: ring.centre, radius: innerRim,
+                if let web = filletWeb(along: side, circleCentre: rims.inner.centre,
+                                       radius: rims.inner.radius,
                                        fillet: bandFillet, insideCircle: true,
-                                       depth: zodiacBandWidth / 2) {
+                                       depth: bandSink) {
                     rete = rete.union(web)
                 }
                 if let web = filletWeb(along: side, circleCentre: center, radius: hubRadius,
@@ -728,17 +729,205 @@ struct OrlojFace {
                 }
             }
         }
-        if withStarHand, let star = starArm(outerRim: outerRim, ringCentre: ring.centre) {
+        if withStarHand, let star = starArm(outerRim: rims.outer.radius, ringCentre: rims.outer.centre) {
             rete = rete.union(star.bar)
             for side in star.sides {
-                if let web = filletWeb(along: side, circleCentre: ring.centre, radius: outerRim,
+                if let web = filletWeb(along: side, circleCentre: rims.outer.centre,
+                                       radius: rims.outer.radius,
                                        fillet: bandFillet, insideCircle: false,
-                                       depth: zodiacBandWidth / 2) {
+                                       depth: bandSink) {
                     rete = rete.union(web)
                 }
             }
         }
-        return rete
+        return rete.normalized(eoFill: false)
+    }
+
+    /// How far an arm sinks into the band past the rim it joins — enough
+    /// for a seamless union, never past the band's narrowest width.
+    private var bandSink: CGFloat { 3 * ui }
+
+    // MARK: Zodiac band (2.0)
+    // The band as Prague draws it — by the projection. Its rims are the
+    // two circles of ecliptic LATITUDE ±`zodiacHalfWidth` (true circles,
+    // so off-centre and wide on the far side); each sign's divider is its
+    // line of constant longitude between them; each glyph is warped into
+    // its cell point by point through the same projection.
+
+    /// Half-width of the band in ecliptic latitude. ▼ TWEAK ▼
+    static let zodiacHalfWidth: Angle = .degrees(5)
+
+    /// How much of its cell's height a glyph fills. ▼ TWEAK ▼
+    static let zodiacGlyphFill: Double = 0.78
+
+    typealias RimCircle = (centre: CGPoint, radius: CGFloat)
+
+    /// The band's two rims, as exact circles.
+    @MainActor
+    func zodiacRims() -> (inner: RimCircle, outer: RimCircle)? {
+        func rim(_ beta: Angle) -> RimCircle? {
+            guard let a = screen(eclipticLongitude: .degrees(0),   latitude: beta),
+                  let b = screen(eclipticLongitude: .degrees(120), latitude: beta),
+                  let c = screen(eclipticLongitude: .degrees(240), latitude: beta)
+            else { return nil }
+            return Self.circle(through: a, b, c)
+        }
+        guard let north = rim(Self.zodiacHalfWidth),
+              let south = rim(.radians(-Self.zodiacHalfWidth.radians)) else { return nil }
+        return north.radius < south.radius ? (north, south) : (south, north)
+    }
+
+    /// Where the cross's arms meet the band — the equinoxes and solstices.
+    static let reteArmLongitudes: [Double] = [0, 90, 180, 270]
+
+    /// The Roman numerals as glass: each hour's numeral outlined in the
+    /// dial's serif, centred on its ring point, feet to the centre.
+    /// `isDay` lets the face frost the daylit hours.
+    @MainActor
+    func numeralGlassPaths() -> [(path: Path, isDay: Bool)] {
+        // ▼ TWEAK the numerals' size ▼
+        let size: CGFloat = (ui >= 0.7 ? 12 : 8.5) * type
+        return dialNumerals().compactMap { numeral in
+            guard let outline = Self.romanOutlines[numeral.text] else { return nil }
+            let box   = outline.boundingRect
+            let place = CGAffineTransform(translationX: numeral.position.x, y: numeral.position.y)
+                .rotated(by: numeral.rotation.radians)
+                .scaledBy(x: size / 100, y: -size / 100)        // CoreText is y-up
+                .translatedBy(x: -box.midX, y: -box.midY)
+            return (outline.applying(place), numeral.isDay)
+        }
+    }
+
+    /// The twelve sign glyphs, each warped into its cell: tops toward the
+    /// band's outside, as on the original, swelling where the band does.
+    @MainActor
+    func zodiacGlyphPaths() -> [Path] {
+        guard let rims = zodiacRims() else { return [] }
+        let bandCentre = CGPoint(x: (rims.inner.centre.x + rims.outer.centre.x) / 2,
+                                 y: (rims.inner.centre.y + rims.outer.centre.y) / 2)
+        return ZodiacSign.zodiac.compactMap { sign in
+            guard let outline = Self.zodiacOutlines[sign.index - 1] else { return nil }
+            return warped(outline,
+                          into:       .degrees(Double(sign.index - 1) * 30 + 15),
+                          bandCentre: bandCentre)
+        }
+    }
+
+    /// Maps a glyph outline (CoreText units, y up) into the cell centred on
+    /// longitude `lc`: glyph height → ecliptic latitude, glyph width →
+    /// longitude, keeping the glyph's aspect at the cell's centre. Every
+    /// point goes through the projection, so the glyph bends with the band.
+    @MainActor
+    private func warped(_ glyph: Path, into lc: Angle, bandCentre: CGPoint) -> Path? {
+        let b   = Self.zodiacHalfWidth.degrees * Self.zodiacGlyphFill
+        let box = glyph.boundingRect
+        guard box.width > 0, box.height > 0,
+              let mid    = screen(eclipticLongitude: lc,                       latitude: .zero),
+              let north  = screen(eclipticLongitude: lc,                       latitude: .degrees(b)),
+              let south  = screen(eclipticLongitude: lc,                       latitude: .degrees(-b)),
+              let ahead  = screen(eclipticLongitude: lc + .degrees(0.5),       latitude: .zero),
+              let behind = screen(eclipticLongitude: lc - .degrees(0.5),       latitude: .zero)
+        else { return nil }
+
+        // Top of the glyph faces the band's outside.
+        let northIsOut = distance(north, bandCentre) > distance(south, bandCentre)
+        let betaSign   = northIsOut ? 1.0 : -1.0
+        let top        = northIsOut ? north : south
+        // Width from the cell's local scale, so the glyph keeps its aspect.
+        let heightPts  = distance(north, south)
+        let ptsPerDeg  = max(distance(ahead, behind), 0.0001)
+        let lambdaSpan = min(Double(box.width / box.height * heightPts / ptsPerDeg), 30 * 0.85)
+        // Glyph-right must sit clockwise of glyph-up, or it reads mirrored.
+        let cross      = (ahead.x - mid.x) * (top.y - mid.y) - (ahead.y - mid.y) * (top.x - mid.x)
+        let lambdaSign = cross < 0 ? 1.0 : -1.0
+
+        func warp(_ p: CGPoint) -> CGPoint {
+            let gx = Double((p.x - box.minX) / box.width) - 0.5
+            let gy = Double((p.y - box.minY) / box.height) * 2 - 1
+            return screen(eclipticLongitude: lc + .degrees(gx * lambdaSpan * lambdaSign),
+                          latitude:          .degrees(gy * b * betaSign)) ?? mid
+        }
+        var out = Path()
+        glyph.forEach { element in
+            switch element {
+            case .move(let to):                 out.move(to: warp(to))
+            case .line(let to):                 out.addLine(to: warp(to))
+            case .quadCurve(let to, let c):     out.addQuadCurve(to: warp(to), control: warp(c))
+            case .curve(let to, let c1, let c2): out.addCurve(to: warp(to), control1: warp(c1),
+                                                             control2: warp(c2))
+            case .closeSubpath:                 out.closeSubpath()
+            }
+        }
+        return out
+    }
+
+    /// A point at ecliptic longitude λ and latitude β, on screen.
+    @MainActor
+    private func screen(eclipticLongitude lambda: Angle, latitude beta: Angle) -> CGPoint? {
+        camera.screen(equatorial: Self.eclipticVector(lambda: lambda, beta: beta))
+    }
+
+    /// Ecliptic (λ, β) → equatorial unit vector, tilted by the obliquity
+    /// exactly as `SIMD3.eclipticPoint` does for β = 0.
+    private static func eclipticVector(lambda: Angle, beta: Angle) -> SIMD3<Double> {
+        let e = AstroConstants.obliquity.radians
+        let x = cos(beta.radians) * cos(lambda.radians)
+        let y = cos(beta.radians) * sin(lambda.radians)
+        let z = sin(beta.radians)
+        return SIMD3(x, y * cos(e) - z * sin(e), y * sin(e) + z * cos(e))
+    }
+
+    private func distance(_ a: CGPoint, _ b: CGPoint) -> CGFloat {
+        hypot(a.x - b.x, a.y - b.y)
+    }
+
+    /// The sign glyphs' outlines from the system's own symbol font, built
+    /// once per process. CoreText picks whichever font draws the sign
+    /// (the variation selector asks for the text form, not the emoji).
+    private static let zodiacOutlines: [Path?] = ZodiacSign.zodiac.map {
+        glyphOutline($0.symbol, font: symbolFont)
+    }
+
+    /// The numerals' outlines at 100 pt, in the serif-semibold voice the
+    /// labels use, built once per process.
+    private static let romanOutlines: [String: Path] = Dictionary(
+        uniqueKeysWithValues: romanTexts.compactMap { text in
+            glyphOutline(text, font: romanFont).map { (text, $0) }
+        })
+
+    private static let symbolFont: CTFont =
+        CTFontCreateUIFontForLanguage(.system, 100, nil)
+        ?? CTFontCreateWithName("Helvetica" as CFString, 100, nil)
+
+    private static let romanFont: CTFont = {
+        var descriptor = UIFont.systemFont(ofSize: 100, weight: .semibold).fontDescriptor
+        descriptor     = descriptor.withDesign(.serif) ?? descriptor
+        return UIFont(descriptor: descriptor, size: 100) as CTFont
+    }()
+
+    /// A string's outline at its font's size (CoreText units, y up),
+    /// whichever fonts CoreText falls back to for its characters.
+    private static func glyphOutline(_ text: String, font: CTFont) -> Path? {
+        let attributed = NSAttributedString(string: text,
+                                            attributes: [.init(kCTFontAttributeName as String): font])
+        let line       = CTLineCreateWithAttributedString(attributed)
+        let outline    = CGMutablePath()
+        for run in CTLineGetGlyphRuns(line) as? [CTRun] ?? [] {
+            let attributes = CTRunGetAttributes(run) as NSDictionary
+            guard let value = attributes[kCTFontAttributeName as String] else { continue }
+            let runFont   = value as! CTFont
+            let count     = CTRunGetGlyphCount(run)
+            var glyphs    = [CGGlyph](repeating: 0, count: count)
+            var positions = [CGPoint](repeating: .zero, count: count)
+            CTRunGetGlyphs(run,    CFRange(location: 0, length: count), &glyphs)
+            CTRunGetPositions(run, CFRange(location: 0, length: count), &positions)
+            for (glyph, position) in zip(glyphs, positions) {
+                guard let path = CTFontCreatePathForGlyph(runFont, glyph, nil) else { continue }
+                outline.addPath(path, transform: CGAffineTransform(translationX: position.x,
+                                                                   y: position.y))
+            }
+        }
+        return outline.isEmpty ? nil : Path(outline)
     }
 
     /// The star hand's arm: the λ 0° spoke continued from inside the band
@@ -755,7 +944,7 @@ struct OrlojFace {
                                       centre: ringCentre, radius: outerRim),
               handReach > reach + 6 * ui
         else { return nil }
-        let start = along(u, reach - zodiacBandWidth * 0.45)
+        let start = along(u, reach - bandSink)
         let tip   = along(u, handReach - width / 2)
         let n     = CGVector(dx: -u.dy, dy: u.dx)
         let bar   = taperedBar(from: start, to: tip, startWidth: width, endWidth: width)
@@ -783,7 +972,7 @@ struct OrlojFace {
     @MainActor
     private func reteSpokes(innerRim: CGFloat, ringCentre: CGPoint)
         -> [(bar: Path, sides: [SpokeSide])] {
-        [0.0, 90, 180, 270].compactMap { lambda in
+        Self.reteArmLongitudes.compactMap { lambda in
             guard let p = camera.screen(equatorial: .eclipticPoint(lambda: .degrees(lambda)))
             else { return nil }
             let u = unitVector(to: p)
@@ -791,7 +980,7 @@ struct OrlojFace {
                                           centre: ringCentre, radius: innerRim)
             else { return nil }
             let start      = along(u, hubRadius * 0.6)
-            let end        = along(u, reach + zodiacBandWidth * 0.45)
+            let end        = along(u, reach + bandSink)
             let startWidth = 4 * ui
             let endWidth   = 3 * ui
             let n          = CGVector(dx: -u.dy, dy: u.dx)
@@ -833,12 +1022,19 @@ struct OrlojFace {
         let toRim   = CGPoint(x: c.x + radial.dx * r, y: c.y + radial.dy * r)  // tangent on the circle
         let sunk    = insideCircle ? r + depth : r - depth
         let cornerU = unit(CGVector(dx: corner.x - c.x, dy: corner.y - c.y))
+        // The web's spoke-side edge runs INSIDE the spoke, not along its
+        // edge: shapes that merely share an edge leave seams in the union.
+        let overlap = 0.8 * ui
+        func intoSpoke(_ p: CGPoint) -> CGPoint {
+            CGPoint(x: p.x - n.dx * overlap, y: p.y - n.dy * overlap)
+        }
         var web = Path()
-        web.addLines([toEdge,
-                      corner,
+        web.addLines([intoSpoke(toEdge),
+                      intoSpoke(corner),
                       CGPoint(x: c.x + cornerU.dx * sunk, y: c.y + cornerU.dy * sunk),
                       CGPoint(x: c.x + radial.dx  * sunk, y: c.y + radial.dy  * sunk),
-                      toRim])
+                      toRim,
+                      toEdge])
         web.closeSubpath()
         return web.subtracting(circle(fc, f))
     }
