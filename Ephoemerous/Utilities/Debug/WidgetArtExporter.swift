@@ -79,6 +79,32 @@ enum WidgetArtExporter {
                       to: dir, name: "orlojglass_\(f.name)_ring_\(ring).png")
             }
         }
+        // Every material side by side, captioned — one sheet per family.
+        let materials: [(String, OrlojMaterial)] = [("Gold", .gold), ("Spun titanium", .titanium),
+                                                    ("Paper", .paper), ("Light", .light)]
+        for f in families where f.name != "medium" {
+            let face  = OrlojFace(date: now, origin: origin, size: f.size)
+            // Rows of three — one long row outgrows what ImageRenderer will draw.
+            let rows = stride(from: 0, to: materials.count, by: 3).map {
+                Array(materials[$0 ..< min($0 + 3, materials.count)])
+            }
+            let sheet = VStack(alignment: .leading, spacing: 24) {
+                ForEach(rows.indices, id: \.self) { r in
+                    HStack(spacing: 24) {
+                        ForEach(rows[r], id: \.0) { name, material in
+                            VStack(spacing: 10) {
+                                tile(size: f.size) { OrlojGlassLayers(face: face, material: material) }
+                                Text(name).font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(24)
+            .background(Color(white: 0.12))
+            write(sheet, to: dir, name: "orlojmaterials_\(f.name).png")
+        }
         let sydney = OrlojFace(date: now, origin: (latDeg: -33.87, lonDeg: 151.21),
                                size: families[2].size)
         write(tile(size: families[2].size) { OrlojGlassLayers(face: sydney) },

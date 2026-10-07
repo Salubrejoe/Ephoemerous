@@ -857,10 +857,13 @@ struct OrlojFace {
     ///
     /// `withStarHand`: the λ 0° spoke runs on through the band to the
     /// plate's edge. It points at the first point of Aries, so its angle
-    /// IS sidereal time — the star hand, cast in the rete itself.
+    /// IS sidereal time — the star hand, cast in the rete itself, with a
+    /// star badge fused at its tip.
+    /// `carvesGlyphs`: the sign glyphs are cut out of the band — holes,
+    /// not marks laid over it.
     /// ▼ TWEAK the fillets and spoke weight here ▼
     @MainActor
-    func reteGlassPath(withStarHand: Bool) -> Path {
+    func reteGlassPath(withStarHand: Bool, carvesGlyphs: Bool) -> Path {
         guard let rims = zodiacRims() else { return Path() }
         let bandFillet: CGFloat = 7 * ui
         let hubFillet:  CGFloat = 4 * ui
@@ -895,7 +898,65 @@ struct OrlojFace {
                 }
             }
         }
-        return rete.normalized(eoFill: false)
+        if withStarHand, let star = starBadgePath() {
+            rete = rete.union(star)
+        }
+        if carvesGlyphs {
+            let glyphs = zodiacGlyphPaths().reduce(Path()) { $0.union($1) }
+            rete = rete.subtracting(glyphs)
+        }
+        return rete.subtracting(axleHole).normalized(eoFill: false)
+    }
+
+    // MARK: Axle and badges (2.0)
+
+    /// The axle is a HOLE, not a pin: the plate shows through every layer
+    /// at the centre, like the hub of the iOS Clock icon. ▼ TWEAK ▼
+    var axleHoleRadius: CGFloat { 2.2 * ui }
+    var axleHole: Path { circle(center, axleHoleRadius) }
+
+    /// The collars the hands turn on, nested inside the rete's hub: the
+    /// lower hand's collar is the wider, so each one shows round the next,
+    /// like stacked washers. ▼ TWEAK ▼
+    var moonCollarRadius: CGFloat { 6.4 * ui }
+    var sunCollarRadius:  CGFloat { 4.6 * ui }
+
+    /// The badges, across — the app's POI sizes in proportion. ▼ TWEAK ▼
+    var sunBadgeSize:  CGFloat { 20 * ui }
+    var moonBadgeSize: CGFloat { 15 * ui }
+    var starBadgeSize: CGFloat { 12 * ui }
+
+    /// A pentagon squircle `size` across, centred on `p` — the app's badge
+    /// for the Sun and every star.
+    private func pentagonBadge(at p: CGPoint, size: CGFloat) -> Path {
+        Squircle(corners: 5, bulge: 5)
+            .path(in: CGRect(x: p.x - size / 2, y: p.y - size / 2, width: size, height: size))
+    }
+
+    /// The star badge at the tip of the star hand, toward the first point
+    /// of Aries — Prague's star, on the sidereal hand.
+    @MainActor
+    private func starBadgePath() -> Path? {
+        guard let aries = camera.screen(equatorial: .eclipticPoint(lambda: .zero)) else { return nil }
+        let u = unitVector(to: aries)
+        return pentagonBadge(at: along(u, handReach(toward: u) - starBadgeSize / 2),
+                             size: starBadgeSize)
+    }
+
+    /// The Moon's lit part, to lay over its badge in frosted glass: the
+    /// real phase, its bright limb turned toward the Sun on the face.
+    @MainActor
+    func moonLitPath() -> Path? {
+        guard let p = moonPoint, let sun = sunPoint else { return nil }
+        let phase = MoonPosition.phase(for: date, latitude: latitude)
+        guard !phase.isNew else { return nil }
+        // Lit on the +x side, then turned to face the Sun.
+        let shape = MoonPhaseShape(phase: LunarPhase(illuminatedFraction: phase.illuminatedFraction,
+                                                     isWaxing: true, southernView: false))
+        let d     = moonBadgeSize - 2.4 * ui            // a rim of the dark disc shows round it
+        let place = CGAffineTransform(translationX: p.x, y: p.y)
+            .rotated(by: atan2(sun.y - p.y, sun.x - p.x))
+        return shape.path(in: CGRect(x: -d / 2, y: -d / 2, width: d, height: d)).applying(place)
     }
 
     /// How far an arm sinks into the band past the rim it joins — enough
@@ -1504,26 +1565,38 @@ struct OrlojFace {
         return web.subtracting(circle(fc, f))
     }
 
-    /// The Sun's hand — a thin glass capsule from a short tail behind the
-    /// axle out to the crown.
+    /// The Sun's hand — a thin glass capsule turning on its collar at the
+    /// axle, the Sun's pentagon badge fused on where the Sun stands.
     /// ▼ TWEAK the hands' proportions here ▼
     @MainActor
     func sunCapsulePath() -> Path? {
         guard let p = sunPoint else { return nil }
-        return capsuleHand(toward: unitVector(to: p),
-                           length: handReach(toward: unitVector(to: p)),
-                           tail:   12 * ui,
-                           width:  3.6 * ui)
+        let u = unitVector(to: p)
+        return collaredHand(toward: u, length: handReach(toward: u),
+                            width: 3.6 * ui, collar: sunCollarRadius)
+            .union(pentagonBadge(at: p, size: sunBadgeSize))
+            .subtracting(axleHole)
     }
 
-    /// The Moon's hand — as long as the Sun's, slimmer.
+    /// The Moon's hand — as long as the Sun's, slimmer, its round badge
+    /// fused on where the Moon stands (the phase is laid over it apart,
+    /// see `moonLitPath`).
     @MainActor
     func moonCapsulePath() -> Path? {
         guard let p = moonPoint else { return nil }
-        return capsuleHand(toward: unitVector(to: p),
-                           length: handReach(toward: unitVector(to: p)),
-                           tail:   9 * ui,
-                           width:  2.8 * ui)
+        let u = unitVector(to: p)
+        return collaredHand(toward: u, length: handReach(toward: u),
+                            width: 2.8 * ui, collar: moonCollarRadius)
+            .union(circle(p, moonBadgeSize / 2))
+            .subtracting(axleHole)
+    }
+
+    /// A hand that starts AT the axle: a capsule outward from a collar,
+    /// instead of running through.
+    private func collaredHand(toward u: CGVector, length: CGFloat,
+                              width: CGFloat, collar: CGFloat) -> Path {
+        capsuleHand(toward: u, length: length, tail: 0, width: width)
+            .union(circle(center, collar))
     }
 
     // MARK: Glass helpers

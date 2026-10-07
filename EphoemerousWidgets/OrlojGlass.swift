@@ -24,35 +24,44 @@ struct OrlojGlassLayers: View {
     /// it goes; the glass keeps its alpha and reads as clear glass.
     var lineArt: Bool = false
 
+    /// What the moving parts are made of (see `OrlojMaterial`). ▼ TWEAK ▼
+    var material: OrlojMaterial = .glass
+
     private var palette: OrlojGlassPalette { OrlojGlassPalette(lineArt: lineArt) }
     private var isLarge: Bool              { face.ui >= 0.7 }
 
     var body: some View {
         ZStack {
             if !lineArt {
-                OrlojPlateLight(face: face, palette: palette)
+                OrlojPlateLight(face: face, palette: palette, material: material)
             }
-            OrlojPlateLines(face: face, palette: palette, showsHours: isLarge)
-            OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette)
+            OrlojPlateLines(face: face, palette: palette, showsHours: isLarge, material: material)
+            OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette, material: material)
 
             if face.numeralRing == .crown {
-                OrlojGlassPieces(pieces: [crownGlass], face: face, palette: palette)
+                OrlojGlassPieces(pieces: [crownGlass], face: face, palette: palette, material: material)
             }
             if face.numeralRing == .contour && !Self.contourInGlass {
                 OrlojFlatNumerals(face: face, palette: palette)
             } else {
-                OrlojGlassPieces(pieces: numeralGlass(daylit: false), face: face, palette: palette)
+                // Glass frosts the daylit hours; every other material casts
+                // all twenty-four alike.
+                OrlojGlassPieces(pieces: numeralGlass(daylit: false), face: face, palette: palette,
+                                 material: material)
                 OrlojGlassPieces(pieces: numeralGlass(daylit: true),  face: face, palette: palette,
-                                 variant: .regular)
+                                 variant: material == .glass ? .regular : .clear, material: material)
             }
 
-            OrlojGlassPieces(pieces: [reteGlass], face: face, palette: palette)
-            if isLarge {
-                OrlojGlassPieces(pieces: glyphGlass, face: face, palette: palette, variant: .regular)
-            }
+            OrlojGlassPieces(pieces: [reteGlass], face: face, palette: palette,
+                             material: material, outlined: true)
 
-            OrlojGlassPieces(pieces: handGlass, face: face, palette: palette)
-            OrlojHubEarth(face: face, palette: palette)
+            // The hands, the Moon's below the Sun's; its lit part frosted.
+            OrlojGlassPieces(pieces: piece(face.moonCapsulePath()), face: face, palette: palette,
+                             material: material)
+            OrlojGlassPieces(pieces: piece(face.moonLitPath()), face: face, palette: palette,
+                             variant: .regular, material: material)
+            OrlojGlassPieces(pieces: piece(face.sunCapsulePath()), face: face, palette: palette,
+                             material: material)
         }
         // A round dial keeps a breath of the widget's ground round it.
         .scaleEffect(face.numeralRing == .contour ? 1 : 0.95)
@@ -85,21 +94,14 @@ struct OrlojGlassLayers: View {
     }
 
     /// The rete — band, cross, hub and (large only) the star hand as one
-    /// piece of glass.
+    /// piece of glass, the sign glyphs carved through it.
     private var reteGlass: OrlojGlassPiece {
-        OrlojGlassPiece(path: face.reteGlassPath(withStarHand: isLarge))
+        OrlojGlassPiece(path: face.reteGlassPath(withStarHand: isLarge, carvesGlyphs: isLarge))
     }
 
-    /// The sign glyphs, warped into the band — regular glass on the
-    /// band's clear glass, so they read.
-    private var glyphGlass: [OrlojGlassPiece] {
-        face.zodiacGlyphPaths().map { OrlojGlassPiece(path: $0) }
-    }
-
-    /// The Sun and Moon hands, front of the stack — plain glass.
-    private var handGlass: [OrlojGlassPiece] {
-        [face.moonCapsulePath(), face.sunCapsulePath()]
-            .compactMap { $0.map { OrlojGlassPiece(path: $0) } }
+    /// A single optional path as a pass of glass.
+    private func piece(_ path: Path?) -> [OrlojGlassPiece] {
+        path.map { [OrlojGlassPiece(path: $0)] } ?? []
     }
 }
 
@@ -190,12 +192,26 @@ struct OrlojGlassPiece {
 /// outline (blurred, saturated, lifted), a thin body, one shadow for the
 /// whole pass, then each piece's rim.
 struct OrlojGlassPieces: View {
-    let pieces:  [OrlojGlassPiece]
-    let face:    OrlojFace
-    let palette: OrlojGlassPalette
-    var variant: OrlojGlassVariant = .clear
+    let pieces:   [OrlojGlassPiece]
+    let face:     OrlojFace
+    let palette:  OrlojGlassPalette
+    var variant:  OrlojGlassVariant = .clear
+    var material: OrlojMaterial     = .glass
+    /// Light traces a big piece's outline instead of filling it.
+    var outlined: Bool              = false
 
     var body: some View {
+        // A luminance-mapped Home Screen keeps the glass: it survives as alpha.
+        switch palette.lineArt ? .glass : material {
+        case .glass:    glass
+        case .gold:     metal(.gold)
+        case .titanium: metal(.titanium(spunAround: unitCentre))
+        case .paper:    paper
+        case .light:    light
+        }
+    }
+
+    private var glass: some View {
         ZStack {
             ZStack {
                 if !palette.lineArt {
@@ -226,6 +242,149 @@ struct OrlojGlassPieces: View {
             }
         }
     }
+
+    /// Every piece's outline, stroked.
+    private func edges<S: ShapeStyle>(_ style: S, width: CGFloat) -> some View {
+        ZStack {
+            ForEach(pieces.indices, id: \.self) { i in
+                OrlojPath(source: pieces[i].path).stroke(style, lineWidth: width)
+            }
+        }
+    }
+
+    /// The axle, in the widget's unit square — where the spinning is centred.
+    private var unitCentre: UnitPoint {
+        UnitPoint(x: face.center.x / max(face.camera.size.width,  1),
+                  y: face.center.y / max(face.camera.size.height, 1))
+    }
+
+    // MARK: Metal
+    // A body in the metal's own sheen, a bevel (lit along the top-left
+    // edges, shaded along the bottom-right), and a tight shadow. Engraved
+    // marks (`.regular`) sink instead: dark, with the bevel reversed.
+
+    private func metal(_ metal: OrlojMetal) -> some View {
+        let engraved = variant == .regular
+        let bevel    = LinearGradient(colors: [metal.highlight, metal.deep],
+                                      startPoint: engraved ? .bottomTrailing : .topLeading,
+                                      endPoint:   engraved ? .topLeading     : .bottomTrailing)
+        return ZStack {
+            Rectangle().fill(engraved ? AnyShapeStyle(metal.engraved) : metal.body)
+            edges(bevel, width: 1.8 * face.ui)
+        }
+        .mask { silhouette }
+        .compositingGroup()
+        .shadow(color: .black.opacity(engraved ? 0 : 0.5), radius: 1.4 * face.ui, y: 1.1 * face.ui)
+    }
+
+    // MARK: Paper
+    // Cut card: a flat warm white (engraved marks in navy card), a crisp
+    // cut edge, and two shadows — a contact line and a soft lift.
+
+    private var paper: some View {
+        let card: Color = variant == .regular ? OrlojMaterial.paperNavy : OrlojMaterial.paperCard
+        return ZStack {
+            Rectangle().fill(card)
+            edges(OrlojMaterial.paperShade, width: 0.8 * face.ui)
+        }
+        .mask { silhouette }
+        .compositingGroup()
+        .shadow(color: .black.opacity(0.22), radius: 0.5 * face.ui, y: 0.5 * face.ui)
+        .shadow(color: .black.opacity(0.30), radius: 3.5 * face.ui, y: 2.5 * face.ui)
+    }
+
+    // MARK: Light
+    // No body at all: a white-hot core in each piece's shape (or tracing
+    // its outline, for the rete), and a warm glow bleeding round it.
+
+    private var light: some View {
+        ZStack {
+            tube(OrlojMaterial.lightGlow).blur(radius: 5 * face.ui).opacity(0.9)
+            tube(OrlojMaterial.lightGlow).blur(radius: 1.6 * face.ui)
+            tube(OrlojMaterial.lightCore)
+        }
+    }
+
+    @ViewBuilder
+    private func tube(_ colour: Color) -> some View {
+        if outlined {
+            edges(colour, width: 1.1 * face.ui + 0.3)
+        } else {
+            Rectangle().fill(colour).mask { silhouette }
+        }
+    }
+}
+
+// MARK: - Materials
+// What the moving parts are cast in. The plate is the same enamel under
+// all of them; the materials differ in how a piece's outline is filled,
+// edged and lifted off it — using only what a widget can draw (fills,
+// gradients, masks, blur, shadows).
+
+enum OrlojMaterial: Equatable {
+    /// Hand-rolled glass: the plate seen frosted through each piece.
+    case glass
+    /// Satin gold — Prague's own gilt rete on its painted plate.
+    case gold
+    /// Spun titanium — brushed in circles round the axle.
+    case titanium
+    /// Cut card, layered like a shadow box.
+    case paper
+    /// No material: lines of light.
+    case light
+
+    /// The plate's hairlines in this material — gold and titanium wires,
+    /// cloisonné-style; nil keeps the ink.
+    var wire: Color? {
+        switch self {
+        case .gold:     return OrlojMetal.goldMid.opacity(0.75)
+        case .titanium: return OrlojMetal.tiHigh.opacity(0.55)
+        default:        return nil
+        }
+    }
+
+    static let paperCard  = Color(.displayP3, red: 0.966, green: 0.953, blue: 0.923)   // OKLCH L .965 C .012 h  85
+    static let paperShade = Color(.displayP3, red: 0.859, green: 0.843, blue: 0.806)   //       L .88  C .015 h  85
+    static let paperNavy  = Color(.displayP3, red: 0.158, green: 0.219, blue: 0.331)   //       L .34  C .060 h 258
+    static let lightCore  = Color(.displayP3, red: 0.995, green: 0.974, blue: 0.909)   //       L .98  C .025 h  90
+    static let lightGlow  = Color(.displayP3, red: 0.919, green: 0.801, blue: 0.583)   //       L .86  C .090 h  80
+}
+
+/// A metal's palette: its body sheen, bevel ends and engraving.
+struct OrlojMetal {
+    let body:      AnyShapeStyle
+    let highlight: Color
+    let deep:      Color
+    let engraved:  Color
+
+    /// Satin gold: soft diagonal bands of sheen, lit from the top left.
+    static let gold = OrlojMetal(
+        body: AnyShapeStyle(LinearGradient(stops: [.init(color: goldHigh, location: 0),
+                                                   .init(color: goldMid,  location: 0.30),
+                                                   .init(color: goldDeep, location: 0.52),
+                                                   .init(color: goldMid,  location: 0.72),
+                                                   .init(color: goldHigh, location: 0.88),
+                                                   .init(color: goldMid,  location: 1)],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing)),
+        highlight: goldHigh, deep: goldDeep, engraved: goldEngraved)
+
+    /// Spun titanium: the light caught in rings of brushing round the
+    /// axle — an angular sheen, repeating, centred on `centre`.
+    static func titanium(spunAround centre: UnitPoint) -> OrlojMetal {
+        let sweep: [Color] = [tiHigh, tiMid, tiDeep, tiMid]
+        let stops = (0..<6).flatMap { _ in sweep } + [tiHigh]
+        return OrlojMetal(body: AnyShapeStyle(AngularGradient(colors: stops, center: centre)),
+                          highlight: tiHigh, deep: tiDeep, engraved: tiEngraved)
+    }
+
+    static let goldHigh     = Color(.displayP3, red: 0.954, green: 0.894, blue: 0.711)   // OKLCH L .92  C .070 h  90
+    static let goldMid      = Color(.displayP3, red: 0.860, green: 0.724, blue: 0.416)   //       L .80  C .120 h  84
+    static let goldDeep     = Color(.displayP3, red: 0.587, green: 0.451, blue: 0.225)   //       L .58  C .100 h  76
+    static let goldEngraved = Color(.displayP3, red: 0.357, green: 0.258, blue: 0.124)   //       L .40  C .070 h  70
+    static let tiHigh       = Color(.displayP3, red: 0.900, green: 0.910, blue: 0.923)   //       L .93  C .006 h 250
+    static let tiMid        = Color(.displayP3, red: 0.680, green: 0.696, blue: 0.716)   //       L .76  C .010 h 250
+    static let tiDeep       = Color(.displayP3, red: 0.441, green: 0.459, blue: 0.481)   //       L .56  C .012 h 250
+    static let tiEngraved   = Color(.displayP3, red: 0.266, green: 0.283, blue: 0.304)   //       L .40  C .012 h 250
 }
 
 // MARK: - Plate
@@ -234,8 +393,12 @@ struct OrlojGlassPieces: View {
 /// last down to night — inside the crown, or filling the whole widget
 /// under the Contour ring. Flat colour, crisp edges.
 struct OrlojPlateLight: View {
-    let face:    OrlojFace
-    let palette: OrlojGlassPalette
+    let face:     OrlojFace
+    let palette:  OrlojGlassPalette
+    var material: OrlojMaterial = .glass
+
+    /// In paper, each field is its own sheet and lifts off the one below.
+    private var layerShadow: Color { .black.opacity(material == .paper ? 0.28 : 0) }
 
     var body: some View {
         ZStack {
@@ -245,8 +408,10 @@ struct OrlojPlateLight: View {
             }
             ForEach(face.altitudeFields(), id: \.altitude) { field in
                 OrlojPath(source: field.path).fill(palette.field(below: field.altitude))
+                    .shadow(color: layerShadow, radius: 3 * face.ui, y: 2 * face.ui)
             }
             OrlojPath(source: face.earthDiscPath()).fill(OrlojGlassPalette.earth)
+                .shadow(color: layerShadow, radius: 3 * face.ui, y: 2 * face.ui)
         }
         .clipShape(OrlojPath(source: face.plateFillPath()))
     }
@@ -258,18 +423,21 @@ struct OrlojPlateLines: View {
     let face:       OrlojFace
     let palette:    OrlojGlassPalette
     let showsHours: Bool
+    var material:   OrlojMaterial = .glass
+
+    private var wire: Color { material.wire ?? palette.ink }
 
     var body: some View {
         ZStack {
             if showsHours {
                 OrlojPath(source: face.unequalHoursPath())
-                    .stroke(palette.ink.opacity(0.14), lineWidth: 0.5)
+                    .stroke(wire.opacity(material.wire == nil ? 0.14 : 0.5), lineWidth: 0.5)
             }
             // The horizon and the twilight line; the orange runs unbroken between.
             ForEach(face.altitudeFields().filter { $0.altitude.degrees.truncatingRemainder(dividingBy: 18) == 0 },
                     id: \.altitude) { field in
                 OrlojPath(source: field.path)
-                    .stroke(palette.ink.opacity(field.altitude == .zero ? 0.6 : 0.18),
+                    .stroke(wire.opacity(field.altitude == .zero ? 0.6 : 0.18),
                             lineWidth: field.altitude == .zero ? 0.9 * face.ui + 0.1 : 0.5)
             }
         }
