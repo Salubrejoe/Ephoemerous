@@ -159,6 +159,38 @@ enum WidgetArtExporter {
                 try? data.write(to: dir.appendingPathComponent("colourtrials.png"))
             }
         }
+        // The planets (see `OrlojPlanetStyle`): beads or glass, large and small.
+        do {
+            let styles: [(String, OrlojPlanetStyle)] = [("1 · beads", .beads), ("2 · glass", .glass)]
+            let sizes = [families[2].size, families[0].size]
+            let sheet = VStack(alignment: .leading, spacing: 24) {
+                HStack(spacing: 24) {
+                    ForEach(styles, id: \.0) { name, _ in
+                        Text(name).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: sizes[0].width, alignment: .leading)
+                    }
+                }
+                ForEach(sizes.indices, id: \.self) { r in
+                    HStack(alignment: .top, spacing: 24) {
+                        ForEach(styles, id: \.0) { _, style in
+                            tile(size: sizes[r]) {
+                                OrlojGlassLayers(face: OrlojFace(date: now, origin: origin, size: sizes[r]),
+                                                 planets: style)
+                                    .environment(\.colorScheme, .dark)
+                            }
+                            .frame(width: sizes[0].width, alignment: .leading)
+                        }
+                    }
+                }
+            }
+            .padding(24)
+            .background(Color(white: 0.06))
+            let renderer = ImageRenderer(content: sheet)
+            renderer.scale = 2
+            if let data = renderer.uiImage?.pngData() {
+                try? data.write(to: dir.appendingPathComponent("planettrials.png"))
+            }
+        }
         // The postcard zoom per family (see `WidgetZoom`): today's single
         // zoom, the gentle square root, the full one.
         do {

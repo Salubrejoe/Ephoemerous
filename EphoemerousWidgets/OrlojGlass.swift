@@ -27,6 +27,10 @@ struct OrlojGlassLayers: View {
     /// What the moving parts are made of (see `OrlojMaterial`). ▼ TWEAK ▼
     var material: OrlojMaterial = .glass
 
+    /// How the planets ride the zodiac band (see `OrlojPlanetStyle`).
+    /// ▼ TWEAK ▼
+    var planets: OrlojPlanetStyle = .glass
+
     /// Standing on the app's live sky (see `OrlojOverlay`), not in a tile:
     /// the app draws the sky and its ground, so the face brings only its
     /// glass, at its true size — it must land on the stars beneath.
@@ -60,6 +64,8 @@ struct OrlojGlassLayers: View {
             earthLayer
             crownLayer
             reteLayer
+            // On the sky the app draws its own planets.
+            if !onSky { planetLayer }
             handsLayer
         }
         // A round dial keeps a breath of the widget's ground round it.
@@ -108,6 +114,46 @@ struct OrlojGlassLayers: View {
                          }),
                          lift: 2)
     }
+
+    /// The naked-eye planets on the band, under the hands.
+    @ViewBuilder
+    private var planetLayer: some View {
+        switch planets {
+        case .none:  EmptyView()
+        case .beads: OrlojPlanetBeads(face: face, palette: palette)
+        case .glass:
+            ForEach(face.planetMarks().filter { !OrlojPlanetBeads.hidden.contains($0.id) }, id: \.id) { mark in
+                if Self.appBadged.contains(mark.id) {
+                    // The app's own badge — Venus's phase, Mars's cap,
+                    // Jupiter's bands, Saturn's rings — with no name.
+                    POILabelView(category:   .planet(mark.planet),
+                                 text:       "",
+                                 nameReveal: 0,
+                                 phase:      BadgePhase.of(.planet(mark.planet), date: face.date,
+                                                           latitude: face.latitude),
+                                 sizeScale:  planetBadgeScale)
+                        .dynamicTypeSize(.large)
+                        .position(mark.position)
+                } else {
+                    OrlojTintedGlass(path: Path(ellipseIn: CGRect(x: mark.position.x - planetRadius,
+                                                                  y: mark.position.y - planetRadius,
+                                                                  width: 2 * planetRadius,
+                                                                  height: 2 * planetRadius)),
+                                     tint: Artist.shared.planetGradient(mark.planet),
+                                     face: face, palette: palette)
+                }
+            }
+        }
+    }
+
+    /// The planets that wear the app's custom badge; the rest are glass.
+    private static let appBadged: Set<String> = [Strings.Planets.venus, Strings.Planets.mars,
+                                                 Strings.Planets.jupiter, Strings.Planets.saturn]
+    /// The app badges' size on the face. ▼ TWEAK ▼
+    private var planetBadgeScale: CGFloat { 0.85 * max(0.6, face.ui) }
+
+    /// A glass planet's radius. ▼ TWEAK ▼
+    private var planetRadius: CGFloat { 3.4 * face.ui + 1.2 }
 
     /// Height 3: the hands, the Moon's below the Sun's, frosting everything.
     ///
@@ -456,6 +502,15 @@ struct OrlojGlassPieces: View {
     }
 }
 
+/// How the Orloj wears the planets.
+enum OrlojPlanetStyle {
+    case none
+    /// Glowing beads in each planet's colour.
+    case beads
+    /// Small coloured glass, like the Sun's badge.
+    case glass
+}
+
 // MARK: - Materials
 // What the moving parts are cast in. The plate is the same enamel under
 // all of them; the materials differ in how a piece's outline is filled,
@@ -592,6 +647,9 @@ struct OrlojTintedGlass: View {
         if let path, !palette.lineArt {
             let box = path.boundingRect
             ZStack {
+                // A black edge, like the app's badges — stroked first, so
+                // the glass covers its inner half and only a border shows.
+                OrlojPath(source: path).stroke(.black, lineWidth: 2.4 * max(0.6, face.ui))
                 OrlojPath(source: path)
                     .fill(LinearGradient(colors: [tint.top, tint.bottom],
                                          startPoint: unit(box.midX, box.minY),
@@ -675,7 +733,7 @@ struct OrlojPlanetBeads: View {
     let face:    OrlojFace
     let palette: OrlojGlassPalette
 
-    private static let hidden: Set<String> = [Strings.Planets.uranus, Strings.Planets.neptune]
+    static let hidden: Set<String> = [Strings.Planets.uranus, Strings.Planets.neptune]
 
     var body: some View {
         ForEach(face.planetMarks().filter { !Self.hidden.contains($0.id) }, id: \.id) { mark in
