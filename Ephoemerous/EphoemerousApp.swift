@@ -94,10 +94,11 @@ struct EphoemerousApp: App {
     #if DEBUG
     /// Reads `-shot <state>` from the launch arguments and seeds the app
     /// into that screen for an App Store capture. No-op without the arg.
-    /// States: `northout`, `date`, or any SkyObjectEntity id (`moon`,
+    /// States: `northout`, `orloj`, `date`, or any SkyObjectEntity id (`moon`,
     /// `sun`, `planet_jupiter`, `star_Vega`) to raise its detail card.
     @MainActor
     private func seedScreenshotState() async {
+        MemoryLog.startIfAsked()
         let args = ProcessInfo.processInfo.arguments
         guard let i = args.firstIndex(of: "-shot"), i + 1 < args.count else { return }
         let want = args[i + 1]
@@ -106,6 +107,7 @@ struct EphoemerousApp: App {
         try? await Task.sleep(for: .milliseconds(500))
         switch want {
         case "northout":  state.isNorthOut = true
+        case "orloj":     state.isNorthOut = true; state.isOrlojOn = true
         case "date":      state.isShowingDatePicker = true
         // Widget artwork export (see WidgetArtExporter) — marketing art.
         case "exportart": WidgetArtExporter.exportAll()

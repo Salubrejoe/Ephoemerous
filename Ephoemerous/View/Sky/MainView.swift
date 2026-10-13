@@ -177,6 +177,16 @@ struct MainView: View {
                                 sky.scale = CGFloat(z)
                             }
                         }
+                        // `-livePinch <n>` freezes a pinch mid-gesture — the
+                        // live parent transform held at n× — for measuring
+                        // what a pinch costs without a finger on the glass.
+                        if let i = args.firstIndex(of: "-livePinch"), i + 1 < args.count,
+                           let p = Double(args[i + 1]) {
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(4))
+                                sky.pinch = CGFloat(p)
+                            }
+                        }
                         #endif
                         // Grabbing the canvas drops compass mode (heading no
                         // longer owns the view) — but the zoom/framing stays
@@ -447,6 +457,9 @@ struct MainView: View {
         // and its dial tracks — whenever the user twists the canvas, not only
         // in compass mode. Negated to match the camera's y-flip handedness so
         // `-renderedRotation` equals the on-screen rotation in BOTH modes.
+        // The Orloj's glass can't follow a zoom — while it stands, touch
+        // pans and turns the sky but doesn't zoom it.
+        .onChange(of: app.orlojStands, initial: true) { _, stands in sky.zoomLocked = stands }
         .onChange(of: sky.rotation)     { _, _ in mirrorRotationToRose() }
         .onChange(of: sky.liveRotation) { _, _ in mirrorRotationToRose() }
         // The compass rose's reset-to-north (`resetRotationToNorth` →

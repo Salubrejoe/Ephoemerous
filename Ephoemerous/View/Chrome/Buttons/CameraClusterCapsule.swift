@@ -16,13 +16,21 @@ import SwiftUI
 // capsule gracefully shrinks to the flip alone.
 struct CameraClusterCapsule: View {
 
+    @Environment(AppState.self) private var state
+
     var body: some View {
         VStack(spacing: 0) {
+            // The Orloj joins the cluster on the NorthOUT chart only.
+            if state.canShowOrloj {
+                OrlojButton(bare: true)
+                    .transition(.opacity)
+            }
             ProjectionFlipButton(bare: true)
             CompassModeButton(bare: true)
         }
         .padding(.bottom, 4)
         .glassEffect(.regular.interactive(), in: .capsule)
+        .animation(.snappy(duration: 0.28), value: state.canShowOrloj)
     }
 }
 

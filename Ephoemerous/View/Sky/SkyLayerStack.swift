@@ -62,6 +62,20 @@ struct SkyLayerStack: View {
             // (they stay sharp).
             HorizonBlurOverlay(camera: frame.camera)
 
+            // The Orloj in Liquid Glass, over the ground and the stars,
+            // under every label — the names stay sharp on top of the glass.
+            ZStack {
+                if app.orlojStands {
+                    OrlojOverlay(camera:    frame.camera,
+                                 date:      app.renderedObservationDate,
+                                 latitude:  app.origin.latitude,
+                                 longitude: app.origin.longitude)
+                        .equatable()
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.4), value: app.orlojStands)
+
             // Curved cartographic labels — horizon rim + colures.
             CartographyLabels(camera: frame.camera,
                               latitude: app.origin.latitude,

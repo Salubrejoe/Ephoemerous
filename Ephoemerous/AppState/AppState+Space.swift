@@ -38,6 +38,17 @@ extension AppState {
         (isNorthOut && !compassMode) ? .northOut : .northIn
     }
 
+    /// The Orloj's button shows only where the Orloj can stand: on the
+    /// NorthOUT chart — its projection IS the astrolabe's — not through
+    /// the window.
+    var canShowOrloj: Bool { skyPerspective == .northOut && !isLooking }
+
+    /// The Orloj stands on the sky: switched on, and the chart settled in
+    /// NorthOUT. Mid-morph the projection is neither, so it waits.
+    var orlojStands: Bool {
+        isOrlojOn && canShowOrloj && _perspectiveMorphTransition == nil && _lookTransition == nil
+    }
+
     /// Toggle NorthOUT on/off. The view observes `isNorthOut` to reframe the
     /// camera for the new perspective.
     /// Flip NorthIN ↔ NorthOUT.

@@ -75,6 +75,10 @@ class AppState {
     /// `skyPerspective` / `SkyPerspective`. Mutually exclusive with compass
     /// mode (engaging compass clears it).
     var isNorthOut: Bool = false
+    /// The Orloj laid over the NorthOUT sky, in Liquid Glass (see
+    /// `OrlojOverlay`). Remembered across NorthIN trips — it stands
+    /// again whenever the sky returns to NorthOUT.
+    var isOrlojOn: Bool = false
     /// In-flight NorthIN↔NorthOUT morph, advanced once per canvas-clock frame
     /// (see `advanceCanvasClock`) so the projection reprojects each tick — the
     /// grid morphs with the labels instead of snapping. `nil` at rest; the

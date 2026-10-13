@@ -205,9 +205,8 @@ struct OrlojFace {
         if wrist {
             scale = targetOuterRadius / CGFloat(romanRho)
         } else {
-            let plateEdge = numeralRadius - 0.36 * Self.glassNumeralSize(ui: ui, type: type)
-                          - Self.plateNumeralGap * ui
-            scale = plateEdge / CGFloat(Self.tropicRho)
+            scale = Self.plateEdge(numeralRadius: numeralRadius, ui: ui, type: type)
+                  / CGFloat(Self.tropicRho)
         }
 
         // The face must stand STILL — meridian vertical, noon at top,
@@ -241,6 +240,31 @@ struct OrlojFace {
 
         camera = SkyCamera(scale: scale, offset: .zero, rotation: rotation,
                           size: size, viewpoint: viewpoint, sidereal: sidereal, mirrored: mirrored)
+    }
+
+    /// The face riding the APP's sky: drawn through the app's own camera,
+    /// so every line lands on the star beneath it and the instrument pans,
+    /// pinches and turns with the chart. The camera must be NorthOUT
+    /// (morph 1) — that projection IS the astrolabe's. The dressing grows
+    /// with the plate, so a pinch magnifies the clock as one object.
+    @MainActor
+    init(riding camera: SkyCamera, date: Date, latitude: Angle, longitude: Angle,
+         timeZone: TimeZone = .current) {
+        wrist = false
+        var civil = Calendar(identifier: .gregorian)
+        civil.timeZone = timeZone
+        civilCalendar  = civil
+        jwst           = nil
+        self.date      = date
+        self.latitude  = latitude
+        self.longitude = longitude
+        lst            = Precession.lst(for: date, longitude: longitude)
+        let plateEdge  = camera.scale * CGFloat(Self.tropicRho)
+        ui             = max(0.7, plateEdge / Self.largePlateEdge)
+        type           = max(0.92, ui)
+        numeralRadius  = plateEdge + 0.36 * Self.glassNumeralSize(ui: ui, type: type)
+                       + Self.plateNumeralGap * ui
+        self.camera    = camera
     }
 
     var center: CGPoint { camera.screen(.zero) }
@@ -1151,6 +1175,17 @@ struct OrlojFace {
     /// Where the numerals' feet stand past the plate's edge, × ui — inside
     /// the outer tropic's glass ring, so they fuse with it. ▼ TWEAK ▼
     private static let plateNumeralGap: CGFloat = 0.2
+
+    /// The plate's edge — the outer tropic — just short of the numerals'
+    /// feet on a ring of `numeralRadius`.
+    private static func plateEdge(numeralRadius: CGFloat, ui: CGFloat, type: CGFloat) -> CGFloat {
+        numeralRadius - 0.36 * glassNumeralSize(ui: ui, type: type) - plateNumeralGap * ui
+    }
+
+    /// The large tile's plate edge (`ui` = 1) — the yardstick a face
+    /// riding the app's sky measures its dressing against.
+    private static let largePlateEdge: CGFloat =
+        plateEdge(numeralRadius: 0.81 * 340 * 0.52 + 11, ui: 1, type: 1)
 
     /// The outer tropic's ring and the Roman numerals standing on it, fused
     /// into one piece of glass.
