@@ -421,12 +421,12 @@ struct OrlojFace {
         .radians(hemi * AstroConstants.tropicCapricorn.radians)
     }
 
-    /// The tropics and the equator as thin rings, for glass: each parallel
+    /// The two tropics as thin rings, for glass: each parallel
     /// stroked into a band `width` wide. ▼ TWEAK the width ▼
     @MainActor
     func plateRingPaths() -> [Path] {
         let width = 1.6 * ui + 0.6
-        return [AstroConstants.tropicCapricorn, .zero, AstroConstants.tropicCancer].map { dec in
+        return [AstroConstants.tropicCapricorn, AstroConstants.tropicCancer].map { dec in
             var parallel = sampledParallel(declination: dec, steps: 240)
             parallel.closeSubpath()
             return parallel.strokedPath(StrokeStyle(lineWidth: width))
@@ -451,10 +451,11 @@ struct OrlojFace {
     // north, the mirror of that in the south, never a mirrored map. So the
     // day side always faces the Sun hand.
 
-    /// The globe's radius: most of the open centre, leaving a ring of
-    /// space inside the inner tropic. ▼ TWEAK ▼
+    /// The globe's radius: part of the open centre, leaving a ring of
+    /// space inside the inner tropic — more of it on the large face, where
+    /// the rete has room to breathe. ▼ TWEAK ▼
     var earthRadius: CGFloat {
-        0.62 * camera.scale * CGFloat(2 * tan(.pi / 4 - AstroConstants.tropicCancer.radians / 2))
+        (ui >= 0.7 ? 0.45 : 0.62) * camera.scale * CGFloat(2 * tan(.pi / 4 - AstroConstants.tropicCancer.radians / 2))
     }
 
     /// The globe's limb.
@@ -939,11 +940,22 @@ struct OrlojFace {
 
     /// The Roman numerals' size on the glass face. ▼ TWEAK ▼
     static func glassNumeralSize(ui: CGFloat, type: CGFloat) -> CGFloat {
-        (ui >= 0.7 ? 15 : 10.5) * type
+        (ui >= 0.7 ? 19 : 13) * type
     }
 
-    /// Gap between the plate's edge and the numerals' feet, × ui. ▼ TWEAK ▼
-    private static let plateNumeralGap: CGFloat = 3
+    /// Where the numerals' feet stand past the plate's edge, × ui — inside
+    /// the outer tropic's glass ring, so they fuse with it. ▼ TWEAK ▼
+    private static let plateNumeralGap: CGFloat = 0.2
+
+    /// The outer tropic's ring and the Roman numerals standing on it, fused
+    /// into one piece of glass.
+    @MainActor
+    func numeralCrownPath() -> Path {
+        let ring = plateRingPaths().last ?? Path()
+        return numeralGlassPaths()
+            .reduce(ring) { $0.union($1.path) }
+            .normalized(eoFill: false)
+    }
 
     /// The glass plate's edge: the outer tropic, as on the original.
     var plateEdgeRadius: CGFloat { camera.scale * CGFloat(Self.tropicRho) }
@@ -966,7 +978,7 @@ struct OrlojFace {
     @MainActor
     func handReach(toward u: CGVector) -> CGFloat {
         switch numeralRing {
-        case .roman:   return plateEdgeRadius + 2 * ui
+        case .roman:   return plateEdgeRadius - (0.8 * ui + 0.3) - 3.5 * ui   // short of the ring, a breath of gap
         case .crown:   return plateRadius + 3 * ui
         case .contour: return contourReach(toward: u)
         }

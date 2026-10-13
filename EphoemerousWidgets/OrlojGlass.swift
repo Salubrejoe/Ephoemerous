@@ -35,14 +35,14 @@ struct OrlojGlassLayers: View {
             if !lineArt {
                 OrlojPlateLight(face: face, palette: palette, material: material)
             }
-            OrlojPlateLines(face: face, palette: palette, showsHours: isLarge, material: material)
-            OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette, material: material)
 
             if face.numeralRing == .crown {
                 OrlojGlassPieces(pieces: [crownGlass], face: face, palette: palette, material: material)
             }
             if face.numeralRing == .contour && !Self.contourInGlass {
                 OrlojFlatNumerals(face: face, palette: palette)
+            } else if face.numeralRing == .roman {
+                // Fused into the outer tropic's ring (see `plateRingGlass`).
             } else {
                 // Glass frosts the daylit hours; every other material casts
                 // all twenty-four alike.
@@ -52,29 +52,80 @@ struct OrlojGlassLayers: View {
                                  variant: material == .glass ? .regular : .clear, material: material)
             }
 
-            OrlojGlassPieces(pieces: [reteGlass], face: face, palette: palette,
-                             material: material, outlined: true)
-
-            // The hands, the Moon's below the Sun's; its lit part frosted.
-            OrlojGlassPieces(pieces: piece(face.moonCapsulePath()), face: face, palette: palette,
-                             material: material)
-            OrlojTintedGlass(path: face.moonLitPath(), tint: moonTint, face: face, palette: palette)
-            OrlojGlassPieces(pieces: piece(face.sunCapsulePath()), face: face, palette: palette,
-                             material: material)
-            OrlojTintedGlass(path: face.sunBadgePath(), tint: sunTint, face: face, palette: palette)
+            earthLayer
+            crownLayer
+            reteLayer
+            handsLayer
         }
         // A round dial keeps a breath of the widget's ground round it.
         .scaleEffect(face.numeralRing == .contour ? 1 : 0.95)
         .dynamicTypeSize(.large)
     }
 
+    // MARK: Depth
+    // Three heights of glass over the sky. Each layer frosts what lies
+    // BELOW it — the glass included, so a numeral blurs under the band
+    // where they cross — and casts a shadow that grows with its height.
+
+    /// The Earth in glass, resting on the plate: the seas a disc of clear
+    /// glass, the continents frosted glass laid on it.
+    private var earthLayer: some View {
+        ZStack {
+            OrlojGlassPieces(pieces: [OrlojGlassPiece(path: face.earthGlobePath())], face: face,
+                             palette: palette, material: material, lift: 1)
+            OrlojGlassPieces(pieces: [OrlojGlassPiece(path: face.earthLandPath())], face: face,
+                             palette: palette, variant: .regular, material: material, lift: 0.4)
+        }
+    }
+
+    /// Height 1: the tropics and the numeral crown, fixed to the plate.
+    /// Unfrosted — the stars would make some numerals glow and others not.
+    private var crownLayer: some View {
+        OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette, variant: .smoked,
+                         material: material, frosted: false, lift: 1)
+    }
+
+    /// Height 2: the rete, turning over the crown, frosting sky and crown.
+    private var reteLayer: some View {
+        OrlojGlassPieces(pieces: [reteGlass], face: face, palette: palette, variant: .smoked,
+                         material: material, outlined: true,
+                         backdrop: AnyView(ZStack {
+                             OrlojPlateLight(face: face, palette: palette)
+                             earthLayer
+                             crownLayer
+                         }),
+                         lift: 2)
+    }
+
+    /// Height 3: the hands, the Moon's below the Sun's, frosting everything.
+    private var handsLayer: some View {
+        let below = AnyView(ZStack {
+            OrlojPlateLight(face: face, palette: palette)
+            earthLayer
+            crownLayer
+            reteLayer
+        })
+        return ZStack {
+            OrlojGlassPieces(pieces: piece(face.moonCapsulePath()), face: face, palette: palette,
+                             variant: .regular, material: material, backdrop: below, lift: 3)
+            OrlojTintedGlass(path: face.moonLitPath(), tint: moonTint, face: face, palette: palette)
+            OrlojGlassPieces(pieces: piece(face.sunCapsulePath()), face: face, palette: palette,
+                             variant: .regular, material: material, backdrop: below, lift: 3)
+            OrlojTintedGlass(path: face.sunBadgePath(), tint: sunTint, face: face, palette: palette)
+        }
+    }
+
     /// The Contour numerals in glass, or flat ink while their layout is
     /// being tuned. The Roman rings are always glass. ▼ TWEAK ▼
     private static let contourInGlass = false
 
-    /// The tropics and the equator — thin rings of clear glass on the plate.
+    /// The tropics — thin rings of clear glass on the plate. Under the
+    /// Roman ring only the outer one stays, carrying the numerals.
     private var plateRingGlass: [OrlojGlassPiece] {
-        face.plateRingPaths().map { OrlojGlassPiece(path: $0) }
+        guard face.numeralRing == .roman else {
+            return face.plateRingPaths().map { OrlojGlassPiece(path: $0) }
+        }
+        return [OrlojGlassPiece(path: face.numeralCrownPath())]
     }
 
     /// The crown band — even-odd, so the plate shows through its middle.
@@ -172,6 +223,7 @@ struct OrlojGlassPalette {
     func bodyOpacity(_ variant: OrlojGlassVariant) -> Double {
         switch variant {
         case .clear:   return lineArt ? 0.10 : 0.07
+        case .smoked:  return lineArt ? 0.18 : 0.16      // ▼ TWEAK the rete's presence ▼
         case .regular: return lineArt ? 0.45 : 0.42
         }
     }
@@ -193,6 +245,9 @@ struct OrlojGlassPalette {
 /// must read on top of other glass.
 enum OrlojGlassVariant {
     case clear
+    /// Clear glass with more body — for the rete, so it holds its shape
+    /// against the night sky.
+    case smoked
     case regular
 }
 
@@ -212,6 +267,15 @@ struct OrlojGlassPieces: View {
     var material: OrlojMaterial     = .glass
     /// Light traces a big piece's outline instead of filling it.
     var outlined: Bool              = false
+    /// Glass frosts the sky behind it. Off for pieces that must read
+    /// evenly — the numerals, which would catch whatever stars lie under
+    /// each one.
+    var frosted:  Bool              = true
+    /// What the glass frosts — the sky by default, or the stack beneath.
+    var backdrop: AnyView?          = nil
+    /// How high the piece stands over the plate, 1–3: its shadow grows
+    /// with it. ▼ TWEAK the shadow per height in `glass` ▼
+    var lift:     CGFloat           = 1
 
     var body: some View {
         // A luminance-mapped Home Screen keeps the glass: it survives as alpha.
@@ -227,8 +291,11 @@ struct OrlojGlassPieces: View {
     private var glass: some View {
         ZStack {
             ZStack {
-                if !palette.lineArt {
-                    OrlojPlateLight(face: face, palette: palette)
+                if !palette.lineArt && frosted {
+                    // The glass hides what it frosts: a ground under the blur,
+                    // or the sharp sky would show straight through.
+                    Artist.shared.canvasBackground
+                    (backdrop ?? AnyView(OrlojPlateLight(face: face, palette: palette)))
                         .blur(radius: palette.frostBlur * face.ui)
                         .saturation(palette.frostSaturation)
                         .brightness(palette.frostLift)
@@ -237,8 +304,8 @@ struct OrlojGlassPieces: View {
             }
             .mask { silhouette }
             .compositingGroup()
-            .shadow(color: .black.opacity(palette.lineArt ? 0 : 0.45),
-                    radius: 2 * face.ui, y: 1.6 * face.ui)
+            .shadow(color: .black.opacity(palette.lineArt ? 0 : 0.6),
+                    radius: (0.8 + 1.4 * lift) * face.ui, y: (0.6 + 1.2 * lift) * face.ui)
 
             ForEach(pieces.indices, id: \.self) { i in
                 OrlojPath(source: pieces[i].path)
@@ -488,63 +555,34 @@ struct OrlojTintedGlass: View {
 
 // MARK: - Plate
 
-/// The plate's light: day, then each altitude field painted over the
-/// last down to night — inside the crown, or filling the whole widget
-/// under the Contour ring. Flat colour, crisp edges.
+/// The plate's light — now the night sky itself: its stars across the
+/// WHOLE widget, spilling past the dial, and the Earth at the centre. No
+/// ground of its own: the widget's container background shows through,
+/// lit by the system exactly like the other Ephoemerous widgets. The
+/// glass lenses frost exactly this.
 struct OrlojPlateLight: View {
     let face:     OrlojFace
     let palette:  OrlojGlassPalette
     var material: OrlojMaterial = .glass
 
-    /// In paper, each field is its own sheet and lifts off the one below.
-    private var layerShadow: Color { .black.opacity(material == .paper ? 0.28 : 0) }
-
     var body: some View {
         ZStack {
-            Rectangle().fill(palette.day)
-            ForEach(Array(face.unequalHourSections().enumerated()), id: \.offset) { k, section in
-                OrlojPath(source: section).fill(OrlojGlassPalette.hour(k))
+            Canvas { ctx, size in
+                face.drawStars(in: &ctx, size: size)
             }
-            ForEach(face.altitudeFields(), id: \.altitude) { field in
-                OrlojPath(source: field.path).fill(palette.field(below: field.altitude))
-                    .shadow(color: layerShadow, radius: 3 * face.ui, y: 2 * face.ui)
+            // The horizon, dashed exactly like the postcard widgets' — part
+            // of the sky, out to the outer tropic.
+            if let horizon = face.altitudeFields().first(where: { $0.altitude == .zero }) {
+                OrlojPath(source: horizon.path)
+                    .stroke(material.wire ?? .white.opacity(0.35),
+                            style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                    .clipShape(OrlojPath(source: face.plateFillPath()))
             }
-            // The centre is open: the widget's own ground, as if the plate
-            // were cut away inside the inner tropic.
-            OrlojPath(source: face.earthDiscPath()).fill(Artist.shared.canvasBackground)
-            OrlojEarth(face: face, palette: palette)
-                .shadow(color: layerShadow, radius: 3 * face.ui, y: 2 * face.ui)
+            // Remembered constellations, as hairline figures.
+            OrlojPath(source: face.favouriteConstellationsPath())
+                .stroke(.white.opacity(0.3),
+                        style: StrokeStyle(lineWidth: 0.8, lineCap: .round, lineJoin: .round))
         }
-        .clipShape(OrlojPath(source: face.plateFillPath()))
-    }
-}
-
-/// Hairlines on the plate: the field edges, the horizon brightest, and
-/// the unequal hours where there's room for them.
-struct OrlojPlateLines: View {
-    let face:       OrlojFace
-    let palette:    OrlojGlassPalette
-    let showsHours: Bool
-    var material:   OrlojMaterial = .glass
-
-    private var wire: Color { material.wire ?? palette.ink }
-
-    var body: some View {
-        ZStack {
-            if showsHours {
-                OrlojPath(source: face.unequalHoursPath())
-                    .stroke(wire.opacity(material.wire == nil ? 0.14 : 0.5), lineWidth: 0.5)
-            }
-            // The horizon and the twilight line; the orange runs unbroken between.
-            ForEach(face.altitudeFields().filter { $0.altitude.degrees.truncatingRemainder(dividingBy: 18) == 0 },
-                    id: \.altitude) { field in
-                OrlojPath(source: field.path)
-                    .stroke(wire.opacity(field.altitude == .zero ? 0.6 : 0.18),
-                            lineWidth: field.altitude == .zero ? 0.9 * face.ui + 0.1 : 0.5)
-            }
-        }
-        // The Earth's disc is painted over the lines, as on the original.
-        .clipShape(OrlojPath(source: face.plateFillPath().subtracting(face.earthDiscPath())))
     }
 }
 
