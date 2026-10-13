@@ -202,6 +202,10 @@ struct OrlojGlassPalette {
     /// turns with the face; on the widget, where noon is up, it falls
     /// straight down from the top edge like the shadows.
     let rim:     LinearGradient
+    /// How wide the rim light runs: 0.9pt on the tiles, growing with the
+    /// face as it's zoomed on the sky, so the light keeps its share of a
+    /// numeral instead of thinning to a hairline. ▼ TWEAK ▼
+    let rimWidth: CGFloat
 
     @MainActor
     init(lineArt: Bool, face: OrlojFace) {
@@ -218,6 +222,7 @@ struct OrlojGlassPalette {
             center: UnitPoint(x: face.center.x / max(face.camera.size.width,  1),
                               y: face.center.y / max(face.camera.size.height, 1)),
             startAngle: .zero, endAngle: .degrees(360))
+        rimWidth = 0.9 * max(1, face.ui)
         let size = face.camera.size
         let up   = CGVector(dx: cos(face.noonAngle), dy: sin(face.noonAngle))
         let r    = face.numeralRadius
@@ -362,9 +367,9 @@ struct OrlojGlassPieces: View {
 
             ForEach(pieces.indices, id: \.self) { i in
                 if daylit {
-                    OrlojPath(source: pieces[i].path).stroke(palette.dayRim, lineWidth: 0.9)
+                    OrlojPath(source: pieces[i].path).stroke(palette.dayRim, lineWidth: palette.rimWidth)
                 } else {
-                    OrlojPath(source: pieces[i].path).stroke(palette.rim, lineWidth: 0.9)
+                    OrlojPath(source: pieces[i].path).stroke(palette.rim, lineWidth: palette.rimWidth)
                 }
             }
         }
@@ -597,7 +602,7 @@ struct OrlojTintedGlass: View {
                                          center: unit(box.midX,
                                                       box.minY + box.height * 0.28),
                                          startRadius: 0, endRadius: box.width * 0.45))
-                OrlojPath(source: path).stroke(palette.rim, lineWidth: 0.9)
+                OrlojPath(source: path).stroke(palette.rim, lineWidth: palette.rimWidth)
             }
         }
     }
