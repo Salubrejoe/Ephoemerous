@@ -542,6 +542,117 @@ struct OrlojFace {
         return path
     }
 
+    // MARK: The ground (2.0)
+    // Everything inside the horizon circle is BELOW the observer's feet —
+    // Prague paints it black as NOX. Here it is the Earth: the whole world
+    // as an azimuthal map centred on the observer, laid into the sky below
+    // the horizon. A place's compass bearing from the observer is the
+    // azimuth it sits under; its distance sets the depth — the observer at
+    // the nadir, the far side of the world wrapping round the horizon.
+
+    /// How far round the world the map runs before it stops at the
+    /// horizon — short of the antipode, where every bearing meets. ▼ TWEAK ▼
+    private static let groundReach: Double = 172 * .pi / 180
+    /// How much room the near world gets: 1 spaces distance evenly down to
+    /// the nadir; lower pushes the near world out, the far side together. ▼ TWEAK ▼
+    private static let groundEasing: Double = 0.55
+
+    /// The sky below the horizon, inside the outer tropic.
+    @MainActor
+    func groundPath() -> Path {
+        guard let h = almucantarCircle(altitude: .zero) else { return Path() }
+        return circle(h.centre, h.radius).intersection(plateFillPath())
+    }
+
+    /// The continents, mapped onto the ground.
+    @MainActor
+    func groundLandPath() -> Path {
+        let φo = latitude.radians, λo = longitude.radians
+        let east   = SIMD3<Double>(-sin(λo), cos(λo), 0)
+        let north  = SIMD3<Double>(-sin(φo) * cos(λo), -sin(φo) * sin(λo), cos(φo))
+        let zenith = Self.earthVector(latitude: φo, longitude: λo)
+        let rim    = cos(Self.groundReach)
+        var path   = Path()
+        for ring in OrlojLand.rings {
+            // Each place in the observer's frame: x east, y north, z up.
+            let local = Self.densified(ring.map { place -> SIMD3<Double> in
+                let p = Self.earthVector(latitude: place.y * .pi / 180, longitude: place.x * .pi / 180)
+                return SIMD3(simd_dot(p, east), simd_dot(p, north), simd_dot(p, zenith))
+            })
+            let kept = Self.clipped(local, aboveZ: rim)
+            guard kept.count >= 3 else { continue }
+            let points = kept.compactMap { v -> CGPoint? in
+                let distance = acos(max(-1, min(1, v.z)))
+                let bearing  = atan2(v.x, v.y)
+                // Depth from distance — eased, so the near world (which
+                // the projection shrinks round the nadir) gets the room.
+                let depth = pow(distance / .pi, Self.groundEasing)
+                let q = camera.viewpoint.skyPoint(azimuth: bearing, altitude: (depth - 1) * .pi / 2)
+                return camera.screen(rotatedEquatorial: q)
+            }
+            guard points.count >= 3 else { continue }
+            path.addLines(points)
+            path.closeSubpath()
+        }
+        return path.intersection(groundPath())
+    }
+
+    /// A ring with no edge longer than ~1.5°, so it bends with the map.
+    private static func densified(_ ring: [SIMD3<Double>]) -> [SIMD3<Double>] {
+        guard let last = ring.last else { return [] }
+        var out: [SIMD3<Double>] = []
+        var previous = last
+        for v in ring {
+            let angle = acos(max(-1, min(1, simd_dot(previous, v))))
+            let steps = Int(angle / (1.5 * .pi / 180))
+            if steps > 1 {
+                for k in 1..<steps {
+                    out.append(simd_normalize(previous + (v - previous) * (Double(k) / Double(steps))))
+                }
+            }
+            out.append(v)
+            previous = v
+        }
+        return out
+    }
+
+    /// A ring cut to the cap z ≥ `aboveZ`, its cuts bridged along the cap's
+    /// edge the shorter way round.
+    private static func clipped(_ ring: [SIMD3<Double>], aboveZ zc: Double) -> [SIMD3<Double>] {
+        guard let start = ring.firstIndex(where: { $0.z >= zc }) else { return [] }
+        let walk = Array(ring[start...] + ring[..<start]) + [ring[start]]
+        let edge = sqrt(max(0, 1 - zc * zc))
+        func onEdge(_ a: Double) -> SIMD3<Double> { SIMD3(edge * sin(a), edge * cos(a), zc) }
+        func crossing(_ p: SIMD3<Double>, _ q: SIMD3<Double>) -> Double {
+            let c = p + (q - p) * ((p.z - zc) / (p.z - q.z))
+            return atan2(c.x, c.y)
+        }
+        var out: [SIMD3<Double>] = [walk[0]]
+        var exit: Double?
+        for (p, q) in zip(walk, walk.dropFirst()) {
+            switch (p.z >= zc, q.z >= zc) {
+            case (true, true):
+                out.append(q)
+            case (true, false):
+                exit = crossing(p, q)
+                out.append(onEdge(exit!))
+            case (false, true):
+                let entry = crossing(p, q)
+                if let from = exit {
+                    let span  = atan2(sin(entry - from), cos(entry - from))
+                    let steps = max(Int(abs(span) / 0.05), 1)
+                    for k in 1..<steps { out.append(onEdge(from + span * Double(k) / Double(steps))) }
+                }
+                out.append(onEdge(entry))
+                out.append(q)
+                exit = nil
+            case (false, false):
+                break
+            }
+        }
+        return out
+    }
+
     /// A ring of view vectors clipped to the near hemisphere (z ≥ 0): where
     /// it passes behind the limb it is cut, and the gap is bridged round
     /// the limb itself, the shorter way.

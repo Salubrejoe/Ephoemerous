@@ -67,13 +67,19 @@ struct OrlojGlassLayers: View {
     // BELOW it — the glass included, so a numeral blurs under the band
     // where they cross — and casts a shadow that grows with its height.
 
-    /// The Earth in glass, resting on the plate: the seas a disc of clear
-    /// glass, the continents frosted glass laid on it.
+    /// The Earth in glass, resting on the plate: the seas clear glass, the
+    /// continents frosted glass laid on them. Either the whole ground below
+    /// the horizon, mapped from the observer — or the little globe at the
+    /// axle. ▼ TWEAK ▼
+    static let earthIsGround = true
+
     private var earthLayer: some View {
-        ZStack {
-            OrlojGlassPieces(pieces: [OrlojGlassPiece(path: face.earthGlobePath())], face: face,
+        let sea  = Self.earthIsGround ? face.groundPath()     : face.earthGlobePath()
+        let land = Self.earthIsGround ? face.groundLandPath() : face.earthLandPath()
+        return ZStack {
+            OrlojGlassPieces(pieces: [OrlojGlassPiece(path: sea)], face: face,
                              palette: palette, material: material, lift: 1)
-            OrlojGlassPieces(pieces: [OrlojGlassPiece(path: face.earthLandPath())], face: face,
+            OrlojGlassPieces(pieces: [OrlojGlassPiece(path: land)], face: face,
                              palette: palette, variant: .regular, material: material, lift: 0.4)
         }
     }
@@ -572,7 +578,8 @@ struct OrlojPlateLight: View {
             }
             // The horizon, dashed exactly like the postcard widgets' — part
             // of the sky, out to the outer tropic.
-            if let horizon = face.altitudeFields().first(where: { $0.altitude == .zero }) {
+            if !OrlojGlassLayers.earthIsGround,
+               let horizon = face.altitudeFields().first(where: { $0.altitude == .zero }) {
                 OrlojPath(source: horizon.path)
                     .stroke(material.wire ?? .white.opacity(0.35),
                             style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
