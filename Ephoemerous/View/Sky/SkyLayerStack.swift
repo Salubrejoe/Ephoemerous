@@ -70,7 +70,8 @@ struct SkyLayerStack: View {
                                  date:      app.renderedObservationDate,
                                  latitude:  app.origin.latitude,
                                  longitude: app.origin.longitude,
-                                 resting:   frame.resting)
+                                 resting:   frame.resting,
+                                 scrubbing: app.isScrubbingDate || app._dateTransition != nil)
                         .equatable()
                         .transition(.opacity)
                 }

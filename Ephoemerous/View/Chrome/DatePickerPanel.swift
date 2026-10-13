@@ -3,10 +3,14 @@ import LoreKit
 
 // MARK: - DatePickerPanel
 // The time-travel instrument, FREE-FLOATING — no sheet. Sheets are for
-// content; instruments stand on the sky. The crown (`DateCrown`) floats
-// above one control row:
+// content; instruments stand on the sky. A ruler (`TimeRuler`) slides
+// like film over one control row, whose picker sets its scale:
 //
-//     [ Now ]   [ Hours · Days · Months · Years ]   [ ✕ ]
+//     [ wheels ]   [ Hours · Days · Months · Years ]   [ ✕ ]
+//
+// (The ring crown, `DateCrown`, is retired for now: a ring around the sky
+// says "turn the sky", true for hours only, and fought the Orloj's dial.
+// Its gears live on as the ruler's scales.)
 //
 // No title (a crown needs no nameplate) and no date readout — the toolbar
 // capsule at the top is already the live readout, counting as you scrub.
@@ -37,28 +41,16 @@ struct DatePickerPanel: View {
 
     var body: some View {
         ZStack {
-            // The ring rests ON the horizon circle (NorthIN) / the tropic
-            // (NorthOUT) — same screen radius by construction: the camera
-            // glides home on present (see MainView), where the horizon
-            // projects at exactly 2 · defaultScale about the screen centre.
-            if !showWheels {
-                // Same scale MainView glides the camera to while the picker
-                // is open, so the ring still rests exactly on the horizon —
-                // just a smaller horizon. Read from the screen rather than
-                // `defaultScale`, which framed the crown off both edges.
-                GeometryReader { geo in
-                    DateCrown(radius: 2 * state.datePickerScale(screenSize: geo.size),
-                              gear: $gear)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                .transition(.opacity)
-            }
-
             VStack(spacing: 16) {
                 Spacer()
                 if showWheels {
                     preciseWheels
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
+                } else {
+                    // The ruler (see `TimeRuler`), below the sky and clear
+                    // of whatever stands on it; its scale is the picker.
+                    TimeRuler(gear: gear)
+                        .transition(.opacity)
                 }
                 controlRow
             }
@@ -99,9 +91,8 @@ struct DatePickerPanel: View {
                         gearTick.impactOccurred()
                         showWheels = true
                     }
-                    
+
                     gearSegments
-                    
                     CircleIconButton(symbol: .xmark) {
                         state.isShowingDatePicker = false
                     }
