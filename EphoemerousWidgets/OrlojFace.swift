@@ -276,7 +276,8 @@ struct OrlojFace {
     /// field-star style (see `Artist+StarField`) — grey squircles, named
     /// stars a step above the nameless, the glow — at the dial's size.
     @MainActor
-    func drawStars(in ctx: inout GraphicsContext, size: CGSize, gain: Double = 1) {
+    func drawStars(in ctx: inout GraphicsContext, size: CGSize, gain: Double = 1,
+                   ink: Color? = nil) {
         // The small tile takes a sparser field (mag 3.8) — the same dot
         // count at a quarter the area would read as fog, not sky.
         let magLimit = ui < 0.7 ? 3.8 : 4.6
@@ -294,6 +295,7 @@ struct OrlojFace {
                             scale:        camera.scale,
                             gain:         gain,
                             sizeScale:    0.6 * ui,
+                            ink:          ink,
                             aboveHorizon: simd_dot(star.equatorialVector.sidereallyRotated(by: camera.sidereal),
                                                    zenith) > 0)
         }

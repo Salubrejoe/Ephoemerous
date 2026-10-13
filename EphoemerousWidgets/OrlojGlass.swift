@@ -52,12 +52,18 @@ struct OrlojGlassLayers: View {
     /// more than a tile on the Home Screen. 1 = the widget. ▼ TWEAK ▼
     var brilliance: Double = 1
 
+    /// On the wrist (the watch app): the face fills the screen's width (no
+    /// breath of ground round the dial), its stars are brighter, and the
+    /// small face's zodiac signs come back as hairlines on the band.
+    var wrist: Bool = false
+
     /// Which parts to draw — all of them, or one of the pieces the watch
     /// turns separately while its crown travels (see `OrlojParts`).
     var parts: OrlojParts = .all
 
     private var palette: OrlojGlassPalette {
-        OrlojGlassPalette(lineArt: lineArt, face: face, brilliance: brilliance, quick: quick)
+        OrlojGlassPalette(lineArt: lineArt, face: face, brilliance: brilliance, quick: quick,
+                          starGain: wrist ? Self.wristStarGain : 1)
     }
     private var isLarge: Bool              { face.ui >= 0.7 }
 
@@ -69,6 +75,7 @@ struct OrlojGlassLayers: View {
             if parts.contains(.dial) { dialLayer }
             if parts.contains(.rete) {
                 reteLayer
+                if wrist && !isLarge { thinGlyphs }
                 // On the sky the app draws its own planets.
                 if !onSky { planetLayer }
             }
@@ -76,9 +83,19 @@ struct OrlojGlassLayers: View {
             if parts.contains(.sunHand)  { sunHandLayer }
         }
         // A round dial keeps a breath of the widget's ground round it.
-        .scaleEffect(onSky || face.numeralRing == .contour ? 1 : 0.95)
+        .scaleEffect(onSky || wrist || face.numeralRing == .contour ? 1 : 0.95)
         .background { if !lineArt && !onSky && parts.contains(.sky) { WidgetColourTrial.orlojGround } }
         .dynamicTypeSize(.large)
+    }
+
+    /// How much brighter the wrist's stars are. ▼ TWEAK ▼
+    private static let wristStarGain: Double = 1.8
+
+    /// The zodiac signs as hairlines of ink on the band — the small face
+    /// has no room to carve them. ▼ TWEAK the weight ▼
+    private var thinGlyphs: some View {
+        OrlojPath(source: face.zodiacGlyphPaths().reduce(Path()) { $0.union($1) })
+            .stroke(palette.ink.opacity(0.75), lineWidth: 0.5)
     }
 
     /// The fixed dial: the numerals' ring and the Earth below the horizon.
@@ -297,10 +314,14 @@ struct OrlojGlassPalette {
     /// See `OrlojGlassLayers.brilliance` and `.quick`.
     let brilliance: Double
     let quick:      Bool
+    /// The stars' gain — lifted on the wrist.
+    let starGain:   Double
 
     @MainActor
-    init(lineArt: Bool, face: OrlojFace, brilliance: Double = 1, quick: Bool = false) {
+    init(lineArt: Bool, face: OrlojFace, brilliance: Double = 1, quick: Bool = false,
+         starGain: Double = 1) {
         self.lineArt    = lineArt
+        self.starGain   = starGain
         self.brilliance = brilliance
         self.quick      = quick
         #if os(watchOS)
@@ -768,7 +789,13 @@ struct OrlojPlateLight: View {
                     .fill(Artist.shared.skyColor)
             }
             Canvas { ctx, size in
-                face.drawStars(in: &ctx, size: size)
+                // The stars in the glass's own ink: on the watch the
+                // asset's field-star colours resolve their light variants.
+                #if os(watchOS)
+                face.drawStars(in: &ctx, size: size, gain: palette.starGain, ink: palette.ink)
+                #else
+                face.drawStars(in: &ctx, size: size, gain: palette.starGain)
+                #endif
             }
             // The horizon, dashed exactly like the postcard widgets' — part
             // of the sky, out to the outer tropic.

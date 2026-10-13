@@ -149,16 +149,16 @@ struct OrlojWatchView: View {
                 guard !Task.isCancelled else { return }
             }
             let renderer = ImageRenderer(content:
-                OrlojGlassLayers(face: face, lean: true, brilliance: Self.brilliance, parts: part)
+                OrlojGlassLayers(face: face, lean: true, brilliance: Self.brilliance,
+                                 wrist: true, parts: part)
                     .frame(width: size.width, height: size.height)
                     .environment(\.colorScheme, .dark))
             renderer.scale = displayScale
             if let image = renderer.cgImage { images.append((part, image)) }
         }
-        // The axle, where the glass layers' 0.95 breath leaves it.
+        // The axle — the wrist face fills the screen, no breath.
         let mid  = CGPoint(x: size.width / 2, y: size.height / 2)
-        let axle = CGPoint(x: mid.x + 0.95 * (face.center.x - mid.x),
-                           y: mid.y + 0.95 * (face.center.y - mid.y))
+        let axle = face.center
         drawn = Drawn(parts: images, date: date, size: size, sense: face.hourSense,
                       axle: UnitPoint(x: axle.x / size.width, y: axle.y / size.height))
     }
