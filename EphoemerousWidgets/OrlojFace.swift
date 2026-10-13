@@ -548,14 +548,21 @@ struct OrlojFace {
     // as an azimuthal map centred on the observer, laid into the sky below
     // the horizon. A place's compass bearing from the observer is the
     // azimuth it sits under; its distance sets the depth — the observer at
-    // the nadir, the far side of the world wrapping round the horizon.
+    // the nadir, the edge of their half of the globe on the horizon.
+    //
+    // The axle is the sky's hidden pole, not the observer: it stands over
+    // the ground as far south of them as the pole is deep (for 51° N, over
+    // the Sahel). Only at a pole would the two coincide.
 
-    /// How far round the world the map runs before it stops at the
-    /// horizon — short of the antipode, where every bearing meets. ▼ TWEAK ▼
-    private static let groundReach: Double = 172 * .pi / 180
-    /// How much room the near world gets: 1 spaces distance evenly down to
-    /// the nadir; lower pushes the near world out, the far side together. ▼ TWEAK ▼
-    private static let groundEasing: Double = 0.55
+    /// How far round the world the map runs: the half of the globe centred
+    /// on the observer. ▼ TWEAK ▼
+    private static let groundReach: Double = .pi / 2
+
+    /// Where the observer stands on the face: the nadir, straight below.
+    @MainActor
+    var nadirPoint: CGPoint? {
+        camera.screen(rotatedEquatorial: camera.viewpoint.skyPoint(azimuth: 0, altitude: -.pi / 2))
+    }
 
     /// The sky below the horizon, inside the outer tropic.
     @MainActor
@@ -584,9 +591,8 @@ struct OrlojFace {
             let points = kept.compactMap { v -> CGPoint? in
                 let distance = acos(max(-1, min(1, v.z)))
                 let bearing  = atan2(v.x, v.y)
-                // Depth from distance — eased, so the near world (which
-                // the projection shrinks round the nadir) gets the room.
-                let depth = pow(distance / .pi, Self.groundEasing)
+                // Depth from distance, evenly: the nadir to the horizon.
+                let depth = distance / Self.groundReach
                 let q = camera.viewpoint.skyPoint(azimuth: bearing, altitude: (depth - 1) * .pi / 2)
                 return camera.screen(rotatedEquatorial: q)
             }
