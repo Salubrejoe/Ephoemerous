@@ -208,6 +208,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				OrlojFace.swift,
+				OrlojLand.swift,
 			);
 			target = 7C1803D5300A4F64004D9B33 /* EphoemerousWatch */;
 		};
@@ -217,6 +218,7 @@
 				EphoemerousWidgets.swift,
 				OrlojFace.swift,
 				OrlojGlass.swift,
+				OrlojLand.swift,
 			);
 			target = 7C51B0DC2F8F8C2600B39A8A /* Ephoemerous */;
 		};

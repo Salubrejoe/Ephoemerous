@@ -141,6 +141,12 @@ struct OrlojGlassPalette {
         hourBlues[min(k, 11 - k)]
     }
 
+    /// The Earth: ocean lit and deep, its night side, the atmosphere.
+    static let oceanLight   = Color(.displayP3, red: 0.344, green: 0.603, blue: 0.807)   //       L .66  C .120  h 238
+    static let oceanDeep    = Color(.displayP3, red: 0.166, green: 0.349, blue: 0.576)   //       L .46  C .120  h 250
+    static let earthNight   = Color(.displayP3, red: 0.074, green: 0.104, blue: 0.163)   //       L .22  C .035  h 260
+    static let atmosphere   = Color(.displayP3, red: 0.697, green: 0.849, blue: 0.927)   //       L .86  C .060  h 225
+    static let land         = Color(.displayP3, red: 0.852, green: 0.822, blue: 0.692)   //       L .86  C .050  h  95
     /// AVRORA and CREPVSCVLVM: one step paler than the palest hour.
     static let aurora       = Color(.displayP3, red: 0.792, green: 0.843, blue: 0.867)   // OKLCH L .87  C .020  h 224
     /// ▼ TWEAK the day's blues — horizon first, noon last ▼
@@ -394,6 +400,52 @@ struct OrlojMetal {
     static let tiEngraved   = Color(.displayP3, red: 0.266, green: 0.283, blue: 0.304)   //       L .40  C .012 h 250
 }
 
+// MARK: - The Earth
+
+/// The planet at the centre: ocean lit from the subsolar point, the night
+/// side in shadow behind a soft terminator, a breath of atmosphere at the
+/// limb, and the glass language's highlight and rim.
+struct OrlojEarth: View {
+    let face:    OrlojFace
+    let palette: OrlojGlassPalette
+
+    var body: some View {
+        let globe = face.earthGlobePath()
+        let r     = face.earthRadius
+        ZStack {
+            // Atmosphere — a thin halo just outside the limb.
+            OrlojPath(source: globe)
+                .stroke(OrlojGlassPalette.atmosphere.opacity(0.7), lineWidth: 2.2 * face.ui)
+                .blur(radius: 1.6 * face.ui)
+            // Ocean, brightest where the Sun stands overhead.
+            OrlojPath(source: globe)
+                .fill(RadialGradient(colors: [OrlojGlassPalette.oceanLight, OrlojGlassPalette.oceanDeep],
+                                     center: unit(face.subsolarPoint),
+                                     startRadius: 0, endRadius: r * 1.7))
+            // The continents.
+            OrlojPath(source: face.earthLandPath()).fill(OrlojGlassPalette.land)
+            // Night, behind a soft terminator.
+            OrlojPath(source: face.earthNightPath())
+                .fill(OrlojGlassPalette.earthNight.opacity(0.88))
+                .blur(radius: 1.4 * face.ui)
+                .clipShape(OrlojPath(source: globe))
+            // Glass: a highlight at the top left, the rim light.
+            OrlojPath(source: globe)
+                .fill(RadialGradient(colors: [palette.ink.opacity(0.28), .clear],
+                                     center: unit(CGPoint(x: face.center.x - r * 0.45,
+                                                          y: face.center.y - r * 0.5)),
+                                     startRadius: 0, endRadius: r * 0.8))
+            OrlojPath(source: globe).stroke(palette.rim, lineWidth: 0.8)
+        }
+    }
+
+    /// A point on the face as a unit point of the widget.
+    private func unit(_ p: CGPoint) -> UnitPoint {
+        UnitPoint(x: p.x / max(face.camera.size.width,  1),
+                  y: p.y / max(face.camera.size.height, 1))
+    }
+}
+
 // MARK: - Tinted glass
 
 /// A badge in coloured glass: its colour run top to bottom across the
@@ -460,6 +512,7 @@ struct OrlojPlateLight: View {
             // The centre is open: the widget's own ground, as if the plate
             // were cut away inside the inner tropic.
             OrlojPath(source: face.earthDiscPath()).fill(Artist.shared.canvasBackground)
+            OrlojEarth(face: face, palette: palette)
                 .shadow(color: layerShadow, radius: 3 * face.ui, y: 2 * face.ui)
         }
         .clipShape(OrlojPath(source: face.plateFillPath()))

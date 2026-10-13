@@ -442,6 +442,174 @@ struct OrlojFace {
         return disc
     }
 
+    // MARK: The Earth (2.0)
+    // The planet at the centre — the Orloj is geocentric. It is seen from
+    // space straight above the OBSERVER, so the axle pierces it exactly
+    // where they stand. It is turned the way the face is: the way to the
+    // noon Sun (toward the equator) points up, and east lies on the side
+    // where the face's morning is — south-up with east on the left in the
+    // north, the mirror of that in the south, never a mirrored map. So the
+    // day side always faces the Sun hand.
+
+    /// The globe's radius: most of the open centre, leaving a ring of
+    /// space inside the inner tropic. ▼ TWEAK ▼
+    var earthRadius: CGFloat {
+        0.62 * camera.scale * CGFloat(2 * tan(.pi / 4 - AstroConstants.tropicCancer.radians / 2))
+    }
+
+    /// The globe's limb.
+    func earthGlobePath() -> Path { circle(center, earthRadius) }
+
+    /// How hour angles lie round the axle: screen angle θ(H) = zero + sense·H.
+    @MainActor
+    private var hourAngleFrame: (zero: Double, sense: Double) {
+        guard let a = ringPoint(hourAngle: 0,   declination: .zero),
+              let b = ringPoint(hourAngle: 0.1, declination: .zero)
+        else { return (-.pi / 2, 1) }
+        let t0 = atan2(Double(a.y - center.y), Double(a.x - center.x))
+        let t1 = atan2(Double(b.y - center.y), Double(b.x - center.x))
+        return (t0, atan2(sin(t1 - t0), cos(t1 - t0)) >= 0 ? 1 : -1)
+    }
+
+    /// A place on Earth (latitude, longitude in radians, east positive)
+    /// as a unit vector fixed to the Earth.
+    private static func earthVector(latitude φ: Double, longitude λ: Double) -> SIMD3<Double> {
+        SIMD3(cos(φ) * cos(λ), cos(φ) * sin(λ), sin(φ))
+    }
+
+    /// The globe's view: Earth-fixed vectors → x, y along the screen, z
+    /// toward the viewer (the observer's zenith).
+    private struct GlobeView {
+        let east, north, zenith: SIMD3<Double>      // the observer's local axes
+        let eastOnScreen, northOnScreen: SIMD2<Double>
+
+        func callAsFunction(_ p: SIMD3<Double>) -> SIMD3<Double> {
+            let e = simd_dot(p, east), n = simd_dot(p, north)
+            let xy = e * eastOnScreen + n * northOnScreen
+            return SIMD3(xy.x, xy.y, simd_dot(p, zenith))
+        }
+    }
+
+    @MainActor
+    private var globeView: GlobeView {
+        let φ = latitude.radians, λ = longitude.radians
+        let frame = hourAngleFrame
+        // Up the face is toward noon — toward the equator; east is where
+        // the morning hour angles lie.
+        let noon  = SIMD2(cos(frame.zero), sin(frame.zero))
+        let morning = frame.zero - frame.sense * .pi / 2
+        return GlobeView(east:   SIMD3(-sin(λ), cos(λ), 0),
+                         north:  SIMD3(-sin(φ) * cos(λ), -sin(φ) * sin(λ), cos(φ)),
+                         zenith: Self.earthVector(latitude: φ, longitude: λ),
+                         eastOnScreen:  SIMD2(cos(morning), sin(morning)),
+                         northOnScreen: -hemi * noon)
+    }
+
+    /// A view vector's place on the face.
+    private func onGlobe(_ v: SIMD3<Double>) -> CGPoint {
+        CGPoint(x: center.x + CGFloat(v.x) * earthRadius, y: center.y + CGFloat(v.y) * earthRadius)
+    }
+
+    /// The subsolar point, in the globe's view.
+    @MainActor
+    private var subsolarVector: SIMD3<Double> {
+        let sun = SIMD3<Double>.eclipticPoint(lambda: sunLambda)
+        let hourAngle = lst.radians - atan2(sun.y, sun.x)
+        return globeView(Self.earthVector(latitude:  asin(max(-1, min(1, sun.z))),
+                                          longitude: longitude.radians - hourAngle))
+    }
+
+    /// Where the Sun stands overhead, on the globe — the brightest point
+    /// of the day side (on the limb's far side, it shows at the limb).
+    @MainActor
+    var subsolarPoint: CGPoint { onGlobe(subsolarVector) }
+
+    /// The continents on the visible hemisphere (see `OrlojLand`). Where a
+    /// landmass runs over the limb it is cut, and the cut follows the limb.
+    @MainActor
+    func earthLandPath() -> Path {
+        let view = globeView
+        var path = Path()
+        for ring in OrlojLand.rings {
+            let vectors = ring.map { view(Self.earthVector(latitude:  $0.y * .pi / 180,
+                                                           longitude: $0.x * .pi / 180)) }
+            let visible = Self.visiblePart(of: vectors)
+            guard visible.count >= 3 else { continue }
+            path.addLines(visible.map(onGlobe))
+            path.closeSubpath()
+        }
+        return path
+    }
+
+    /// A ring of view vectors clipped to the near hemisphere (z ≥ 0): where
+    /// it passes behind the limb it is cut, and the gap is bridged round
+    /// the limb itself, the shorter way.
+    private static func visiblePart(of ring: [SIMD3<Double>]) -> [SIMD3<Double>] {
+        guard let start = ring.firstIndex(where: { $0.z >= 0 }) else { return [] }
+        let walk = Array(ring[start...] + ring[..<start]) + [ring[start]]
+        func crossing(_ p: SIMD3<Double>, _ q: SIMD3<Double>) -> SIMD3<Double> {
+            let c = p + (q - p) * (p.z / (p.z - q.z))
+            let h = simd_normalize(SIMD2(c.x, c.y))
+            return SIMD3(h.x, h.y, 0)
+        }
+        var out: [SIMD3<Double>] = [walk[0]]
+        var exit: SIMD3<Double>?
+        for (p, q) in zip(walk, walk.dropFirst()) {
+            switch (p.z >= 0, q.z >= 0) {
+            case (true, true):
+                out.append(q)
+            case (true, false):
+                exit = crossing(p, q)
+                out.append(exit!)
+            case (false, true):
+                let entry = crossing(p, q)
+                if let from = exit {
+                    let a0 = atan2(from.y, from.x)
+                    let span = atan2(sin(atan2(entry.y, entry.x) - a0), cos(atan2(entry.y, entry.x) - a0))
+                    let steps = max(Int(abs(span) / 0.05), 1)
+                    for k in 1..<steps {
+                        let a = a0 + span * Double(k) / Double(steps)
+                        out.append(SIMD3(cos(a), sin(a), 0))
+                    }
+                }
+                out.append(entry)
+                out.append(q)
+                exit = nil
+            case (false, false):
+                break
+            }
+        }
+        return out
+    }
+
+    /// The night side of the visible hemisphere: bounded by the terminator
+    /// (a great circle, seen from above the pole as half an ellipse) and
+    /// the limb on the side away from the Sun.
+    @MainActor
+    func earthNightPath() -> Path {
+        let s  = subsolarVector
+        guard simd_length(SIMD2(s.x, s.y)) > 1e-6 else {       // Sun straight overhead or underfoot
+            return s.z > 0 ? Path() : earthGlobePath()
+        }
+        let sh = simd_normalize(SIMD2(s.x, s.y))               // the Sun's bearing
+        let e  = SIMD3<Double>(-sh.y, sh.x, 0)                  // where the terminator meets the limb
+        let w  = simd_normalize(SIMD3<Double>(0, 0, 1) - s.z * s)   // its highest point
+        let anti = SIMD3<Double>(-sh.x, -sh.y, 0)               // the limb's midnight
+        let steps = 48
+        let terminator = (0...steps).map { i -> SIMD3<Double> in
+            let t = Double.pi * Double(i) / Double(steps)
+            return cos(t) * e + sin(t) * w
+        }
+        let limb = (0...steps).map { i -> SIMD3<Double> in
+            let t = Double.pi * Double(i) / Double(steps)
+            return cos(t) * -e + sin(t) * anti
+        }
+        var path = Path()
+        path.addLines((terminator + limb).map(onGlobe))
+        path.closeSubpath()
+        return path
+    }
+
     /// One unequal hour line, `frac` of the way through the day, walked
     /// across declinations: at each, the same fraction of that parallel's
     /// day arc. Where a parallel never sets (or never rises) the arc is
