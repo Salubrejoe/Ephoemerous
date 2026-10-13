@@ -41,6 +41,20 @@ final class LocalityResolver {
         }
     }
 
+    /// The time zone at `(lat, lon)`, from the same reverse geocoder —
+    /// `nil` if it failed (open ocean, offline). Cached like the names.
+    func timeZone(lat: Double, lon: Double) async -> TimeZone? {
+        let key = Self.cacheKey(lat: lat, lon: lon)
+        if let cached = zones[key] { return cached }
+        guard let request = MKReverseGeocodingRequest(location: CLLocation(latitude: lat, longitude: lon))
+        else { return nil }
+        let zone = try? await request.mapItems.first?.timeZone
+        if let zone { zones[key] = zone }
+        return zone
+    }
+
+    private var zones: [String: TimeZone] = [:]
+
     /// 0.1° rounding ≈ 11 km — coarse enough that movements within a
     /// city all hit the same cache entry, fine enough that a hop
     /// between two nearby cities is a cache miss.

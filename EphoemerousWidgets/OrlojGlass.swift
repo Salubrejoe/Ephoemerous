@@ -80,7 +80,7 @@ struct OrlojGlassLayers: View {
             OrlojGlassPieces(pieces: [OrlojGlassPiece(path: sea)], face: face,
                              palette: palette, material: material, lift: 1)
             OrlojGlassPieces(pieces: [OrlojGlassPiece(path: land)], face: face,
-                             palette: palette, variant: .regular, material: material, lift: 0.4)
+                             palette: palette, variant: .misted, material: material, lift: 0.4)
         }
     }
 
@@ -230,6 +230,7 @@ struct OrlojGlassPalette {
         switch variant {
         case .clear:   return lineArt ? 0.10 : 0.07
         case .smoked:  return lineArt ? 0.18 : 0.16      // ▼ TWEAK the rete's presence ▼
+        case .misted:  return lineArt ? 0.30 : 0.26      // ▼ TWEAK the continents' frost ▼
         case .regular: return lineArt ? 0.45 : 0.42
         }
     }
@@ -254,6 +255,8 @@ enum OrlojGlassVariant {
     /// Clear glass with more body — for the rete, so it holds its shape
     /// against the night sky.
     case smoked
+    /// Between smoked and frosted — the continents on the glass Earth.
+    case misted
     case regular
 }
 

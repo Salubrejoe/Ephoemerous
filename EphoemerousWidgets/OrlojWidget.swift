@@ -30,13 +30,16 @@ struct OrlojProvider: TimelineProvider {
 
     func getSnapshot(in context: Context, completion: @escaping (OrlojEntry) -> Void) {
         Task { @MainActor in
-            completion(OrlojEntry(date: .now, origin: FavouritesStore().observerOrigin()))
+            let store = FavouritesStore()
+            completion(OrlojEntry(date: .now, origin: store.observerOrigin(),
+                                  timeZone: store.observerTimeZone() ?? .current))
         }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<OrlojEntry>) -> Void) {
         Task { @MainActor in
             let origin = FavouritesStore().observerOrigin()
+            let zone   = FavouritesStore().observerTimeZone() ?? .current
             let now    = Date.now
             let webb   = await WebbTrack.ephemeris()
             // 15-minute beats — the hands and unequal-hour arcs visibly
@@ -44,7 +47,8 @@ struct OrlojProvider: TimelineProvider {
             let entries = stride(from: 0, through: 60, by: 15).map { m in
                 let date = now.addingTimeInterval(Double(m) * 60)
                 return OrlojEntry(date: date, origin: origin,
-                                  jwst: Self.jwst(webb, at: date, origin: origin))
+                                  jwst: Self.jwst(webb, at: date, origin: origin),
+                                  timeZone: zone)
             }
             completion(Timeline(entries: entries,
                                 policy: .after(now.addingTimeInterval(75 * 60))))
@@ -70,6 +74,8 @@ struct OrlojEntry: TimelineEntry {
     let origin: (latDeg: Double, lonDeg: Double)?
     /// The JWST's direction at `date`, when its track is cached.
     var jwst:   SIMD3<Double>? = nil
+    /// The origin's own time zone — the clock the face keeps.
+    var timeZone: TimeZone = .current
 }
 
 // MARK: - Entry view
@@ -91,7 +97,8 @@ struct OrlojWidgetView: View {
             OrlojGlassLayers(face: OrlojFace(date:   entry.date,
                                              origin: entry.origin,
                                              size:   geo.size,
-                                             jwst:   entry.jwst),
+                                             jwst:   entry.jwst,
+                                             timeZone: entry.timeZone),
                              lineArt: renderingMode != .fullColor)
                 // The face is always NIGHT. `.preferredColorScheme` doesn't
                 // reach a widget's colours: on a light Home Screen the

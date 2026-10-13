@@ -31,6 +31,11 @@ struct SkyCamera: Equatable {
 
     var viewpoint: Projection.Viewpoint
     var sidereal:  Angle
+    /// Mirror the projection left–right, before rotation and pan. The sky
+    /// as seen from outside the celestial sphere — the astrolabe's own
+    /// convention; the Orloj uses it below the equator, so its hours still
+    /// run clockwise.
+    var mirrored:  Bool = false
 
     /// Where the observer is standing, recovered from the earth-fixed
     /// origin vector (its z IS sin φ). Saves threading a latitude down to
@@ -50,6 +55,7 @@ struct SkyCamera: Equatable {
             && l.viewpoint.planeVector == r.viewpoint.planeVector
             && l.viewpoint.morph == r.viewpoint.morph
             && l.viewpoint.look == r.viewpoint.look
+            && l.mirrored == r.mirrored
     }
 
     /// Projection-unit point → screen pixel: scale about centre + the
@@ -61,7 +67,7 @@ struct SkyCamera: Equatable {
     func screen(_ p: CGPoint) -> CGPoint {
         // Scaled, y-flipped projection vector, rotated about the centre
         // (same operator as `.rotationEffect`), then panned in screen space.
-        let vx = p.x * scale
+        let vx = (mirrored ? -p.x : p.x) * scale
         let vy = -p.y * scale
         let c  = CGFloat(cos(rotation.radians))
         let s  = CGFloat(sin(rotation.radians))

@@ -61,6 +61,10 @@ struct OrlojFace {
     /// Radius of the ring the Roman numerals' centres sit on.
     let numeralRadius: CGFloat
 
+    /// The clock the numerals keep: the PLACE's own time zone, not the
+    /// phone's — it's a clock of where the sky is drawn.
+    let civilCalendar: Calendar
+
     /// Which ring of hours the glass face wears (see `NumeralRing`).
     /// ▼ TWEAK the default here ▼
     var numeralRing: NumeralRing = .roman
@@ -74,7 +78,7 @@ struct OrlojFace {
     /// marker to the hand rather than the one it last passed. Same civil
     /// clock `dialNumerals` phases the ring against.
     var sunHour: Int {
-        let c = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
+        let c = civilCalendar.dateComponents([.hour, .minute, .second], from: date)
         let civil = Double(c.hour ?? 12) + Double(c.minute ?? 0) / 60
                   + Double(c.second ?? 0) / 3600
         return Int(civil.rounded()) % 24
@@ -110,8 +114,11 @@ struct OrlojFace {
 
     @MainActor
     init(date: Date, origin: (latDeg: Double, lonDeg: Double)?, size: CGSize,
-         wrist: Bool = false, jwst: SIMD3<Double>? = nil) {
+         wrist: Bool = false, jwst: SIMD3<Double>? = nil, timeZone: TimeZone = .current) {
         self.wrist = wrist
+        var civil = Calendar(identifier: .gregorian)
+        civil.timeZone = timeZone
+        self.civilCalendar = civil
         self.jwst  = jwst
         self.date = date
         // Prague fallback before the app has ever backgrounded — apt for
@@ -168,8 +175,12 @@ struct OrlojFace {
         // −LST double-counted longitude and spun the tympan (horizon,
         // twilight bands, Latin labels) by `lon` against the rete/ring.
         let sidereal = -Precession.gmstSiderealOffset(for: date)
+        // Below the equator the glass face is mirrored, so its hours run
+        // clockwise like any clock (see `SkyCamera.mirrored`). The wrist
+        // keeps the sky as seen.
+        let mirrored  = !wrist && lat.radians < 0
         let unrotated = SkyCamera(scale: scale, offset: .zero, size: size,
-                                 viewpoint: viewpoint, sidereal: sidereal)
+                                 viewpoint: viewpoint, sidereal: sidereal, mirrored: mirrored)
         var rotation = Angle.zero
         let c = unrotated.screen(.zero)
         if let probe = unrotated.screen(
@@ -179,7 +190,7 @@ struct OrlojFace {
         }
 
         camera = SkyCamera(scale: scale, offset: .zero, rotation: rotation,
-                          size: size, viewpoint: viewpoint, sidereal: sidereal)
+                          size: size, viewpoint: viewpoint, sidereal: sidereal, mirrored: mirrored)
     }
 
     var center: CGPoint { camera.screen(.zero) }
@@ -426,7 +437,8 @@ struct OrlojFace {
     @MainActor
     func plateRingPaths() -> [Path] {
         let width = 1.6 * ui + 0.6
-        return [AstroConstants.tropicCapricorn, AstroConstants.tropicCancer].map { dec in
+        // Inner, then outer — whichever tropic each is in this hemisphere.
+        return [innerTropic, outerTropic].map { dec in
             var parallel = sampledParallel(declination: dec, steps: 240)
             parallel.closeSubpath()
             return parallel.strokedPath(StrokeStyle(lineWidth: width))
@@ -546,17 +558,23 @@ struct OrlojFace {
     // Everything inside the horizon circle is BELOW the observer's feet —
     // Prague paints it black as NOX. Here it is the Earth: the whole world
     // as an azimuthal map centred on the observer, laid into the sky below
-    // the horizon. A place's compass bearing from the observer is the
-    // azimuth it sits under; its distance sets the depth — the observer at
-    // the nadir, the edge of their half of the globe on the horizon.
+    // the horizon, the edge of their half of the globe on the horizon.
     //
-    // The axle is the sky's hidden pole, not the observer: it stands over
-    // the ground as far south of them as the pole is deep (for 51° N, over
-    // the Sahel). Only at a pole would the two coincide.
+    // The axle is the sky's hidden pole, not the observer's nadir, so the
+    // map is built to put the observer ON the axle: their hemisphere is
+    // projected stereographically onto a disc (the astrolabe's own map —
+    // conformal, circles stay circles), then slid inside that disc by a
+    // Möbius transformation until they sit where the pole does, and laid
+    // below the horizon. The rim stays on the horizon; bearings stay true
+    // along the meridian and bend a little elsewhere.
 
     /// How far round the world the map runs: the half of the globe centred
     /// on the observer. ▼ TWEAK ▼
     private static let groundReach: Double = .pi / 2
+
+    /// The slide's largest reach: near the equator the hidden pole sits on
+    /// the horizon itself, and the observer would be pushed to the rim. ▼ TWEAK ▼
+    private static let groundSlideCap: Double = 0.85
 
     /// Where the observer stands on the face: the nadir, straight below.
     @MainActor
@@ -579,6 +597,12 @@ struct OrlojFace {
         let north  = SIMD3<Double>(-sin(φo) * cos(λo), -sin(φo) * sin(λo), cos(φo))
         let zenith = Self.earthVector(latitude: φo, longitude: λo)
         let rim    = cos(Self.groundReach)
+        // Where the axle sits in the hemisphere's stereographic disc: toward
+        // the hidden pole's bearing, tan((90° − |φ|) / 2) out — so the
+        // observer, slid there, lands under the axle.
+        let poleBearing: Double = φo >= 0 ? .pi : 0
+        let reach = min(tan((.pi / 2 - abs(φo)) / 2), Self.groundSlideCap)
+        let slide = SIMD2(reach * sin(poleBearing), reach * cos(poleBearing))   // (east, north)
         var path   = Path()
         for ring in OrlojLand.rings {
             // Each place in the observer's frame: x east, y north, z up.
@@ -589,11 +613,15 @@ struct OrlojFace {
             let kept = Self.clipped(local, aboveZ: rim)
             guard kept.count >= 3 else { continue }
             let points = kept.compactMap { v -> CGPoint? in
-                let distance = acos(max(-1, min(1, v.z)))
-                let bearing  = atan2(v.x, v.y)
-                // Depth from distance, evenly: the nadir to the horizon.
-                let depth = distance / Self.groundReach
-                let q = camera.viewpoint.skyPoint(azimuth: bearing, altitude: (depth - 1) * .pi / 2)
+                // Stereographic from the antipode: the observer at 0, the
+                // hemisphere's edge on the unit circle…
+                let w = SIMD2(v.x, v.y) / (1 + v.z)
+                // …slid by the Möbius map w ↦ (w + a) / (1 + ā·w)…
+                let m = Self.mobius(w, slide)
+                // …and read back as a direction below the horizon.
+                let fromNadir = 2 * atan(simd_length(m))
+                let q = camera.viewpoint.skyPoint(azimuth:  atan2(m.x, m.y),
+                                                  altitude: fromNadir - .pi / 2)
                 return camera.screen(rotatedEquatorial: q)
             }
             guard points.count >= 3 else { continue }
@@ -601,6 +629,16 @@ struct OrlojFace {
             path.closeSubpath()
         }
         return path.intersection(groundPath())
+    }
+
+    /// The disc automorphism w ↦ (w + a) / (1 + ā·w), in complex arithmetic
+    /// on (x, y) pairs: carries 0 to a and the unit circle onto itself.
+    private static func mobius(_ w: SIMD2<Double>, _ a: SIMD2<Double>) -> SIMD2<Double> {
+        let num = w + a
+        // 1 + conj(a)·w
+        let den = SIMD2(1 + a.x * w.x + a.y * w.y, a.x * w.y - a.y * w.x)
+        let d2  = den.x * den.x + den.y * den.y
+        return SIMD2((num.x * den.x + num.y * den.y) / d2, (num.y * den.x - num.x * den.y) / d2)
     }
 
     /// A ring with no edge longer than ~1.5°, so it bends with the map.
@@ -861,7 +899,7 @@ struct OrlojFace {
         // The civil anchor: the Sun's hour angle now (H = LST − RA,
         // ringPoint's own convention) against the wall clock now.
         let sunHA    = lst.radians - atan2(sunVec.y, sunVec.x)
-        let comps    = Calendar.current.dateComponents([.hour, .minute, .second],
+        let comps    = civilCalendar.dateComponents([.hour, .minute, .second],
                                                        from: date)
         let civilNow = Double(comps.hour ?? 12) + Double(comps.minute ?? 0) / 60
                      + Double(comps.second ?? 0) / 3600
@@ -1501,7 +1539,7 @@ struct OrlojFace {
     /// The wall clock as a fractional hour — the same clock `dialNumerals`
     /// phases the ring against.
     private var civilHourNow: Double {
-        let c = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
+        let c = civilCalendar.dateComponents([.hour, .minute, .second], from: date)
         return Double(c.hour ?? 12) + Double(c.minute ?? 0) / 60 + Double(c.second ?? 0) / 3600
     }
 

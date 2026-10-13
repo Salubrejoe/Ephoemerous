@@ -72,10 +72,19 @@ struct EphoemerousApp: App {
                 // (it has no location access) and re-render the widgets so
                 // fresh favourites / origin land immediately.
                 if phase == .background {
-                    CloudSync.shared.saveObserverOrigin(
-                        latDeg: state.origin.latitude.degrees,
-                        lonDeg: state.origin.longitude.degrees)
+                    let lat = state.origin.latitude.degrees
+                    let lon = state.origin.longitude.degrees
+                    CloudSync.shared.saveObserverOrigin(latDeg: lat, lonDeg: lon)
                     WidgetCenter.shared.reloadAllTimelines()
+                    // …and its time zone, so the Orloj keeps that place's
+                    // clock. Resolved over the network; the widgets reload
+                    // again once it lands.
+                    Task {
+                        guard let zone = await LocalityResolver.shared.timeZone(lat: lat, lon: lon)
+                        else { return }
+                        CloudSync.shared.saveObserverTimeZone(zone)
+                        WidgetCenter.shared.reloadAllTimelines()
+                    }
                 }
             }
             .environment(state)

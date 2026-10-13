@@ -118,6 +118,12 @@ final class CloudSync {
         store.synchronize()
     }
 
+    /// The parked origin's time zone (see `FavouritesStore.observerTimeZone`).
+    func saveObserverTimeZone(_ zone: TimeZone) {
+        store.set(zone.identifier, forKey: FavouritesStore.Key.observerTimeZone)
+        store.synchronize()
+    }
+
     // MARK: - Read
 
     /// Favourites straight from the store — for callers that live outside

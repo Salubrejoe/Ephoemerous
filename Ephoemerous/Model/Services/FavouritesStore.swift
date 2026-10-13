@@ -22,6 +22,7 @@ struct FavouritesStore {
         static let favouriteMoon           = "favouriteMoon"
         static let observerLatDeg          = "observerLatDeg"
         static let observerLonDeg          = "observerLonDeg"
+        static let observerTimeZone        = "observerTimeZone"
     }
 
     private let store = NSUbiquitousKeyValueStore.default
@@ -74,6 +75,12 @@ struct FavouritesStore {
         guard store.object(forKey: Key.observerLatDeg) != nil else { return nil }
         return (store.double(forKey: Key.observerLatDeg),
                 store.double(forKey: Key.observerLonDeg))
+    }
+
+    /// The parked origin's own time zone, resolved by the app — so a clock
+    /// widget keeps the time of the place it draws. `nil` until resolved.
+    func observerTimeZone() -> TimeZone? {
+        store.string(forKey: Key.observerTimeZone).flatMap(TimeZone.init(identifier:))
     }
 
     func planets() -> [Planet] {

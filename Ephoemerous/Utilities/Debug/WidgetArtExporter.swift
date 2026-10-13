@@ -106,7 +106,8 @@ enum WidgetArtExporter {
             write(sheet, to: dir, name: "orlojmaterials_\(f.name).png")
         }
         let sydney = OrlojFace(date: now, origin: (latDeg: -33.87, lonDeg: 151.21),
-                               size: families[2].size)
+                               size: families[2].size,
+                               timeZone: TimeZone(identifier: "Australia/Sydney") ?? .current)
         write(tile(size: families[2].size) { OrlojGlassLayers(face: sydney) },
               to: dir, name: "orlojglass_large_sydney.png")
         do {
