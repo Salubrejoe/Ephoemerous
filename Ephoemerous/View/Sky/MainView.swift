@@ -177,6 +177,50 @@ struct MainView: View {
                                 sky.scale = CGFloat(z)
                             }
                         }
+                        // `-panWave` drags the sky round in a slow loop for ten
+                        // seconds, as a finger would, and logs the frame rate
+                        // it managed (see `MemoryLog`).
+                        if args.contains("-panWave") {
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(5))
+                                let start = Date.now
+                                var last = start, frames = 0, worst = 0.0
+                                while Date.now.timeIntervalSince(start) < 10 {
+                                    let t = Date.now.timeIntervalSince(start)
+                                    sky.drag = CGSize(width: 120 * sin(t * 2), height: 80 * cos(t * 1.3))
+                                    try? await Task.sleep(for: .milliseconds(16))
+                                    frames += 1
+                                    worst = Swift.max(worst, Date.now.timeIntervalSince(last))
+                                    last = .now
+                                }
+                                sky.drag = .zero
+                                MemoryLog.note(String(format: "panWave  %.1f fps  worst %.0f ms",
+                                                      Double(frames) / 10, worst * 1000))
+                            }
+                        }
+                        // `-pinchWave` pinches in 3× over three seconds through
+                        // the real recogniser path (stepped refreshes and all),
+                        // then lets go, and logs the frame rate it managed.
+                        if args.contains("-pinchWave") {
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(5))
+                                let c = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+                                sky.pinchBegan(centroid: c)
+                                let start = Date.now
+                                var last = start, frames = 0, worst = 0.0
+                                while Date.now.timeIntervalSince(start) < 3 {
+                                    let t = Date.now.timeIntervalSince(start) / 3
+                                    sky.pinchChanged(scale: CGFloat(exp(t * log(3.0))), centroid: c)
+                                    try? await Task.sleep(for: .milliseconds(16))
+                                    frames += 1
+                                    worst = Swift.max(worst, Date.now.timeIntervalSince(last))
+                                    last = .now
+                                }
+                                sky.pinchEnded()
+                                MemoryLog.note(String(format: "pinchWave  %.1f fps  worst %.0f ms",
+                                                      Double(frames) / 3, worst * 1000))
+                            }
+                        }
                         // `-livePinch <n>` freezes a pinch mid-gesture — the
                         // live parent transform held at n× — for measuring
                         // what a pinch costs without a finger on the glass.
@@ -457,9 +501,6 @@ struct MainView: View {
         // and its dial tracks — whenever the user twists the canvas, not only
         // in compass mode. Negated to match the camera's y-flip handedness so
         // `-renderedRotation` equals the on-screen rotation in BOTH modes.
-        // The Orloj's glass can't follow a zoom — while it stands, touch
-        // pans and turns the sky but doesn't zoom it.
-        .onChange(of: app.orlojStands, initial: true) { _, stands in sky.zoomLocked = stands }
         .onChange(of: sky.rotation)     { _, _ in mirrorRotationToRose() }
         .onChange(of: sky.liveRotation) { _, _ in mirrorRotationToRose() }
         // The compass rose's reset-to-north (`resetRotationToNorth` →

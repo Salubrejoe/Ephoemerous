@@ -69,7 +69,8 @@ struct SkyLayerStack: View {
                     OrlojOverlay(camera:    frame.camera,
                                  date:      app.renderedObservationDate,
                                  latitude:  app.origin.latitude,
-                                 longitude: app.origin.longitude)
+                                 longitude: app.origin.longitude,
+                                 resting:   frame.resting)
                         .equatable()
                         .transition(.opacity)
                 }

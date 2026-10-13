@@ -45,6 +45,9 @@ struct SkyFrame {
     let applied:   CGSize
     /// Where unpromoted names may speak — see `LabelComfortZone`.
     let comfort:   LabelComfortZone
+    /// No finger on the sky and nothing gliding — the committed camera is
+    /// what's on screen. Dear layers (the Orloj) redraw only then.
+    let resting:   Bool
 
     // Who is selected — passive labels defer to the promoted pin.
     let selection:       SkyObject?
@@ -136,6 +139,7 @@ struct SkyFrame {
         // identity — labels take the camera scale for their tiers and stay
         // put (no counter-drift).
         let baked = engaging || look > 0
+        resting   = sky.isResting
         effPinch  = baked ? 1            : sky.effPinch
         liveScale = baked ? camera.scale : sky.liveScale
         applied   = baked ? .zero        : sky.applied

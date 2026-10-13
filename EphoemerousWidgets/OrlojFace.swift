@@ -2034,6 +2034,8 @@ struct OrlojFace {
     /// corners where they meet rounded to `fillet`, like the rete's webs.
     /// The rounding is a closing (grow by the fillet, shrink back), kept
     /// only near both parts — so nothing else is rounded or bridged.
+    /// Returned flattened (see `Path.flattened`): the boolean ops leave
+    /// curves the stroker chokes on.
     func fused(_ a: Path, _ b: Path, fillet r: CGFloat) -> Path {
         let whole  = a.union(b)
         let band   = StrokeStyle(lineWidth: 2 * r, lineCap: .round, lineJoin: .round)
@@ -2041,7 +2043,7 @@ struct OrlojFace {
         let closed = grown.subtracting(grown.strokedPath(band))
         let reach  = StrokeStyle(lineWidth: 4 * r, lineCap: .round, lineJoin: .round)
         let near   = a.union(a.strokedPath(reach)).intersection(b.union(b.strokedPath(reach)))
-        return whole.union(closed.subtracting(whole).intersection(near))
+        return whole.union(closed.subtracting(whole).intersection(near)).flattened()
     }
 
     // MARK: Glass helpers
@@ -2313,6 +2315,52 @@ struct OrlojContour {
 /// Lifts a pre-computed `Path` (already in view coordinates) into a
 /// SwiftUI `Shape`, so face layers can be styled as views — and can take
 /// a real `.glassEffect(in:)` when this face graduates into the app.
+extension Path {
+    /// Every curve as straight lines no longer than `step` points.
+    ///
+    /// The boolean ops behind `OrlojFace.fused` leave runs of degenerate
+    /// cubics that CoreGraphics' stroker chokes on: stroking the crown's
+    /// rim took 0.3 s on an iPad, and 1 ms once flattened. Fills never
+    /// minded. ▼ TWEAK `step` if facets ever show ▼
+    func flattened(step: CGFloat = 1.5) -> Path {
+        var out   = Path()
+        var last  = CGPoint.zero, start = CGPoint.zero
+        /// Segments for a curve, from its control polygon's length.
+        func count(_ p: CGPoint...) -> Int {
+            let length = zip(p, p.dropFirst()).reduce(0) { $0 + hypot($1.1.x - $1.0.x, $1.1.y - $1.0.y) }
+            return min(32, max(1, Int((length / step).rounded(.up))))
+        }
+        forEach { element in
+            switch element {
+            case .move(let to):
+                out.move(to: to); last = to; start = to
+            case .line(let to):
+                out.addLine(to: to); last = to
+            case .quadCurve(let to, let c):
+                let n = count(last, c, to)
+                for i in 1...n {
+                    let t = CGFloat(i) / CGFloat(n), u = 1 - t
+                    out.addLine(to: CGPoint(x: u * u * last.x + 2 * u * t * c.x + t * t * to.x,
+                                            y: u * u * last.y + 2 * u * t * c.y + t * t * to.y))
+                }
+                last = to
+            case .curve(let to, let c1, let c2):
+                let n = count(last, c1, c2, to)
+                for i in 1...n {
+                    let t = CGFloat(i) / CGFloat(n), u = 1 - t
+                    let a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t
+                    out.addLine(to: CGPoint(x: a * last.x + b * c1.x + c * c2.x + d * to.x,
+                                            y: a * last.y + b * c1.y + c * c2.y + d * to.y))
+                }
+                last = to
+            case .closeSubpath:
+                out.closeSubpath(); last = start
+            }
+        }
+        return out
+    }
+}
+
 struct OrlojPath: Shape {
     let source: Path
     func path(in rect: CGRect) -> Path { source }

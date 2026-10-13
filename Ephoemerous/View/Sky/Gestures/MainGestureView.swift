@@ -133,14 +133,6 @@ struct MainGestureView: UIViewRepresentable {
             }
         }
 
-        // Zoom locked (the Orloj stands): the pinch and the double-tap-hold
-        // zoom don't begin. A refused hold fails, so the tap and the pan
-        // that wait on it still fire.
-        func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
-            guard sky.zoomLocked else { return true }
-            return !(g is UIPinchGestureRecognizer || g is UILongPressGestureRecognizer)
-        }
-
         // Pan + pinch + rotation run simultaneously (Maps pattern). Hold
         // stays exclusive — the pan already requires it to fail.
         func gestureRecognizer(_ g: UIGestureRecognizer,

@@ -52,11 +52,6 @@ final class MainGestureCoordinator {
     /// canvas hands control back to touch. Runs before the gesture's own
     /// begin bookkeeping.
     @ObservationIgnored var onGestureStart: (() -> Void)?
-    /// No zoom by touch — the pinch and the double-tap zooms don't begin;
-    /// pan and rotation carry on. Set while the Orloj stands: its Liquid
-    /// Glass is repainted every frame a zoom moves it, and the iPad ran
-    /// out of memory under a pinch. Zoom first, then stand the clock.
-    @ObservationIgnored var zoomLocked = false
 
     // Limits / feel — production values.
     @ObservationIgnored var minScale:     CGFloat = 90

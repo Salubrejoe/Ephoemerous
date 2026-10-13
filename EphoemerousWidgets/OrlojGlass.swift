@@ -27,12 +27,17 @@ struct OrlojGlassLayers: View {
     /// What the moving parts are made of (see `OrlojMaterial`). ▼ TWEAK ▼
     var material: OrlojMaterial = .glass
 
+    /// Standing on the app's live sky (see `OrlojOverlay`), not in a tile:
+    /// the app draws the sky and its ground, so the face brings only its
+    /// glass, at its true size — it must land on the stars beneath.
+    var onSky: Bool = false
+
     private var palette: OrlojGlassPalette { OrlojGlassPalette(lineArt: lineArt) }
     private var isLarge: Bool              { face.ui >= 0.7 }
 
     var body: some View {
         ZStack {
-            if !lineArt {
+            if !lineArt && !onSky {
                 OrlojPlateLight(face: face, palette: palette, material: material)
             }
 
@@ -58,8 +63,8 @@ struct OrlojGlassLayers: View {
             handsLayer
         }
         // A round dial keeps a breath of the widget's ground round it.
-        .scaleEffect(face.numeralRing == .contour ? 1 : 0.95)
-        .background { if !lineArt { WidgetColourTrial.orlojGround } }
+        .scaleEffect(onSky || face.numeralRing == .contour ? 1 : 0.95)
+        .background { if !lineArt && !onSky { WidgetColourTrial.orlojGround } }
         .dynamicTypeSize(.large)
     }
 
@@ -99,17 +104,22 @@ struct OrlojGlassLayers: View {
                          backdrop: AnyView(ZStack {
                              OrlojPlateLight(face: face, palette: palette)
                              earthLayer
-                             crownLayer
+                             if !onSky { crownLayer }
                          }),
                          lift: 2)
     }
 
     /// Height 3: the hands, the Moon's below the Sun's, frosting everything.
+    ///
+    /// On the sky the frost under the rete and the hands leaves the crown
+    /// out: its fused outline is the face's dearest path to draw (~0.6 s on
+    /// an iPad), and frosting re-drew it five more times per render. Under
+    /// the blur it barely showed. The widget, drawn once, keeps it.
     private var handsLayer: some View {
         let below = AnyView(ZStack {
             OrlojPlateLight(face: face, palette: palette)
             earthLayer
-            crownLayer
+            if !onSky { crownLayer }
             reteLayer
         })
         return ZStack {
