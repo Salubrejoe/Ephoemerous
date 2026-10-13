@@ -36,15 +36,54 @@ struct OrlojGlassLayers: View {
     /// glass, at its true size — it must land on the stars beneath.
     var onSky: Bool = false
 
-    private var palette: OrlojGlassPalette { OrlojGlassPalette(lineArt: lineArt, face: face) }
+    /// The lean frost: the glass under the rete and the hands leaves the
+    /// crown out, so it is drawn once, not six times (see `handsLayer`).
+    /// The sky and the wrist both want it; the widget, drawn once a
+    /// quarter hour, keeps the full frost.
+    var lean: Bool = false
+    private var leanFrost: Bool { onSky || lean }
+
+    /// Drawn live while something turns it (the watch's crown): no frost
+    /// and no shadows — the blurs are what make the glass dear. The full
+    /// glass is rendered once it rests.
+    var quick: Bool = false
+
+    /// Lifts the glass's body and rim light — the watch's small OLED wants
+    /// more than a tile on the Home Screen. 1 = the widget. ▼ TWEAK ▼
+    var brilliance: Double = 1
+
+    /// Which parts to draw — all of them, or one of the pieces the watch
+    /// turns separately while its crown travels (see `OrlojParts`).
+    var parts: OrlojParts = .all
+
+    private var palette: OrlojGlassPalette {
+        OrlojGlassPalette(lineArt: lineArt, face: face, brilliance: brilliance, quick: quick)
+    }
     private var isLarge: Bool              { face.ui >= 0.7 }
 
     var body: some View {
         ZStack {
-            if !lineArt && !onSky {
+            if !lineArt && !onSky && parts.contains(.sky) {
                 OrlojPlateLight(face: face, palette: palette, material: material)
             }
+            if parts.contains(.dial) { dialLayer }
+            if parts.contains(.rete) {
+                reteLayer
+                // On the sky the app draws its own planets.
+                if !onSky { planetLayer }
+            }
+            if parts.contains(.moonHand) { moonHandLayer }
+            if parts.contains(.sunHand)  { sunHandLayer }
+        }
+        // A round dial keeps a breath of the widget's ground round it.
+        .scaleEffect(onSky || face.numeralRing == .contour ? 1 : 0.95)
+        .background { if !lineArt && !onSky && parts.contains(.sky) { WidgetColourTrial.orlojGround } }
+        .dynamicTypeSize(.large)
+    }
 
+    /// The fixed dial: the numerals' ring and the Earth below the horizon.
+    @ViewBuilder
+    private var dialLayer: some View {
             if face.numeralRing == .crown {
                 OrlojGlassPieces(pieces: [crownGlass], face: face, palette: palette, material: material)
             }
@@ -63,15 +102,6 @@ struct OrlojGlassLayers: View {
 
             earthLayer
             crownLayer
-            reteLayer
-            // On the sky the app draws its own planets.
-            if !onSky { planetLayer }
-            handsLayer
-        }
-        // A round dial keeps a breath of the widget's ground round it.
-        .scaleEffect(onSky || face.numeralRing == .contour ? 1 : 0.95)
-        .background { if !lineArt && !onSky { WidgetColourTrial.orlojGround } }
-        .dynamicTypeSize(.large)
     }
 
     // MARK: Depth
@@ -110,7 +140,7 @@ struct OrlojGlassLayers: View {
                          backdrop: AnyView(ZStack {
                              OrlojPlateLight(face: face, palette: palette)
                              earthLayer
-                             if !onSky { crownLayer }
+                             if !leanFrost { crownLayer }
                          }),
                          lift: 2)
     }
@@ -129,6 +159,10 @@ struct OrlojGlassLayers: View {
                     POILabelView(category:   .planet(mark.planet),
                                  text:       "",
                                  nameReveal: 0,
+                                 // The Sun's and Moon's edge: half their
+                                 // 2.4·ui stroke shows past the glass.
+                                 borderScaleCompensation: 1.2 * max(0.6, face.ui)
+                                                          / Artist.shared.poiTextBorderWidth,
                                  phase:      BadgePhase.of(.planet(mark.planet), date: face.date,
                                                            latitude: face.latitude),
                                  sizeScale:  planetBadgeScale)
@@ -161,19 +195,27 @@ struct OrlojGlassLayers: View {
     /// out: its fused outline is the face's dearest path to draw (~0.6 s on
     /// an iPad), and frosting re-drew it five more times per render. Under
     /// the blur it barely showed. The widget, drawn once, keeps it.
-    private var handsLayer: some View {
-        let below = AnyView(ZStack {
+    private var handsBelow: AnyView {
+        AnyView(ZStack {
             OrlojPlateLight(face: face, palette: palette)
             earthLayer
-            if !onSky { crownLayer }
+            if !leanFrost { crownLayer }
             reteLayer
         })
-        return ZStack {
+    }
+
+    private var moonHandLayer: some View {
+        ZStack {
             OrlojGlassPieces(pieces: piece(face.moonCapsulePath()), face: face, palette: palette,
-                             variant: .regular, material: material, backdrop: below, lift: 3)
+                             variant: .regular, material: material, backdrop: handsBelow, lift: 3)
             OrlojTintedGlass(path: face.moonLitPath(), tint: moonTint, face: face, palette: palette)
+        }
+    }
+
+    private var sunHandLayer: some View {
+        ZStack {
             OrlojGlassPieces(pieces: piece(face.sunCapsulePath()), face: face, palette: palette,
-                             variant: .regular, material: material, backdrop: below, lift: 3)
+                             variant: .regular, material: material, backdrop: handsBelow, lift: 3)
             OrlojTintedGlass(path: face.sunBadgePath(), tint: sunTint, face: face, palette: palette)
         }
     }
@@ -252,18 +294,29 @@ struct OrlojGlassPalette {
     /// face as it's zoomed on the sky, so the light keeps its share of a
     /// numeral instead of thinning to a hairline. ▼ TWEAK ▼
     let rimWidth: CGFloat
+    /// See `OrlojGlassLayers.brilliance` and `.quick`.
+    let brilliance: Double
+    let quick:      Bool
 
     @MainActor
-    init(lineArt: Bool, face: OrlojFace) {
-        self.lineArt = lineArt
-        let ink    = Artist.shared.ink
+    init(lineArt: Bool, face: OrlojFace, brilliance: Double = 1, quick: Bool = false) {
+        self.lineArt    = lineArt
+        self.brilliance = brilliance
+        self.quick      = quick
+        #if os(watchOS)
+        self.ink = Self.nightInk
+        #else
+        self.ink = Artist.shared.ink
+        #endif
+        let lift: (Double) -> Double = { min(1, $0 * brilliance) }
+        let ink    = self.ink
         let levels = face.daylight()
         let last   = Double(max(levels.count - 1, 1))
         // ▼ TWEAK the night and noon rims ▼
         let night = 0.16, noon = 0.95
         dayRim = AngularGradient(
             stops: levels.enumerated().map { i, level in
-                .init(color: ink.opacity(night + (noon - night) * level), location: Double(i) / last)
+                .init(color: ink.opacity(lift(night + (noon - night) * level)), location: Double(i) / last)
             },
             center: UnitPoint(x: face.center.x / max(face.camera.size.width,  1),
                               y: face.center.y / max(face.camera.size.height, 1)),
@@ -276,13 +329,20 @@ struct OrlojGlassPalette {
             UnitPoint(x: (face.center.x + up.dx * r * k) / max(size.width,  1),
                       y: (face.center.y + up.dy * r * k) / max(size.height, 1))
         }
-        rim = LinearGradient(stops: [.init(color: ink.opacity(0.95), location: 0),
-                                     .init(color: ink.opacity(0.14), location: 0.5),
-                                     .init(color: ink.opacity(0.50), location: 1)],
+        rim = LinearGradient(stops: [.init(color: ink.opacity(lift(0.95)), location: 0),
+                                     .init(color: ink.opacity(lift(0.14)), location: 0.5),
+                                     .init(color: ink.opacity(lift(0.50)), location: 1)],
                              startPoint: unit(1), endPoint: unit(-1))
     }
 
-    var ink:   Color { Artist.shared.ink }
+    /// The glass's ink — ALWAYS the night variant of the app's ink. The
+    /// asset's light variant is a warm brown, and watchOS, which has no
+    /// appearances, ships only that one: the whole instrument came out
+    /// dim and sepia. So the watch takes the night value directly.
+    let ink:   Color
+    /// `starField`'s night variant, for the watch. Keep it in step with
+    /// the asset.
+    private static let nightInk = Color(.sRGB, red: 0.974, green: 0.981, blue: 0.995)
     var night: Color { Artist.shared.skyColor }
 
     /// The day — the plate's ground, everything above the horizon.
@@ -328,12 +388,14 @@ struct OrlojGlassPalette {
     /// The body of a lens: a whisper on clear glass; on regular glass a
     /// frosted veil of ink, so a glyph reads against the glass behind it.
     func bodyOpacity(_ variant: OrlojGlassVariant) -> Double {
+        let base: Double
         switch variant {
-        case .clear:   return lineArt ? 0.10 : 0.07
-        case .smoked:  return lineArt ? 0.18 : 0.16      // ▼ TWEAK the rete's presence ▼
-        case .misted:  return lineArt ? 0.34 : 0.31      // ▼ TWEAK the crown and continents' frost ▼
-        case .regular: return lineArt ? 0.45 : 0.42
+        case .clear:   base = lineArt ? 0.10 : 0.07
+        case .smoked:  base = lineArt ? 0.18 : 0.16      // ▼ TWEAK the rete's presence ▼
+        case .misted:  base = lineArt ? 0.34 : 0.31      // ▼ TWEAK the crown and continents' frost ▼
+        case .regular: base = lineArt ? 0.45 : 0.42
         }
+        return min(0.9, base * brilliance)
     }
 }
 
@@ -395,7 +457,7 @@ struct OrlojGlassPieces: View {
     private var glass: some View {
         ZStack {
             ZStack {
-                if !palette.lineArt && frosted {
+                if !palette.lineArt && !palette.quick && frosted {
                     // The glass hides what it frosts: a ground under the blur,
                     // or the sharp sky would show straight through.
                     WidgetColourTrial.orlojGround
@@ -408,7 +470,7 @@ struct OrlojGlassPieces: View {
             }
             .mask { silhouette }
             .compositingGroup()
-            .shadow(color: .black.opacity(palette.lineArt ? 0 : 0.6),
+            .shadow(color: .black.opacity(palette.lineArt || palette.quick ? 0 : 0.6),
                     radius: (0.8 + 1.4 * lift) * face.ui, y: (0.6 + 1.2 * lift) * face.ui)
 
             ForEach(pieces.indices, id: \.self) { i in
@@ -500,6 +562,19 @@ struct OrlojGlassPieces: View {
             Rectangle().fill(colour).mask { silhouette }
         }
     }
+}
+
+/// The parts of the face that move apart while the watch's crown travels
+/// in time: the sky and the rete turn at the sidereal rate, each hand at
+/// its body's, the dial stands still.
+struct OrlojParts: OptionSet {
+    let rawValue: Int
+    static let sky      = OrlojParts(rawValue: 1 << 0)
+    static let dial     = OrlojParts(rawValue: 1 << 1)
+    static let rete     = OrlojParts(rawValue: 1 << 2)
+    static let moonHand = OrlojParts(rawValue: 1 << 3)
+    static let sunHand  = OrlojParts(rawValue: 1 << 4)
+    static let all: OrlojParts = [.sky, .dial, .rete, .moonHand, .sunHand]
 }
 
 /// How the Orloj wears the planets.

@@ -563,6 +563,11 @@ struct OrlojFace {
     @MainActor
     var noonAngle: Double { hourAngleFrame.zero }
 
+    /// +1 when hour angles run clockwise on screen, −1 when they run
+    /// counter-clockwise — which way the sky and the hands turn with time.
+    @MainActor
+    var hourSense: Double { hourAngleFrame.sense }
+
     /// How light the dial is round the axle, 0…1: how high the Sun stands
     /// when its hand points that way — today, here. Full at noon, fading
     /// through the twilights to nothing past astronomical dusk, so the
