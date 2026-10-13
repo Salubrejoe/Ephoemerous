@@ -78,7 +78,7 @@ struct OrlojGlassLayers: View {
         let land = Self.earthIsGround ? face.groundLandPath() : face.earthLandPath()
         return ZStack {
             OrlojGlassPieces(pieces: [OrlojGlassPiece(path: sea)], face: face,
-                             palette: palette, material: material, lift: 1)
+                             palette: palette, variant: .smoked, material: material, lift: 1)
             OrlojGlassPieces(pieces: [OrlojGlassPiece(path: land)], face: face,
                              palette: palette, variant: .misted, material: material, lift: 0.4)
         }
@@ -87,7 +87,7 @@ struct OrlojGlassLayers: View {
     /// Height 1: the tropics and the numeral crown, fixed to the plate.
     /// Unfrosted — the stars would make some numerals glow and others not.
     private var crownLayer: some View {
-        OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette, variant: .smoked,
+        OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette, variant: .misted,
                          material: material, frosted: false, lift: 1)
     }
 
@@ -230,18 +230,19 @@ struct OrlojGlassPalette {
         switch variant {
         case .clear:   return lineArt ? 0.10 : 0.07
         case .smoked:  return lineArt ? 0.18 : 0.16      // ▼ TWEAK the rete's presence ▼
-        case .misted:  return lineArt ? 0.30 : 0.26      // ▼ TWEAK the continents' frost ▼
+        case .misted:  return lineArt ? 0.34 : 0.31      // ▼ TWEAK the crown and continents' frost ▼
         case .regular: return lineArt ? 0.45 : 0.42
         }
     }
 
-    /// Rim light — bright top-left, dim across the middle, a bounce at
-    /// the bottom-right. The badges' "lit from above".
+    /// Rim light — bright along the top, dim across the middle, a bounce
+    /// along the bottom. One light, straight down from the top edge, the
+    /// way the shadows already fall.
     var rim: LinearGradient {
         LinearGradient(stops: [.init(color: ink.opacity(0.95), location: 0),
                                .init(color: ink.opacity(0.14), location: 0.5),
                                .init(color: ink.opacity(0.50), location: 1)],
-                       startPoint: .topLeading, endPoint: .bottomTrailing)
+                       startPoint: .top, endPoint: .bottom)
     }
 }
 
@@ -255,7 +256,7 @@ enum OrlojGlassVariant {
     /// Clear glass with more body — for the rete, so it holds its shape
     /// against the night sky.
     case smoked
-    /// Between smoked and frosted — the continents on the glass Earth.
+    /// Between smoked and frosted — the numeral crown, and the continents on the glass Earth.
     case misted
     case regular
 }
@@ -505,10 +506,10 @@ struct OrlojEarth: View {
                 .fill(OrlojGlassPalette.earthNight.opacity(0.88))
                 .blur(radius: 1.4 * face.ui)
                 .clipShape(OrlojPath(source: globe))
-            // Glass: a highlight at the top left, the rim light.
+            // Glass: a highlight at the top, the rim light.
             OrlojPath(source: globe)
                 .fill(RadialGradient(colors: [palette.ink.opacity(0.28), .clear],
-                                     center: unit(CGPoint(x: face.center.x - r * 0.45,
+                                     center: unit(CGPoint(x: face.center.x,
                                                           y: face.center.y - r * 0.5)),
                                      startRadius: 0, endRadius: r * 0.8))
             OrlojPath(source: globe).stroke(palette.rim, lineWidth: 0.8)
@@ -525,7 +526,7 @@ struct OrlojEarth: View {
 // MARK: - Tinted glass
 
 /// A badge in coloured glass: its colour run top to bottom across the
-/// badge itself, a specular bloom at the top left, the rim light — so it
+/// badge itself, a specular bloom at the top, the rim light — so it
 /// reads as glass that has colour, not paint on glass.
 struct OrlojTintedGlass: View {
     let path:    Path?
@@ -547,7 +548,7 @@ struct OrlojTintedGlass: View {
                     .opacity(Self.density)
                 OrlojPath(source: path)
                     .fill(RadialGradient(colors: [palette.ink.opacity(0.55), .clear],
-                                         center: unit(box.minX + box.width * 0.32,
+                                         center: unit(box.midX,
                                                       box.minY + box.height * 0.28),
                                          startRadius: 0, endRadius: box.width * 0.45))
                 OrlojPath(source: path).stroke(palette.rim, lineWidth: 0.9)

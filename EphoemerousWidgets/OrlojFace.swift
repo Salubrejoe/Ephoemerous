@@ -1106,9 +1106,9 @@ struct OrlojFace {
     /// into one piece of glass.
     @MainActor
     func numeralCrownPath() -> Path {
-        let ring = plateRingPaths().last ?? Path()
-        return numeralGlassPaths()
-            .reduce(ring) { $0.union($1.path) }
+        let ring     = plateRingPaths().last ?? Path()
+        let numerals = numeralGlassPaths().reduce(Path()) { $0.union($1.path) }
+        return fused(ring, numerals, fillet: jointFillet)
             .normalized(eoFill: false)
     }
 
@@ -1234,7 +1234,7 @@ struct OrlojFace {
             }
         }
         if withStarHand, let star = starBadgePath() {
-            rete = rete.union(star)
+            rete = fused(rete, star, fillet: jointFillet)
         }
         if carvesGlyphs {
             let glyphs = zodiacGlyphPaths().reduce(Path()) { $0.union($1) }
@@ -1906,10 +1906,10 @@ struct OrlojFace {
     @MainActor
     func sunCapsulePath() -> Path? {
         guard let p = sunPoint else { return nil }
-        let u = unitVector(to: p)
-        return collaredHand(toward: u, length: handReach(toward: u),
-                            width: 3.6 * ui, collar: sunCollarRadius)
-            .union(pentagonBadge(at: p, size: sunBadgeSize))
+        let u    = unitVector(to: p)
+        let hand = collaredHand(toward: u, length: handReach(toward: u),
+                                width: 3.6 * ui, collar: sunCollarRadius)
+        return fused(hand, pentagonBadge(at: p, size: sunBadgeSize), fillet: jointFillet)
             .subtracting(axleHole)
     }
 
@@ -1926,10 +1926,10 @@ struct OrlojFace {
     @MainActor
     func moonCapsulePath() -> Path? {
         guard let p = moonPoint else { return nil }
-        let u = unitVector(to: p)
-        return collaredHand(toward: u, length: handReach(toward: u),
-                            width: 2.8 * ui, collar: moonCollarRadius)
-            .union(circle(p, moonBadgeSize / 2))
+        let u    = unitVector(to: p)
+        let hand = collaredHand(toward: u, length: handReach(toward: u),
+                                width: 2.8 * ui, collar: moonCollarRadius)
+        return fused(hand, circle(p, moonBadgeSize / 2), fillet: jointFillet)
             .subtracting(axleHole)
     }
 
@@ -1937,8 +1937,26 @@ struct OrlojFace {
     /// instead of running through.
     private func collaredHand(toward u: CGVector, length: CGFloat,
                               width: CGFloat, collar: CGFloat) -> Path {
-        capsuleHand(toward: u, length: length, tail: 0, width: width)
-            .union(circle(center, collar))
+        fused(capsuleHand(toward: u, length: length, tail: 0, width: width),
+              circle(center, collar), fillet: jointFillet)
+    }
+
+    /// How round the glass runs where two fused parts meet — numeral on
+    /// ring, hand into collar, badge onto hand. ▼ TWEAK ▼
+    var jointFillet: CGFloat { 1.4 * ui }
+
+    /// Two parts cast as one piece of glass: their union, with the inside
+    /// corners where they meet rounded to `fillet`, like the rete's webs.
+    /// The rounding is a closing (grow by the fillet, shrink back), kept
+    /// only near both parts — so nothing else is rounded or bridged.
+    func fused(_ a: Path, _ b: Path, fillet r: CGFloat) -> Path {
+        let whole  = a.union(b)
+        let band   = StrokeStyle(lineWidth: 2 * r, lineCap: .round, lineJoin: .round)
+        let grown  = whole.union(whole.strokedPath(band))
+        let closed = grown.subtracting(grown.strokedPath(band))
+        let reach  = StrokeStyle(lineWidth: 4 * r, lineCap: .round, lineJoin: .round)
+        let near   = a.union(a.strokedPath(reach)).intersection(b.union(b.strokedPath(reach)))
+        return whole.union(closed.subtracting(whole).intersection(near))
     }
 
     // MARK: Glass helpers
