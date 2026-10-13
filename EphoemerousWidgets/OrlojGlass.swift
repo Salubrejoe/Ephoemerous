@@ -304,7 +304,7 @@ struct OrlojGlassPieces: View {
                 if !palette.lineArt && frosted {
                     // The glass hides what it frosts: a ground under the blur,
                     // or the sharp sky would show straight through.
-                    Artist.shared.canvasBackground
+                    WidgetColourTrial.tileGround
                     (backdrop ?? AnyView(OrlojPlateLight(face: face, palette: palette)))
                         .blur(radius: palette.frostBlur * face.ui)
                         .saturation(palette.frostSaturation)
@@ -577,6 +577,12 @@ struct OrlojPlateLight: View {
 
     var body: some View {
         ZStack {
+            // The app's horizon rule — the sky above the horizon
+            // a notch darker than the ground it stands on.
+            if WidgetColourTrial.current.contains(.horizon) {
+                OrlojPath(source: face.plateFillPath().subtracting(face.groundPath()))
+                    .fill(Artist.shared.skyColor)
+            }
             Canvas { ctx, size in
                 face.drawStars(in: &ctx, size: size)
             }

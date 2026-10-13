@@ -105,6 +105,60 @@ enum WidgetArtExporter {
             .background(Color(white: 0.12))
             write(sheet, to: dir, name: "orlojmaterials_\(f.name).png")
         }
+        // The colour trials (see `WidgetColourTrial`), side by side with
+        // today: one column per idea, one row per widget. Each tile renders
+        // alone, under its own trial, then the sheet lays the images out.
+        do {
+            let trials: [(String, WidgetColourTrial)] = [("Before", []),
+                                                         ("A · sky ground", .skyGround),
+                                                         ("B · horizon", .horizon),
+                                                         ("C · app stars", .starScale),
+                                                         ("Shipping", .shipping)]
+            let large  = families[2].size
+            let medium = families[1].size
+            let moon   = SkyObjectEntry(date: now, captured: now, entity: SkyObjectEntity(.moon), origin: origin)
+            let orion  = SkyObjectEntry(date: now, captured: now,
+                                        entity: SkyObjectEntity(.constellation(.Ori)), origin: origin)
+            let rows: [(CGSize, () -> AnyView)] = [
+                (large,  { AnyView(OrlojGlassLayers(face: OrlojFace(date: now, origin: origin, size: large))
+                                       .environment(\.colorScheme, .dark)) }),
+                (medium, { AnyView(SkyObjectWidgetView(entry: moon, familyOverride: .systemMedium)) }),
+                (large,  { AnyView(SkyObjectWidgetView(entry: orion, familyOverride: .systemLarge)) }),
+            ]
+            var shots: [[UIImage]] = []
+            for (size, make) in rows {
+                shots.append(trials.compactMap { _, trial in
+                    WidgetColourTrial.current = trial
+                    let renderer = ImageRenderer(content: tile(size: size) { make() })
+                    renderer.scale = 2
+                    return renderer.uiImage
+                })
+            }
+            WidgetColourTrial.current = .shipping
+            let sheet = VStack(alignment: .leading, spacing: 24) {
+                HStack(spacing: 24) {
+                    ForEach(trials, id: \.0) { name, _ in
+                        Text(name).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: large.width, alignment: .leading)
+                    }
+                }
+                ForEach(rows.indices, id: \.self) { r in
+                    HStack(alignment: .top, spacing: 24) {
+                        ForEach(shots[r].indices, id: \.self) { c in
+                            Image(uiImage: shots[r][c]).resizable()
+                                .frame(width: rows[r].0.width, height: rows[r].0.height)
+                        }
+                    }
+                }
+            }
+            .padding(24)
+            .background(Color(white: 0.06))
+            let renderer = ImageRenderer(content: sheet)
+            renderer.scale = 2
+            if let data = renderer.uiImage?.pngData() {
+                try? data.write(to: dir.appendingPathComponent("colourtrials.png"))
+            }
+        }
         let sydney = OrlojFace(date: now, origin: (latDeg: -33.87, lonDeg: 151.21),
                                size: families[2].size,
                                timeZone: TimeZone(identifier: "Australia/Sydney") ?? .current)
@@ -258,7 +312,7 @@ enum WidgetArtExporter {
     private static func tile<V: View>(size: CGSize,
                                       @ViewBuilder _ content: () -> V) -> some View {
         ZStack {
-            Artist.shared.canvasBackground
+            WidgetColourTrial.tileGround
             content()
         }
         .frame(width: size.width, height: size.height)

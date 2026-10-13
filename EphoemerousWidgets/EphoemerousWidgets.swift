@@ -296,9 +296,16 @@ struct SkySnapshot {
         // above the nameless, the pentagon squircle, the glow.
         let a      = Artist.shared
         let zenith = camera.viewpoint.originVector
+        // The app's horizon rule — the sky a notch darker than
+        // the ground it stands on, a fill instead of the dashed line.
+        if WidgetColourTrial.current.contains(.horizon) {
+            ctx.fill(skyRegion(in: size), with: .color(a.skyColor), style: FillStyle(eoFill: true))
+        }
         // A tile is small and static — it needs a firmer field than the
         // live sky to read as stars, not haze. ▼ TWEAK the tile's field ▼
-        let gain   = 1.3
+        let appStars = WidgetColourTrial.current.contains(.starScale)
+        let gain     = appStars ? 1 : 1.3
+        let limit    = appStars ? WidgetColourTrial.appLimit(scale: camera.scale) : magnitudeLimit
 
         // The traced figures' stars, by name. Every one must be drawn (even
         // past the field's depth limit: a line has to end on a star); only
@@ -314,7 +321,7 @@ struct SkySnapshot {
                 }
             }
         }
-        for star in StarDatabase.shared.workableStars where star.magnitude <= magnitudeLimit {
+        for star in StarDatabase.shared.workableStars where star.magnitude <= limit {
             guard !tinted.contains(star.id) else { continue }
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
@@ -324,6 +331,8 @@ struct SkySnapshot {
                             magnitude:    star.magnitude,
                             named:        star.properName != nil,
                             scale:        camera.scale,
+                            reveal:       appStars ? WidgetColourTrial.appReveal(magnitude: star.magnitude,
+                                                                                 limit: limit) : 1,
                             gain:         gain,
                             aboveHorizon: simd_dot(star.equatorialVector.sidereallyRotated(by: camera.sidereal),
                                                    zenith) > 0)
@@ -335,7 +344,7 @@ struct SkySnapshot {
         // plain. ▼ TWEAK the figure stars here ▼
         for star in figureStars.values {
             let colour = tinted.contains(star.id)
-            guard colour || star.magnitude > magnitudeLimit else { continue }
+            guard colour || star.magnitude > limit else { continue }
             guard let sc = camera.screen(equatorial: star.equatorialVector),
                   sc.x > -4, sc.x < size.width + 4,
                   sc.y > -4, sc.y < size.height + 4 else { continue }
@@ -453,9 +462,30 @@ struct SkySnapshot {
                   abs(sc.x) < 4000, abs(sc.y) < 4000 else { started = false; continue }
             if started { horizon.addLine(to: sc) } else { horizon.move(to: sc); started = true }
         }
-        ctx.stroke(horizon,
-                   with: .color(.white.opacity(0.35)),
-                   style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+        if !WidgetColourTrial.current.contains(.horizon) {
+            ctx.stroke(horizon,
+                       with: .color(.white.opacity(0.35)),
+                       style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+        }
+    }
+
+    /// The sky above the horizon, on the tile: the horizon's projected
+    /// circle, or the whole tile around it when the zenith lies outside
+    /// (even-odd).
+    private func skyRegion(in size: CGSize) -> Path {
+        var ring = Path()
+        for i in 0 ..< 96 {
+            let q = camera.viewpoint.skyPoint(altitude: .zero, at: Double(i) / 96)
+            guard let sc = camera.screen(rotatedEquatorial: q),
+                  abs(sc.x) < 40000, abs(sc.y) < 40000 else { continue }
+            if ring.isEmpty { ring.move(to: sc) } else { ring.addLine(to: sc) }
+        }
+        ring.closeSubpath()
+        guard let zenith = camera.screen(rotatedEquatorial: camera.viewpoint.originVector),
+              !ring.contains(zenith) else { return ring }
+        var outside = Path(CGRect(origin: .zero, size: size).insetBy(dx: -100, dy: -100))
+        outside.addPath(ring)
+        return outside
     }
 }
 
@@ -655,7 +685,7 @@ struct SkyObjectWidgetView: View {
             }
         }
         .containerBackground(for: .widget) {
-            Artist.shared.canvasBackground
+            WidgetColourTrial.tileGround
         }
     }
 

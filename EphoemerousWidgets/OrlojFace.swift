@@ -14,6 +14,49 @@ import simd
 // SHARED between the iOS widget (OrlojWidget) and the watch app
 // (OrlojWatchView) — deliberately free of WidgetKit so it compiles on
 // watchOS. Keep it that way.
+// MARK: - Widget colours
+/// How the widgets match the app's sky. Options, so the DEBUG art
+/// exporter can render each idea alone; the widgets wear `shipping`.
+///   `.skyGround`  every tile stands on the app's sky colour.
+///   `.horizon`    the app's horizon rule: the sky a notch darker above
+///                 the horizon, the tile the app's ground.
+///   `.starScale`  the postcards' field is the app's own: its gain and
+///                 its depth. (The Orloj keeps its own — at its small
+///                 scale the app's stars read busier, not quieter.)
+struct WidgetColourTrial: OptionSet {
+    let rawValue: Int
+
+    static let skyGround = WidgetColourTrial(rawValue: 1 << 0)
+    static let horizon   = WidgetColourTrial(rawValue: 1 << 1)
+    static let starScale = WidgetColourTrial(rawValue: 1 << 2)
+
+    /// ▼ TWEAK what the widgets wear ▼
+    static let shipping: WidgetColourTrial = [.horizon, .starScale]
+
+    nonisolated(unsafe) static var current: WidgetColourTrial = shipping
+
+    /// What a tile stands on.
+    @MainActor
+    static var tileGround: Color {
+        let a = Artist.shared
+        if current.contains(.skyGround) { return a.skyColor }
+        if current.contains(.horizon)   { return a.canvasBackground.mix(with: .white, by: 0.045) }
+        return a.canvasBackground
+    }
+
+    /// The app's faintest star at a scale, and the fade in to it — the
+    /// same anchors as `StarsCanvas`.
+    static func appLimit(scale: CGFloat) -> Double {
+        let t = log(Double(max(scale, 90) / 90)) / log(1200.0 / 90)
+        return 4.5 + 2.5 * min(1, t)
+    }
+
+    static func appReveal(magnitude m: Double, limit: Double) -> Double {
+        let x = max(0, min(1, (limit - m) / 0.5))
+        return x * x * (3 - 2 * x)
+    }
+}
+
 struct OrlojFace {
 
     let camera:    SkyCamera
