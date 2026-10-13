@@ -32,7 +32,7 @@ struct OrlojGlassLayers: View {
     /// glass, at its true size — it must land on the stars beneath.
     var onSky: Bool = false
 
-    private var palette: OrlojGlassPalette { OrlojGlassPalette(lineArt: lineArt) }
+    private var palette: OrlojGlassPalette { OrlojGlassPalette(lineArt: lineArt, face: face) }
     private var isLarge: Bool              { face.ui >= 0.7 }
 
     var body: some View {
@@ -94,7 +94,7 @@ struct OrlojGlassLayers: View {
     /// Unfrosted — the stars would make some numerals glow and others not.
     private var crownLayer: some View {
         OrlojGlassPieces(pieces: plateRingGlass, face: face, palette: palette, variant: .misted,
-                         material: material, frosted: false, lift: 1)
+                         material: material, frosted: false, daylit: true, lift: 1)
     }
 
     /// Height 2: the rete, turning over the crown, frosting sky and crown.
@@ -191,6 +191,45 @@ struct OrlojGlassLayers: View {
 //   • the Sun     = a G-class star, like any other (`palette.sun`)
 struct OrlojGlassPalette {
     let lineArt: Bool
+    /// The crown's rim light — the Sun's day round the dial (see
+    /// `OrlojFace.daylight`): bright along the hours the Sun is up,
+    /// brightest at noon, dimming through the twilights, low through the
+    /// night. It turns with the dial, not the screen, and follows the
+    /// place and the season. Every other piece keeps `rim`.
+    let dayRim:  AngularGradient
+    /// Rim light — bright along the noon side of the dial, dim across the
+    /// middle, a bounce along the midnight side. Locked to the dial, so it
+    /// turns with the face; on the widget, where noon is up, it falls
+    /// straight down from the top edge like the shadows.
+    let rim:     LinearGradient
+
+    @MainActor
+    init(lineArt: Bool, face: OrlojFace) {
+        self.lineArt = lineArt
+        let ink    = Artist.shared.ink
+        let levels = face.daylight()
+        let last   = Double(max(levels.count - 1, 1))
+        // ▼ TWEAK the night and noon rims ▼
+        let night = 0.16, noon = 0.95
+        dayRim = AngularGradient(
+            stops: levels.enumerated().map { i, level in
+                .init(color: ink.opacity(night + (noon - night) * level), location: Double(i) / last)
+            },
+            center: UnitPoint(x: face.center.x / max(face.camera.size.width,  1),
+                              y: face.center.y / max(face.camera.size.height, 1)),
+            startAngle: .zero, endAngle: .degrees(360))
+        let size = face.camera.size
+        let up   = CGVector(dx: cos(face.noonAngle), dy: sin(face.noonAngle))
+        let r    = face.numeralRadius
+        func unit(_ k: CGFloat) -> UnitPoint {
+            UnitPoint(x: (face.center.x + up.dx * r * k) / max(size.width,  1),
+                      y: (face.center.y + up.dy * r * k) / max(size.height, 1))
+        }
+        rim = LinearGradient(stops: [.init(color: ink.opacity(0.95), location: 0),
+                                     .init(color: ink.opacity(0.14), location: 0.5),
+                                     .init(color: ink.opacity(0.50), location: 1)],
+                             startPoint: unit(1), endPoint: unit(-1))
+    }
 
     var ink:   Color { Artist.shared.ink }
     var night: Color { Artist.shared.skyColor }
@@ -245,16 +284,6 @@ struct OrlojGlassPalette {
         case .regular: return lineArt ? 0.45 : 0.42
         }
     }
-
-    /// Rim light — bright along the top, dim across the middle, a bounce
-    /// along the bottom. One light, straight down from the top edge, the
-    /// way the shadows already fall.
-    var rim: LinearGradient {
-        LinearGradient(stops: [.init(color: ink.opacity(0.95), location: 0),
-                               .init(color: ink.opacity(0.14), location: 0.5),
-                               .init(color: ink.opacity(0.50), location: 1)],
-                       startPoint: .top, endPoint: .bottom)
-    }
 }
 
 // MARK: - Glass
@@ -292,6 +321,9 @@ struct OrlojGlassPieces: View {
     /// evenly — the numerals, which would catch whatever stars lie under
     /// each one.
     var frosted:  Bool              = true
+    /// The rim lit by the day round the dial (`palette.dayRim`), not from
+    /// the top — the crown's, telling the day's hours from the night's.
+    var daylit:   Bool              = false
     /// What the glass frosts — the sky by default, or the stack beneath.
     var backdrop: AnyView?          = nil
     /// How high the piece stands over the plate, 1–3: its shadow grows
@@ -329,8 +361,11 @@ struct OrlojGlassPieces: View {
                     radius: (0.8 + 1.4 * lift) * face.ui, y: (0.6 + 1.2 * lift) * face.ui)
 
             ForEach(pieces.indices, id: \.self) { i in
-                OrlojPath(source: pieces[i].path)
-                    .stroke(palette.rim, lineWidth: 0.9)
+                if daylit {
+                    OrlojPath(source: pieces[i].path).stroke(palette.dayRim, lineWidth: 0.9)
+                } else {
+                    OrlojPath(source: pieces[i].path).stroke(palette.rim, lineWidth: 0.9)
+                }
             }
         }
     }

@@ -558,6 +558,34 @@ struct OrlojFace {
         return (t0, atan2(sin(t1 - t0), cos(t1 - t0)) >= 0 ? 1 : -1)
     }
 
+    /// Screen angle (radians, 0 = right, clockwise) from the axle toward
+    /// noon on the dial — the face's own "up", whatever way it's turned.
+    @MainActor
+    var noonAngle: Double { hourAngleFrame.zero }
+
+    /// How light the dial is round the axle, 0…1: how high the Sun stands
+    /// when its hand points that way — today, here. Full at noon, fading
+    /// through the twilights to nothing past astronomical dusk, so the
+    /// glass's rim light tells the day's hours from the night's. `count + 1`
+    /// samples by SCREEN angle, 0 = right, clockwise, last = first — the
+    /// layout an `AngularGradient` wants.
+    @MainActor
+    func daylight(count: Int = 72) -> [Double] {
+        let frame = hourAngleFrame
+        let sun   = SIMD3<Double>.eclipticPoint(lambda: sunLambda)
+        let δ     = asin(max(-1, min(1, sun.z))), φ = latitude.radians
+        let dusk  = -18.0 * .pi / 180
+        let noon  = asin(max(-1, min(1, sin(φ) * sin(δ) + cos(φ) * cos(δ))))
+        guard noon > dusk else { return Array(repeating: 0, count: count + 1) }
+        return (0...count).map { i in
+            let θ = 2 * .pi * Double(i) / Double(count)
+            let H = (θ - frame.zero) * frame.sense
+            let a = asin(max(-1, min(1, sin(φ) * sin(δ) + cos(φ) * cos(δ) * cos(H))))
+            let x = max(0, min(1, (a - dusk) / (noon - dusk)))
+            return x * x * (3 - 2 * x)
+        }
+    }
+
     /// A place on Earth (latitude, longitude in radians, east positive)
     /// as a unit vector fixed to the Earth.
     private static func earthVector(latitude φ: Double, longitude λ: Double) -> SIMD3<Double> {

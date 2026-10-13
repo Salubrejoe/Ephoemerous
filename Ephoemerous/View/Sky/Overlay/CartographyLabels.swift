@@ -22,12 +22,14 @@ struct CartographyLabels: View, Equatable {
     /// geo rect centred inside the overdraw margin. Words whose centre sits
     /// near/off its edge fade out instead of clipping mid-word ("TUNNO").
     let visibleRect: CGRect
+    /// The Orloj stands on the ground — the horizon names give way to it.
+    var onGlass: Bool = false
 
     // Camera already folds in observer (viewpoint) + time (sidereal); add
     // latitude+date so the twilight roster redraws when they move.
     static func == (l: Self, r: Self) -> Bool {
         l.camera == r.camera && l.latitude == r.latitude && l.date == r.date
-            && l.visibleRect == r.visibleRect
+            && l.visibleRect == r.visibleRect && l.onGlass == r.onGlass
     }
 
     private struct Colure { let ra: Angle; let centreDec: Double; let text: String }
@@ -69,12 +71,14 @@ struct CartographyLabels: View, Equatable {
             let meridianColor = artist.gridColor
 
             // Horizon rim (alt = 0). t: 0 = N, 0.25 = W, 0.5 = S, 0.75 = E.
-            drawCurved(String(localized: "EASTERN HORIZON"), centre: 0.75, probe: 0.01,
-                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont,
-                       side: .ground, type: type, ctx)
-            drawCurved(String(localized: "WESTERN HORIZON"), centre: 0.25, probe: 0.01,
-                       point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont,
-                       side: .ground, type: type, ctx)
+            if !onGlass {
+                drawCurved(String(localized: "EASTERN HORIZON"), centre: 0.75, probe: 0.01,
+                           point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont,
+                           side: .ground, type: type, ctx)
+                drawCurved(String(localized: "WESTERN HORIZON"), centre: 0.25, probe: 0.01,
+                           point: horizonPoint, zenith: zenith, color: horizonColor, font: horizonFont,
+                           side: .ground, type: type, ctx)
+            }
 
             // Colures — constant-RA meridians through the equinox/solstice
             // points. Tiered: reveal past `colureTextIn`.

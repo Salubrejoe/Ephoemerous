@@ -81,7 +81,8 @@ struct SkyLayerStack: View {
             CartographyLabels(camera: frame.camera,
                               latitude: app.origin.latitude,
                               date: app.renderedObservationDate,
-                              visibleRect: frame.visibleRect)
+                              visibleRect: frame.visibleRect,
+                              onGlass: app.orlojStands)
                 .equatable()
 
             // Tiered native labels — each reveals at its own zoom tier.
