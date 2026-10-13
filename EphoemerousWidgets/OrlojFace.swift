@@ -44,6 +44,13 @@ struct WidgetColourTrial: OptionSet {
         return a.canvasBackground
     }
 
+    /// What the Orloj stands on: the deep sky all round the crown under
+    /// the horizon rule — the clock hangs in the night, its Earth below.
+    @MainActor
+    static var orlojGround: Color {
+        current.contains(.horizon) ? Artist.shared.skyColor : tileGround
+    }
+
     /// The app's faintest star at a scale, and the fade in to it — the
     /// same anchors as `StarsCanvas`.
     static func appLimit(scale: CGFloat) -> Double {

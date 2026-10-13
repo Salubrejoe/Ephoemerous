@@ -106,7 +106,7 @@ struct OrlojWidgetView: View {
                 .environment(\.colorScheme, .dark)
         }
         .containerBackground(for: .widget) {
-            WidgetColourTrial.tileGround
+            WidgetColourTrial.orlojGround
         }
         .preferredColorScheme(.dark)
     }

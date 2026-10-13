@@ -59,6 +59,7 @@ struct OrlojGlassLayers: View {
         }
         // A round dial keeps a breath of the widget's ground round it.
         .scaleEffect(face.numeralRing == .contour ? 1 : 0.95)
+        .background { if !lineArt { WidgetColourTrial.orlojGround } }
         .dynamicTypeSize(.large)
     }
 
@@ -304,7 +305,7 @@ struct OrlojGlassPieces: View {
                 if !palette.lineArt && frosted {
                     // The glass hides what it frosts: a ground under the blur,
                     // or the sharp sky would show straight through.
-                    WidgetColourTrial.tileGround
+                    WidgetColourTrial.orlojGround
                     (backdrop ?? AnyView(OrlojPlateLight(face: face, palette: palette)))
                         .blur(radius: palette.frostBlur * face.ui)
                         .saturation(palette.frostSaturation)

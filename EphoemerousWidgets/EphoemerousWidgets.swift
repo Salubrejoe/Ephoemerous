@@ -110,6 +110,19 @@ private enum Pin {
 // lands exactly on the pin's precise-location dot.
 // Internal (not private): the app's `SkyShareCard` renders the very same
 // sky for the share postcard, so the two can never drift apart.
+/// How much closer a roomier tile looks. The tile's size — the side of
+/// a square of equal area — against the small tile's 170 pt, raised to
+/// `strength`: 0 keeps every family at the small tile's zoom, 1 grows the
+/// zoom with the tile, ½ in between. ▼ TWEAK ▼
+enum WidgetZoom {
+    nonisolated(unsafe) static var strength: Double = 1
+
+    static func factor(for size: CGSize) -> CGFloat {
+        let side = (size.width * size.height).squareRoot()
+        return pow(max(side / 170, 1), strength)
+    }
+}
+
 struct SkySnapshot {
 
     let camera: SkyCamera
@@ -130,7 +143,7 @@ struct SkySnapshot {
     @MainActor
     init(entity: SkyObjectEntity, date: Date,
          origin: (latDeg: Double, lonDeg: Double)?, size: CGSize, isLandscape: Bool,
-         focus: CGPoint? = nil) {
+         focus: CGPoint? = nil, zoom: CGFloat = 1) {
         self.date = date
         self.isLandscape = isLandscape
         if case .constellation(let c) = entity.skyObject {
@@ -151,7 +164,7 @@ struct SkySnapshot {
         let sidereal = -Precession.gmstSiderealOffset(for: date)
 
         // ▼ TWEAK the postcard zoom here — screen pt per projection unit ▼
-        let scale: CGFloat = 110
+        let scale: CGFloat = 110 * zoom
 
         // Offset the camera so the object projects ONTO THE PIN DOT —
         // screen() = size/2 + (p.x·s, −p.y·s) + offset, so solve for
@@ -591,7 +604,8 @@ struct SkyObjectWidgetView: View {
                                        date:   entry.date,
                                        origin: entry.origin,
                                        size:   geo.size,
-                                       isLandscape: isLandscape)
+                                       isLandscape: isLandscape,
+                                       zoom:   WidgetZoom.factor(for: geo.size))
 
             ZStack(alignment: .topLeading) {
                 // The map: cartography canvas + flat body labels. Large
@@ -606,7 +620,7 @@ struct SkyObjectWidgetView: View {
                                  magnitudeLimit: isMasked                    ? 4.0
                                                : family == .systemExtraLarge ? 5.6
                                                : isExpansive                 ? 5.2 : 4.5,
-                                 avoid: footprints(bodies: bodies,
+                                 avoid: footprints(bodies: bodies, scale: snapshot.camera.scale,
                                                    pinned: snapshot.pinnedConstellation == nil ? category : nil,
                                                    in: size),
                                  // Only what you follow gets a figure — the rest is
@@ -616,7 +630,7 @@ struct SkyObjectWidgetView: View {
                 }
                 ForEach(bodies,
                         id: \.2) { category, sc, name in
-                    flatLabel(category, name: name)
+                    flatLabel(category, name: name, scale: snapshot.camera.scale)
                         .position(sc)
                 }
 
@@ -692,14 +706,14 @@ struct SkyObjectWidgetView: View {
     /// An UNPROMOTED label — badge + trailing name, exactly the app's
     /// flat POI treatment at this zoom (names ride the tier reveal).
     @MainActor
-    private func flatLabel(_ category: POICategory, name: String) -> some View {
+    private func flatLabel(_ category: POICategory, name: String, scale: CGFloat) -> some View {
         let style = Artist.shared.poiStyle(for: category)
         return POILabelView(category:    category,
                             text:        name,
                             labelStyle:  labelStyle(for: category),
-                            badgeReveal: POILabelView.tierReveal(scale: 110,
+                            badgeReveal: POILabelView.tierReveal(scale: scale,
                                                                  threshold: style.badgeIn),
-                            nameReveal:  POILabelView.tierReveal(scale: 110,
+                            nameReveal:  POILabelView.tierReveal(scale: scale,
                                                                  threshold: style.textIn),
                             phase:       lunarPhase(for: category))
     }
@@ -740,7 +754,7 @@ struct SkyObjectWidgetView: View {
     /// Each body's badge and (revealed) name, the pinned badge, and the
     /// name block in the bottom-leading corner.
     @MainActor
-    private func footprints(bodies: [(POICategory, CGPoint, String)],
+    private func footprints(bodies: [(POICategory, CGPoint, String)], scale: CGFloat,
                             pinned: POICategory?, in size: CGSize) -> [CGRect] {
         let a      = Artist.shared
         let type   = a.typeScale(dynamicTypeSize)
@@ -752,7 +766,7 @@ struct SkyObjectWidgetView: View {
             let d     = style.badgeSize * type + a.poiTextBorderWidth * 2
             rects.append(CGRect(x: p.x - d / 2, y: p.y - d / 2, width: d, height: d))
             // The name trails the badge, as `POILabelView` draws it.
-            guard POILabelView.tierReveal(scale: 110, threshold: style.textIn) > 0.01 else { continue }
+            guard POILabelView.tierReveal(scale: scale, threshold: style.textIn) > 0.01 else { continue }
             let w = (name as NSString).size(withAttributes: [.font: font]).width + 3
             rects.append(CGRect(x: p.x + (style.badgeSize / 2 + 6) * type, y: p.y - font.lineHeight / 2,
                                 width: w, height: font.lineHeight))

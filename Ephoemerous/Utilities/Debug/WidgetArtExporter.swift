@@ -159,6 +159,52 @@ enum WidgetArtExporter {
                 try? data.write(to: dir.appendingPathComponent("colourtrials.png"))
             }
         }
+        // The postcard zoom per family (see `WidgetZoom`): today's single
+        // zoom, the gentle square root, the full one.
+        do {
+            let strengths: [(String, Double)] = [("Today · one zoom", 0), ("Gentle · ½", 0.5), ("Full · 1", 1)]
+            let sizes: [(CGSize, WidgetFamily)] = [(families[0].size, .systemSmall),
+                                                   (families[1].size, .systemMedium),
+                                                   (families[2].size, .systemLarge),
+                                                   (CGSize(width: 723, height: 348), .systemExtraLarge)]
+            let moon = SkyObjectEntry(date: now, captured: now, entity: SkyObjectEntity(.moon), origin: origin)
+            var shots: [[UIImage]] = []
+            for (size, family) in sizes {
+                shots.append(strengths.compactMap { _, strength in
+                    WidgetZoom.strength = strength
+                    let renderer = ImageRenderer(content: tile(size: size) {
+                        SkyObjectWidgetView(entry: moon, familyOverride: family)
+                    })
+                    renderer.scale = 2
+                    return renderer.uiImage
+                })
+            }
+            WidgetZoom.strength = 1
+            let sheet = VStack(alignment: .leading, spacing: 24) {
+                HStack(spacing: 24) {
+                    ForEach(strengths, id: \.0) { name, _ in
+                        Text(name).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: 723, alignment: .leading)
+                    }
+                }
+                ForEach(sizes.indices, id: \.self) { r in
+                    HStack(alignment: .top, spacing: 24) {
+                        ForEach(shots[r].indices, id: \.self) { c in
+                            Image(uiImage: shots[r][c]).resizable()
+                                .frame(width: sizes[r].0.width, height: sizes[r].0.height)
+                                .frame(width: 723, alignment: .leading)
+                        }
+                    }
+                }
+            }
+            .padding(24)
+            .background(Color(white: 0.06))
+            let renderer = ImageRenderer(content: sheet)
+            renderer.scale = 1.5
+            if let data = renderer.uiImage?.pngData() {
+                try? data.write(to: dir.appendingPathComponent("zoomtrials.png"))
+            }
+        }
         let sydney = OrlojFace(date: now, origin: (latDeg: -33.87, lonDeg: 151.21),
                                size: families[2].size,
                                timeZone: TimeZone(identifier: "Australia/Sydney") ?? .current)
