@@ -148,9 +148,9 @@ struct POILabelView: View {
         return AnyShape(Squircle(corners: s.corners, bulge: s.bulge, rotation: s.rotation))
     }
 
-    /// The Local Group galaxy this badge stands for, when it is one.
-    private var galaxy: LocalGalaxy? {
-        if case .deepSky(_, _, let g) = category { return g }
+    /// The deep-sky silhouette this badge is, when it has one.
+    private var figure: DeepSkyFigure? {
+        if case .deepSky(_, _, let f) = category { return f }
         return nil
     }
 
@@ -276,13 +276,14 @@ struct POILabelView: View {
                                 casing:     casing,
                                 lineWidth:  bw,
                                 masked:     isMasked)
-            } else if let galaxy {
-                // So is each Local Group galaxy (see `GalaxyGlyph`).
-                GalaxyGlyph(galaxy:     galaxy,
-                            casing:     casing,
-                            lineWidth:  bw,
-                            fullDetail: richDetail,
-                            masked:     isMasked)
+            } else if let figure {
+                // So is each Local Group galaxy and named nebula (see
+                // `DeepSkyGlyph`).
+                DeepSkyGlyph(figure:     figure,
+                             casing:     casing,
+                             lineWidth:  bw,
+                             fullDetail: richDetail,
+                             masked:     isMasked)
             } else if surface == .venusPhase || (isMoon && !isNewMoon), let phase {
                 // Venus and the Moon keep their full circle: lit part in its
                 // gradient, night side black (see `PlanetSurface`).
@@ -307,7 +308,7 @@ struct POILabelView: View {
         // Casing ring — the light outline doing the legibility work. A
         // spacecraft or a galaxy cases its own silhouette instead.
         .overlay {
-            if craft == nil, galaxy == nil { shape.stroke(casing, lineWidth: bw) }
+            if craft == nil, figure == nil { shape.stroke(casing, lineWidth: bw) }
         }
         // The casing is near-black, which disappears on an unfilled new
         // moon against a dark sky — so that one case gets a tint ring too.

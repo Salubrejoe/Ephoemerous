@@ -88,8 +88,9 @@ enum POICategory: Equatable {
     case spacecraft(Spacecraft)
     /// A galaxy, cluster or nebula. Deep sky, so it keeps quiet: no badge
     /// at all until well zoomed in, the Messier objects first. The Local
-    /// Group galaxies each carry their own face (`galaxy`).
-    case deepSky(DeepSkyKind, messier: Bool, galaxy: LocalGalaxy? = nil)
+    /// Group galaxies and the named nebulae carry their own silhouette
+    /// (`figure`).
+    case deepSky(DeepSkyKind, messier: Bool, figure: DeepSkyFigure? = nil)
 }
 
 /// The three deep-sky badges. Open and globular clusters share one — at
@@ -98,6 +99,13 @@ enum POICategory: Equatable {
 /// wear the nebula badge.
 enum DeepSkyKind: Equatable {
     case galaxy, cluster, nebula
+}
+
+/// A deep-sky object drawn as its own silhouette (see `DeepSkyGlyph`)
+/// rather than its kind's badge.
+enum DeepSkyFigure: Equatable {
+    case galaxy(LocalGalaxy)
+    case nebula(NamedNebula)
 }
 
 /// The six galaxies on the sky — the Local Group members you can point at.
@@ -112,6 +120,11 @@ enum LocalGalaxy: String, CaseIterable {
     case lmc        = "ESO056-115"
     case smc        = "NGC 292"
 
+    /// Its badge, wherever one is drawn without the catalogue entry to hand.
+    var category: POICategory {
+        .deepSky(.galaxy, messier: rawValue.hasPrefix("M"), figure: .galaxy(self))
+    }
+
     /// The galaxy this one is a satellite of, where both are on the sky.
     var host: LocalGalaxy? {
         switch self {
@@ -119,4 +132,17 @@ enum LocalGalaxy: String, CaseIterable {
         default:          return nil
         }
     }
+}
+
+/// The nebulae with a silhouette of their own, added a few at a time —
+/// each checked by eye on the sky before the next. Raw values are the
+/// `DeepSkyObject` ids. ▼ ADD as they're drawn ▼
+enum NamedNebula: String, CaseIterable {
+    // Planetary nebulae — the shells of dying stars.
+    case ring           = "M57"
+    case owl            = "M97"
+    case dumbbell       = "M27"
+    case littleDumbbell = "M76"
+
+    var category: POICategory { .deepSky(.nebula, messier: true, figure: .nebula(self)) }
 }

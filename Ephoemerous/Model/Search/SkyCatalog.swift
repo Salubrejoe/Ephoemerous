@@ -5,7 +5,7 @@ import simd
 // The search sheet's browse categories — a row of chips under the field,
 // so finding something never requires typing.
 enum BrowseChip: String, CaseIterable, Identifiable {
-    case favorites, stars, constellations, planets, spacecraft, deepSky
+    case favorites, stars, constellations, planets, spacecraft, galaxies, clusters, nebulae
 
     var id: String { rawValue }
 
@@ -16,7 +16,9 @@ enum BrowseChip: String, CaseIterable, Identifiable {
         case .constellations: return String(localized: "Constellations")
         case .planets:        return String(localized: "Planets")
         case .spacecraft:     return String(localized: "Spacecraft")
-        case .deepSky:        return String(localized: "Deep sky")
+        case .galaxies:       return String(localized: "Galaxies")
+        case .clusters:       return String(localized: "Clusters")
+        case .nebulae:        return String(localized: "Nebulae")
         }
     }
 }
@@ -126,7 +128,7 @@ struct SkyCatalog {
             halves = (up.sorted(by: alphabetically), down.sorted(by: alphabetically))
         case .constellations:
             halves = (up.sorted { ($0.altitude ?? 0) > ($1.altitude ?? 0) }, down.sorted(by: alphabetically))
-        case .stars, .planets, .spacecraft, .deepSky:
+        case .stars, .planets, .spacecraft, .galaxies, .clusters, .nebulae:
             halves = (up.sorted(by: brightestFirst), down.sorted(by: brightestFirst))
         }
         return Listing(sections: [Section(title: String(localized: "Up now"),           entries: halves.0),
@@ -288,12 +290,15 @@ struct SkyCatalog {
             return [.sun, .moon] + Planet.all.map { .planet($0) }
         case .spacecraft:
             return Spacecraft.allCases.map { .spacecraft($0) }
-        case .deepSky:
-            // What's on the sky and has a card: the Local Group galaxies
-            // and the clusters drawn so far.
-            return DeepSkyCatalog.objects
-                .filter { $0.galaxy != nil || $0.isShownCluster }
-                .map { .deepSky($0) }
+        // Deep sky — only what's been drawn so far: the Local Group
+        // galaxies, the clusters on the sky, the nebulae with their own
+        // silhouette.
+        case .galaxies:
+            return DeepSkyCatalog.objects.filter { $0.galaxy != nil }.map { .deepSky($0) }
+        case .clusters:
+            return DeepSkyCatalog.objects.filter(\.isShownCluster).map { .deepSky($0) }
+        case .nebulae:
+            return DeepSkyCatalog.objects.filter { $0.namedNebula != nil }.map { .deepSky($0) }
         }
     }
 

@@ -49,8 +49,18 @@ struct DeepSkyObject: Identifiable, Decodable, Hashable {
     /// The galaxy this one orbits, when it's one of Andromeda's companions.
     var companionOf: LocalGalaxy? { galaxy?.host }
 
+    /// Which of the named nebulae this is, if it has its own silhouette.
+    var namedNebula: NamedNebula? { NamedNebula(rawValue: id) }
+
+    /// Its own silhouette, where it has one.
+    var figure: DeepSkyFigure? {
+        if let galaxy      { return .galaxy(galaxy) }
+        if let namedNebula { return .nebula(namedNebula) }
+        return nil
+    }
+
     var poiCategory: POICategory {
-        .deepSky(badgeKind, messier: isMessier, galaxy: galaxy)
+        .deepSky(badgeKind, messier: isMessier, figure: figure)
     }
 
     /// Open clusters come onto the sky one at a time, each checked by eye

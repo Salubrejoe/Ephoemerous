@@ -202,7 +202,7 @@ struct GalaxyDistanceLine: View {
                 }
                 ForEach(Array(order.enumerated()), id: \.element) { i, g in
                     let own = g == galaxy
-                    POILabelView(category:   g.object?.poiCategory ?? .deepSky(.galaxy, messier: false, galaxy: g),
+                    POILabelView(category:   g.category,
                                  text:       "",
                                  nameReveal: 0,
                                  sizeScale:  own ? Self.ownScale : Self.otherScale)
@@ -253,10 +253,9 @@ struct GalaxyAcrossTile: View {
                     // (the casing's margin), so the frame runs that much
                     // wider for the drawn galaxy to come out true.
                     let own    = max(10, galaxy.diameterLy * perLy) / 0.85
-                    let badge  = Artist.shared.poiStyle(for: galaxy.object?.poiCategory
-                                                      ?? .deepSky(.galaxy, messier: false, galaxy: galaxy)).badgeSize
+                    let badge  = Artist.shared.poiStyle(for: galaxy.category).badgeSize
                     HStack(alignment: .center, spacing: 18) {
-                        POILabelView(category:   galaxy.object?.poiCategory ?? .deepSky(.galaxy, messier: false, galaxy: galaxy),
+                        POILabelView(category:   galaxy.category,
                                      text:       "",
                                      nameReveal: 0,
                                      richDetail: own > 30,

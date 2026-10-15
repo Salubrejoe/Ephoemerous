@@ -10,6 +10,7 @@ struct BadgeGallery: View {
 
     private let galaxies = LocalGalaxy.allCases
     private let planets: [Planet] = [.venus, .mars, .jupiter, .saturn]
+    private let nebulae  = NamedNebula.allCases
 
     var body: some View {
         ZStack {
@@ -38,6 +39,21 @@ struct BadgeGallery: View {
                         badge(g, nameReveal: 0, richDetail: true, sizeScale: 2.8).frame(width: 90)
                     }
                 }
+                row("Nebulae — sky size") {
+                    ForEach(nebulae, id: \.self) { n in
+                        nebulaBadge(n).frame(width: 90, alignment: .leading)
+                    }
+                }
+                row("Nebulae — sky size, ×4") {
+                    ForEach(nebulae, id: \.self) { n in
+                        nebulaBadge(n, nameReveal: 0, sizeScale: 4).frame(width: 90)
+                    }
+                }
+                row("Nebulae — promoted pin") {
+                    ForEach(nebulae, id: \.self) { n in
+                        nebulaBadge(n, nameReveal: 0, richDetail: true, sizeScale: 2.8).frame(width: 90)
+                    }
+                }
                 row("Planets — promoted pin") {
                     ForEach(planets, id: \.name) { p in
                         POILabelView(category: .planet(p), text: "", nameReveal: 0,
@@ -53,8 +69,18 @@ struct BadgeGallery: View {
     private func badge(_ g: LocalGalaxy, nameReveal: Double = 1, richDetail: Bool = false,
                        sizeScale: CGFloat = 1) -> some View {
         let obj = DeepSkyCatalog.objects.first { $0.id == g.rawValue }
-        return POILabelView(category:   obj?.poiCategory ?? .deepSky(.galaxy, messier: true, galaxy: g),
+        return POILabelView(category:   obj?.poiCategory ?? g.category,
                             text:       obj?.label ?? g.rawValue,
+                            nameReveal: nameReveal,
+                            richDetail: richDetail,
+                            sizeScale:  sizeScale)
+    }
+
+    private func nebulaBadge(_ n: NamedNebula, nameReveal: Double = 1, richDetail: Bool = false,
+                             sizeScale: CGFloat = 1) -> some View {
+        let obj = DeepSkyCatalog.objects.first { $0.id == n.rawValue }
+        return POILabelView(category:   obj?.poiCategory ?? n.category,
+                            text:       obj?.label ?? n.rawValue,
                             nameReveal: nameReveal,
                             richDetail: richDetail,
                             sizeScale:  sizeScale)

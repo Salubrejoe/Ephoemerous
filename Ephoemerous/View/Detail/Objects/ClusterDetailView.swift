@@ -113,7 +113,7 @@ struct ClusterDistanceTile: View {
                 if let ly = cluster.distance {
                     ClusterDistanceLine(cluster: cluster, lightYears: ly)
                         .frame(maxHeight: .infinity)
-                    Text("The light you see left it around \(String(year - Int(ly.rounded()))).")
+                    Text(lightLine(ly))
                         .font(.tileLine)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -121,6 +121,17 @@ struct ClusterDistanceTile: View {
                 }
             }
         }
+    }
+}
+
+extension ClusterDistanceTile {
+    /// "…left it around 1582." — or, from farther than the calendar runs,
+    /// "…around 540 BC" (there's no year 0, hence the one).
+    fileprivate func lightLine(_ ly: Double) -> String {
+        let left = year - Int(ly.rounded())
+        if left > 0 { return String(localized: "The light you see left it around \(String(left)).") }
+        let bc = Int((Double(1 - left) / 10).rounded()) * 10
+        return String(localized: "The light you see left it around \(String(bc)) BC.")
     }
 }
 
@@ -192,7 +203,9 @@ struct ClusterDistanceLine: View {
                      with: .color(tint.opacity(0.25)))
 
             var onBand = 0
-            var named: [CGFloat] = [cx]           // label slots taken, by x
+            // Label room taken, as spans along the line — the cluster's own
+            // patch first, so nothing is named on top of it.
+            var taken: [ClosedRange<CGFloat>] = [(cx - r)...(cx + r)]
             for m in marks {
                 var p = CGPoint(x: x(m.ly), y: y)
                 switch m.kind {
@@ -209,12 +222,18 @@ struct ClusterDistanceLine: View {
                     ctx.fill(Path(ellipseIn: CGRect(x: p.x - 5, y: y - 5, width: 10, height: 10)),
                              with: .color(tint.opacity(0.22)))
                 }
-                // Names where there's room — never on top of another.
-                if let name = m.name, !named.contains(where: { abs($0 - p.x) < 34 }) {
-                    named.append(p.x)
-                    ctx.draw(Text(name).font(.tileTick)
-                                .foregroundStyle(m.kind == .star ? .secondary : .tertiary),
-                             at: CGPoint(x: p.x, y: y - 9), anchor: .bottom)
+                // Names where there's room — measured, never on top of
+                // another, and kept inside the tile (Vega at the far left).
+                if let name = m.name {
+                    let label = ctx.resolve(Text(name).font(.tileTick)
+                                    .foregroundStyle(m.kind == .star ? .secondary : .tertiary))
+                    let w     = label.measure(in: size).width
+                    let mid   = min(max(p.x, w / 2), size.width - w / 2)
+                    let span  = (mid - w / 2 - 4)...(mid + w / 2 + 4)
+                    if !taken.contains(where: { $0.overlaps(span) }) {
+                        taken.append(span)
+                        ctx.draw(label, at: CGPoint(x: mid, y: y - 9), anchor: .bottom)
+                    }
                 }
             }
         }

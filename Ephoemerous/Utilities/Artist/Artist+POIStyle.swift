@@ -166,7 +166,7 @@ extension Artist {
                 badgeCorners:   4,
                 tier:           tier)
 
-        case .deepSky(_, _, let galaxy?):
+        case .deepSky(_, _, .galaxy(let galaxy)?):
             // A Local Group galaxy is its own silhouette, like a spacecraft
             // (see `Artist+Galaxies`); glow and name in its main paint.
             let paint = galaxyPaint(galaxyMainPaint(galaxy))
@@ -177,6 +177,18 @@ extension Artist {
                 textColor:      paint.1,
                 badgeSize:      galaxyBadgeSize(galaxy),
                 badgeCorners:   deepSkyBadgeShape(.galaxy).corners,
+                tier:           tier)
+
+        case .deepSky(_, _, .nebula(let nebula)?):
+            // A named nebula's own silhouette (see `Artist+Nebulae`).
+            let paint = nebulaPaint(nebulaMainPaint(nebula))
+            return POICategoryStyle(
+                gradientTop:    paint.1,
+                gradientBottom: paint.0,
+                shading:        (top: paint.1, bottom: paint.0),
+                textColor:      paint.1,
+                badgeSize:      nebulaBadgeSize(nebula),
+                badgeCorners:   deepSkyBadgeShape(.nebula).corners,
                 tier:           tier)
 
         case .deepSky(let kind, _, nil):

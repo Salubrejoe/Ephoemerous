@@ -267,7 +267,7 @@ struct SearchSheet: View {
         }
         .scrollClipDisabled()
         #if DEBUG
-        // Screenshot seeding: `-searchChip deepSky` opens on that chip (a
+        // Screenshot seeding: `-searchChip nebulae` opens on that chip (a
         // device can't scroll the row from the command line).
         .onAppear {
             let args = ProcessInfo.processInfo.arguments
@@ -351,8 +351,17 @@ struct SearchSheet: View {
         case .spacecraft:
             POILabelView(category: .spacecraft(.iss), text: "")
                 .scaleEffect(0.8)
-        case .deepSky:
-            POILabelView(category: .deepSky(.galaxy, messier: true, galaxy: .andromeda), text: "")
+        case .galaxies:
+            POILabelView(category: LocalGalaxy.andromeda.category, text: "")
+                .scaleEffect(0.8)
+        case .clusters:
+            // Clusters have no badge on the sky — a region, like a
+            // constellation — so a glyph in their tint.
+            Image(systemName: "sparkles")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Artist.shared.deepSkyGradient(.cluster).bottom)
+        case .nebulae:
+            POILabelView(category: NamedNebula.ring.category, text: "")
                 .scaleEffect(0.8)
         }
     }
@@ -567,8 +576,9 @@ struct SearchSheet: View {
         case .constellation(let c):
             Artist.shared.constellationFigure(c)
                 .foregroundStyle(.secondary)
-        case .deepSky(let d) where d.galaxy != nil:
-            // A galaxy wears its own silhouette, as a spacecraft does.
+        case .deepSky(let d) where d.figure != nil:
+            // A galaxy or a named nebula wears its own silhouette, as a
+            // spacecraft does.
             POILabelView(category: d.poiCategory, text: "")
         case .deepSky(let d):
             Image(systemName: "sparkles")
