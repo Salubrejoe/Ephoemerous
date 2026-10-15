@@ -79,6 +79,10 @@ struct FloatingPanel<Content: View>: View {
     /// Inset from the screen's leading and bottom edges.
     private static var margin: CGFloat { 16 }
 
+    /// How much of the screen's width the card takes, margin included —
+    /// the sky centres in what's left (see `MainView.panelHome`).
+    static var footprint: CGFloat { width + margin }
+
     /// How far a drag must travel before it changes stage.
     private static var dragThreshold: CGFloat { 44 }
 

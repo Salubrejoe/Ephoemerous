@@ -42,6 +42,12 @@ final class MainGestureCoordinator {
     var liveRotation: Angle   = .zero
     var homeBlend:    CGFloat = 0     // 0 = none, 1 = offset fully homed (recenter)
 
+    /// Where "centred" is — the committed offset a recentre homes to.
+    /// Zero is the screen's middle; on iPad a lifted panel moves it
+    /// trailing so the disk centres in the uncovered sky. Moved with
+    /// `moveHome`, never written directly.
+    private(set) var home: CGSize = .zero
+
     // Config, set by the view.
     @ObservationIgnored var center: CGPoint = .zero
     /// Tap hit-test, supplied by the view (it owns the camera + catalogue).
@@ -126,8 +132,8 @@ final class MainGestureCoordinator {
         // effective minus the scaleEffect part (`ep·offset`).
         let effW = ep * offset.width  + (focal.x - center.x) * (1 - ep) + drag.width
         let effH = ep * offset.height + (focal.y - center.y) * (1 - ep) + drag.height
-        return CGSize(width:  (1 - hb) * effW - ep * offset.width,
-                      height: (1 - hb) * effH - ep * offset.height)
+        return CGSize(width:  (1 - hb) * effW + hb * home.width  - ep * offset.width,
+                      height: (1 - hb) * effH + hb * home.height - ep * offset.height)
     }
 
     // MARK: Recogniser input
@@ -239,7 +245,7 @@ final class MainGestureCoordinator {
         let id = releaseID
         let targetPinch = scale > 0 ? targetScale / scale : 1
         let still = abs(targetPinch - pinch) < 0.001
-            && offset == .zero && drag == .zero && homeBlend == 0
+            && offset == home && drag == .zero && homeBlend == 0
         if still { return }
         withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
             pinch     = targetPinch
@@ -257,6 +263,24 @@ final class MainGestureCoordinator {
         let id = releaseID
         withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
             drag = target
+        } completion: { if self.releaseID == id { self.commitLive() } }
+    }
+
+    /// Move home, and glide the sky by the same amount — a sky you've
+    /// panned keeps its framing relative to the new centre. Mid-gesture only home moves; the release then settles onto it.
+    func moveHome(to newHome: CGSize) {
+        let delta = CGSize(width:  newHome.width  - home.width,
+                           height: newHome.height - home.height)
+        guard delta != .zero else { return }
+        home = newHome
+        guard active == 0 else { return }
+        // Added to the live drag rather than folding first: a comfort-zone
+        // pan or a release already gliding retargets smoothly, no jump.
+        releaseID += 1
+        let id = releaseID
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+            drag = CGSize(width:  drag.width  + delta.width,
+                          height: drag.height + delta.height)
         } completion: { if self.releaseID == id { self.commitLive() } }
     }
 
@@ -362,11 +386,12 @@ final class MainGestureCoordinator {
         let rc = CGFloat(cos(lr)), rs = CGFloat(sin(lr))
         let hb = homeBlend
         // Whole effective offset (rotated committed offset + focal comp +
-        // pan), then homed toward 0 by `hb` — so hb = 1 lands exactly at
-        // centre, matching the live `applied`.
+        // pan), then homed toward `home` by `hb` — so hb = 1 lands exactly
+        // at centre, matching the live `applied`.
         let effW = cMag * (offset.width * rc - offset.height * rs) + (focal.x - center.x) * (1 - cMag) + drag.width
         let effH = cMag * (offset.width * rs + offset.height * rc) + (focal.y - center.y) * (1 - cMag) + drag.height
-        offset   = CGSize(width: (1 - hb) * effW, height: (1 - hb) * effH)
+        offset   = CGSize(width:  (1 - hb) * effW + hb * home.width,
+                          height: (1 - hb) * effH + hb * home.height)
         scale    = settled
         rotation = rotation + liveRotation
         pinch = 1; drag = .zero; liveRotation = .zero; homeBlend = 0

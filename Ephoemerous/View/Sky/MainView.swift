@@ -77,6 +77,22 @@ struct MainView: View {
     /// the detail card and the stage has to survive the swap.
     @State private var panelStage: PanelStage = .bar
 
+    /// The trailing side flips under right-to-left, and the card with it.
+    @Environment(\.layoutDirection) private var layoutDirection
+
+    /// Where the sky centres. A card lifted to medium or large covers the
+    /// leading part of the disk, so home moves trailing by half the card's
+    /// footprint — the disk sits in the middle of the uncovered sky. At
+    /// the bar, or with no card, it is the screen's middle.
+    private var panelHome: CGSize {
+        let panelUp = isRegular
+            && (app.detailDestination != nil || searchPresented.wrappedValue)
+            && panelStage != .bar
+        guard panelUp else { return .zero }
+        let shift = FloatingPanel<EmptyView>.footprint / 2
+        return CGSize(width: layoutDirection == .rightToLeft ? -shift : shift, height: 0)
+    }
+
 
     /// Seed / retune the camera's home + zoom floor from the visible screen
     /// size. The coordinator's built-in 90 approximates an iPhone; on iPad
@@ -305,8 +321,10 @@ struct MainView: View {
                 return
             }
             sky.scale  = sky.defaultScale
-            sky.offset = .zero
+            sky.offset = sky.home
         }
+        // The card lifting or dropping moves the sky's centre with it.
+        .onChange(of: panelHome) { _, home in sky.moveHome(to: home) }
 
 //        .alert("Return to your location?",
 //               isPresented: Bindable(app)._compassReturnHomePrompt) {
@@ -493,7 +511,7 @@ struct MainView: View {
             sky.minScale     = northOut ? target : northInMinScale(defaultScale: target)
             sky.defaultScale = target
             sky.scale        = target
-            sky.offset       = .zero
+            sky.offset       = sky.home
             app.animatePerspectiveMorph(to: northOut ? 1 : 0)
         }
         // Mirror the SkyLab's committed + live rotation into the app rotation

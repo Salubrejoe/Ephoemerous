@@ -166,7 +166,8 @@ extension MainView {
                                             date:     app.renderedObservationDate,
                                             liveDate: app.liveSpacecraftDate) else { return }
         let objScreen = CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)
-        let focus = CGPoint(x: geoSize.width / 2, y: geoSize.height / 3)
+        // Centred on the sky's home, which a lifted iPad card moves trailing.
+        let focus = CGPoint(x: geoSize.width / 2 + sky.home.width, y: geoSize.height / 3)
         let dx = objScreen.x - focus.x
         let dy = objScreen.y - focus.y
         let dist = hypot(dx, dy)
