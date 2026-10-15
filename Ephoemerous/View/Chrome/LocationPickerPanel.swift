@@ -159,7 +159,7 @@ struct LocationPickerPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical,    9)
         .background(
-            Capsule().fill(.clear).glassEffect(.clear.interactive())
+            Capsule().fill(.clear).glassEffect(.regular.interactive())
         )
     }
 

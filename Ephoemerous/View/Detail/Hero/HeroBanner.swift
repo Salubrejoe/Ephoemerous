@@ -74,11 +74,11 @@ struct HeroBanner: View {
         switch object {
         case .sun:  return luminaryHalfField(for: artist.sunAngularDiameter)
         case .moon: return luminaryHalfField(for: artist.moonAngularDiameter)
-        // Wide enough for the whole cluster with sky round it — the
-        // Hyades are five degrees.
+        // Zoomed right in: the cluster fills the header, a little sky at
+        // its edges — the stars of the cluster, not the constellation.
         case .deepSky(let d):
-            let radius = (d.major ?? 0) / 2 * .pi / (180 * 60)
-            return max(artist.heroBodyHalfField, radius * 1.6)
+            let radius = (d.major ?? 120) / 2 * .pi / (180 * 60)
+            return radius * 0.8
         default:    return artist.heroBodyHalfField
         }
     }

@@ -21,7 +21,7 @@ struct CircleIconButton: View {
         .frame(width: 44, height: 44)
         .contentShape(.circle)
         .buttonStyle(.plain)
-        .glassEffect(.clear.interactive(), in: .circle)
+        .glassEffect(.regular.interactive(), in: .circle)
     }
 }
 
@@ -39,7 +39,7 @@ struct CircleIconLabel: View {
             .offset(y: symbol == .share ? -2 : 0)
             .frame(width: 44, height: 44)
             .contentShape(.circle)
-            .glassEffect(.clear.interactive(), in: .circle)
+            .glassEffect(.regular.interactive(), in: .circle)
     }
 }
 

@@ -40,6 +40,10 @@ struct SkyHeroScene {
     /// Faintest star drawn — near the naked-eye limit, so the patch looks
     /// like a dark-sky night rather than a chart.
     static let limitingMagnitude = 6.0
+    /// … and in a small patch (a cluster's header, a few degrees), every
+    /// star the catalogue has: zoomed that far in, the eye would be at a
+    /// pair of binoculars anyway.
+    static let deepLimitingMagnitude = 7.0
 
     init(focus: Focus) {
         let stars   = StarDatabase.shared.workableStars
@@ -64,8 +68,12 @@ struct SkyHeroScene {
         }
 
         let focusID: String? = { if case .star(let s) = focus { return s.id } else { return nil } }()
+        let limit: Double = {
+            if case .point(_, let half) = focus, half < 4 * .pi / 180 { return Self.deepLimitingMagnitude }
+            return Self.limitingMagnitude
+        }()
         dots = stars.compactMap { s in
-            guard s.magnitude <= Self.limitingMagnitude, let p = project(s.equatorialVector) else { return nil }
+            guard s.magnitude <= limit, let p = project(s.equatorialVector) else { return nil }
             return Dot(x: p.x, y: p.y, magnitude: s.magnitude,
                        color: s.spectralClass.color, isFocus: s.id == focusID)
         }

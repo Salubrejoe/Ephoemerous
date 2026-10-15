@@ -128,25 +128,34 @@ struct ClusterDistanceLine: View {
     let cluster:    DeepSkyObject
     let lightYears: Double
 
-    private static let domain = (lo: log10(3.0), hi: log10(3_000.0))
-    /// How far off the cluster's distance a star must be to be named as
-    /// in front of it or behind it.
+    /// How far off the cluster's distance a star must be to count as in
+    /// front of it or behind it.
     private static let outlier = 0.25
+    /// Neighbours from the same constellation drawn for scale — its
+    /// brightest stars with a distance, and its other clusters.
+    private static let neighbours = 5
+
+    /// Something on the line: a star, or another cluster.
+    private struct Mark {
+        let ly:    Double
+        let name:  String?
+        let color: Color
+        let kind:  Kind
+        enum Kind { case member, star, neighbour, cluster }
+    }
 
     var body: some View {
-        // Each star once: its own distance where we have one, else the
-        // cluster's if it's a confirmed member, else left off.
-        let placed: [(star: Star, ly: Double)] = cluster.memberStars.compactMap { s in
-            if let own = s.distanceLY { return (s, own) }
-            return cluster.isMember(s) ? (s, lightYears) : nil
-        }
+        let marks = Self.marks(for: cluster, at: lightYears)
         Canvas { ctx, size in
             let a     = Artist.shared
             let y     = size.height * 0.55
             let inset: CGFloat = 8
+            // LINEAR, Sun to a little past the farthest mark — so the gap
+            // between Aldebaran and the Hyades reads as the gulf it is.
+            let far   = max(lightYears, marks.map(\.ly).max() ?? lightYears) * 1.12
+            let step  = Self.tickStep(for: far)
             func x(_ ly: Double) -> CGFloat {
-                let t = (log10(max(3, min(3_000, ly))) - Self.domain.lo) / (Self.domain.hi - Self.domain.lo)
-                return inset + CGFloat(t) * (size.width - inset * 2)
+                inset + CGFloat(min(ly, far) / far) * (size.width - inset * 2)
             }
 
             var line = Path()
@@ -157,44 +166,106 @@ struct ClusterDistanceLine: View {
                        with: .color(.white.opacity(0.6)), lineWidth: 1)
             ctx.draw(Text("Sun").font(.tileTick).foregroundStyle(.tertiary),
                      at: CGPoint(x: 0, y: y + 12), anchor: .topLeading)
-            for tick in [10.0, 100, 1_000] {
+            var tick = step
+            while tick < far {
                 let tx = x(tick)
                 var t = Path()
                 t.move(to: CGPoint(x: tx, y: y - 3))
                 t.addLine(to: CGPoint(x: tx, y: y + 3))
                 ctx.stroke(t, with: .color(.white.opacity(0.35)), lineWidth: 1)
-                let label = tick == 1_000 ? "\(tick.formatted()) ly" : tick.formatted()
-                ctx.draw(Text(label).font(.tileTick).foregroundStyle(.tertiary),
+                let last = tick + step >= far
+                ctx.draw(Text(last ? "\(Int(tick).formatted()) ly" : Int(tick).formatted())
+                            .font(.tileTick).foregroundStyle(.tertiary),
                          at: CGPoint(x: tx, y: y + 12), anchor: .top)
+                tick += step
             }
 
-            // The stars on the cluster gather as a little swarm round its
-            // point — a sunflower spiral, so a dozen at one distance still
-            // read as a dozen — inside a soft patch of the cluster tint.
+            // This cluster: a soft patch, its members a little swarm in it
+            // (a sunflower spiral — a dozen at one distance still read as a
+            // dozen).
             let cx     = x(lightYears)
             let tint   = a.deepSkyGradient(.cluster).bottom
-            let swarm  = placed.filter { abs($0.ly / lightYears - 1) <= Self.outlier }.count
+            let swarm  = marks.filter { $0.kind == .member }.count
             let spread: CGFloat = 2.7
             let r      = max(7, spread * CGFloat(Double(swarm).squareRoot()) + 4)
             ctx.fill(Path(ellipseIn: CGRect(x: cx - r, y: y - r, width: 2 * r, height: 2 * r)),
                      with: .color(tint.opacity(0.25)))
 
             var onBand = 0
-            for (s, ly) in placed {
-                let off   = abs(ly / lightYears - 1) > Self.outlier
-                var p     = CGPoint(x: x(ly), y: y)
-                if !off {
+            var named: [CGFloat] = [cx]           // label slots taken, by x
+            for m in marks {
+                var p = CGPoint(x: x(m.ly), y: y)
+                switch m.kind {
+                case .member:
                     let k = Double(onBand); onBand += 1
                     let turn = k * 2.39996, rad = Double(spread) * k.squareRoot()
                     p = CGPoint(x: cx + CGFloat(rad * cos(turn)), y: y + CGFloat(rad * sin(turn)))
+                    ctx.fill(a.starPath(at: p, radius: 2.8), with: .color(m.color.opacity(0.85)))
+                case .star:
+                    ctx.fill(a.starPath(at: p, radius: 2.8), with: .color(m.color.opacity(0.85)))
+                case .neighbour:
+                    ctx.fill(a.starPath(at: p, radius: 2.2), with: .color(m.color.opacity(0.45)))
+                case .cluster:
+                    ctx.fill(Path(ellipseIn: CGRect(x: p.x - 5, y: y - 5, width: 10, height: 10)),
+                             with: .color(tint.opacity(0.22)))
                 }
-                ctx.fill(a.starPath(at: p, radius: 2.8), with: .color(s.spectralClass.color.opacity(0.85)))
-                if off {
-                    ctx.draw(Text(s.displayName).font(.tileTick).foregroundStyle(.secondary),
+                // Names where there's room — never on top of another.
+                if let name = m.name, !named.contains(where: { abs($0 - p.x) < 34 }) {
+                    named.append(p.x)
+                    ctx.draw(Text(name).font(.tileTick)
+                                .foregroundStyle(m.kind == .star ? .secondary : .tertiary),
                              at: CGPoint(x: p.x, y: y - 9), anchor: .bottom)
                 }
             }
         }
+    }
+
+    /// Everything the line shows, nearest first.
+    private static func marks(for cluster: DeepSkyObject, at ly: Double) -> [Mark] {
+        var marks: [Mark] = []
+        var used  = Set<String>()
+        // Its own stars: a measured distance where we have one, else the
+        // cluster's if it's a confirmed member, else left off.
+        for s in cluster.memberStars {
+            if let own = s.distanceLY {
+                let off = abs(own / ly - 1) > outlier
+                marks.append(Mark(ly: own, name: off ? s.displayName : nil,
+                                  color: s.spectralClass.color, kind: off ? .star : .member))
+            } else if cluster.isMember(s) {
+                marks.append(Mark(ly: ly, name: nil, color: s.spectralClass.color, kind: .member))
+            } else { continue }
+            used.insert(s.id)
+        }
+        // Neighbours for scale: the constellation's brightest stars with a
+        // distance, and its other clusters on the sky — nothing past a few
+        // times the cluster's own distance, so the line stays about it.
+        if let c = cluster.constellation {
+            let stars = c.catalogueStars
+                .filter { !used.contains($0.id) && $0.distanceLY != nil && $0.distanceLY! <= ly * 2.5 }
+                .prefix(neighbours)
+            for s in stars {
+                marks.append(Mark(ly: s.distanceLY!, name: s.displayName,
+                                  color: s.spectralClass.color, kind: .neighbour))
+            }
+            for other in DeepSkyCatalog.objects
+            where other.isShownCluster && other.id != cluster.id && other.constellation == c {
+                if let d = other.distance, d <= ly * 2.5 {
+                    marks.append(Mark(ly: d, name: other.label, color: .clear, kind: .cluster))
+                }
+            }
+        }
+        // Clusters and named outliers first, so they win the label slots.
+        return marks.sorted { rank($0.kind) < rank($1.kind) }
+    }
+
+    private static func rank(_ k: Mark.Kind) -> Int {
+        switch k { case .star: 0; case .cluster: 1; case .neighbour: 2; case .member: 3 }
+    }
+
+    /// A round tick spacing giving three to five ticks.
+    private static func tickStep(for far: Double) -> Double {
+        for step in [10.0, 20, 25, 50, 100, 200, 250, 500, 1_000] where far / step <= 5 { return step }
+        return 2_000
     }
 }
 
