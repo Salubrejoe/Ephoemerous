@@ -91,6 +91,12 @@ extension MainView {
                 }
             }
 
+            // Open cluster names — tappable once the name shows; the hit
+            // point is the pinned name (see `SkyLabObjects.screen`).
+            for obj in DeepSkyCatalog.objects where obj.isShownCluster {
+                consider(.deepSky(obj), gate: scale >= a.clusterNameIn(magnitude: obj.mag))
+            }
+
             let tapRadius: CGFloat = 30
             var best: (obj: SkyObject, dist: CGFloat, screen: CGPoint)? = nil
             for (obj, s) in cands {

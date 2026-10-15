@@ -26,6 +26,9 @@ extension SkyObject {
         case .moon:                 return String(localized: "Earth's only natural satellite")
         case .planet(let p):        return p.mythology
         case .spacecraft(let c):    return c.portrait
+        case .deepSky(let d):
+            guard let c = d.constellation else { return d.kindName }
+            return String(localized: "\(d.kindName) in \(c.localizedName)")
         }
     }
 }

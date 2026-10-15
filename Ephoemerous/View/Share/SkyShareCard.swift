@@ -156,6 +156,7 @@ struct SkyShareCard: View {
         case .planet(let p): .planet(p)
         case .constellation: .constellation
         case .spacecraft(let c): .spacecraft(c)
+        case .deepSky:       nil
         }
     }
 

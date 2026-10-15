@@ -554,6 +554,9 @@ struct SearchSheet: View {
         case .constellation(let c):
             Artist.shared.constellationFigure(c)
                 .foregroundStyle(.secondary)
+        case .deepSky(let d):
+            Image(systemName: "sparkles")
+                .foregroundStyle(Artist.shared.deepSkyGradient(d.badgeKind).bottom)
         }
     }
 
@@ -565,6 +568,7 @@ struct SearchSheet: View {
         case .planet:               return String(localized: "Solar system · Planet")
         case .constellation:        return String(localized: "Constellation")
         case .spacecraft:           return String(localized: "Spacecraft")
+        case .deepSky(let d):       return d.kindName
         }
     }
 

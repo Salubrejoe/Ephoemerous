@@ -6,10 +6,11 @@ import SwiftUI
 // in small spaced capitals, here in the cluster tint so it reads as a
 // place inside a constellation.
 //
-// The name sits centred on the cluster, a fixed few points below its
-// middle — under the central star's badge (Alcyone, at the Pleiades). It
-// always shows, and so do the stars: their badges never give way to it,
-// only a star's NAME that would land on it does (see `StarLabelLayout`).
+// The name is pinned to a point on the sky inside the cluster, picked by
+// eye in a clear patch (`DeepSkyObject.nameVector`), so it rides with the
+// stars at every zoom. It always shows, and so do the stars: their badges
+// never give way to it, only a star's NAME that would land on it does
+// (see `StarLabelLayout`).
 // Counter-scaled and counter-rotated like every label.
 struct ClusterLabels: View {
 
@@ -23,10 +24,6 @@ struct ClusterLabels: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private static let blur: CGFloat = 4
-    /// How far below the cluster's centre the name's top sits, in screen
-    /// points — clear of the central star's badge, and the same at every
-    /// zoom, so the name never moves against the stars.
-    static let centreDrop: CGFloat = 12
 
     var body: some View {
         let a    = Artist.shared
@@ -39,10 +36,6 @@ struct ClusterLabels: View {
                     .tracking(a.regionTracking * a.typeScale(dynamicTypeSize))
                     .foregroundStyle(tint)
                     .shadow(color: a.canvasBackground, radius: a.regionHalo)
-                    // Top edge a fixed drop below the centre.
-                    .fixedSize()
-                    .alignmentGuide(VerticalAlignment.center) { $0[.top] - Self.centreDrop }
-                    .frame(height: 0)
                     .opacity(mark.reveal)
                     .blur(radius: (1 - mark.reveal) * Self.blur)
                     .rotationEffect(-rotation, anchor: .center)
@@ -63,7 +56,7 @@ struct ClusterLabels: View {
     private var marks: [Mark] {
         DeepSkyCatalog.objects.compactMap { obj in
             guard layout.clusters.contains(obj.id),
-                  let sc = camera.screen(equatorial: obj.equatorialVector) else { return nil }
+                  let sc = camera.screen(equatorial: obj.nameVector) else { return nil }
             let reveal = POILabelView.tierReveal(scale: scale,
                                                  threshold: Artist.shared.clusterNameIn(magnitude: obj.mag))
             return Mark(obj: obj, sc: sc, reveal: reveal * comfort.nameVisibility(at: sc))

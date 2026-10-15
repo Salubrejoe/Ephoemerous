@@ -24,6 +24,9 @@ extension SkyObject {
             // month, so finer digits would only flicker past.
             let km = (MoonPosition.distanceKm(for: date) / 1000).rounded() * 1000
             return String(localized: "\(Int(km), format: .number) km")
+        case .deepSky(let d):
+            guard let ly = d.distance else { return nil }
+            return String(localized: "\(Int(ly.rounded())) ly")
         case .constellation, .spacecraft:
             return nil
         }

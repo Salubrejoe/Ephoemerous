@@ -242,6 +242,8 @@ struct SkySnapshot {
             guard let anchor = ConstellationLines.shared.labelAnchors[c] else { return nil }
             return Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
                 .sidereallyRotated(by: sidereal)
+        case .deepSky(let d):
+            return d.equatorialVector.sidereallyRotated(by: sidereal)
         // The widget process carries no orbit data — and a pin that moves
         // four degrees a minute has no business on a postcard anyway.
         case .spacecraft, nil:
@@ -558,6 +560,7 @@ struct SkyObjectWidgetView: View {
         case .planet(let p):   .planet(p)
         case .constellation:   .constellation
         case .spacecraft(let c): .spacecraft(c)
+        case .deepSky(let d):  d.poiCategory
         case nil:              nil
         }
     }

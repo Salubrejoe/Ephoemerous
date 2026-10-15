@@ -74,6 +74,11 @@ struct HeroBanner: View {
         switch object {
         case .sun:  return luminaryHalfField(for: artist.sunAngularDiameter)
         case .moon: return luminaryHalfField(for: artist.moonAngularDiameter)
+        // Wide enough for the whole cluster with sky round it — the
+        // Hyades are five degrees.
+        case .deepSky(let d):
+            let radius = (d.major ?? 0) / 2 * .pi / (180 * 60)
+            return max(artist.heroBodyHalfField, radius * 1.6)
         default:    return artist.heroBodyHalfField
         }
     }
@@ -104,7 +109,7 @@ struct HeroBanner: View {
     @ViewBuilder
     private var subject: some View {
         switch object {
-        case .constellation, .star:
+        case .constellation, .star, .deepSky:
             EmptyView()                          // the sky IS the subject
         case .sun, .moon:
             luminary

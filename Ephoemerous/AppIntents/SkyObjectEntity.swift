@@ -66,6 +66,11 @@ struct SkyObjectEntity: AppEntity {
             name       = c.displayName
             subtitle   = String(localized: "Spacecraft")
             symbolName = "antenna.radiowaves.left.and.right"
+        case .deepSky(let d):
+            id         = "deepsky_\(d.id)"
+            name       = d.label
+            subtitle   = d.kindName
+            symbolName = "sparkles"
         }
     }
 
@@ -104,6 +109,10 @@ struct SkyObjectEntity: AppEntity {
             if id.hasPrefix("spacecraft_") {
                 return Spacecraft(rawValue: String(id.dropFirst("spacecraft_".count)))
                                   .map(SkyObject.spacecraft)
+            }
+            if id.hasPrefix("deepsky_") {
+                let key = String(id.dropFirst("deepsky_".count))
+                return DeepSkyCatalog.objects.first { $0.id == key }.map(SkyObject.deepSky)
             }
             if id.hasPrefix("star_") {
                 let name = String(id.dropFirst("star_".count))

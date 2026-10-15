@@ -7,9 +7,9 @@ import UIKit
 //
 //   1. Fixed, never yield: the selected object's pin; the Sun, the Moon,
 //      the planets and the spacecraft (their own layer already declutters
-//      them among themselves). Open cluster names are fixed too, centred
-//      on the cluster — but only NAMES give way to them, never a badge, so
-//      a cluster and its stars always show together.
+//      them among themselves). Open cluster names are fixed too, pinned to
+//      a sky point inside the cluster — but only NAMES give way to them,
+//      never a badge, so a cluster and its stars always show together.
 //   2. Favourite stars, brightest first. Their BADGE always stays (a
 //      favourite has no dot to fall back to); only the name can give way.
 //   3. Named stars, brightest first. A name that would overlap drops; a
@@ -66,8 +66,10 @@ struct StarLabelLayout {
         func collides(_ r: CGRect) -> Bool { placed.contains { $0.intersects(r) } }
 
         // 1 · Fixed marks.
+        var pin: [CGRect] = []
         if let selection, let sc = SkyLabObjects.screen(selection, camera: camera, date: date) {
-            placed.append(contentsOf: Self.pinFootprint(selection, at: comfort.screenPoint(sc), date: date, metrics: m))
+            pin = Self.pinFootprint(selection, at: comfort.screenPoint(sc), date: date, metrics: m)
+            placed.append(contentsOf: pin)
         }
         if case .constellation(let c) = selection, let anchor = ConstellationLines.shared.labelAnchors[c],
            let sc = camera.screen(equatorial: Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)) {
@@ -110,11 +112,15 @@ struct StarLabelLayout {
         var clusterRects: [CGRect] = []
         for obj in DeepSkyCatalog.objects where obj.isShownCluster {
             guard scale >= a.clusterNameIn(magnitude: obj.mag),
-                  let sc = camera.screen(equatorial: obj.equatorialVector),
+                  let sc = camera.screen(equatorial: obj.nameVector),
                   comfort.nameVisibility(at: sc) > 0.01
             else { continue }
             let rect = Self.regionRect(obj.label, at: comfort.screenPoint(sc), metrics: m)
-            clusterRects.append(rect.offsetBy(dx: 0, dy: rect.height / 2 + ClusterLabels.centreDrop))
+            // The selected star's lifted pin covers it — Mirfak in its own
+            // cluster. The name doesn't move (that's what made it travel);
+            // it steps aside until the pin goes.
+            guard !pin.contains(where: { $0.intersects(rect) }) else { continue }
+            clusterRects.append(rect)
             clusterNames.insert(obj.id)
         }
         func nameBlocked(_ r: CGRect) -> Bool {

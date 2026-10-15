@@ -9,6 +9,8 @@ enum SkyObject: Identifiable, Hashable {
     case planet(Planet)
     case constellation(Constellation)
     case spacecraft(Spacecraft)
+    /// A deep-sky object — for now, the open clusters on the sky.
+    case deepSky(DeepSkyObject)
 
     var id: String {
         switch self {
@@ -18,6 +20,7 @@ enum SkyObject: Identifiable, Hashable {
         case .planet(let p):        return "planet_\(p.id)"
         case .constellation(let c): return "constellation_\(c.rawValue)"
         case .spacecraft(let c):    return "spacecraft_\(c.rawValue)"
+        case .deepSky(let d):       return "deepsky_\(d.id)"
         }
     }
 
@@ -29,6 +32,7 @@ enum SkyObject: Identifiable, Hashable {
         case .planet(let p):        return p.displayName
         case .constellation(let c): return c.localizedName
         case .spacecraft(let c):    return c.displayName
+        case .deepSky(let d):       return d.label
         }
     }
 
@@ -48,6 +52,8 @@ enum SkyObject: Identifiable, Hashable {
             return "\(c.localizedName) \(c.fullName) \(c.rawValue) constellation".lowercased()
         case .spacecraft(let c):
             return "\(c.displayName) \(c.fullName) \(c.rawValue) spacecraft satellite telescope station".lowercased()
+        case .deepSky(let d):
+            return "\(d.label) \(d.id) \(d.catalog) \(d.kindName)".lowercased()
         }
     }
 }

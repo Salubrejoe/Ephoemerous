@@ -35,6 +35,8 @@ extension SkyObject {
             return Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec)
         case .spacecraft(let c):
             return SpacecraftTracker.shared.direction(of: c, at: date, from: observer)
+        case .deepSky(let d):
+            return d.equatorialVector
         }
     }
 
@@ -48,6 +50,7 @@ extension SkyObject {
         case .planet(let p):     return p.baseMagnitude
         case .spacecraft(let c): return c.standardMagnitude
         case .constellation:     return 0
+        case .deepSky(let d):    return d.mag ?? 99
         }
     }
 }

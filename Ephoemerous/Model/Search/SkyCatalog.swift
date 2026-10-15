@@ -170,6 +170,7 @@ struct SkyCatalog {
         case .moon:                 return MoonPosition.distanceKm(for: date)
         case .planet(let p):        return PlanetPosition.distanceAU(p, date: date).map { $0 * auKm }
         case .spacecraft(let c):    return SpacecraftTracker.shared.rangeKm(of: c, at: date, from: observer)
+        case .deepSky(let d):       return d.distance.map { $0 * lyKm }
         }
     }
 
@@ -205,7 +206,7 @@ struct SkyCatalog {
     /// lately. Nil when there's no such night to name.
     private func seasonDays(_ obj: SkyObject) -> Double? {
         switch obj {
-        case .star, .constellation:
+        case .star, .constellation, .deepSky:
             guard let v = obj.equatorialDirection(at: date, from: observer) else { return nil }
             let sun   = SkyObject.sun.equatorialDirection(at: date, from: observer) ?? v
             // Highest at midnight when it stands opposite the Sun; the Sun

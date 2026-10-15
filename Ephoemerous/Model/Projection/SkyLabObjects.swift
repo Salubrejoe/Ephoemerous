@@ -36,6 +36,9 @@ enum SkyLabObjects {
             return camera.screen(equatorial: q)
         case .spacecraft(let c):
             return camera.screen(c, skyDate: date, liveDate: liveDate)
+        case .deepSky(let d):
+            // A cluster is found by its pinned name.
+            return camera.screen(equatorial: d.isShownCluster ? d.nameVector : d.equatorialVector)
         }
     }
 
@@ -60,6 +63,8 @@ enum SkyLabObjects {
             return Precession.equatorialVector(ra: anchor.ra, dec: anchor.dec).sidereallyRotated(by: camera.sidereal)
         case .spacecraft:
             return nil
+        case .deepSky(let d):
+            return d.equatorialVector.sidereallyRotated(by: camera.sidereal)
         }
     }
 
@@ -83,6 +88,10 @@ enum SkyLabObjects {
             return (.planet(p), .unicode(a.planetGlyph(p)), p.displayName)
         case .constellation:
             return nil
+        // A cluster promotes as its emphasised name, like a constellation;
+        // the rest of deep sky as its badge.
+        case .deepSky(let d):
+            return d.badgeKind == .cluster ? nil : (d.poiCategory, .sfSymbol("sparkles"), d.label)
         case .spacecraft(let c):
             return (.spacecraft(c), .sfSymbol("antenna.radiowaves.left.and.right"), c.displayName)
         }

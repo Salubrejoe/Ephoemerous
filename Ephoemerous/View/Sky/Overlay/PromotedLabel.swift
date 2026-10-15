@@ -61,6 +61,8 @@ struct PromotedLabel: View {
                 .planetoids
         case .spacecraft(_):
                 .planetoids
+        case .deepSky(_):
+                .planetoids
         case nil:
                 .planetoids
         }

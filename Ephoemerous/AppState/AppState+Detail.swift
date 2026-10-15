@@ -172,7 +172,7 @@ extension AppState {
             return planetPositions[planet.name]
         // Moves by the minute; the comfort-zone pan re-projects it through
         // `SkyLabObjects` instead.
-        case .spacecraft:
+        case .spacecraft, .deepSky:
             return nil
         }
     }

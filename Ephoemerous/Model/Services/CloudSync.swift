@@ -77,7 +77,7 @@ final class CloudSync {
             case .sun:                  sunFav  = true
             case .moon:                 moonFav = true
             // Not rememberable — the detail sheet offers no Remember.
-            case .spacecraft:           break
+            case .spacecraft, .deepSky: break
             }
         }
         store.set(starNames,   forKey: Key.favouriteStars)

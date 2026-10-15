@@ -57,7 +57,7 @@ struct HeroSource {
             case Strings.Planets.neptune: return .nasa("PIA01492", "large",  credit: "NASA/JPL", fit: .disc(0.84))
             default:                      return nil
             }
-        case .star, .constellation, .spacecraft:
+        case .star, .constellation, .spacecraft, .deepSky:
             return nil
         }
     }
