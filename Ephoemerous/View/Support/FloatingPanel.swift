@@ -108,6 +108,9 @@ struct FloatingPanel<Content: View>: View {
     /// `@State`: it resets itself when the gesture ends, so a cancelled or
     /// interrupted drag can't strand the card at an offset height.
     @GestureState private var drag: CGFloat = 0
+    // Measured in GLOBAL space: the handle rides the card's top edge, so a
+    // local translation shrinks as the card does and the height chased
+    // its own tail — a slow drag jittered up and down.
 
     /// The tallest the card may grow: (nearly) the full height of the
     /// screen, like Maps' card pulled up — search and the place card alike.
@@ -191,7 +194,7 @@ struct FloatingPanel<Content: View>: View {
             .frame(height: 16)
             .contentShape(Rectangle())
             .highPriorityGesture(
-                DragGesture(minimumDistance: 2)
+                DragGesture(minimumDistance: 2, coordinateSpace: .global)
                     .updating($drag) { value, state, _ in
                         state = value.translation.height
                     }
@@ -221,7 +224,7 @@ struct FloatingPanel<Content: View>: View {
             // corners.
             .contentShape(Rectangle())
             .highPriorityGesture(
-                DragGesture(minimumDistance: 2)
+                DragGesture(minimumDistance: 2, coordinateSpace: .global)
                     .updating($drag) { value, state, _ in
                         state = value.translation.height
                     }
