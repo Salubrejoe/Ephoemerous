@@ -12,8 +12,8 @@ import SwiftUI
 //
 // Order matters and is the whole composition:
 //   grid → facing bezel → figures → star field → named dots
-//   → frosted ground → cartography → labels → look crosshair → the
-//   promoted pin on top.
+//   → frosted ground → cartography → labels → the Orloj → Sun and Moon
+//   → look crosshair → the promoted pin on top.
 struct SkyLayerStack: View {
 
     @Environment(AppState.self) private var app
@@ -61,22 +61,6 @@ struct SkyLayerStack: View {
             // Above the star canvases (the ground frosts), below the labels
             // (they stay sharp).
             HorizonBlurOverlay(camera: frame.camera)
-
-            // The Orloj in Liquid Glass, over the ground and the stars,
-            // under every label — the names stay sharp on top of the glass.
-            ZStack {
-                if app.orlojStands {
-                    OrlojOverlay(camera:    frame.camera,
-                                 date:      app.renderedObservationDate,
-                                 latitude:  app.origin.latitude,
-                                 longitude: app.origin.longitude,
-                                 resting:   frame.resting,
-                                 scrubbing: app.isScrubbingDate || app._dateTransition != nil)
-                        .equatable()
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.4), value: app.orlojStands)
 
             // Curved cartographic labels — horizon rim + colures.
             CartographyLabels(camera: frame.camera,
@@ -142,7 +126,35 @@ struct SkyLayerStack: View {
                               rotation: frame.liveRot,
                               selected: frame.selection,
                               spacecraftLive: app.isObservationLive,
-                              comfort: frame.comfort)
+                              comfort: frame.comfort,
+                              drawing: .rest)
+
+            // The Orloj in glass, over the sky and every label on it — a
+            // pane in front of the sky; what lies under it can't be tapped.
+            // Only the Sun and Moon ride on top: their labels ARE the
+            // hands' badges.
+            ZStack {
+                if app.orlojStands {
+                    OrlojOverlay(camera:    frame.camera,
+                                 date:      app.renderedObservationDate,
+                                 latitude:  app.origin.latitude,
+                                 longitude: app.origin.longitude,
+                                 resting:   frame.resting,
+                                 scrubbing: app.isScrubbingDate || app._dateTransition != nil)
+                        .equatable()
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.4), value: app.orlojStands)
+
+            SolarSystemLabels(camera: frame.camera,
+                              date: app.renderedObservationDate,
+                              pinch: frame.effPinch,
+                              scale: frame.liveScale,
+                              rotation: frame.liveRot,
+                              selected: frame.selection,
+                              comfort: frame.comfort,
+                              drawing: .sunAndMoon)
 
             // LOOK mode's sight — fixed at the screen's centre while the sky
             // moves under it; with something selected, it hunts for it.

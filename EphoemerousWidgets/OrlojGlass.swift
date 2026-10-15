@@ -225,7 +225,9 @@ struct OrlojGlassLayers: View {
         ZStack {
             OrlojGlassPieces(pieces: piece(face.moonCapsulePath()), face: face, palette: palette,
                              variant: .regular, material: material, backdrop: handsBelow, lift: 3)
-            OrlojTintedGlass(path: face.moonLitPath(), tint: moonTint, face: face, palette: palette)
+            if face.skyLabels == nil {
+                OrlojTintedGlass(path: face.moonLitPath(), tint: moonTint, face: face, palette: palette)
+            }
         }
     }
 
@@ -233,7 +235,9 @@ struct OrlojGlassLayers: View {
         ZStack {
             OrlojGlassPieces(pieces: piece(face.sunCapsulePath()), face: face, palette: palette,
                              variant: .regular, material: material, backdrop: handsBelow, lift: 3)
-            OrlojTintedGlass(path: face.sunBadgePath(), tint: sunTint, face: face, palette: palette)
+            if face.skyLabels == nil {
+                OrlojTintedGlass(path: face.sunBadgePath(), tint: sunTint, face: face, palette: palette)
+            }
         }
     }
 

@@ -34,6 +34,11 @@ struct SolarSystemLabels: View {
     var spacecraftLive: Bool = false
     /// Names fade outside the calm middle of the screen; badges stay.
     var comfort: LabelComfortZone = .everywhere
+    /// Which bodies this pass draws — the Orloj splits them round its
+    /// glass: the Sun and Moon over it, the rest under.
+    var drawing: Drawing = .all
+
+    enum Drawing { case all, sunAndMoon, rest }
 
     private var artist: Artist { .shared }
 
@@ -52,36 +57,46 @@ struct SolarSystemLabels: View {
         let bodies: [CGPoint?] = [sun, moon] + marks.map(\.sc)
 
         ZStack {
-            ForEach(Array(marks.enumerated()), id: \.element.id) { i, mark in
-                // Tier-0 dot — a planet reads as a small tinted dot until
-                // its badge tier, then crossfades into the badge. Skipped
-                // for the selected planet (the promoted pin stands in).
-                if selected != .planet(mark.planet) {
-                    tierDot(for: .planet(mark.planet), at: mark.sc)
-                }
-                marker(for: .planet(mark.planet),
-                       at: mark.sc,
-                       category: .planet(mark.planet),
-                       text:     mark.planet.displayName,
-                       suppressName: nameCollides(mark.sc,
-                                                  with: [sun, moon] + marks.prefix(i).map(\.sc)))
-            }
-
-            spacecraftLayer(below: bodies)
-
-            marker(for: .sun,
-                   at: sunScreen,
-                   category: .sun,
-                   text:     Strings.Bodies.sun,
-                   labelStyle: .star)
-
-            marker(for: .moon,
-                   at: moonScreen,
-                   category: .moon,
-                   text:     Strings.Bodies.moon,
-                   suppressName: nameCollides(moon, with: [sun]))
-
+            if drawing != .sunAndMoon { rest(marks, sun: sun, moon: moon, bodies: bodies) }
+            if drawing != .rest       { sunAndMoon(sun: sun, moon: moon) }
         }
+    }
+
+    /// The planets and spacecraft, each giving way to the bodies before it.
+    @ViewBuilder
+    private func rest(_ marks: [PlanetMark], sun: CGPoint?, moon: CGPoint?,
+                      bodies: [CGPoint?]) -> some View {
+        ForEach(Array(marks.enumerated()), id: \.element.id) { i, mark in
+            // Tier-0 dot — a planet reads as a small tinted dot until
+            // its badge tier, then crossfades into the badge. Skipped
+            // for the selected planet (the promoted pin stands in).
+            if selected != .planet(mark.planet) {
+                tierDot(for: .planet(mark.planet), at: mark.sc)
+            }
+            marker(for: .planet(mark.planet),
+                   at: mark.sc,
+                   category: .planet(mark.planet),
+                   text:     mark.planet.displayName,
+                   suppressName: nameCollides(mark.sc,
+                                              with: [sun, moon] + marks.prefix(i).map(\.sc)))
+        }
+
+        spacecraftLayer(below: bodies)
+    }
+
+    @ViewBuilder
+    private func sunAndMoon(sun: CGPoint?, moon: CGPoint?) -> some View {
+        marker(for: .sun,
+               at: sun,
+               category: .sun,
+               text:     Strings.Bodies.sun,
+               labelStyle: .star)
+
+        marker(for: .moon,
+               at: moon,
+               category: .moon,
+               text:     Strings.Bodies.moon,
+               suppressName: nameCollides(moon, with: [sun]))
     }
 
     // MARK: Spacecraft

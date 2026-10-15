@@ -14,7 +14,15 @@ import SwiftUI
 //     the sky;
 //   • once the sky has rested a beat, and only if something the picture
 //     shows has changed — a pan moves the whole instrument, so it needs
-//     none.
+//     none;
+//   • while time is scrubbed, the parts are turned apart (see `Picture.turn`)
+//     — true for the dial and rete at any span, but a hand's badge also
+//     slides along its hand with the season (the Sun's declination, the
+//     Moon's), which no turn can fake: past `turnTruth` the hands ALONE are
+//     redrawn, quick (no frost, no shadow), so they stay on the sky's own
+//     Sun and Moon. The full glass comes back once the scrub settles.
+// The Sun and Moon themselves are the sky's own POI labels, laid over the
+// glass (see `SkyLayerStack`); the hands carry only a bulge round each.
 // A render costs the main thread up to a second or more on an iPad (the
 // fused crown is dear to draw), so the rule is: as few as possible, never
 // under a finger.
@@ -29,25 +37,29 @@ struct OrlojOverlay: View, Equatable {
     let longitude: Angle
     /// The sky is at rest — no finger on it, nothing gliding.
     let resting:   Bool
-    /// Time is being scrubbed (the date crown) — the picture's parts are
-    /// turned, not redrawn, until it settles.
+    /// Time is being scrubbed (the ruler) — the picture's parts are turned,
+    /// only the hands redrawn, until it settles.
     var scrubbing: Bool = false
 
     /// The place's own clock, like the widget's — the phone's until the
     /// geocoder answers.
     @State private var timeZone: TimeZone = .current
-    /// The instrument as last rendered, and when.
+    /// The instrument as last rendered.
     @State private var picture:  Picture?
-    @State private var lastRender: Date = .distantPast
+    /// The hands alone, redrawn quick while time is scrubbed — they stand
+    /// in for the picture's own until it is redrawn. And when.
+    @State private var hands:    Picture?
+    @State private var lastHands: Date = .distantPast
 
-    @Environment(\.displayScale) private var displayScale
+    @Environment(\.displayScale)    private var displayScale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// How long the sky must rest before the picture is redrawn. ▼ TWEAK ▼
     private static let settle: Duration = .milliseconds(300)
-    /// How far turning the parts stays true, and how often a long scrub
-    /// redraws instead. ▼ TWEAK ▼
+    /// How far turning the hands stays true, and how often a scrub may
+    /// redraw them past it. ▼ TWEAK ▼
     private static let turnTruth:   TimeInterval = 6 * 3600
-    private static let scrubRedraw: TimeInterval = 0.25
+    private static let handsRedraw: TimeInterval = 0.08
 
     /// The widest picture, in pixels. Past it — deep zoom — only the canvas
     /// is drawn, and a pan has to redraw. ▼ TWEAK ▼
@@ -64,21 +76,8 @@ struct OrlojOverlay: View, Equatable {
 
     var body: some View {
         ZStack {
-            if let picture {
-                let place = placement(of: picture)
-                ZStack {
-                    // Each part turned on by the time since it was drawn —
-                    // the rete with the sky, each hand with its body.
-                    ForEach(picture.parts.indices, id: \.self) { i in
-                        Image(decorative: picture.parts[i].image, scale: displayScale)
-                            .rotationEffect(picture.turn(picture.parts[i].part, to: date),
-                                            anchor: picture.pole)
-                    }
-                }
-                .scaleEffect(place.scale)
-                .rotationEffect(place.rotation)
-                .position(place.centre)
-            }
+            if let picture { carried(picture, showing: hands == nil ? .all : [.dial, .rete]) }
+            if let hands   { carried(hands) }
         }
         .frame(width: camera.size.width, height: camera.size.height)
         .allowsHitTesting(false)
@@ -89,25 +88,47 @@ struct OrlojOverlay: View, Equatable {
         }
     }
 
+    /// A picture's parts, each turned on by the time since it was drawn —
+    /// the rete with the sky, each hand with its body — and the whole
+    /// carried with the sky.
+    private func carried(_ picture: Picture, showing shown: OrlojParts = .all) -> some View {
+        let place = placement(of: picture)
+        return ZStack {
+            ForEach(picture.parts.indices, id: \.self) { i in
+                if shown.contains(picture.parts[i].part) {
+                    Image(decorative: picture.parts[i].image, scale: displayScale)
+                        .rotationEffect(picture.turn(picture.parts[i].part, to: date),
+                                        anchor: picture.pole)
+                }
+            }
+        }
+        .scaleEffect(place.scale)
+        .rotationEffect(place.rotation)
+        .position(place.centre)
+    }
+
     // MARK: Rendering
 
-    /// Redraw if the sky is at rest, time isn't being scrubbed, and the
-    /// picture no longer shows it.
+    /// Redraw if the sky is at rest and the picture no longer shows it —
+    /// or, while time is scrubbed, just the hands once turning them would
+    /// lie.
     private func redraw() async {
         let wanted = Inputs(of: self)
-        // Scrubbing: turning the parts holds for a few hours either side
-        // (the Sun, Moon and planets barely move along the band); past
-        // that it would lie — two Suns — so redraw for real, but at most
-        // a few times a second.
-        if scrubbing, resting, let picture {
-            let drift = abs(date.timeIntervalSince(picture.inputs.date))
-            guard drift > Self.turnTruth,
-                  Date.now.timeIntervalSince(lastRender) > Self.scrubRedraw else { return }
-            render(wanted)
+        guard resting else { return }
+        if scrubbing {
+            guard let picture else { return }
+            let drawn = hands?.inputs.date ?? picture.inputs.date
+            guard abs(date.timeIntervalSince(drawn)) > Self.turnTruth else { return }
+            // Held back, not dropped: a pause mid-scrub still lands true.
+            let wait = Self.handsRedraw - Date.now.timeIntervalSince(lastHands)
+            if wait > 0 {
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled else { return }
+            }
+            renderHands(wanted)
             return
         }
-        guard resting && !scrubbing else { return }
-        if let picture, picture.shows(wanted) { return }
+        if let picture, hands == nil, picture.shows(wanted) { return }
         if picture != nil {
             try? await Task.sleep(for: Self.settle)
             guard !Task.isCancelled else { return }
@@ -115,43 +136,73 @@ struct OrlojOverlay: View, Equatable {
         render(wanted)
     }
 
-    /// Draw the face into a bitmap the size of the instrument. The face is
-    /// built through a copy of the camera shifted so the instrument's box
-    /// IS its canvas — nothing outside the box is laid out at all.
+    /// The whole instrument, in full glass.
     private func render(_ inputs: Inputs) {
         #if DEBUG
         let started = Date.now
         #endif
+        guard let drawn = draw([.dial, .rete, .moonHand, .sunHand], quick: false, for: inputs)
+        else { return }
+        picture = drawn
+        hands   = nil
+        #if DEBUG
+        MemoryLog.note(String(format: "orloj rendered  %4.0f ms  %.0f×%.0f pt%@",
+                              Date.now.timeIntervalSince(started) * 1000,
+                              drawn.box.width, drawn.box.height, drawn.whole ? "" : "  (clipped)"))
+        #endif
+    }
+
+    /// The Sun's and Moon's hands alone, quick.
+    private func renderHands(_ inputs: Inputs) {
+        #if DEBUG
+        let started = Date.now
+        #endif
+        lastHands = .now
+        guard let drawn = draw([.moonHand, .sunHand], quick: true, for: inputs) else { return }
+        hands = drawn
+        #if DEBUG
+        MemoryLog.note(String(format: "orloj hands     %4.0f ms",
+                              Date.now.timeIntervalSince(started) * 1000))
+        #endif
+    }
+
+    /// Draw parts of the face into bitmaps the size of the instrument. The
+    /// face is built through a copy of the camera shifted so the
+    /// instrument's box IS its canvas — nothing outside the box is laid
+    /// out at all.
+    private func draw(_ parts: [OrlojParts], quick: Bool, for inputs: Inputs) -> Picture? {
         let face = OrlojFace(riding: camera, date: date, latitude: latitude,
                              longitude: longitude, timeZone: timeZone)
-        guard let (box, whole) = frame(of: face) else { picture = nil; return }
+        guard let (box, whole) = frame(of: face) else { return nil }
         var local    = camera
         local.size   = box.size
         local.offset = CGSize(width:  camera.offset.width  + camera.size.width  / 2 - box.midX,
                               height: camera.offset.height + camera.size.height / 2 - box.midY)
-        let drawn = OrlojFace(riding: local, date: date, latitude: latitude,
+        var drawn = OrlojFace(riding: local, date: date, latitude: latitude,
                               longitude: longitude, timeZone: timeZone)
-        // Four pictures, so time can turn them apart (see `OrlojParts`).
-        let parts: [OrlojParts] = [.dial, .rete, .moonHand, .sunHand]
+        drawn.skyLabels = labelSizes
+        // One picture a part, so time can turn them apart (see `OrlojParts`).
         let images = parts.compactMap { part -> (part: OrlojParts, image: CGImage)? in
             let renderer = ImageRenderer(content:
-                OrlojGlassLayers(face: drawn, onSky: true, parts: part)
+                OrlojGlassLayers(face: drawn, onSky: true, quick: quick, parts: part)
                     .frame(width: box.width, height: box.height)
                     .environment(\.colorScheme, .dark))
             renderer.scale = displayScale
             return renderer.cgImage.map { (part, $0) }
         }
-        guard images.count == parts.count else { return }
-        lastRender = .now
-        picture = Picture(parts: images, box: box, inputs: inputs, whole: whole,
-                          sense: drawn.hourSense,
-                          pole: UnitPoint(x: drawn.center.x / box.width,
-                                          y: drawn.center.y / box.height))
-        #if DEBUG
-        MemoryLog.note(String(format: "orloj rendered  %4.0f ms  %.0f×%.0f pt%@",
-                              Date.now.timeIntervalSince(started) * 1000,
-                              box.width, box.height, whole ? "" : "  (clipped)"))
-        #endif
+        guard images.count == parts.count else { return nil }
+        return Picture(parts: images, box: box, inputs: inputs, whole: whole,
+                       sense: drawn.hourSense,
+                       pole: UnitPoint(x: drawn.center.x / box.width,
+                                       y: drawn.center.y / box.height))
+    }
+
+    /// The Sun's and Moon's POI labels across, as `POILabelView` draws
+    /// them — the hands' bulges are cut to fit round them.
+    private var labelSizes: (sun: CGFloat, moon: CGFloat) {
+        let a    = Artist.shared
+        let type = a.typeScale(dynamicTypeSize)
+        return (a.poiStyle(for: .sun).badgeSize * type, a.poiStyle(for: .moon).badgeSize * type)
     }
 
     /// The instrument's square — the numerals' ring, their height and a

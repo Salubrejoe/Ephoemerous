@@ -119,6 +119,12 @@ struct OrlojFace {
     /// ▼ TWEAK the default here ▼
     var numeralRing: NumeralRing = .roman
 
+    /// On the sky the Sun and Moon wear the app's own live POI labels, not
+    /// badges of their own: the labels' diameters on screen, and the hands
+    /// keep only an empty bulge of glass round each. `nil` = the face's
+    /// own badges (the widget, the watch).
+    var skyLabels: (sun: CGFloat, moon: CGFloat)? = nil
+
     /// Tropic circles and zodiac sign dividers — two greys among the
     /// ecliptic, the horizon and the plate edge. Dropped on the wrist.
     var showsFiligree: Bool { !wrist }
@@ -1377,8 +1383,10 @@ struct OrlojFace {
     var sunCollarRadius:  CGFloat { 4.6 * ui }
 
     /// The badges, across — the app's POI sizes in proportion. ▼ TWEAK ▼
-    var sunBadgeSize:  CGFloat { 20 * ui }
-    var moonBadgeSize: CGFloat { 15 * ui }
+    var sunBadgeSize:  CGFloat { skyLabels.map { $0.sun  + 2 * labelRim } ?? 20 * ui }
+    var moonBadgeSize: CGFloat { skyLabels.map { $0.moon + 2 * labelRim } ?? 15 * ui }
+    /// The clear glass that shows round a sky label. ▼ TWEAK ▼
+    private var labelRim: CGFloat { 3 }
     var starBadgeSize: CGFloat { 12 * ui }
 
     /// A pentagon squircle `size` across, centred on `p` — the app's badge
