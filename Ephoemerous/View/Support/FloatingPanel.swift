@@ -62,10 +62,6 @@ struct FloatingPanel<Content: View>: View {
     /// keyboard. Search carries the swipe itself instead, as a
     /// `simultaneousGesture` on the field, so tap and swipe coexist.
     var showsDragBand: Bool = true
-    /// Open to (nearly) the full height of the screen — the place card's
-    /// one open state, where its hero shows, like Maps' card pulled up.
-    /// Search keeps the shorter card.
-    var fullHeight: Bool = false
     /// Reports how open the card is, 0 parked … 1 fully open, live through
     /// a drag — the place card's header follows it as the iPhone sheet's
     /// follows `bottomSheetTop`.
@@ -113,14 +109,15 @@ struct FloatingPanel<Content: View>: View {
     /// interrupted drag can't strand the card at an offset height.
     @GestureState private var drag: CGFloat = 0
 
-    /// The tallest the card may grow. Matters most in landscape, where a
-    /// larger fraction would leave no sky at all.
+    /// The tallest the card may grow: (nearly) the full height of the
+    /// screen, like Maps' card pulled up — search and the place card alike.
+    /// The card sits beside the sky, not over it, so there's no reason to
+    /// stop short.
     private var cap: CGFloat {
-        fullHeight ? max(200, available - Self.margin - Self.topClearance)
-                   : max(200, available * 0.72 - Self.margin)
+        max(200, available - Self.margin - Self.topClearance)
     }
 
-    /// Sky left above a full-height card — the status bar and a breath.
+    /// Sky left above an open card — the status bar and a breath.
     private static var topClearance: CGFloat { 44 }
 
     private var dragging: Bool { drag != 0 }

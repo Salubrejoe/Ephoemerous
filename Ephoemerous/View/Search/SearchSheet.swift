@@ -42,6 +42,9 @@ struct SearchSheet: View {
     /// sheet opens on `SkyCatalog.defaultChip`.
     @State private var chosenChip: BrowseChip? = nil
 
+    /// One order for every chip, remembered between launches.
+    @AppStorage("browseSort") private var sort: BrowseSort = .upNow
+
     /// PANEL mode (iPad, regular width): the host `FloatingPanel` owns the
     /// stage, so this view drives that binding instead of its own detent
     /// and skips every `presentation*` modifier — those belong to a sheet
@@ -230,6 +233,13 @@ struct SearchSheet: View {
                 chipRow
                 browseList
             }
+            // Concentric with the card's corner: a 22pt-radius circle
+            // inset 16 shares the corner's 38pt centre, as the header's
+            // buttons do up top.
+            .overlay(alignment: .bottomTrailing) {
+                sortButton
+                    .padding(16)
+            }
         }
     }
 
@@ -243,8 +253,8 @@ struct SearchSheet: View {
 
     private var activeChip: BrowseChip { chosenChip ?? catalog.defaultChip }
 
-    /// A scrolling row of capsule chips on material; the selected one is
-    /// solid white with dark ink.
+    /// A scrolling row of glass capsule chips, each led by its own colour;
+    /// the selected one is glass tinted white, with dark ink.
     private var chipRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -258,45 +268,96 @@ struct SearchSheet: View {
         .scrollClipDisabled()
     }
 
+    /// One order for every chip: a glass circle in the card's bottom-
+    /// trailing corner, with a menu that ticks the current order.
+    private var sortButton: some View {
+        Menu {
+            Picker(String(localized: "Sort by"), selection: $sort) {
+                ForEach(BrowseSort.allCases) { option in
+                    Label(option.title, systemImage: option.systemImage).tag(option)
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.primary)
+                .frame(width: 44, height: 44)
+                .glassEffect(.regular.interactive(), in: .circle)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(String(localized: "Sort by \(sort.title)"))
+    }
+
     private func chipButton(_ chip: BrowseChip) -> some View {
         let selected = chip == activeChip
         return Button { chosenChip = chip } label: {
-            Text(chip.title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(selected ? Color.black : Color.primary)
-                .padding(.horizontal, 12)
-                .frame(height: 28)
-                .background {
-                    if selected { Capsule().fill(.white) }
-                    else        { Capsule().fill(.regularMaterial) }
-                }
-                .contentShape(.capsule)
+            HStack(spacing: 6) {
+                chipIcon(chip)
+                    .frame(width: 18, height: 18)
+                Text(chip.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(selected ? Color.black : Color.primary)
+            }
+            .padding(.leading, 8)
+            .padding(.trailing, 12)
+            .frame(height: 32)
+            // The glass sits BEHIND the label, not on it: glass applied to
+            // the label itself tones its content, and the white selected
+            // glass washed the pin out to pink.
+            .background {
+                Color.clear
+                    .glassEffect(selected ? .regular.tint(.white).interactive()
+                                          : .regular.interactive(),
+                                 in: .capsule)
+            }
+            .contentShape(.capsule)
         }
         .buttonStyle(.plain)
         .animation(.snappy(duration: 0.2), value: selected)
     }
 
+    /// Each chip's leading mark: the sky's own badges where the category
+    /// has one, a coloured glyph where it doesn't.
+    @ViewBuilder
+    private func chipIcon(_ chip: BrowseChip) -> some View {
+        switch chip {
+        case .favorites:
+            // The accent: a pin is the engaged state (see `PinAction`).
+            Image(systemName: "pin.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+        case .stars:
+            POILabelView(category: .sun, text: "", labelStyle: .star)
+                .scaleEffect(0.8)
+        case .constellations:
+            Artist.shared.constellationFigure(.Ori)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(.cyan)
+        case .planets:
+            POILabelView(category: .planet(.saturn), text: "")
+                .scaleEffect(0.8)
+        case .spacecraft:
+            POILabelView(category: .spacecraft(.iss), text: "")
+                .scaleEffect(0.8)
+        }
+    }
+
     /// The active chip's list: Up now, then Below the horizon.
     @ViewBuilder
     private var browseList: some View {
-        let listing = catalog.listing(for: activeChip)
+        let listing = catalog.listing(for: activeChip, sortedBy: sort)
         if listing.isEmpty {
             browseEmptyNote(String(localized: "Nothing pinned yet. Tap Pin on a star or a constellation to keep it here."))
             Spacer(minLength: 0)
         } else {
             List {
-                if !listing.upNow.isEmpty {
+                ForEach(Array(listing.sections.enumerated()), id: \.element.id) { i, section in
                     Section {
-                        ForEach(listing.upNow) { browseRow($0) }
+                        ForEach(section.entries) { browseRow($0) }
                     } header: {
-                        sectionTitle(String(localized: "Up now"), first: true)
-                    }
-                }
-                if !listing.below.isEmpty {
-                    Section {
-                        ForEach(listing.below) { browseRow($0) }
-                    } header: {
-                        sectionTitle(String(localized: "Below the horizon"), first: listing.upNow.isEmpty)
+                        sectionTitle(section.title, first: i == 0)
                     }
                 }
             }
@@ -306,8 +367,10 @@ struct SearchSheet: View {
             // bottom padding + the first title's inset set the gap, so it
             // matches the one between the search bar and the chips.
             .contentMargins(.top, 0, for: .scrollContent)
+            // The last rows scroll clear of the sort button.
+            .contentMargins(.bottom, 44 + 16, for: .scrollContent)
             .environment(\.defaultMinListHeaderHeight, 0)
-            .id(activeChip)                     // each chip starts at the top
+            .id("\(activeChip.rawValue).\(sort.rawValue)")   // each chip and order starts at the top
         }
     }
 
@@ -387,8 +450,8 @@ struct SearchSheet: View {
                     .minimumScaleFactor(0.85)
             }
             Spacer(minLength: 8)
-            if let degrees = entry.altitudeDegrees {
-                Text(verbatim: "\(degrees)°")
+            if let figure = entry.figure ?? entry.altitudeDegrees.map({ "\($0)°" }) {
+                Text(verbatim: figure)
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             }

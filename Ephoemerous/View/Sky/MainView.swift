@@ -320,8 +320,8 @@ struct MainView: View {
                 if app.detailDestination != nil { detailDetent = detailHeaderDetent }
                 return
             }
+            sky.restAtHome()
             sky.scale  = sky.defaultScale
-            sky.offset = sky.home
         }
         // The card lifting or dropping moves the sky's centre with it.
         .onChange(of: panelHome) { _, home in sky.moveHome(to: home) }
@@ -424,9 +424,6 @@ struct MainView: View {
                 FloatingPanel(stage: $panelStage,
                               available: viewSize.height,
                               showsDragBand: app.detailDestination != nil,
-                              // The place card's two states: its title, or
-                              // the full height with the hero — Maps' card.
-                              fullHeight: app.detailDestination != nil,
                               onExpansion: { e in
                                   let v: CGFloat? = app.detailDestination == nil ? nil : e
                                   if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
@@ -455,6 +452,13 @@ struct MainView: View {
                 // and the two corners no longer share a baseline.
                 .ignoresSafeArea(.container, edges: .bottom)
                 .transition(.opacity)
+                #if DEBUG
+                // Screenshot seeding: `-searchOpen` opens the iPad card
+                // (a device can't be dragged from the command line).
+                .onAppear {
+                    if ProcessInfo.processInfo.arguments.contains("-searchOpen") { panelStage = .large }
+                }
+                #endif
             }
         }
         // Any selection (canvas tap OR search pick) glides into the comfort
@@ -510,8 +514,8 @@ struct MainView: View {
             let target = northOut ? app.northOutDefaultScale : app.defaultScale
             sky.minScale     = northOut ? target : northInMinScale(defaultScale: target)
             sky.defaultScale = target
+            sky.restAtHome()
             sky.scale        = target
-            sky.offset       = sky.home
             app.animatePerspectiveMorph(to: northOut ? 1 : 0)
         }
         // Mirror the SkyLab's committed + live rotation into the app rotation

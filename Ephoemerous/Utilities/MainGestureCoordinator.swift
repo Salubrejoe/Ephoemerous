@@ -284,6 +284,17 @@ final class MainGestureCoordinator {
         } completion: { if self.releaseID == id { self.commitLive() } }
     }
 
+    /// Rest the committed camera at home, dropping any live motion — for
+    /// the view's own reframes (NorthOUT, closing Look), which set the
+    /// camera outright. Writing `offset` alone under a live glide let the
+    /// glide add itself on top when it folded: the sky landed twice as
+    /// far from centre.
+    func restAtHome() {
+        releaseID += 1
+        pinch = 1; drag = .zero; liveRotation = .zero; homeBlend = 0
+        offset = home
+    }
+
     // MARK: Lifecycle
 
     private func begin() {
