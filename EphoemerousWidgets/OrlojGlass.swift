@@ -315,6 +315,9 @@ struct OrlojGlassPalette {
     /// face as it's zoomed on the sky, so the light keeps its share of a
     /// numeral instead of thinning to a hairline. ▼ TWEAK ▼
     let rimWidth: CGFloat
+    /// The glass with no edges at all — no rim light round any
+    /// piece, no highlight on the Earth; just the fill. ▼ TWEAK ▼
+    static let rimless = true
     /// See `OrlojGlassLayers.brilliance` and `.quick`.
     let brilliance: Double
     let quick:      Bool
@@ -498,11 +501,13 @@ struct OrlojGlassPieces: View {
             .shadow(color: .black.opacity(palette.lineArt || palette.quick ? 0 : 0.6),
                     radius: (0.8 + 1.4 * lift) * face.ui, y: (0.6 + 1.2 * lift) * face.ui)
 
-            ForEach(pieces.indices, id: \.self) { i in
-                if daylit {
-                    OrlojPath(source: pieces[i].path).stroke(palette.dayRim, lineWidth: palette.rimWidth)
-                } else {
-                    OrlojPath(source: pieces[i].path).stroke(palette.rim, lineWidth: palette.rimWidth)
+            if !OrlojGlassPalette.rimless {
+                ForEach(pieces.indices, id: \.self) { i in
+                    if daylit {
+                        OrlojPath(source: pieces[i].path).stroke(palette.dayRim, lineWidth: palette.rimWidth)
+                    } else {
+                        OrlojPath(source: pieces[i].path).stroke(palette.rim, lineWidth: palette.rimWidth)
+                    }
                 }
             }
         }
@@ -713,12 +718,14 @@ struct OrlojEarth: View {
                 .blur(radius: 1.4 * face.ui)
                 .clipShape(OrlojPath(source: globe))
             // Glass: a highlight at the top, the rim light.
-            OrlojPath(source: globe)
-                .fill(RadialGradient(colors: [palette.ink.opacity(0.28), .clear],
-                                     center: unit(CGPoint(x: face.center.x,
-                                                          y: face.center.y - r * 0.5)),
-                                     startRadius: 0, endRadius: r * 0.8))
-            OrlojPath(source: globe).stroke(palette.rim, lineWidth: 0.8)
+            if !OrlojGlassPalette.rimless {
+                OrlojPath(source: globe)
+                    .fill(RadialGradient(colors: [palette.ink.opacity(0.28), .clear],
+                                         center: unit(CGPoint(x: face.center.x,
+                                                              y: face.center.y - r * 0.5)),
+                                         startRadius: 0, endRadius: r * 0.8))
+                OrlojPath(source: globe).stroke(palette.rim, lineWidth: 0.8)
+            }
         }
     }
 
@@ -760,7 +767,9 @@ struct OrlojTintedGlass: View {
                                          center: unit(box.midX,
                                                       box.minY + box.height * 0.28),
                                          startRadius: 0, endRadius: box.width * 0.45))
-                OrlojPath(source: path).stroke(palette.rim, lineWidth: palette.rimWidth)
+                if !OrlojGlassPalette.rimless {
+                    OrlojPath(source: path).stroke(palette.rim, lineWidth: palette.rimWidth)
+                }
             }
         }
     }
