@@ -86,4 +86,15 @@ enum POICategory: Equatable {
     /// A crafted thing in orbit (ISS, Hubble) or at L2 (Webb) — one steel
     /// species, set apart from every natural body by its colour.
     case spacecraft(Spacecraft)
+    /// A galaxy, cluster or nebula. Deep sky, so it keeps quiet: no badge
+    /// at all until well zoomed in, the Messier objects first.
+    case deepSky(DeepSkyKind, messier: Bool)
+}
+
+/// The three deep-sky badges. Open and globular clusters share one — at
+/// badge size the difference doesn't read; the sky's atlas symbol and the
+/// subtitle tell them apart. Planetary nebulae and supernova remnants
+/// wear the nebula badge.
+enum DeepSkyKind: Equatable {
+    case galaxy, cluster, nebula
 }

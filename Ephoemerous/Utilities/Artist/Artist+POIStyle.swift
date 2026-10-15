@@ -166,6 +166,18 @@ extension Artist {
                 badgeCorners:   4,
                 tier:           tier)
 
+        case .deepSky(let kind, _):
+            // Told apart by outline (`deepSkyBadgeShape`) as well as tint.
+            let g = deepSkyGradient(kind)
+            return POICategoryStyle(
+                gradientTop:    g.top,
+                gradientBottom: g.bottom,
+                shading:        (top: g.top, bottom: g.bottom),
+                textColor:      g.bottom,
+                badgeSize:      12,
+                badgeCorners:   deepSkyBadgeShape(kind).corners,
+                tier:           tier)
+
         case .spacecraft:
             // Each craft draws its own silhouette (see `SpacecraftGlyph`)
             // as a bold, thickly-cased silhouette. 16 wide, casing included: a
@@ -180,6 +192,30 @@ extension Artist {
                 badgeSize:      16,
                 badgeCorners:   6,
                 tier:           tier)
+        }
+    }
+
+    // MARK: Deep sky  ▼ TWEAK the deep-sky colours here ▼
+    /// Muted and cool, so a galaxy or a nebula reads as "not a star" without
+    /// competing with the warm star badges. Light top, mid-tone bottom (the
+    /// name takes the bottom), like the spacecraft steel.
+    func deepSkyGradient(_ kind: DeepSkyKind) -> (top: Color, bottom: Color) {
+        func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(.displayP3, red: r, green: g, blue: b) }
+        switch kind {
+        case .galaxy:  return (c(0.905, 0.885, 0.972), c(0.611, 0.569, 0.749))   // violet-grey
+        case .cluster: return (c(0.885, 0.938, 0.990), c(0.525, 0.640, 0.780))   // ice blue
+        case .nebula:  return (c(0.866, 0.968, 0.938), c(0.478, 0.682, 0.659))   // sea-glass
+        }
+    }
+
+    /// Each deep-sky kind's badge outline — the shape does the telling,
+    /// since every other badge is a pentagon: a cluster a triangle, a
+    /// galaxy a diamond, a nebula a hexagon. ▼ TWEAK the shapes here ▼
+    func deepSkyBadgeShape(_ kind: DeepSkyKind) -> (corners: Int, bulge: CGFloat, rotation: Angle) {
+        switch kind {
+        case .cluster: return (3, 4.5, .zero)
+        case .galaxy:  return (4, 4.5, .degrees(45))
+        case .nebula:  return (6, 4.5, .zero)
         }
     }
 

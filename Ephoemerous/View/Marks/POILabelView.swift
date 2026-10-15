@@ -140,6 +140,14 @@ struct POILabelView: View {
         return 1
     }
 
+    /// A deep-sky badge's outline: its kind's corners, turned so a corner
+    /// points up.
+    private var deepSkyShape: AnyShape? {
+        guard case .deepSky(let kind, _) = category else { return nil }
+        let s = Artist.shared.deepSkyBadgeShape(kind)
+        return AnyShape(Squircle(corners: s.corners, bulge: s.bulge, rotation: s.rotation))
+    }
+
     /// The craft this badge stands for, when it's a spacecraft.
     private var craft: Spacecraft? {
         if case .spacecraft(let c) = category { return c }
@@ -246,7 +254,10 @@ struct POILabelView: View {
         // and a thin toenail all but vanished; now it keeps the full disc
         // with the night side in black, like Venus, so the phase reads
         // at any size.
-        let shape = AnyShape(Squircle(corners: 5, bulge: bulge))
+        // Deep sky is told apart by SHAPE, not colour alone — at badge size
+        // nothing drawn inside would read. Its own corner count and turn
+        // (see `deepSkyBadgeShape`); every other badge is the pentagon.
+        let shape = deepSkyShape ?? AnyShape(Squircle(corners: 5, bulge: bulge))
         let isMoon: Bool = { if case .moon = category { return true }; return false }()
         let isNewMoon = phase?.isNew ?? false
 

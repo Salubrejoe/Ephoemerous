@@ -28,6 +28,7 @@ struct SkyLayerStack: View {
             CelestialGridCanvas(camera: frame.camera)
                 .equatable()
 
+
             // Where you face — a softly lit stretch of the horizon rim
             // (see `Artist+Aim`).
             FacingBezel(camera: frame.camera)
@@ -89,6 +90,14 @@ struct SkyLayerStack: View {
                         rotation: frame.liveRot,
                         selectedID: frame.selectedStarID,
                         comfort: frame.comfort)
+
+            // Deep sky — quieter than any star, so it paints under them.
+            DeepSkyLabels(camera: frame.camera,
+                          pinch: frame.effPinch,
+                          scale: frame.liveScale,
+                          rotation: frame.liveRot,
+                          comfort: frame.comfort,
+                          layout: frame.starLabels)
 
             StarLabels(camera: frame.camera,
                        stars: app.favouriteStars,

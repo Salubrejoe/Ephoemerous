@@ -66,6 +66,12 @@ extension Artist {
         // Spacecraft ride the planet tier — same zoom, lowest declutter
         // priority (see `SpacecraftLabels`).
         case .spacecraft:     return POITier(badgeIn: 160, textIn: 220)
+        // Deep sky arrives late — after the named stars have had their say.
+        // Badges only: the names wait for a tap (see `DeepSkyLabels`), so
+        // `textIn` is out of reach.
+        case .deepSky(_, let messier):
+            return messier ? POITier(badgeIn: 420, textIn: .infinity)
+                           : POITier(badgeIn: 620, textIn: .infinity)
         // Named stars ripple in brightest-first, each at its own zoom, well
         // past constellation-name territory (see `Artist+NamedStars`).
         case .namedStar(let star):
