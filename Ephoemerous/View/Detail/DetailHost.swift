@@ -43,7 +43,9 @@ struct DetailHost: View {
         case .planet(let p):        PlanetDetailView(planet: p)
         case .constellation(let c): ConstellationDetailView(constellation: c)
         case .spacecraft(let c):    SpacecraftDetailView(craft: c)
-        case .deepSky(let d):       ClusterDetailView(cluster: d)
+        case .deepSky(let d):
+            if let g = d.galaxy { GalaxyDetailView(galaxy: g, object: d) }
+            else                { ClusterDetailView(cluster: d) }
         }
     }
 }

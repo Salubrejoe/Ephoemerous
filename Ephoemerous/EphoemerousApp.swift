@@ -55,6 +55,10 @@ struct EphoemerousApp: App {
             // can't inject taps), for App Store captures. Remove freely.
             #if DEBUG
             .task { await seedScreenshotState() }
+            // Badge design bench — see `BadgeGallery`.
+            .overlay {
+                if ProcessInfo.processInfo.arguments.contains("-badgeGallery") { BadgeGallery() }
+            }
             #endif
 
             .task { await SpacecraftTracker.shared.refreshIfStale() }
@@ -103,8 +107,9 @@ struct EphoemerousApp: App {
         guard let i = args.firstIndex(of: "-shot"), i + 1 < args.count else { return }
         let want = args[i + 1]
         // Let the canvas publish its size + first projection before seeding,
-        // so focus panning and the NorthOUT reframe have geometry to work with.
-        try? await Task.sleep(for: .milliseconds(500))
+        // so focus panning and the NorthOUT reframe have geometry to work with
+        // — and after any `-skyScale` zoom (4 s), or that would undo the pan.
+        try? await Task.sleep(for: .milliseconds(4500))
         switch want {
         case "northout":  state.isNorthOut = true
         case "orloj":     state.isNorthOut = true; state.isOrlojOn = true

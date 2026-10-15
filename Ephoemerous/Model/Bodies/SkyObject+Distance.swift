@@ -25,11 +25,18 @@ extension SkyObject {
             let km = (MoonPosition.distanceKm(for: date) / 1000).rounded() * 1000
             return String(localized: "\(Int(km), format: .number) km")
         case .deepSky(let d):
-            guard let ly = d.distance else { return nil }
-            return String(localized: "\(Int(ly.rounded())) ly")
+            guard let ly = d.lightYears else { return nil }
+            return Self.lightYears(ly)
         case .constellation, .spacecraft:
             return nil
         }
+    }
+
+    /// "444 ly", "163,000 ly", "2.5 million ly".
+    static func lightYears(_ ly: Double) -> String {
+        ly >= 1_000_000
+        ? String(localized: "\(ly / 1_000_000, format: .number.precision(.fractionLength(1))) million ly")
+        : String(localized: "\(Int(ly.rounded()), format: .number) ly")
     }
 
     /// Two decimals inside 10 AU (the inner planets move visibly), one

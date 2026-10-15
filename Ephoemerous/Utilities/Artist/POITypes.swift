@@ -87,8 +87,9 @@ enum POICategory: Equatable {
     /// species, set apart from every natural body by its colour.
     case spacecraft(Spacecraft)
     /// A galaxy, cluster or nebula. Deep sky, so it keeps quiet: no badge
-    /// at all until well zoomed in, the Messier objects first.
-    case deepSky(DeepSkyKind, messier: Bool)
+    /// at all until well zoomed in, the Messier objects first. The Local
+    /// Group galaxies each carry their own face (`galaxy`).
+    case deepSky(DeepSkyKind, messier: Bool, galaxy: LocalGalaxy? = nil)
 }
 
 /// The three deep-sky badges. Open and globular clusters share one — at
@@ -97,4 +98,25 @@ enum POICategory: Equatable {
 /// wear the nebula badge.
 enum DeepSkyKind: Equatable {
     case galaxy, cluster, nebula
+}
+
+/// The six galaxies on the sky — the Local Group members you can point at.
+/// Like the planets, each wears its own badge (see `GalaxyFace`): the same
+/// diamond outline as every galaxy, with what makes it ITSELF drawn inside.
+/// Raw values are the `DeepSkyObject` ids.
+enum LocalGalaxy: String, CaseIterable {
+    case andromeda  = "M31"
+    case triangulum = "M33"
+    case m32        = "M32"
+    case m110       = "M110"
+    case lmc        = "ESO056-115"
+    case smc        = "NGC 292"
+
+    /// The galaxy this one is a satellite of, where both are on the sky.
+    var host: LocalGalaxy? {
+        switch self {
+        case .m32, .m110: return .andromeda
+        default:          return nil
+        }
+    }
 }

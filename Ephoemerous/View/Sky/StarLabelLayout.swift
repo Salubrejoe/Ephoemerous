@@ -93,7 +93,13 @@ struct StarLabelLayout {
         // Badges only; each gated by its tier and kept to the calm middle.
         var deep = Set<String>()
         func placeDeepSky(_ objects: [DeepSkyObject]) {
-            for obj in objects {
+            // A companion only shows beside its host — M32 and M110 without
+            // Andromeda would be the satellites without the planet. Hosts
+            // go first so they're decided before their companions.
+            for obj in objects.sorted(by: { $0.companionOf == nil && $1.companionOf != nil }) {
+                if let host = obj.companionOf,
+                   !deep.contains(host.rawValue),
+                   selection?.id != "deepsky_\(host.rawValue)" { continue }
                 let style = a.poiStyle(for: obj.poiCategory)
                 guard scale >= style.badgeIn,
                       let sc = camera.screen(equatorial: obj.equatorialVector),

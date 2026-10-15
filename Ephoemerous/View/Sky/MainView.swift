@@ -187,9 +187,10 @@ struct MainView: View {
                         if let i = args.firstIndex(of: "-skyScale"), i + 1 < args.count,
                            let z = Double(args[i + 1]) {
                             // After the camera has seeded its home (and any
-                            // NorthIN reframe), or it would put it back.
+                            // NorthIN reframe), or it would put it back — the
+                            // simulator's first location fix lands late.
                             Task { @MainActor in
-                                try? await Task.sleep(for: .seconds(2))
+                                try? await Task.sleep(for: .seconds(4))
                                 sky.scale = CGFloat(z)
                             }
                         }

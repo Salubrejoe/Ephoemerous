@@ -143,9 +143,15 @@ struct POILabelView: View {
     /// A deep-sky badge's outline: its kind's corners, turned so a corner
     /// points up.
     private var deepSkyShape: AnyShape? {
-        guard case .deepSky(let kind, _) = category else { return nil }
+        guard case .deepSky(let kind, _, _) = category else { return nil }
         let s = Artist.shared.deepSkyBadgeShape(kind)
         return AnyShape(Squircle(corners: s.corners, bulge: s.bulge, rotation: s.rotation))
+    }
+
+    /// The Local Group galaxy this badge stands for, when it is one.
+    private var galaxy: LocalGalaxy? {
+        if case .deepSky(_, _, let g) = category { return g }
+        return nil
     }
 
     /// The craft this badge stands for, when it's a spacecraft.
@@ -270,6 +276,13 @@ struct POILabelView: View {
                                 casing:     casing,
                                 lineWidth:  bw,
                                 masked:     isMasked)
+            } else if let galaxy {
+                // So is each Local Group galaxy (see `GalaxyGlyph`).
+                GalaxyGlyph(galaxy:     galaxy,
+                            casing:     casing,
+                            lineWidth:  bw,
+                            fullDetail: richDetail,
+                            masked:     isMasked)
             } else if surface == .venusPhase || (isMoon && !isNewMoon), let phase {
                 // Venus and the Moon keep their full circle: lit part in its
                 // gradient, night side black (see `PlanetSurface`).
@@ -292,9 +305,9 @@ struct POILabelView: View {
         // Saturn's far rings pass behind the globe…
         .background { rings(.back, lineWidth: bw) }
         // Casing ring — the light outline doing the legibility work. A
-        // spacecraft cases its own silhouette instead.
+        // spacecraft or a galaxy cases its own silhouette instead.
         .overlay {
-            if craft == nil { shape.stroke(casing, lineWidth: bw) }
+            if craft == nil, galaxy == nil { shape.stroke(casing, lineWidth: bw) }
         }
         // The casing is near-black, which disappears on an unfilled new
         // moon against a dark sky — so that one case gets a tint ring too.

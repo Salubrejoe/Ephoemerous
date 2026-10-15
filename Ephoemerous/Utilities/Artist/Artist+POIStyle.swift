@@ -166,7 +166,20 @@ extension Artist {
                 badgeCorners:   4,
                 tier:           tier)
 
-        case .deepSky(let kind, _):
+        case .deepSky(_, _, let galaxy?):
+            // A Local Group galaxy is its own silhouette, like a spacecraft
+            // (see `Artist+Galaxies`); glow and name in its main paint.
+            let paint = galaxyPaint(galaxyMainPaint(galaxy))
+            return POICategoryStyle(
+                gradientTop:    paint.1,
+                gradientBottom: paint.0,
+                shading:        (top: paint.1, bottom: paint.0),
+                textColor:      paint.1,
+                badgeSize:      galaxyBadgeSize(galaxy),
+                badgeCorners:   deepSkyBadgeShape(.galaxy).corners,
+                tier:           tier)
+
+        case .deepSky(let kind, _, nil):
             // Told apart by outline (`deepSkyBadgeShape`) as well as tint.
             let g = deepSkyGradient(kind)
             return POICategoryStyle(

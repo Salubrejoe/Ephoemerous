@@ -76,7 +76,9 @@ struct HeroBanner: View {
         case .moon: return luminaryHalfField(for: artist.moonAngularDiameter)
         // Zoomed right in: the cluster fills the header, a little sky at
         // its edges — the stars of the cluster, not the constellation.
-        case .deepSky(let d):
+        // A galaxy or a nebula has no stars of its own to show, so it takes
+        // the planets' wide patch and wears its badge (see `subject`).
+        case .deepSky(let d) where d.badgeKind == .cluster:
             let radius = (d.major ?? 120) / 2 * .pi / (180 * 60)
             return radius * 0.8
         default:    return artist.heroBodyHalfField
@@ -109,6 +111,8 @@ struct HeroBanner: View {
     @ViewBuilder
     private var subject: some View {
         switch object {
+        case .deepSky(let d) where d.badgeKind != .cluster:
+            pinned(d.poiCategory) { badge(d.poiCategory, sizeScale: artist.poiSelectScale) }
         case .constellation, .star, .deepSky:
             EmptyView()                          // the sky IS the subject
         case .sun, .moon:

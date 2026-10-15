@@ -43,7 +43,15 @@ struct DeepSkyObject: Identifiable, Decodable, Hashable {
         }
     }
 
-    var poiCategory: POICategory { .deepSky(badgeKind, messier: isMessier) }
+    /// Which of the six Local Group galaxies this is, if it is one.
+    var galaxy: LocalGalaxy? { LocalGalaxy(rawValue: id) }
+
+    /// The galaxy this one orbits, when it's one of Andromeda's companions.
+    var companionOf: LocalGalaxy? { galaxy?.host }
+
+    var poiCategory: POICategory {
+        .deepSky(badgeKind, messier: isMessier, galaxy: galaxy)
+    }
 
     /// Open clusters come onto the sky one at a time, each checked by eye
     /// before the next: the Pleiades, the Hyades, Coma, the Beehive,

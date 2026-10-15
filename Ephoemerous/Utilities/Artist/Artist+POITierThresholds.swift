@@ -85,7 +85,7 @@ extension Artist {
         // Deep sky arrives late — after the named stars have had their say.
         // Badges only: the names wait for a tap (see `DeepSkyLabels`), so
         // `textIn` is out of reach.
-        case .deepSky(_, let messier):
+        case .deepSky(_, let messier, _):
             return messier ? POITier(badgeIn: 420, textIn: .infinity)
                            : POITier(badgeIn: 620, textIn: .infinity)
         // Named stars ripple in brightest-first, each at its own zoom, well

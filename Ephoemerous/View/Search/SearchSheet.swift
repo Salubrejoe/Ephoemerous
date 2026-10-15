@@ -266,6 +266,16 @@ struct SearchSheet: View {
             .padding(.bottom, 10)
         }
         .scrollClipDisabled()
+        #if DEBUG
+        // Screenshot seeding: `-searchChip deepSky` opens on that chip (a
+        // device can't scroll the row from the command line).
+        .onAppear {
+            let args = ProcessInfo.processInfo.arguments
+            if let i = args.firstIndex(of: "-searchChip"), i + 1 < args.count {
+                chosenChip = BrowseChip(rawValue: args[i + 1])
+            }
+        }
+        #endif
     }
 
     /// One order for every chip: a glass circle in the card's bottom-
@@ -340,6 +350,9 @@ struct SearchSheet: View {
                 .scaleEffect(0.8)
         case .spacecraft:
             POILabelView(category: .spacecraft(.iss), text: "")
+                .scaleEffect(0.8)
+        case .deepSky:
+            POILabelView(category: .deepSky(.galaxy, messier: true, galaxy: .andromeda), text: "")
                 .scaleEffect(0.8)
         }
     }
@@ -554,6 +567,9 @@ struct SearchSheet: View {
         case .constellation(let c):
             Artist.shared.constellationFigure(c)
                 .foregroundStyle(.secondary)
+        case .deepSky(let d) where d.galaxy != nil:
+            // A galaxy wears its own silhouette, as a spacecraft does.
+            POILabelView(category: d.poiCategory, text: "")
         case .deepSky(let d):
             Image(systemName: "sparkles")
                 .foregroundStyle(Artist.shared.deepSkyGradient(d.badgeKind).bottom)
@@ -568,7 +584,7 @@ struct SearchSheet: View {
         case .planet:               return String(localized: "Solar system · Planet")
         case .constellation:        return String(localized: "Constellation")
         case .spacecraft:           return String(localized: "Spacecraft")
-        case .deepSky(let d):       return d.kindName
+        case .deepSky(let d):       return d.galaxy?.kindName ?? d.kindName
         }
     }
 

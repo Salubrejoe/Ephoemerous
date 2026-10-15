@@ -97,6 +97,11 @@ extension MainView {
                 consider(.deepSky(obj), gate: scale >= a.clusterNameIn(magnitude: obj.mag))
             }
 
+            // The Local Group galaxies — tappable once their badge shows.
+            for obj in DeepSkyCatalog.objects where obj.galaxy != nil {
+                consider(.deepSky(obj), gate: scale >= a.poiStyle(for: obj.poiCategory).badgeIn)
+            }
+
             let tapRadius: CGFloat = 30
             var best: (obj: SkyObject, dist: CGFloat, screen: CGPoint)? = nil
             for (obj, s) in cands {
