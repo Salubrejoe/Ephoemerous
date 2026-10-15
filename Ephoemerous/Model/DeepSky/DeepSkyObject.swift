@@ -36,6 +36,14 @@ struct DeepSkyObject: Identifiable, Decodable {
 
     var poiCategory: POICategory { .deepSky(badgeKind, messier: isMessier) }
 
+    /// Open clusters come onto the sky one at a time, each checked by eye
+    /// before the next: the Pleiades, the Hyades and Coma so far. The rest
+    /// stay in the catalogue, undrawn.
+    static let shownClusters: Set<String> = ["M45", "C041", "Mel111"]
+
+    /// An open cluster that's on the sky now.
+    var isShownCluster: Bool { badgeKind == .cluster && Self.shownClusters.contains(id) }
+
     /// What the label says: the common name where there is one, else the
     /// catalogue designation ("M13", "NGC 7789").
     var label: String { name ?? id }

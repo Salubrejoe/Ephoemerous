@@ -117,7 +117,13 @@ struct Star: Identifiable, Hashable {
 private extension Star {
     
     static func calculateName(from starData: StarData) -> String {
-        guard let input = starData.name else { return "Unknown" }
+        // Two thirds of the catalogue has no Bayer or Flamsteed name — the
+        // faint stars, mostly past magnitude 5.5. They go by their catalogue
+        // number: never listed, searched or tapped, only drawn, so a deep
+        // zoom on a cluster looks like the cluster.
+        guard let input = starData.name else {
+            return starData.hr.map { "HR \($0)" } ?? "Unknown"
+        }
         let last3 = String(input.suffix(3))
         guard let constellation = Constellation(rawValue: last3) else { return "Unknown" }
         var prefix = String(input.dropLast(3)).trimmingCharacters(in: .whitespaces)
@@ -130,6 +136,14 @@ private extension Star {
                 flamsteed = maybeNum
                 prefix = String(prefix[prefix.index(after: spaceIdx)...])
             }
+        } else if !hasGreek, !prefix.isEmpty, prefix.allSatisfy({ $0.isNumber }) {
+            // A Flamsteed number alone — "17 Tau". Without this the digits
+            // were stripped below as disambiguation and every such star
+            // was named just "Tau", so the de-duplication folded ~1,580 of
+            // them into one per constellation (the Pleiades lost all its
+            // sisters but Alcyone).
+            flamsteed = prefix
+            prefix    = ""
         }
         // Strip disambiguation digits, then map Greek abbreviations to symbols
         prefix = prefix.filter { !$0.isNumber }

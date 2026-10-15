@@ -7,10 +7,9 @@ import UIKit
 //
 //   1. Fixed, never yield: the selected object's pin; the Sun, the Moon,
 //      the planets and the spacecraft (their own layer already declutters
-//      them among themselves).
-//   1½. Clusters. A cluster outranks the stars in it — the Pleiades is
-//      what you look for there, Alcyone only its brightest member — so a
-//      named star under a cluster's badge falls back to its dot.
+//      them among themselves). Open cluster names are fixed too, centred
+//      on the cluster — but only NAMES give way to them, never a badge, so
+//      a cluster and its stars always show together.
 //   2. Favourite stars, brightest first. Their BADGE always stays (a
 //      favourite has no dot to fall back to); only the name can give way.
 //   3. Named stars, brightest first. A name that would overlap drops; a
@@ -18,6 +17,7 @@ import UIKit
 //      so the star never vanishes — it just stops shouting.
 //   3½. Galaxies and nebulae, the quiet deep sky — badges only; one that
 //      would land on any mark above is left out.
+
 //   4. Constellation names, the whisper voice, last: one that would land
 //      on any mark above — or on another constellation's name — gives way.
 //      A selected constellation is fixed with the pin instead.
@@ -38,15 +38,19 @@ struct StarLabelLayout {
     let hiddenConstellations: Set<String>
     /// Deep-sky objects whose badge has room to show.
     let deepSky: Set<String>
+    /// Open clusters whose name has room to show.
+    let clusters: Set<String>
 
-    static let none = StarLabelLayout(dotOnly: [], hiddenNames: [], hiddenConstellations: [], deepSky: [])
+    static let none = StarLabelLayout(dotOnly: [], hiddenNames: [], hiddenConstellations: [],
+                                      deepSky: [], clusters: [])
 
     private init(dotOnly: Set<String>, hiddenNames: Set<String>, hiddenConstellations: Set<String>,
-                 deepSky: Set<String>) {
+                 deepSky: Set<String>, clusters: Set<String>) {
         self.dotOnly              = dotOnly
         self.hiddenNames          = hiddenNames
         self.hiddenConstellations = hiddenConstellations
         self.deepSky              = deepSky
+        self.clusters             = clusters
     }
 
     @MainActor
@@ -83,8 +87,8 @@ struct StarLabelLayout {
             }
         }
 
-        // 1½ · Clusters, then 3½ · galaxies and nebulae (below). Badges
-        // only; each gated by its tier and kept to the calm middle.
+        // 3½ · Galaxies and nebulae (placed below, after the stars).
+        // Badges only; each gated by its tier and kept to the calm middle.
         var deep = Set<String>()
         func placeDeepSky(_ objects: [DeepSkyObject]) {
             for obj in objects {
@@ -99,7 +103,23 @@ struct StarLabelLayout {
                 deep.insert(obj.id)
             }
         }
-        placeDeepSky(DeepSkyCatalog.objects.filter { $0.badgeKind == .cluster })
+        // Open cluster names — centred, always shown. Not in `placed`:
+        // star badges never give way to them; only star and constellation
+        // NAMES that would land on one do.
+        var clusterNames = Set<String>()
+        var clusterRects: [CGRect] = []
+        for obj in DeepSkyCatalog.objects where obj.isShownCluster {
+            guard scale >= a.clusterNameIn(magnitude: obj.mag),
+                  let sc = camera.screen(equatorial: obj.equatorialVector),
+                  comfort.nameVisibility(at: sc) > 0.01
+            else { continue }
+            let rect = Self.regionRect(obj.label, at: comfort.screenPoint(sc), metrics: m)
+            clusterRects.append(rect.offsetBy(dx: 0, dy: rect.height / 2 + ClusterLabels.centreDrop))
+            clusterNames.insert(obj.id)
+        }
+        func nameBlocked(_ r: CGRect) -> Bool {
+            collides(r) || clusterRects.contains { $0.intersects(r) }
+        }
 
         // 2 · Favourites, then 3 · named stars — brightest first in each.
         let queue: [(Star, POICategory, Bool)] =
@@ -128,7 +148,7 @@ struct StarLabelLayout {
             if speaks {
                 let r = Self.nameRect(star.displayName, at: p, badge: style.badgeSize, metrics: m)
                 name = r
-                nameCollides = collides(r)
+                nameCollides = nameBlocked(r)
             }
             placed.append(badge)
             if let name {
@@ -156,7 +176,7 @@ struct StarLabelLayout {
                       comfort.nameVisibility(at: sc) > 0.01
                 else { continue }
                 let rect = Self.regionRect(cons.localizedName, at: comfort.screenPoint(sc), metrics: m)
-                if collides(rect) {
+                if nameBlocked(rect) {
                     regions.insert(cons.rawValue)
                 } else {
                     placed.append(rect)
@@ -168,6 +188,7 @@ struct StarLabelLayout {
         hiddenNames          = names
         hiddenConstellations = regions
         deepSky              = deep
+        clusters             = clusterNames
     }
 
     // MARK: Metrics

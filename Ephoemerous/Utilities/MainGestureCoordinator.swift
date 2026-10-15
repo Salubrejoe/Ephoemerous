@@ -61,7 +61,7 @@ final class MainGestureCoordinator {
 
     // Limits / feel — production values.
     @ObservationIgnored var minScale:     CGFloat = 90
-    @ObservationIgnored var maxScale:     CGFloat = 1200
+    @ObservationIgnored var maxScale:     CGFloat = CGFloat(AstroConstants.deepestScale)
     @ObservationIgnored var defaultScale: CGFloat = 90
     private let scaleRubberStiffness = 2.0
     private let minFlingSpeed: CGFloat = 150

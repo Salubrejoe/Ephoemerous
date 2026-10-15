@@ -64,6 +64,14 @@ extension MainView {
                 consider(.star(star), gate: scale >= a.poiStyle(for: .namedStar(star)).badgeIn)
             }
 
+            // Very deep: every designated star too, so a cluster's members
+            // can be picked out one by one.
+            if scale >= a.designatedStarTapIn {
+                for star in SkyFrame.designatedStars where !favIDs.contains(star.id) {
+                    consider(.star(star), gate: true)
+                }
+            }
+
             // Solar-system bodies — Sun / Moon always (badgeIn 0), planets
             // past their badge tier.
             consider(.sun,  gate: true)

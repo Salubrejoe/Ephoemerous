@@ -19,6 +19,12 @@ struct SkyFrame {
     static let properNamedStars: [Star] =
         StarDatabase.shared.workableStars.filter { $0.properName != nil }
 
+    /// Stars with a Bayer letter or Flamsteed number but no proper name —
+    /// tappable only at the very deepest zoom (`designatedStarTapIn`). The
+    /// catalogue-number-only faint stars ("HR 1234") never are.
+    static let designatedStars: [Star] =
+        StarDatabase.shared.workableStars.filter { $0.properName == nil && !$0.name.hasPrefix("HR ") }
+
     /// Figure stars carrying a Bayer letter and NOTHING else — no proper
     /// name to print, so the letter is all they can be called. These get
     /// the quiet Greek glyph (`BayerLabels`); a star with a proper name is

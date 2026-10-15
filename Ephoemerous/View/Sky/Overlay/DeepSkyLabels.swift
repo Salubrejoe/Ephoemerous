@@ -1,14 +1,14 @@
 import SwiftUI
 
 // MARK: - DeepSkyLabels
-// POI badges for open clusters, nebulae and the Local Group galaxies we
-// can see — 55 objects, the Messier ones and a few famous others. Deep sky keeps quiet:
+// POI badges for nebulae and the Local Group galaxies we can see. Open
+// clusters are regions, named like constellations (see `ClusterLabels`). Deep sky keeps quiet:
 //   • late — badges arrive only well past the named stars (see
 //     `poiTier(for: .deepSky)`), the Messier objects before the rest;
 //   • badge only — the name waits for a tap;
 //   • in the calm middle — outside the comfort zone the badge fades too;
-//   • placed with the stars — clusters outrank the named stars in them,
-//     galaxies and nebulae give way to every star (see `StarLabelLayout`).
+//   • placed with the stars — they give way to every star mark (see
+//     `StarLabelLayout`).
 // Culled to the oversized canvas, counter-scaled `1/pinch` and
 // counter-rotated like every other label.
 struct DeepSkyLabels: View {

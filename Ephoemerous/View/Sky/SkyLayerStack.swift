@@ -91,6 +91,25 @@ struct SkyLayerStack: View {
                         selectedID: frame.selectedStarID,
                         comfort: frame.comfort)
 
+            // Open clusters, named as regions at their edge — fixed marks the
+            // stars give way to.
+            ClusterLabels(camera: frame.camera,
+                          pinch: frame.effPinch,
+                          scale: frame.liveScale,
+                          rotation: frame.liveRot,
+                          comfort: frame.comfort,
+                          layout: frame.starLabels)
+
+            // Very deep: a symbol-only badge on every designated star, the
+            // ones a tap can now reach (see `designatedStarTapIn`).
+            DesignatedStarMarks(camera: frame.camera,
+                                pinch: frame.effPinch,
+                                scale: frame.liveScale,
+                                rotation: frame.liveRot,
+                                selectedID: frame.selectedStarID,
+                                favouriteIDs: frame.favouriteIDs,
+                                comfort: frame.comfort)
+
             // Deep sky — quieter than any star, so it paints under them.
             DeepSkyLabels(camera: frame.camera,
                           pinch: frame.effPinch,

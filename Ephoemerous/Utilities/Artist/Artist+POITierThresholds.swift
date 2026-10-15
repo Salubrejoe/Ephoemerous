@@ -52,6 +52,22 @@ extension Artist {
     /// The outer share of that squircle over which names fade out.
     var labelComfortFeather: CGFloat { 0.18 }
 
+    /// When an open cluster's name and patch arrive. The naked-eye ones —
+    /// the Hyades, the Pleiades, Coma, the Beehive — come with the named
+    /// stars; the rest later. Not a `POICategory`: a cluster is a region,
+    /// named like a constellation, with no badge. ▼ TWEAK ▼
+    func clusterNameIn(magnitude: Double?) -> Double {
+        (magnitude ?? 99) <= 3.5 ? 300 : 460
+    }
+
+    /// Rendered scale past which every catalogued star with a Bayer letter
+    /// or a Flamsteed number can be tapped, not just the proper-named ones —
+    /// so a cluster's members can be picked out one by one (Coma has no
+    /// named star at all). Very deep, well past the Greek letters
+    /// (`bayerLetterIn`), so at any ordinary zoom a tap still lands on the
+    /// stars you can see named. ▼ TWEAK ▼
+    var designatedStarTapIn: Double { 2400 }
+
     /// The tier map — tweak every category's reveal timing here.
     func poiTier(for category: POICategory) -> POITier {
         switch category {

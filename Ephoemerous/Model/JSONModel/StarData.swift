@@ -34,6 +34,8 @@ struct StarData: Codable {
   var magnitudeDifference   : String? = nil
   /// Aitken Double Star catalogue number — the system's shared identifier.
   var adsNumber             : String? = nil
+  /// Bright Star Catalogue number — the only name a faint star has.
+  var hr                    : String? = nil
 
   enum CodingKeys: String, CodingKey {
     case name                  = "Name"
@@ -54,5 +56,6 @@ struct StarData: Codable {
     case separation            = "Sep"
     case magnitudeDifference   = "Dmag"
     case adsNumber             = "ADS"
+    case hr                    = "HR"
   }
 }

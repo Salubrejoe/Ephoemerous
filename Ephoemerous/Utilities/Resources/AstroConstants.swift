@@ -251,10 +251,14 @@ enum AstroConstants {
     static let defaultOffsetX:    Double  = 0.0
 //    static let defaultOffsetX:    Double  = -50.0
     static let defaultOffsetY:    Double  = 0.0
-    /// Hard zoom-in ceiling. Mirrors the gesture coordinator's
-    /// `maximumScale` so focus-to-tier (AppState+Detail) and the pinch
-    /// clamp agree on the deepest the canvas can zoom.
+    /// Where the star field reaches its full depth — every catalogue star
+    /// is in by here (see `magnitudeCap`). Past it the zoom carries on,
+    /// only nothing new arrives.
     static let maximumScale:      Double  = 1200
+    /// Hard zoom-in ceiling, the gesture coordinator's `maxScale`. Deep
+    /// enough to pull a cluster's stars apart far enough to tap one: the
+    /// Pleiades' sisters sit a few tenths of a degree from each other.
+    static let deepestScale:      Double  = 8000
 
     // -------------------------------------------------------------------------
     // MARK: Spectral class colours (RGB components)

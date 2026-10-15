@@ -42,6 +42,21 @@ extension Star {
         // Taurus
         "α Tau" : "Aldebaran",
         "η Tau" : "Alcyone",
+        // The Hyades — the V round Aldebaran (who isn't one of them).
+        // θ is the brighter θ², the one the name builder keeps.
+        "ε Tau" : "Ain",
+        "γ Tau" : "Prima Hyadum",
+        "δ Tau" : "Secunda Hyadum",
+        "θ Tau" : "Chamukuy",
+        // The Pleiades — Alcyone's sisters, and their parents
+        "27 Tau" : "Atlas",
+        "17 Tau" : "Electra",
+        "20 Tau" : "Maia",
+        "23 Tau" : "Merope",
+        "19 Tau" : "Taygeta",
+        "28 Tau" : "Pleione",
+        "16 Tau" : "Celaeno",
+        "21 Tau" : "Asterope",
         "β Tau" : "Elnath",
         // Gemini
         "α Gem" : "Castor",
