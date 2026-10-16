@@ -143,6 +143,14 @@ enum NamedNebula: String, CaseIterable {
     case owl            = "M97"
     case dumbbell       = "M27"
     case littleDumbbell = "M76"
+    // Orion's three — the great nebula, the piece of it across the dust,
+    // and the blue reflection nebula north of the Belt.
+    case orion          = "M42"
+    case deMairan       = "M43"
+    case m78            = "M78"
 
     var category: POICategory { .deepSky(.nebula, messier: true, figure: .nebula(self)) }
+
+    /// The nebula this one is drawn beside, where it's part of another.
+    var host: NamedNebula? { self == .deMairan ? .orion : nil }
 }

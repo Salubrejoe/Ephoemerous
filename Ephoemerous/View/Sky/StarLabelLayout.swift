@@ -94,12 +94,13 @@ struct StarLabelLayout {
         var deep = Set<String>()
         func placeDeepSky(_ objects: [DeepSkyObject]) {
             // A companion only shows beside its host — M32 and M110 without
-            // Andromeda would be the satellites without the planet. Hosts
+            // Andromeda would be the satellites without the planet, M43
+            // without the Orion Nebula a scrap of it. Hosts
             // go first so they're decided before their companions.
             for obj in objects.sorted(by: { $0.companionOf == nil && $1.companionOf != nil }) {
                 if let host = obj.companionOf,
-                   !deep.contains(host.rawValue),
-                   selection?.id != "deepsky_\(host.rawValue)" { continue }
+                   !deep.contains(host),
+                   selection?.id != "deepsky_\(host)" { continue }
                 let style = a.poiStyle(for: obj.poiCategory)
                 guard scale >= style.badgeIn,
                       let sc = camera.screen(equatorial: obj.equatorialVector),

@@ -9,15 +9,25 @@ import SwiftUI
 //   • Owl (M97)            — a round aqua face with two dark eyes
 //   • Dumbbell (M27)       — a green hourglass, the "apple core", in a rosy oval
 //   • Little Dumbbell (M76)— a small pink peanut, tied at the waist
+// Then Orion's three, where stars are being born — hydrogen pink, dust
+// dark, starlight blue:
+//   • Orion (M42)          — a bright heart round the Trapezium, two wings
+//                            sweeping south, the dark Fish's Mouth above
+//   • De Mairan's (M43)    — a round pink glow hooked by a dark lane, a star
+//                            at its heart
+//   • M78                  — a blue fan of dust lit by two stars at its tip
 // ▼ TWEAK the nebulae here ▼
 extension Artist {
 
     /// Badge width (pt) — the frame the silhouette is fitted into.
     func nebulaBadgeSize(_ n: NamedNebula) -> CGFloat {
         switch n {
+        case .orion:          return 17
         case .dumbbell:       return 14
         case .ring, .owl:     return 13
         case .littleDumbbell: return 12
+        case .m78:            return 12
+        case .deMairan:       return 10
         }
     }
 
@@ -31,6 +41,10 @@ extension Artist {
         case .owlEye:   return (p3(0.070, 0.140, 0.220), p3(0.110, 0.200, 0.290))   // the eyes
         case .halo:     return (p3(0.520, 0.260, 0.360), p3(0.840, 0.500, 0.560))   // the Dumbbell's rosy oval
         case .bowtie:   return (p3(0.680, 0.260, 0.380), p3(1.000, 0.620, 0.640))   // the Little Dumbbell
+        case .hydrogen: return (p3(0.680, 0.220, 0.340), p3(1.000, 0.560, 0.620))   // Orion's wings
+        case .magenta:  return (p3(0.720, 0.300, 0.480), p3(1.000, 0.680, 0.760))   // De Mairan's
+        case .starlit:  return (p3(0.220, 0.380, 0.780), p3(0.700, 0.840, 1.000))   // M78, dust lit blue
+        case .dust:     return (p3(0.110, 0.060, 0.090), p3(0.180, 0.100, 0.130))   // dark lanes
         }
     }
 
@@ -41,6 +55,9 @@ extension Artist {
         case .owl:            return .owl
         case .dumbbell:       return .oxygen
         case .littleDumbbell: return .bowtie
+        case .orion:          return .hydrogen
+        case .deMairan:       return .magenta
+        case .m78:            return .starlit
         }
     }
 

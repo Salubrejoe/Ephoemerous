@@ -7,15 +7,18 @@ import SwiftUI
 // MARK: - NebulaShapes
 enum NebulaShapes {
 
-    enum Paint { case oxygen, ringRim, ringHole, owl, owlEye, halo, bowtie }
+    enum Paint { case oxygen, ringRim, ringHole, owl, owlEye, halo, bowtie, hydrogen, magenta, starlit, dust }
 
     /// The widest the silhouette reaches, in design units — fitted to the
     /// badge's frame.
     static func designSize(of nebula: NamedNebula) -> CGFloat {
         switch nebula {
+        case .orion:            return 16
         case .ring, .dumbbell:  return 14
         case .owl:              return 13
         case .littleDumbbell:   return 13
+        case .m78:              return 12
+        case .deMairan:         return 10
         }
     }
 
@@ -34,6 +37,9 @@ extension GlyphPainter {
         case .owl:            drawOwl(fullDetail: fullDetail)
         case .dumbbell:       drawDumbbell(fullDetail: fullDetail)
         case .littleDumbbell: drawLittleDumbbell(fullDetail: fullDetail)
+        case .orion:          drawOrion(fullDetail: fullDetail)
+        case .deMairan:       drawDeMairan(fullDetail: fullDetail)
+        case .m78:            drawM78(fullDetail: fullDetail)
         }
     }
 
@@ -141,5 +147,90 @@ extension GlyphPainter {
         let bounds = lobes[0].boundingRect.union(lobes[1].boundingRect)
         for lobe in lobes { fill(lobe, bow, over: bounds) }
         glow(width: 4.4, height: 3.6, tilt: tilt, colour: paint(.oxygen).1, peak: 0.75)
+    }
+
+    // MARK: Orion (M42)
+
+    /// A bird of glowing hydrogen, wings spread and drooping south either
+    /// side of a bay; the Fish's Mouth bitten out of its upper edge, where
+    /// De Mairan's Nebula sits across the dust; and a green-white heart
+    /// round the Trapezium.
+    private mutating func drawOrion(fullDetail: Bool) {
+        var bell = Path()
+        bell.move(to: CGPoint(x: 0.4, y: -5.8))
+        bell.addQuadCurve(to: CGPoint(x:  8.0, y: 3.4),  control: CGPoint(x:  6.4, y: -4.6))   // western shoulder
+        bell.addQuadCurve(to: CGPoint(x:  5.4, y: 4.6),  control: CGPoint(x:  8.2, y:  5.0))   // its wing tip
+        bell.addQuadCurve(to: CGPoint(x: -5.6, y: 5.0),  control: CGPoint(x:  0.0, y:  1.0))   // the bay between
+        bell.addQuadCurve(to: CGPoint(x: -8.0, y: 3.6),  control: CGPoint(x: -8.2, y:  5.6))   // the eastern tip
+        bell.addQuadCurve(to: CGPoint(x:  0.4, y: -5.8), control: CGPoint(x: -6.6, y: -4.8))   // eastern shoulder
+        bell.closeSubpath()
+        let mouth = ellipse(at: CGPoint(x: -2.6, y: -4.6), width: 4.6, height: 3.8, tilt: .degrees(25))
+        let body  = bell.subtracting(mouth)
+        let heart = CGPoint(x: 0.4, y: -2.0)
+        let red   = paint(.hydrogen), oxy = paint(.oxygen)
+
+        caseOutline([body])
+        radialFill(body, at: heart, width: 15, height: 14, tilt: .zero,
+                   stops: [(.white, 0), (oxy.1, 0.12), (red.1, 0.36), (red.0, 1)])
+        if fullDetail {
+            // The Trapezium, the four young stars lighting it all.
+            for p in [CGPoint(x: 0.0, y: -2.3), CGPoint(x: 0.8, y: -2.45),
+                      CGPoint(x: 0.2, y: -1.6), CGPoint(x: 1.0, y: -1.75)] {
+                star(at: p, radius: 0.22)
+            }
+        } else {
+            star(at: heart, radius: 0.45)
+        }
+    }
+
+    // MARK: De Mairan's Nebula (M43)
+
+    /// A round pink glow with a dark lane hooking round its eastern side
+    /// — the comma — and a star at its heart.
+    private mutating func drawDeMairan(fullDetail: Bool) {
+        let body = ellipse(at: CGPoint(x: 0.3, y: 0), width: 9, height: 8.4, tilt: .zero)
+        let pink = paint(.magenta)
+
+        caseOutline([body])
+        radialFill(body, at: CGPoint(x: 0.6, y: -0.2), width: 9, height: 8.4, tilt: .zero,
+                   stops: [(.white, 0), (pink.1, 0.3), (pink.0, 1)])
+        clipped(to: body) { inner in
+            inner.blurred(radius: 0.3) {
+                $0.stroke($0.arc(width: 6.4, height: 6.4, from: 0.6 * .pi, to: 1.45 * .pi, tilt: .zero),
+                          colour: inner.paint(.dust).0.opacity(0.85), width: 1.5)
+            }
+        }
+        star(at: CGPoint(x: 0.6, y: -0.2), radius: fullDetail ? 0.35 : 0.5)
+    }
+
+    // MARK: M78
+
+    /// A reflection nebula: dust lit blue by the two stars at its tip, a
+    /// fan opening below them, a dark lane down its western side.
+    private mutating func drawM78(fullDetail: Bool) {
+        // A rounded head round the two stars, opening into a broad fan,
+        // leaning a little east.
+        var fan = Path()
+        fan.move(to: CGPoint(x: -1.6, y: -3.6))
+        fan.addQuadCurve(to: CGPoint(x: 1.8, y: -3.4),  control: CGPoint(x: 0.1, y: -5.6))
+        fan.addQuadCurve(to: CGPoint(x: 5.4, y: 2.8),   control: CGPoint(x: 4.6, y: -1.4))
+        fan.addQuadCurve(to: CGPoint(x: -5.2, y: 3.0),  control: CGPoint(x: 0.0, y: 7.8))
+        fan.addQuadCurve(to: CGPoint(x: -1.6, y: -3.6), control: CGPoint(x: -4.4, y: -1.2))
+        fan.closeSubpath()
+        fan = fan.applying(CGAffineTransform(rotationAngle: Angle.degrees(8).radians))
+        let blue = paint(.starlit)
+
+        caseOutline([fan])
+        radialFill(fan, at: CGPoint(x: 0.6, y: -2.4), width: 14, height: 14, tilt: .zero,
+                   stops: [(.white, 0), (blue.1, 0.3), (blue.0, 1)])
+        // The dark lane down its western side.
+        clipped(to: fan) { inner in
+            inner.blurred(radius: 0.25) {
+                $0.stroke($0.arc(width: 8.6, height: 10, from: -0.3 * .pi, to: 0.32 * .pi, tilt: .degrees(12)),
+                          colour: inner.paint(.dust).0.opacity(0.75), width: fullDetail ? 0.9 : 1.2)
+            }
+        }
+        star(at: CGPoint(x: -0.4, y: -2.9), radius: 0.4)
+        star(at: CGPoint(x:  1.2, y: -2.4), radius: 0.4)
     }
 }

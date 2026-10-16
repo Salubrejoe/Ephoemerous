@@ -188,6 +188,32 @@ struct GlyphPainter {
                 .concatenating(CGAffineTransform(translationX: centre.x, y: centre.y)))
     }
 
+    /// A band along a curve, `startWidth` thick at its root tapering to
+    /// `endWidth` at its tip — an arm, a wing.
+    func taperedBand(from a: CGPoint, control c: CGPoint, to b: CGPoint,
+                     startWidth: CGFloat, endWidth: CGFloat) -> Path {
+        func point(_ t: CGFloat) -> CGPoint {
+            let u = 1 - t
+            return CGPoint(x: u * u * a.x + 2 * u * t * c.x + t * t * b.x,
+                           y: u * u * a.y + 2 * u * t * c.y + t * t * b.y)
+        }
+        var left = [CGPoint](), right = [CGPoint]()
+        for i in 0...24 {
+            let t      = CGFloat(i) / 24
+            let p      = point(t)
+            let ahead  = point(min(1, t + 0.01)), behind = point(max(0, t - 0.01))
+            let dx     = ahead.x - behind.x, dy = ahead.y - behind.y
+            let len    = max(0.0001, sqrt(dx * dx + dy * dy))
+            let half   = (startWidth * (1 - t) + endWidth * t) / 2
+            left.append(CGPoint(x: p.x - dy / len * half, y: p.y + dx / len * half))
+            right.append(CGPoint(x: p.x + dy / len * half, y: p.y - dx / len * half))
+        }
+        var path = Path()
+        path.addLines(left + right.reversed())
+        path.closeSubpath()
+        return path
+    }
+
     /// Part of a centred ellipse's rim, from angle `from` to `to` (y down,
     /// so angles in 0…π run along its lower, nearer side).
     func arc(width: CGFloat, height: CGFloat, from: CGFloat, to: CGFloat, tilt: Angle) -> Path {

@@ -46,8 +46,10 @@ struct DeepSkyObject: Identifiable, Decodable, Hashable {
     /// Which of the six Local Group galaxies this is, if it is one.
     var galaxy: LocalGalaxy? { LocalGalaxy(rawValue: id) }
 
-    /// The galaxy this one orbits, when it's one of Andromeda's companions.
-    var companionOf: LocalGalaxy? { galaxy?.host }
+    /// The id of the object this one is drawn beside — Andromeda for its
+    /// two companions, the Orion Nebula for De Mairan's — so it only shows
+    /// when its host does.
+    var companionOf: String? { galaxy?.host?.rawValue ?? namedNebula?.host?.rawValue }
 
     /// Which of the named nebulae this is, if it has its own silhouette.
     var namedNebula: NamedNebula? { NamedNebula(rawValue: id) }
