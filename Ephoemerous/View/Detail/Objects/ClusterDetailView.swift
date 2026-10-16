@@ -50,11 +50,10 @@ struct ClusterDetailView: View {
         let object = SkyObject.deepSky(cluster)
         let status = SkyStatus.cached(object: object, date: date, observer: state.placeObserver)
         let path   = StarDayPath(object: object, around: date, observer: state.placeObserver)
-        let year   = Calendar.current.component(.year, from: date)
         let stars  = cluster.memberStars
         return VStack(spacing: a.detailGridSpacing) {
             DetailGridLayout(rows: [1, 2, 2]) {
-                ClusterDistanceTile(cluster: cluster, year: year)
+                ClusterDistanceTile(cluster: cluster)
                 RiseSetTile(status: status, path: path)
                 BrightnessTile(magnitude: cluster.mag ?? 6)
                 ClusterSizeTile(arcminutes: cluster.major)
@@ -91,6 +90,19 @@ extension DeepSkyObject {
     }
 }
 
+extension DeepSkyObject {
+    /// The stars the header picks out: the catalogued ones inside its
+    /// radius that sit at its distance — a confirmed member, or a measured
+    /// distance within a quarter of the cluster's. Aldebaran, well in front
+    /// of the Hyades, stays in the field.
+    var heroMembers: [Star] {
+        guard let ly = lightYears else { return memberStars }
+        return memberStars.filter { s in
+            isMember(s) || s.distanceLY.map { abs($0 / ly - 1) <= 0.25 } == true
+        }
+    }
+}
+
 // MARK: - Distance (wide)
 // The number, and the line the star cards draw — Sun on the left, light-
 // years out to the right — with the cluster as a soft band at its
@@ -99,8 +111,6 @@ extension DeepSkyObject {
 // well in front of the Hyades it seems to lead.
 struct ClusterDistanceTile: View {
     let cluster: DeepSkyObject
-    /// The year the sky is drawn for — the light-travel line counts back.
-    let year: Int
 
     var body: some View {
         DetailCard(title: String(localized: "Distance"), symbol: "ruler") {
@@ -113,25 +123,9 @@ struct ClusterDistanceTile: View {
                 if let ly = cluster.lightYears {
                     ClusterDistanceLine(cluster: cluster, lightYears: ly)
                         .frame(maxHeight: .infinity)
-                    Text(lightLine(ly))
-                        .font(.tileLine)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
                 }
             }
         }
-    }
-}
-
-extension ClusterDistanceTile {
-    /// "…left it around 1582." — or, from farther than the calendar runs,
-    /// "…around 540 BC" (there's no year 0, hence the one).
-    fileprivate func lightLine(_ ly: Double) -> String {
-        let left = year - Int(ly.rounded())
-        if left > 0 { return String(localized: "The light you see left it around \(String(left)).") }
-        let bc = Int((Double(1 - left) / 10).rounded()) * 10
-        return String(localized: "The light you see left it around \(String(bc)) BC.")
     }
 }
 
@@ -155,19 +149,40 @@ struct ClusterDistanceLine: View {
         enum Kind { case member, star, neighbour, cluster }
     }
 
+    /// Where the line runs, as a share of the tile's height.
+    private static let axis: CGFloat = 0.55
+    private static let inset: CGFloat = 8
+
     var body: some View {
         let marks = Self.marks(for: cluster, at: lightYears)
+        // LINEAR, Sun to a little past the farthest mark — so the gap
+        // between Aldebaran and the Hyades reads as the gulf it is.
+        let far   = max(lightYears, marks.map(\.ly).max() ?? lightYears) * 1.12
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                line(marks: marks, far: far)
+                // A named nebula sits on the line as its own badge, the way
+                // a star's card draws the star.
+                if let n = cluster.namedNebula {
+                    POILabelView(category: n.category, text: "", nameReveal: 0, sizeScale: 1.1)
+                        .position(x: Self.x(lightYears, far: far, width: geo.size.width),
+                                  y: geo.size.height * Self.axis)
+                }
+            }
+        }
+    }
+
+    private static func x(_ ly: Double, far: Double, width: CGFloat) -> CGFloat {
+        inset + CGFloat(min(ly, far) / far) * (width - inset * 2)
+    }
+
+    private func line(marks: [Mark], far: Double) -> some View {
         Canvas { ctx, size in
             let a     = Artist.shared
-            let y     = size.height * 0.55
-            let inset: CGFloat = 8
-            // LINEAR, Sun to a little past the farthest mark — so the gap
-            // between Aldebaran and the Hyades reads as the gulf it is.
-            let far   = max(lightYears, marks.map(\.ly).max() ?? lightYears) * 1.12
+            let y     = size.height * Self.axis
+            let inset = Self.inset
             let step  = Self.tickStep(for: far)
-            func x(_ ly: Double) -> CGFloat {
-                inset + CGFloat(min(ly, far) / far) * (size.width - inset * 2)
-            }
+            func x(_ ly: Double) -> CGFloat { Self.x(ly, far: far, width: size.width) }
 
             var line = Path()
             line.move(to: CGPoint(x: inset, y: y))
@@ -200,8 +215,10 @@ struct ClusterDistanceLine: View {
             let swarm  = marks.filter { $0.kind == .member }.count
             let spread: CGFloat = 2.7
             let r      = max(7, spread * CGFloat(Double(swarm).squareRoot()) + 4)
-            ctx.fill(Path(ellipseIn: CGRect(x: cx - r, y: y - r, width: 2 * r, height: 2 * r)),
-                     with: .color(tint.opacity(0.25)))
+            if cluster.namedNebula == nil {
+                ctx.fill(Path(ellipseIn: CGRect(x: cx - r, y: y - r, width: 2 * r, height: 2 * r)),
+                         with: .color(tint.opacity(0.25)))
+            }
 
             var onBand = 0
             // Label room taken, as spans along the line — the cluster's own

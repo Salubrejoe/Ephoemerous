@@ -23,6 +23,8 @@ struct SkyHeroScene {
         let magnitude: Double
         let color:     Color
         let isFocus:   Bool
+        /// One of the stars the hero is about — a cluster's members.
+        var isMember:  Bool = false
     }
 
     /// A figure line, with its two stars' magnitudes — the view pulls each
@@ -36,6 +38,9 @@ struct SkyHeroScene {
     let figureStars: [(star: Star, x: Double, y: Double)]
     /// Half-extent the view must show, tangent units (x, y).
     let extent: (x: Double, y: Double)
+    /// Some stars are picked out from the rest — a cluster's members, which
+    /// otherwise vanish into a field drawn to binocular depth.
+    let hasMembers: Bool
 
     /// Faintest star drawn — near the naked-eye limit, so the patch looks
     /// like a dark-sky night rather than a chart.
@@ -45,7 +50,7 @@ struct SkyHeroScene {
     /// pair of binoculars anyway.
     static let deepLimitingMagnitude = 7.0
 
-    init(focus: Focus) {
+    init(focus: Focus, members: Set<String> = []) {
         let stars   = StarDatabase.shared.workableStars
         let figure  = Self.figureSegments(for: focus)
         let centre: SIMD3<Double>
@@ -75,8 +80,10 @@ struct SkyHeroScene {
         dots = stars.compactMap { s in
             guard s.magnitude <= limit, let p = project(s.equatorialVector) else { return nil }
             return Dot(x: p.x, y: p.y, magnitude: s.magnitude,
-                       color: s.spectralClass.color, isFocus: s.id == focusID)
+                       color: s.spectralClass.color, isFocus: s.id == focusID,
+                       isMember: members.contains(s.id))
         }
+        hasMembers = !members.isEmpty
         var seen = Set<String>()
         figureStars = figure.flatMap { [$0.a, $0.b] }
             .filter { seen.insert($0.id).inserted }
@@ -128,8 +135,8 @@ struct SkyHeroView: View {
     /// own there boxed the figure in a rectangle of a different colour.
     var ground: Bool = true
 
-    init(focus: SkyHeroScene.Focus, ground: Bool = true) {
-        scene       = SkyHeroScene(focus: focus)
+    init(focus: SkyHeroScene.Focus, ground: Bool = true, members: Set<String> = []) {
+        scene       = SkyHeroScene(focus: focus, members: members)
         self.ground = ground
     }
 
@@ -157,15 +164,18 @@ struct SkyHeroView: View {
             for dot in scene.dots {
                 let p = point(dot.x, dot.y)
                 guard p.x > -20, p.x < size.width + 20, p.y > -20, p.y < size.height + 20 else { continue }
-                let r = Self.radius(for: dot.magnitude)
-                if dot.magnitude < 2.5 || dot.isFocus {
+                // With members picked out, they glow and the field steps back.
+                let quiet = scene.hasMembers && !dot.isMember
+                let r     = Self.radius(for: dot.magnitude) * (dot.isMember ? 1.3 : 1)
+                if !quiet && (dot.magnitude < 2.5 || dot.isFocus || dot.isMember) {
                     let glow = r * (dot.isFocus ? 7 : 4)
                     ctx.fill(Path(ellipseIn: CGRect(x: p.x - glow, y: p.y - glow, width: glow * 2, height: glow * 2)),
-                             with: .radialGradient(Gradient(colors: [dot.color.opacity(dot.isFocus ? 0.55 : 0.35), .clear]),
+                             with: .radialGradient(Gradient(colors: [dot.color.opacity(dot.isFocus || dot.isMember ? 0.55 : 0.35), .clear]),
                                                    center: p, startRadius: 0, endRadius: glow))
                 }
+                let fade = quiet ? 0.3 : dot.isMember ? 1 : Self.opacity(for: dot.magnitude)
                 ctx.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2)),
-                         with: .color(dot.color.opacity(Self.opacity(for: dot.magnitude))))
+                         with: .color(dot.color.opacity(fade)))
             }
         }
         .background { if ground { Artist.shared.skyHeroGround } }

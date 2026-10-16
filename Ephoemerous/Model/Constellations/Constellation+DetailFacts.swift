@@ -29,11 +29,13 @@ extension Constellation {
     // MARK: Season
 
     /// The figure's height at 21:00 local, mid-month, through `year` — one
-    /// value per month, radians. "When can I see it" is an evening question.
-    func eveningAltitudes(year: Int, from observer: SatelliteSky.Observer) -> [Double] {
+    /// value per month, radians. "When can I see it" is an evening question;
+    /// `later` hours on asks it of the night (3 → midnight, 6 → 3 am).
+    func eveningAltitudes(year: Int, later: Int = 0, from observer: SatelliteSky.Observer) -> [Double] {
         let cal = Calendar.current
         return (1 ... 12).map { month in
-            guard let date = cal.date(from: DateComponents(year: year, month: month, day: 15, hour: 21)),
+            guard let nine = cal.date(from: DateComponents(year: year, month: month, day: 15, hour: 21)),
+                  let date = cal.date(byAdding: .hour, value: later, to: nine),
                   let alt  = SkyObject.constellation(self).altitude(at: date, from: observer)
             else { return -.pi / 2 }
             return alt

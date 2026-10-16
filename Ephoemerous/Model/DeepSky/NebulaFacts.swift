@@ -39,31 +39,6 @@ extension NamedNebula {
         }
     }
 
-    /// Where it is in a star's life.
-    var story: String {
-        kind == .planetary ? String(localized: "A star's last breath")
-                           : String(localized: "Stars being born")
-    }
-
-    /// How its light is made.
-    var shinesBy: String {
-        kind == .reflection ? String(localized: "Dust reflecting starlight")
-                            : String(localized: "Its own glowing gas")
-    }
-
-    /// The star or stars that light it.
-    var litBy: String {
-        switch self {
-        case .ring, .owl, .dumbbell, .littleDumbbell:
-            return String(localized: "A white dwarf at its heart")
-        case .orion:    return String(localized: "The Trapezium")
-        case .deMairan: return String(localized: "NU Orionis")
-        case .m78:      return String(localized: "Two young blue stars")
-        case .carina:   return String(localized: "Eta Carinae and its clusters")
-        case .lagoon:   return String(localized: "9 Sagittarii and Herschel 36")
-        }
-    }
-
     /// Its catalogue entry, for the roster and its own card.
     var object: DeepSkyObject? { DeepSkyCatalog.objects.first { $0.id == rawValue } }
 }

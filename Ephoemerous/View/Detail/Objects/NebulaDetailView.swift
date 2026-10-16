@@ -6,10 +6,9 @@ import LoreKit
 // with the nebula's own badge pinned on the sky, a Find / Constellation
 // row, then the grid —
 //
-//   [        DISTANCE  (wide)        ]   the cluster card's line, in its glow
+//   [        DISTANCE  (wide)        ]   the cluster card's line, its badge on it
 //   [ RISE & SET   ][  BRIGHTNESS    ]
 //   [     SIZE     ][   POSITION     ]   on the sky, in full Moons
-//   [        NEBULA  (facts)         ]   what it is, what lights it
 //   [        NEBULAE  (roster)       ]   the other eight, each opening its card
 //
 // No Pin yet: the favourites store only knows stars, constellations and the
@@ -55,34 +54,19 @@ struct NebulaDetailView: View {
         let sky    = SkyObject.deepSky(object)
         let status = SkyStatus.cached(object: sky, date: date, observer: state.placeObserver)
         let path   = StarDayPath(object: sky, around: date, observer: state.placeObserver)
-        let year   = Calendar.current.component(.year, from: date)
         return VStack(spacing: a.detailGridSpacing) {
             DetailGridLayout(rows: [1, 2, 2]) {
-                ClusterDistanceTile(cluster: object, year: year)
+                ClusterDistanceTile(cluster: object)
                 RiseSetTile(status: status, path: path)
                 BrightnessTile(magnitude: object.mag ?? 6)
                 ClusterSizeTile(arcminutes: object.major)
                 PositionTile(raHours: object.ra / 15, decDegrees: object.dec)
             }
-            FactsTile(title:  String(localized: "Nebula"),
-                      symbol: "cloud",
-                      stats:  nebula.stats)
             NebulaNeighboursTile(neighbours: NamedNebula.allCases
                 .filter { $0 != nebula }
                 .compactMap(\.object)
                 .sorted { ($0.lightYears ?? .infinity) < ($1.lightYears ?? .infinity) })
         }
-    }
-}
-
-// MARK: - Facts
-
-extension NamedNebula {
-    /// The Nebula tile's rows.
-    var stats: [DetailStat] {
-        [DetailStat(label: String(localized: "Story"),     value: story),
-         DetailStat(label: String(localized: "Shines by"), value: shinesBy),
-         DetailStat(label: String(localized: "Lit by"),    value: litBy)]
     }
 }
 

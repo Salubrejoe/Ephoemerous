@@ -22,6 +22,9 @@ extension Constellation {
     /// The whole sky, square degrees.
     static let wholeSkySquareDegrees = 41_252.96
 
+    /// All 88 areas, largest first — the size tile's chart.
+    static let areasLargestFirst: [Double] = iauAreas.values.sorted(by: >)
+
     private static let iauAreas: [String: Double] = [
         "Hya": 1302.844, "Vir": 1294.428, "UMa": 1279.660, "Cet": 1231.411, "Her": 1225.148,
         "Eri": 1137.919, "Peg": 1120.794, "Dra": 1082.952, "Cen": 1060.422, "Aqr":  979.854,

@@ -38,14 +38,6 @@ extension Star {
         return lo...hi
     }
 
-    /// The year the light you see left the star, as a phrase: "1516", or
-    /// "around 500 BC" for the far ones. `nil` without a distance.
-    func lightDepartureYear(seenIn year: Int) -> String? {
-        guard let ly = distanceLY, ly > 0 else { return nil }
-        let left = year - Int(ly.rounded())
-        return left > 0 ? "\(left)" : String(localized: "\(1 - left) BC")
-    }
-
     /// Every star with a known distance — the distance line's population.
     private static let distanceCatalogue: [Star] =
         StarDatabase.shared.workableStars.filter { $0.distanceLY != nil }

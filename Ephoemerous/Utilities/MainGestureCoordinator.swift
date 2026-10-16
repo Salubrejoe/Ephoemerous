@@ -269,6 +269,24 @@ final class MainGestureCoordinator {
         } completion: { if self.releaseID == id { self.commitLive() } }
     }
 
+    /// Comfort-zone pan with a zoom: glide what's at screen point `from`
+    /// onto `to` while scaling to `targetScale` about it — one move, the
+    /// same synced primitive (live pinch + drag, folded on completion).
+    /// Zooming about `to` keeps that point still, so the drag that lands
+    /// `from` there is the gap scaled by the zoom. Caller guarantees
+    /// `isResting`.
+    func focusZoom(from: CGPoint, to: CGPoint, targetScale: CGFloat) {
+        guard scale > 0 else { return }
+        let ep = clampScale(targetScale) / scale
+        releaseID += 1
+        let id = releaseID
+        focal = to
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.88)) {
+            pinch = ep
+            drag  = CGSize(width: ep * (to.x - from.x), height: ep * (to.y - from.y))
+        } completion: { if self.releaseID == id { self.commitLive() } }
+    }
+
     /// Move home, and glide the sky by the same amount — a sky you've
     /// panned keeps its framing relative to the new centre. Mid-gesture only home moves; the release then settles onto it.
     func moveHome(to newHome: CGSize) {

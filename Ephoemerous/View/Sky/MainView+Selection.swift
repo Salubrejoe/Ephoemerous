@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 // MARK: - MainView + selection
 // What happens between a finger and a selected object: hit-testing a tap
@@ -184,12 +185,21 @@ extension MainView {
                                   size:      canvasSize,
                                   viewpoint: app.viewpoint,
                                   sidereal:  app.localSiderealOffset)
+        // Centred on the sky's home, which a lifted iPad card moves trailing.
+        let focus = CGPoint(x: geoSize.width / 2 + sky.home.width, y: geoSize.height / 3)
+
+        // An open cluster is a patch, not a point: centre it and zoom in
+        // until it spans a good part of the screen, so its stars show.
+        if case .deepSky(let d) = obj, d.badgeKind == .cluster,
+           let zoom = clusterFraming(d, camera: camera, screen: geoSize) {
+            sky.focusZoom(from: zoom.at, to: focus, targetScale: zoom.scale)
+            return
+        }
+
         guard let cp = SkyLabObjects.screen(obj, camera: camera,
                                             date:     app.renderedObservationDate,
                                             liveDate: app.liveSpacecraftDate) else { return }
         let objScreen = CGPoint(x: cp.x - overdraw, y: cp.y - overdraw)
-        // Centred on the sky's home, which a lifted iPad card moves trailing.
-        let focus = CGPoint(x: geoSize.width / 2 + sky.home.width, y: geoSize.height / 3)
         let dx = objScreen.x - focus.x
         let dy = objScreen.y - focus.y
         let dist = hypot(dx, dy)
@@ -206,5 +216,26 @@ extension MainView {
         let edge = CGPoint(x: focus.x + dx * k, y: focus.y + dy * k)
         sky.focusPan(dragTarget: CGSize(width:  edge.x - objScreen.x,
                                         height: edge.y - objScreen.y))
+    }
+
+    /// Share of the screen's shorter side a selected cluster is framed to
+    /// span. ▼ TWEAK ▼
+    private static let clusterSpan: CGFloat = 0.45
+
+    /// Where a cluster's centre sits on screen now, and the scale that makes
+    /// it `clusterSpan` of the screen — `nil` off screen, or when it's
+    /// already that big (never zooms out).
+    private func clusterFraming(_ d: DeepSkyObject, camera: SkyCamera,
+                                screen: CGSize) -> (at: CGPoint, scale: CGFloat)? {
+        let v      = d.equatorialVector
+        let radius = (d.major ?? 60) / 2 * .pi / (180 * 60)
+        let pole   = SIMD3<Double>(0, 0, 1)
+        let north  = simd_normalize(pole - v * simd_dot(v, pole))
+        let rim    = simd_normalize(v * cos(radius) + north * sin(radius))
+        guard let c = camera.screen(equatorial: v), let e = camera.screen(equatorial: rim) else { return nil }
+        let across = 2 * hypot(e.x - c.x, e.y - c.y)
+        let want   = Self.clusterSpan * min(screen.width, screen.height)
+        guard across > 1, across < want * 0.9 else { return nil }
+        return (CGPoint(x: c.x - overdraw, y: c.y - overdraw), sky.scale * want / across)
     }
 }

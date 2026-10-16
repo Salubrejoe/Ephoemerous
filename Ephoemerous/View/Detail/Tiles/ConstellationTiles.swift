@@ -61,38 +61,68 @@ struct ConstellationStoryTile: View {
 
 // MARK: Season
 // When it's up in the evening (21:00), month by month, from where you stand
-// — the question everyone asks of a constellation.
+// — the question everyone asks of a constellation. Tap for later in the
+// night: midnight, 3 am, then back to the evening.
 struct ConstellationSeasonTile: View {
 
-    /// One altitude per month, radians.
-    let altitudes: [Double]
-    let month:     Int          // 1…12, now
+    let constellation: Constellation
+    let year:          Int
+    let month:         Int          // 1…12, now
+    let observer:      SatelliteSky.Observer
 
-    private var best: Int { (altitudes.indices.max { altitudes[$0] < altitudes[$1] } ?? 0) + 1 }
+    /// Hours past 9 pm the bars are drawn for. ▼ TWEAK the steps ▼
+    @State private var later = 0
+    private static let steps = [0, 3, 6]
+
+    private var altitudes: [Double] {
+        constellation.eveningAltitudes(year: year, later: later, from: observer)
+    }
 
     var body: some View {
+        let altitudes = altitudes
         DetailCard(title: String(localized: "Season"), symbol: "calendar") {
             VStack(alignment: .leading, spacing: 6) {
-                Text(headline)
+                Text(Self.headline(altitudes))
                     .font(.title3.weight(.medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                bars.frame(maxHeight: .infinity)
-                Text("Evenings at 9 pm")
+                    .contentTransition(.numericText())
+                bars(altitudes).frame(maxHeight: .infinity)
+                Text(hourLine)
                     .font(.tileLine)
                     .foregroundStyle(.secondary)
+                    .contentTransition(.numericText())
             }
+        }
+        .contentShape(.rect)
+        .onTapGesture {
+            let i = Self.steps.firstIndex(of: later) ?? 0
+            withAnimation(.snappy) { later = Self.steps[(i + 1) % Self.steps.count] }
+        }
+        .sensoryFeedback(.selection, trigger: later)
+        .accessibilityHint(Text("Shows later in the night"))
+    }
+
+    /// "Evenings at 9 pm", "At midnight", "Nights at 3 am".
+    private var hourLine: String {
+        switch later {
+        case 0: return String(localized: "Evenings at 9 pm")
+        case 3: return String(localized: "At midnight")
+        default:
+            let hour = Calendar.current.date(from: DateComponents(hour: (21 + later) % 24)) ?? .now
+            return String(localized: "Nights at \(hour.formatted(.dateTime.hour()))")
         }
     }
 
-    private var headline: String {
-        let deg = altitudes.map { $0 * 180 / .pi }
+    private static func headline(_ altitudes: [Double]) -> String {
+        let best = (altitudes.indices.max { altitudes[$0] < altitudes[$1] } ?? 0) + 1
+        let deg  = altitudes.map { $0 * 180 / .pi }
         if deg.allSatisfy({ $0 < 10 }) { return String(localized: "Low all year") }
         if deg.allSatisfy({ $0 > 20 }) { return String(localized: "Up all year") }
         return String(localized: "Best in \(Calendar.current.monthSymbols[best - 1])")
     }
 
-    private var bars: some View {
+    private func bars(_ altitudes: [Double]) -> some View {
         Canvas { ctx, size in
             let n = 12, gap: CGFloat = 3
             let w = (size.width - gap * CGFloat(n - 1)) / CGFloat(n)
@@ -132,7 +162,7 @@ struct ConstellationDepthTile: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                 }
-                DistanceLine(star: nil, companions: stars)
+                DistanceLine(star: nil, companions: stars, zoomed: true)
                     .frame(maxHeight: .infinity)
                 Text(span.map { Self.phrase($0) } ?? String(localized: "No measured distances"))
                     .font(.tileLine)
@@ -143,10 +173,10 @@ struct ConstellationDepthTile: View {
         }
     }
 
-    /// "Neighbours on the sky, 1,300 light-years apart in depth."
+    /// "1,300 light-years apart."
     private static func phrase(_ span: ClosedRange<Double>) -> String {
         let apart = DistanceUnit.lightYears.number(fromLightYears: span.upperBound - span.lowerBound)
-        return String(localized: "Neighbours on the sky, \(apart) light-years apart in depth.")
+        return String(localized: "\(apart) light-years apart")
     }
 }
 
@@ -181,10 +211,16 @@ struct ConstellationBrightestTile: View {
 }
 
 // MARK: Size
-// Its share of the sky, by the IAU's own boundaries, and its rank of 88.
+// Its share of the sky, by the IAU's own boundaries: all 88 as bars,
+// largest at the left, this one lit — and a few everyone knows marked
+// above theirs, so the place on the chart means something.
 struct ConstellationSizeTile: View {
 
     let constellation: Constellation
+
+    /// The familiar ones marked on the chart, spread from big to small.
+    /// ▼ TWEAK ▼
+    private static let references: [Constellation] = [.UMa, .Ori, .Lyr, .Cru]
 
     var body: some View {
         DetailCard(title: String(localized: "Size"), symbol: "square.dashed") {
@@ -196,10 +232,8 @@ struct ConstellationSizeTile: View {
                             .monospacedDigit()
                         Text("sq°").font(.caption).foregroundStyle(.secondary)
                     }
-                    Text(Self.rankText(rank))
-                        .font(.headline)
                     Spacer(minLength: 0)
-                    rankBar(rank).frame(height: 8)
+                    chart(rank).frame(height: 48)
                     Text("\((area / Constellation.wholeSkySquareDegrees * 100).formatted(.number.precision(.fractionLength(1))))% of the whole sky")
                         .font(.tileLine)
                         .foregroundStyle(.secondary)
@@ -210,24 +244,43 @@ struct ConstellationSizeTile: View {
         }
     }
 
-    private static func rankText(_ rank: Int) -> String {
-        switch rank {
-        case 1:  String(localized: "The largest of 88")
-        case 88: String(localized: "The smallest of 88")
-        default: String(localized: "\(rank.formatted(.number)) of 88 by size")
-        }
-    }
-
-    /// 88 ticks, largest at the left; this one lit.
-    private func rankBar(_ rank: Int) -> some View {
+    /// 88 bars as tall as their areas, this one lit; the references' figures
+    /// over their bars.
+    private func chart(_ rank: Int) -> some View {
         Canvas { ctx, size in
-            let w = size.width / 88
-            for i in 0 ..< 88 {
+            let areas = Constellation.areasLargestFirst
+            let top   = areas.first ?? 1
+            let icon: CGFloat = 14
+            let barsH = size.height - icon - 4
+            let w     = size.width / CGFloat(areas.count)
+            func mid(_ r: Int) -> CGFloat { (CGFloat(r) - 0.5) * w }
+            for (i, area) in areas.enumerated() {
                 let lit = i + 1 == rank
-                ctx.fill(Path(CGRect(x: CGFloat(i) * w, y: lit ? 0 : 2, width: max(1, w - 1), height: lit ? size.height : size.height - 4)),
-                         with: .color(lit ? .white : .white.opacity(0.2)))
+                let h   = max(1.5, CGFloat(area / top) * barsH)
+                ctx.fill(Path(CGRect(x: CGFloat(i) * w, y: size.height - h, width: max(1, w - 0.6), height: h)),
+                         with: .color(lit ? .white : .white.opacity(0.22)))
+            }
+            // This one's bar, picked out to the top — a short one is easy
+            // to lose.
+            var stem = Path()
+            stem.move(to: CGPoint(x: mid(rank), y: icon + 4))
+            stem.addLine(to: CGPoint(x: mid(rank), y: size.height))
+            ctx.stroke(stem, with: .color(.white.opacity(0.7)), lineWidth: 1)
+            ctx.draw(Artist.shared.constellationFigure(constellation)
+                        .resizable().renderingMode(.template),
+                     in: CGRect(x: mid(rank) - icon / 2, y: 0, width: icon, height: icon))
+            // The references, quieter, where they don't crowd this one.
+            for ref in Self.references where ref != constellation {
+                guard let r = ref.sizeRank, abs(mid(r) - mid(rank)) > icon + 2 else { continue }
+                let x = min(max(mid(r), icon / 2), size.width - icon / 2)
+                var g = ctx
+                g.opacity = 0.45
+                g.draw(Artist.shared.constellationFigure(ref).resizable().renderingMode(.template),
+                       in: CGRect(x: x - icon / 2, y: 0, width: icon, height: icon))
             }
         }
+        .foregroundStyle(.white)
+        .accessibilityHidden(true)
     }
 }
 

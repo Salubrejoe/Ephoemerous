@@ -39,7 +39,7 @@ struct SunDetailView: View {
             DetailCard(title: String(localized: "Type"), symbol: "thermometer.medium") {
                 VStack(alignment: .leading, spacing: 4) {
                     MiniHRDiagram(star: nil).frame(maxHeight: .infinity)
-                    Text("A G-type main-sequence star — an ordinary one")
+                    Text("Yellow dwarf")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)

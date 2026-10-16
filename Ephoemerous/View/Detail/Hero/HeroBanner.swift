@@ -41,7 +41,7 @@ struct HeroBanner: View {
 
     var body: some View {
         ZStack {
-            SkyHeroView(focus: focus, ground: ground)
+            SkyHeroView(focus: focus, ground: ground, members: members)
             subject
         }
         .frame(height: height)
@@ -104,6 +104,12 @@ struct HeroBanner: View {
             return .point(object.equatorialDirection(at: state.observationDate, from: observer) ?? SIMD3(0, 0, 1),
                           halfField: halfField)
         }
+    }
+
+    /// A cluster's own stars, picked out of the field around them.
+    private var members: Set<String> {
+        guard case .deepSky(let d) = object, d.badgeKind == .cluster else { return [] }
+        return Set(d.heroMembers.map(\.id))
     }
 
     // MARK: Subject

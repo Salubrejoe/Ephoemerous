@@ -66,10 +66,10 @@ struct ConstellationDetailView: View {
             }
             DetailGridLayout(rows: [2, 1, 2]) {
                 RiseSetTile(status: status, path: path)
-                ConstellationSeasonTile(
-                    altitudes: constellation.eveningAltitudes(year: cal.component(.year, from: date),
-                                                              from: state.placeObserver),
-                    month:     cal.component(.month, from: date))
+                ConstellationSeasonTile(constellation: constellation,
+                                        year:          cal.component(.year, from: date),
+                                        month:         cal.component(.month, from: date),
+                                        observer:      state.placeObserver)
                 ConstellationDepthTile(constellation: constellation)
                 if let brightest = stars.first {
                     ConstellationBrightestTile(star: brightest)

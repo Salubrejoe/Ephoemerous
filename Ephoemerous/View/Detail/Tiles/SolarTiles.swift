@@ -40,13 +40,6 @@ struct BodyDistanceTile: View {
                         .frame(height: 34)
                 }
                 Spacer(minLength: 0)
-                if let km = currentKm {
-                    Text("Its light takes \(BodyDistanceUnit.lightTime(km)) to reach you.")
-                        .font(.tileLine)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                }
             }
         }
         .contentShape(.rect)
@@ -152,12 +145,13 @@ struct DaylightTile: View {
                     .minimumScaleFactor(0.7)
                 strip.frame(height: 14)
                 Spacer(minLength: 0)
-                Text(path.alwaysUp   ? String(localized: "The Sun doesn't set today")
-                   : path.alwaysDown ? String(localized: "The Sun doesn't rise today")
-                                     : String(localized: "of sunlight across this day"))
-                    .font(.tileLine)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                if path.alwaysUp || path.alwaysDown {
+                    Text(path.alwaysUp ? String(localized: "The Sun doesn't set today")
+                                       : String(localized: "The Sun doesn't rise today"))
+                        .font(.tileLine)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
         }
     }
@@ -188,9 +182,9 @@ struct DaylightTile: View {
 }
 
 // MARK: Phase (the Moon)
-// Tonight's face, drawn — the lit part in the Moon's own gradient, the dark
-// in black, like its badge — with its name, how much is lit, and what's
-// next: full or new, whichever comes first.
+// Tonight's phase — its name, how much is lit, and what's next: full or
+// new, whichever comes first. The face itself is the header's, not drawn
+// again here.
 struct MoonPhaseTile: View {
 
     let phase:    LunarPhase
@@ -200,10 +194,7 @@ struct MoonPhaseTile: View {
     var body: some View {
         let next = MoonPosition.nextFullAndNew(after: date)
         DetailCard(title: String(localized: "Phase"), symbol: "moonphase.waxing.crescent") {
-            HStack(spacing: 18) {
-                POILabelView(category: .moon, text: "", nameReveal: 0, phase: phase,
-                             sizeScale: Artist.shared.moonPhaseTileScale)
-                    .frame(maxHeight: .infinity)
+            HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(phase.name)
                         .font(.title3.weight(.medium))
@@ -221,7 +212,6 @@ struct MoonPhaseTile: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.leading, 8)
         }
     }
 
@@ -245,8 +235,9 @@ struct MoonPhaseTile: View {
 
 // MARK: Orbit (a planet)
 // The planet and the Earth on their orbits round the Sun, where they are
-// today — radii on a square-root scale, so Neptune's orbit and Earth's both
-// fit — beside how long a lap takes and how far out it runs.
+// today — to scale, each orbit in its own planet's colour (past Saturn the
+// Earth's is a speck round the Sun, and that's the point) — beside how long
+// a lap takes and how far out it runs.
 struct OrbitTile: View {
 
     let planet: Planet
@@ -261,7 +252,6 @@ struct OrbitTile: View {
                 VStack(alignment: .leading, spacing: 4) {
                     if let period = facts.periodPhrase {
                         Text(period).font(.title3.weight(.medium))
-                        Text("for one lap of the Sun").font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
                     if let a = facts.semiMajorAU {
@@ -287,11 +277,11 @@ private struct OrbitDiagram: View {
         Canvas { ctx, size in
             let c    = CGPoint(x: size.width / 2, y: size.height / 2)
             let maxR = min(size.width, size.height) / 2 - 6
-            let top  = sqrt(max(a, 1))
-            func r(_ au: Double) -> CGFloat { CGFloat(sqrt(au) / top) * maxR }
-            func ring(_ radius: CGFloat, _ opacity: Double) {
+            let top  = max(a, 1)
+            func r(_ au: Double) -> CGFloat { max(6, CGFloat(au / top) * maxR) }
+            func ring(_ radius: CGFloat, _ color: Color) {
                 ctx.stroke(Path(ellipseIn: CGRect(x: c.x - radius, y: c.y - radius, width: radius * 2, height: radius * 2)),
-                           with: .color(.white.opacity(opacity)), lineWidth: 1)
+                           with: .color(color.opacity(0.55)), lineWidth: 1)
             }
             func dot(_ lon: Double, _ radius: CGFloat, _ color: Color, _ d: CGFloat) {
                 let p = CGPoint(x: c.x + radius * CGFloat(cos(lon)), y: c.y - radius * CGFloat(sin(lon)))
@@ -299,14 +289,16 @@ private struct OrbitDiagram: View {
                 ctx.stroke(Path(ellipseIn: CGRect(x: p.x - d / 2, y: p.y - d / 2, width: d, height: d)),
                            with: .color(Artist.shared.poiBadgeCasing), lineWidth: 1)
             }
-            let gold = Artist.shared.palette.sun.bottom
-            ring(r(1), 0.25)
-            ring(r(a), 0.45)
+            let gold  = Artist.shared.palette.sun.bottom
+            let blue  = Color(red: 0.45, green: 0.65, blue: 1)
+            let own   = Artist.shared.planetGradient(planet).top
+            ring(r(1), blue)
+            ring(r(a), own)
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - 4, y: c.y - 4, width: 8, height: 8)), with: .color(gold))
             let earth = PlanetPosition.earthHeliocentric(date: date)
-            dot(earth.longitude, r(earth.radius), Color(red: 0.45, green: 0.65, blue: 1), 7)
+            dot(earth.longitude, r(earth.radius), blue, 7)
             if let h = PlanetPosition.heliocentric(planet, date: date) {
-                dot(h.longitude, r(h.radius), Artist.shared.planetGradient(planet).top, 10)
+                dot(h.longitude, r(h.radius), own, 10)
             }
         }
     }
@@ -330,7 +322,12 @@ struct SizeTile: View {
                     .minimumScaleFactor(0.6)
                 Canvas { ctx, size in
                     let ratio = facts.diameterKm / BodyFacts.earthDiameterKm
-                    let big   = min(size.height * 0.85, size.width * 0.5)
+                    // Both discs, the gap and the name fit the width — Venus
+                    // beside an Earth its own size used to push "Earth" off.
+                    let name  = ctx.resolve(Text("Earth").font(.tileTick).foregroundStyle(.tertiary))
+                    let room  = size.width - 14 - name.measure(in: size).width
+                    let share = ratio >= 1 ? 1 + 1 / ratio : 1 + ratio
+                    let big   = max(6, min(size.height * 0.85, room / CGFloat(share)))
                     let body  = ratio >= 1 ? big : max(3, big * CGFloat(ratio))
                     let earth = ratio >= 1 ? max(3, big / CGFloat(ratio)) : big
                     let y = size.height / 2
@@ -342,8 +339,7 @@ struct SizeTile: View {
                              with: .color(Color(red: 0.45, green: 0.65, blue: 1).opacity(0.35)))
                     ctx.stroke(Path(ellipseIn: CGRect(x: ex - earth / 2, y: y - earth / 2, width: earth, height: earth)),
                                with: .color(Color(red: 0.45, green: 0.65, blue: 1).opacity(0.7)), lineWidth: 1)
-                    ctx.draw(Text("Earth").font(.tileTick).foregroundStyle(.tertiary),
-                             at: CGPoint(x: ex + earth / 2 + 4, y: y), anchor: .leading)
+                    ctx.draw(name, at: CGPoint(x: ex + earth / 2 + 4, y: y), anchor: .leading)
                 }
                 .frame(maxHeight: .infinity)
                 Text(facts.sizePhrase)
@@ -413,10 +409,4 @@ struct FactsTile: View {
             }
         }
     }
-}
-
-// MARK: - Knobs
-extension Artist {
-    /// How large the Moon's face is drawn in its phase tile. ▼ TWEAK ▼
-    var moonPhaseTileScale: CGFloat { 5.2 }
 }

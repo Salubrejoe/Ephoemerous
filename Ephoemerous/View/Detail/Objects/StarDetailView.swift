@@ -45,11 +45,10 @@ struct StarDetailView: View {
 
     private var tiles: some View {
         let date   = state.observationDate
-        let year   = Calendar.current.component(.year, from: date)
         let status = SkyStatus.cached(object: .star(star), date: date, observer: state.placeObserver)
         let path   = StarDayPath(object: .star(star), around: date, observer: state.placeObserver)
         return DetailGridLayout(rows: [1, 2, 1, 2]) {
-            StarDistanceTile(star: star, year: year)
+            StarDistanceTile(star: star)
             RiseSetTile(status: status, path: path)
             BrightnessTile(magnitude: star.magnitude)
             StarTypeTile(star: star)

@@ -26,9 +26,6 @@ private extension Font {
 struct StarDistanceTile: View {
 
     let star: Star
-    /// The year the sky is drawn for — the light-travel line counts back
-    /// from it.
-    let year: Int
 
     /// Tap to cycle ly → pc → AU → km. Remembered across stars, so a reader
     /// who thinks in parsecs keeps parsecs.
@@ -38,26 +35,16 @@ struct StarDistanceTile: View {
         let companions = star.distanceCompanions
         DetailCard(title: String(localized: "Distance"), symbol: "ruler") {
             VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(star.distanceLY.map { unit.text(fromLightYears: $0) } ?? "—")
-                        .font(.tileValue)
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .contentTransition(.numericText())
-                    Spacer(minLength: 8)
-                    if companions.isConstellation, let span = Star.span(of: companions.stars + [star]) {
-                        Text("\(star.constellation.localizedName) spans \(unit.number(fromLightYears: span.lowerBound))–\(unit.text(fromLightYears: span.upperBound))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.6)
-                    }
-                }
+                Text(star.distanceLY.map { unit.text(fromLightYears: $0) } ?? "—")
+                    .font(.tileValue)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
                 DistanceLine(star: star, companions: companions.stars)
                     .frame(maxHeight: .infinity)
-                if let left = star.lightDepartureYear(seenIn: year) {
-                    Text("The light you see left it around \(left).")
+                if companions.isConstellation, let span = Star.span(of: companions.stars + [star]) {
+                    Text("\(star.constellation.localizedName) spans \(unit.number(fromLightYears: span.lowerBound))–\(unit.text(fromLightYears: span.upperBound))")
                         .font(.tileLine)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -134,37 +121,57 @@ struct DistanceLine: View {
     /// where every star is a companion and none leads.
     let star:       Star?
     let companions: [Star]
+    /// Zoom the line to the companions' own spread instead of running it
+    /// from the Sun — a constellation's card, where the stars are the story.
+    var zoomed:     Bool = false
 
-    private static let domain = (lo: log10(3.0), hi: log10(3_000.0))
+    /// The line's reach, log light-years: 3 to 3 000 fits every star we
+    /// hold; zoomed, a little past the companions' nearest and farthest.
+    private var domain: (lo: Double, hi: Double) {
+        let known = companions.compactMap(\.distanceLY)
+        guard zoomed, let near = known.min(), let far = known.max() else {
+            return (log10(3.0), log10(3_000.0))
+        }
+        let pad = max(0.08, (log10(far) - log10(near)) * 0.12)
+        return (log10(near) - pad, log10(far) + pad)
+    }
 
     var body: some View {
+        let domain = domain
         Canvas { ctx, size in
             let a    = Artist.shared
             let y    = size.height * 0.55
             let inset: CGFloat = 8
             func x(_ ly: Double) -> CGFloat {
-                let t = (log10(max(3, min(3_000, ly))) - Self.domain.lo) / (Self.domain.hi - Self.domain.lo)
+                let t = (max(domain.lo, min(domain.hi, log10(ly))) - domain.lo) / (domain.hi - domain.lo)
                 return inset + CGFloat(t) * (size.width - inset * 2)
             }
 
-            // The line, from the Sun outward.
             var line = Path()
             line.move(to: CGPoint(x: inset, y: y))
             line.addLine(to: CGPoint(x: size.width - inset, y: y))
             ctx.stroke(line, with: .color(.white.opacity(0.25)), lineWidth: 1)
-            ctx.stroke(Path(ellipseIn: CGRect(x: inset - 3.5, y: y - 3.5, width: 7, height: 7)),
-                       with: .color(.white.opacity(0.6)), lineWidth: 1)
-            ctx.draw(Text("Sun").font(.tileTick).foregroundStyle(.tertiary),
-                     at: CGPoint(x: 0, y: y + 12), anchor: .topLeading)
+            if zoomed {
+                // The Sun is off the left end — say which way it lies.
+                ctx.draw(Text("← Sun").font(.tileTick).foregroundStyle(.tertiary),
+                         at: CGPoint(x: 0, y: y + 12), anchor: .topLeading)
+            } else {
+                // The line, from the Sun outward.
+                ctx.stroke(Path(ellipseIn: CGRect(x: inset - 3.5, y: y - 3.5, width: 7, height: 7)),
+                           with: .color(.white.opacity(0.6)), lineWidth: 1)
+                ctx.draw(Text("Sun").font(.tileTick).foregroundStyle(.tertiary),
+                         at: CGPoint(x: 0, y: y + 12), anchor: .topLeading)
+            }
 
-            for tick in [10.0, 100, 1_000] {
+            let ticks = Self.ticks(in: domain)
+            for tick in ticks {
                 let tx = x(tick)
                 var t = Path()
                 t.move(to: CGPoint(x: tx, y: y - 3))
                 t.addLine(to: CGPoint(x: tx, y: y + 3))
                 ctx.stroke(t, with: .color(.white.opacity(0.35)), lineWidth: 1)
                 // The line's scale is light-years whatever the unit above.
-                let label = tick == 1_000 ? "\(tick.formatted()) ly" : tick.formatted()
+                let label = tick == ticks.last ? "\(tick.formatted()) ly" : tick.formatted()
                 ctx.draw(Text(label).font(.tileTick).foregroundStyle(.tertiary),
                          at: CGPoint(x: tx, y: y + 12), anchor: .top)
             }
@@ -196,6 +203,21 @@ struct DistanceLine: View {
                 ctx.stroke(a.starPath(at: p, radius: 5), with: .color(a.poiBadgeCasing), lineWidth: 1)
             }
         }
+    }
+
+    /// Round ticks inside the reach, light-years — 10 / 100 / 1 000 for the
+    /// full line; on a zoomed one the 1-2-5 steps that fit, at most four,
+    /// and never the "Sun" corner.
+    private static func ticks(in domain: (lo: Double, hi: Double)) -> [Double] {
+        let lo = pow(10, domain.lo), hi = pow(10, domain.hi)
+        let margin = (domain.hi - domain.lo) * 0.12
+        let decades = Int(floor(domain.lo)) ... Int(ceil(domain.hi))
+        for steps in [[1.0], [1, 3], [1, 2, 5], [1, 1.5, 2, 3, 5, 7]].reversed() {
+            let all = decades.flatMap { d in steps.map { $0 * pow(10, Double(d)) } }
+                .filter { $0 > lo && $0 < hi && log10($0) - domain.lo > margin }
+            if all.count <= 4, !all.isEmpty { return all }
+        }
+        return [10, 100, 1_000].filter { $0 > lo && $0 < hi }
     }
 }
 
@@ -306,13 +328,15 @@ private struct DayCurve: View {
 }
 
 // MARK: Brightness
-// Magnitude on the eye's own scale, Sirius to the naked-eye limit.
+// Magnitude on the eye's own scale, Sirius to the naked-eye limit — run
+// further left for what outshines Sirius (Venus, Jupiter), with Sirius
+// marked where it falls.
 /// Shared by stars and planets.
 struct BrightnessTile: View {
 
     let magnitude: Double
 
-    private static let brightest = -1.5     // Sirius
+    private static let sirius    = -1.5
     private static let faintest  =  6.5     // the naked-eye limit
 
     var body: some View {
@@ -338,21 +362,36 @@ struct BrightnessTile: View {
 
     private var scale: some View {
         Canvas { ctx, size in
-            let bar = CGRect(x: 0, y: 4, width: size.width, height: 6)
+            // The knob's radius in from each end, so it never clips.
+            let knob: CGFloat = 6
+            let bar   = CGRect(x: 0, y: 4, width: size.width, height: 6)
+            let lo    = min(Self.sirius, magnitude)
+            func x(_ mag: Double) -> CGFloat {
+                let t = (mag - lo) / (Self.faintest - lo)
+                return knob + CGFloat(max(0, min(1, t))) * (size.width - knob * 2)
+            }
             ctx.fill(Path(roundedRect: bar, cornerRadius: 3),
                      with: .linearGradient(Gradient(colors: [.white, .white.opacity(0.08)]),
                                            startPoint: CGPoint(x: bar.minX, y: 0),
                                            endPoint:   CGPoint(x: bar.maxX, y: 0)))
-            let t  = (magnitude - Self.brightest) / (Self.faintest - Self.brightest)
-            let x  = CGFloat(max(0, min(1, t))) * size.width
-            let p  = CGPoint(x: x, y: bar.midY)
-            ctx.fill(Path(ellipseIn: CGRect(x: x - 6, y: p.y - 6, width: 12, height: 12)),
+            // Sirius, where it isn't the left end.
+            let sx = x(Self.sirius)
+            if sx > knob + 1 {
+                var tick = Path()
+                tick.move(to: CGPoint(x: sx, y: bar.minY - 2))
+                tick.addLine(to: CGPoint(x: sx, y: bar.maxY + 2))
+                ctx.stroke(tick, with: .color(Artist.shared.canvasBackground), lineWidth: 1.5)
+            }
+            let p = CGPoint(x: x(magnitude), y: bar.midY)
+            ctx.fill(Path(ellipseIn: CGRect(x: p.x - 6, y: p.y - 6, width: 12, height: 12)),
                      with: .color(Artist.shared.canvasBackground))
-            ctx.stroke(Path(ellipseIn: CGRect(x: x - 5, y: p.y - 5, width: 10, height: 10)),
+            ctx.stroke(Path(ellipseIn: CGRect(x: p.x - 5, y: p.y - 5, width: 10, height: 10)),
                        with: .color(.white), lineWidth: 2)
-            ctx.draw(Text("Sirius").font(.tileTick).foregroundStyle(.tertiary),
-                     at: CGPoint(x: 0, y: bar.maxY + 4), anchor: .topLeading)
-            ctx.draw(Text("Eye's limit").font(.tileTick).foregroundStyle(.tertiary),
+            let sirius = ctx.resolve(Text("Sirius").font(.tileTick).foregroundStyle(.tertiary))
+            let half   = sirius.measure(in: size).width / 2
+            ctx.draw(sirius, at: CGPoint(x: max(half, sx), y: bar.maxY + 4), anchor: .top)
+            ctx.draw(Text("Eye's limit \(Self.faintest.formatted(.number.precision(.fractionLength(1))))")
+                        .font(.tileTick).foregroundStyle(.tertiary),
                      at: CGPoint(x: size.width, y: bar.maxY + 4), anchor: .topTrailing)
         }
     }
