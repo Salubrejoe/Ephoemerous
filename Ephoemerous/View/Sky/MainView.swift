@@ -109,21 +109,17 @@ struct MainView: View {
         if wasHome { sky.scale = target }
     }
 
-    /// NorthIN zoom floor. iPhone: home itself — no pulling back past the
-    /// fit-to-height default. iPad: opened DOWN to where a favourite
-    /// star's name label is still FULLY revealed — `textIn` plus the 18%
-    /// fade band (see `POILabelView.tierReveal`) — so the wide canvas can
-    /// zoom out further without the favourites going mute.
+    /// NorthIN zoom floor. Compact: home itself — no pulling back past the
+    /// fit-to-height default. Regular width (iPad, iPhone Duo open): opened
+    /// DOWN to where a favourite star's name label is still FULLY revealed
+    /// — `textIn` plus the 18% fade band (see `POILabelView.tierReveal`) —
+    /// so the wide canvas can zoom out further without the favourites
+    /// going mute.
     private func northInMinScale(defaultScale target: CGFloat) -> CGFloat {
-        guard isPad else { return target }
+        guard isRegular else { return target }
         let nameIn = Artist.shared.followedStarTier.textIn * 1.0
         return Swift.min(target, CGFloat(nameIn))
     }
-
-    /// iPad relocates the camera cluster to the top-trailing corner —
-    /// the wide canvas leaves the bottom-trailing slot marooned mid-air
-    /// above the full-width search sheet.
-    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     /// Camera scale/offset captured at the start of a NorthIN↔NorthOUT morph.
     /// The camera glides from these to the committed `sky` target across the

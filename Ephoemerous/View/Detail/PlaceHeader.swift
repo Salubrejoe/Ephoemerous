@@ -30,6 +30,9 @@ struct PlaceHeader: View {
     /// The toolbar's leading button — Share by default.
     var leading:   Leading = .share
     let onDismiss: () -> Void
+    /// False when iPhone Duo's side rail carries share / ✕ instead (see
+    /// `PlaceRail`) — the row keeps just the title, centred on the card.
+    var showsButtons: Bool = true
 
     /// What sits in the toolbar's leading corner.
     enum Leading {
@@ -59,9 +62,11 @@ struct PlaceHeader: View {
                              : a.placeTitleSize.lowerBound
                                + (a.placeTitleSize.upperBound - a.placeTitleSize.lowerBound) * e
         return HStack(alignment: .top) {
-            switch leading {
-            case .share:                     share
-            case .button(let symbol, let action): CircleIconButton(symbol: symbol, action: action)
+            if showsButtons {
+                switch leading {
+                case .share:                     share
+                case .button(let symbol, let action): CircleIconButton(symbol: symbol, action: action)
+                }
             }
             VStack(spacing: 2) {
                 Text(title)
@@ -79,7 +84,9 @@ struct PlaceHeader: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.top, collapsed ? 2 : a.placeTitleHeadroom * e + 4)
-            CircleIconButton(symbol: .xmark, action: onDismiss)
+            if showsButtons {
+                CircleIconButton(symbol: .xmark, action: onDismiss)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, collapsed ? 12 : 14)

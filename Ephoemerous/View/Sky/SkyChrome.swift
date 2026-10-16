@@ -5,9 +5,15 @@ import SwiftUI
 // top, the camera-family capsule, and the transient compass rose.
 //
 // Chrome grammar (current-Maps layout): the context capsule ALONE at
-// top-centre (iPad: bottom-trailing, level with the floating panel); the camera capsule bottom-trailing just above the search bar,
+// top-centre (regular width: bottom-trailing, level with the floating
+// panel); the camera capsule bottom-trailing just above the search bar,
 // in thumb territory; the compass rose on the OPPOSITE edge so it can appear
 // and vanish without nudging the capsule. The sky's centre stays sacred.
+//
+// iPhone Duo, where the system keeps a side rail (outer display, inner
+// display in landscape): the capsule, the camera cluster and the rose move
+// INTO that rail as system toolbar items — see `SkyRail`. The floating
+// versions stand down so nothing is drawn twice.
 //
 // A modifier rather than lines in `MainView.body` because it is a
 // self-contained layer with its own placement rules — and because the body
@@ -18,16 +24,19 @@ struct SkyChrome: ViewModifier {
     /// Visible screen size, for the sheet-riding lift below.
     let viewSize: CGSize
 
-    /// iPad moves the camera cluster to the top-trailing corner — the wide
-    /// canvas leaves the bottom-trailing slot marooned mid-air above the
-    /// full-width search sheet.
-    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
-
     /// Wide window — the floating panel replaces the bottom sheet (same key
-    /// as MainView). A narrow Stage Manager / Slide Over iPad window gets
-    /// the phone's sheet, so the pill must go back to the top with it.
+    /// as MainView), the pill drops to the panel's baseline and the camera
+    /// cluster moves to the top-trailing corner. Keyed on the size class,
+    /// NOT the idiom: iPhone Duo's inner display is an iPhone with a
+    /// regular width, and a narrow Stage Manager / Slide Over iPad window
+    /// is compact and gets the phone's sheet.
     @Environment(\.horizontalSizeClass) private var hSize
-    private var isRegular: Bool { isPad && hSize == .regular }
+    private var isRegular: Bool { hSize == .regular }
+
+    /// iPhone Duo's side rail is up — the chrome lives in it instead of
+    /// floating over the sky. False everywhere else, including the Duo's
+    /// inner display in portrait, which keeps horizontal bars.
+    @State private var hasRail = false
 
     /// The floating panel's inset from the screen edge — chrome on the
     /// same edge lines up with it. Mirrors `FloatingPanel.margin`.
@@ -60,30 +69,32 @@ struct SkyChrome: ViewModifier {
         // transient compass rose on the OPPOSITE edge so it can appear /
         // vanish without nudging the capsule. The sky's centre stays sacred.
         .overlay(alignment: isRegular ? .bottomTrailing : .top) {
-            // iPad: bottom-TRAILING, on the panel's margin and centred on
-            // its parked bar, so the two bottom corners read as one row of
-            // chrome — and bigger, because the phone's 40pt bar is lost on
-            // a 13" canvas.
-            MainToolbar(barHeight: isPad ? Self.padBarHeight : 40)
-                .padding(.horizontal, isPad ? Self.padMargin : 16)
-                .padding(.top,        isRegular ? 0 : 64)
-                .padding(.bottom,     isRegular ? Self.padToolbarBottom : 0)
+            // Regular width: bottom-TRAILING, on the panel's margin and
+            // centred on its parked bar, so the two bottom corners read as
+            // one row of chrome — and bigger, because the phone's 40pt bar
+            // is lost on a 13" canvas.
+            if !hasRail {
+                MainToolbar(barHeight: isRegular ? Self.padBarHeight : 40)
+                    .padding(.horizontal, isRegular ? Self.padMargin : 16)
+                    .padding(.top,        isRegular ? 0 : 64)
+                    .padding(.bottom,     isRegular ? Self.padToolbarBottom : 0)
+            }
         }
-        .overlay(alignment: isPad ? .topTrailing : .bottomTrailing) {
+        .overlay(alignment: isRegular ? .topTrailing : .bottomTrailing) {
             // Hidden while a scene editor is up — camera-mode toggles are
             // noise mid-picking, and the floating date crown owns the
             // bottom stage.
-            if !app.isShowingDatePicker && !app.isShowingLocationPicker {
+            if !hasRail && !app.isShowingDatePicker && !app.isShowingLocationPicker {
                 let lift = sheetLift(gap: 12, rest: 114)
                 CameraClusterCapsule()
                     .padding(.trailing, 16)
-                    // iPad: top-trailing, 64pt down — the corner the
-                    // context capsule left for the bottom edge. iPhone: rides
+                    // Regular: top-trailing, 64pt down — the corner the
+                    // context capsule left for the bottom edge. Compact: rides
                     // the frontmost sheet's top edge — rests above the
                     // search bar (114) and rises 1:1 as the sheet expands.
                     // ▼ TWEAK the rest / gap here ▼
-                    .padding(.top,    isPad ? 64 : 0)
-                    .padding(.bottom, isPad ? 0  : lift)
+                    .padding(.top,    isRegular ? 64 : 0)
+                    .padding(.bottom, isRegular ? 0  : lift)
                     // A sheet PRESENTING publishes its top edge once, not
                     // per-frame like a drag — animate the lift so the pill
                     // glides to meet it instead of snapping. Drag frames
@@ -96,17 +107,26 @@ struct SkyChrome: ViewModifier {
             // Compass rose — self-hides when the sky is upright; tap
             // springs back to North.
             // Rest clears the floating panel (74 + its 20 margin) with air
-            // to spare on iPad; the phone keeps its sheet-relative 124.
-            let roseLift = sheetLift(gap: 22, rest: isPad ? 150 : 124)
-            CompassButton(faceSize: isPad ? 58 : 44)
-                // Same margin as the floating panel below it, so the rose
-                // sits on the card's leading edge rather than 4pt inside it.
-                .padding(.leading, isPad ? Self.padMargin : 16)
-                .padding(.bottom, roseLift)
-                // Same glide as the camera cluster — the bottom chrome
-                // moves as one when a sheet presents.
-                .animation(.snappy(duration: 0.28), value: roseLift)
+            // to spare in regular width; compact keeps its sheet-relative 124.
+            if !hasRail {
+                let roseLift = sheetLift(gap: 22, rest: isRegular ? 150 : 124)
+                CompassButton(faceSize: isRegular ? 58 : 44)
+                    // Same margin as the floating panel below it, so the rose
+                    // sits on the card's leading edge rather than 4pt inside it.
+                    .padding(.leading, isRegular ? Self.padMargin : 16)
+                    .padding(.bottom, roseLift)
+                    // Same glide as the camera cluster — the bottom chrome
+                    // moves as one when a sheet presents.
+                    .animation(.snappy(duration: 0.28), value: roseLift)
+            }
         }
+        // iPhone Duo: the same controls, as rail items.
+        .modifier(SkyRail(isActive: hasRail))
+        .readsSideRail(into: $hasRail)
+        // Re-resolve the locality name whenever the rounded origin changes.
+        // Here, not on the capsule, so it keeps running while the rail
+        // stands in for the capsule.
+        .task(id: app.localityKey) { await app.refreshLocalityAfterSettling() }
     }
 }
 

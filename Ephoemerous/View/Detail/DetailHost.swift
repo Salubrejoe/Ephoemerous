@@ -23,11 +23,16 @@ struct DetailHost: View {
     /// contents swap, which is the Maps idiom on a big screen anyway.
     var stacked: Bool = true
 
+    /// iPhone Duo's side rail is up for this sheet — the bar has to stay
+    /// visible there, it's what carries share / ✕ (see `PlaceRail`).
+    @State private var hasRail = false
+
     var body: some View {
         if stacked {
             NavigationStack {
                 content
-                    .toolbar(.hidden, for: .navigationBar)
+                    .toolbar(hasRail ? .automatic : .hidden, for: .navigationBar)
+                    .readsSideRail(into: $hasRail)
             }
         } else {
             content

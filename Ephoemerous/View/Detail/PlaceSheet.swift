@@ -33,13 +33,20 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
     /// One fold per pull: armed again once the grid is back at rest.
     @State private var pullArmed = true
 
+    /// iPhone Duo's side rail is up for this sheet (the outer display).
+    @State private var hasRail = false
+    /// Share / ✕ ride the rail — never from the floating panel, whose
+    /// buttons belong to the card they close.
+    private var railed: Bool { hasRail && !inPanel }
+
     var body: some View {
         VStack(spacing: 0) {
             PlaceHeader(object:    object,
                         title:     title,
                         subtitle:  subtitle,
                         leading:   leading,
-                        onDismiss: { state.dismissDetail() })
+                        onDismiss: { state.dismissDetail() },
+                        showsButtons: !railed)
             if !collapsed {
                 let heroH = Artist.shared.placeHeroBlockHeight(reveal: state.detailSheetExpansion,
                                                               scale:  heroScale)
@@ -117,7 +124,15 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                 DetailBackdrop().opacity(Double(state.detailSheetExpansion))
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
+        // The bar stays hidden — the header is the bar — except on the
+        // Duo's rail, which IS where the sheet's bar lives.
+        .toolbar(railed ? .automatic : .hidden, for: .navigationBar)
+        .modifier(PlaceRail(isActive:  railed,
+                            object:    object,
+                            title:     title,
+                            leading:   leading,
+                            onDismiss: { state.dismissDetail() }))
+        .readsSideRail(into: $hasRail)
     }
 }
 

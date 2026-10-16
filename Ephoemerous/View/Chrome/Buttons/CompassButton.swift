@@ -26,9 +26,6 @@ struct CompassButton: View {
     /// Crisp tick on reset — same rigid feel as the rotation detent.
     private let resetHaptic = UIImpactFeedbackGenerator(style: .rigid)
 
-    /// Below this the sky reads as aligned: hide the compass.
-    private let alignedEpsilon: Double = 0.5
-
     // Circular face + orbiting-dot geometry. ONE face size across every
     // round control (44 pt) — the 46/44 mismatch was invisible to name and
     // visible to feel.
@@ -46,9 +43,7 @@ struct CompassButton: View {
         // so the chip stays on screen to play the bouncy reset rather than
         // fading out the instant it's tapped. In compass mode it's never
         // "aligned": the dot is a live heading readout, always shown.
-        let aligned = !state.compassMode
-            && abs(state.renderedRotation.degrees) < alignedEpsilon
-            && state._rotationTransition == nil
+        let aligned = state.isSkyUpright
 
         if !aligned {
             Button {
@@ -139,6 +134,21 @@ struct CompassButton: View {
         if x >  180 { x -= 360 }
         if x < -180 { x += 360 }
         return abs(x)
+    }
+}
+
+// MARK: - AppState + upright
+extension AppState {
+    /// The sky reads as aligned — the rose has nothing to reset, so it
+    /// hides. Settled at North AND no spin-back in flight, so the chip
+    /// stays on screen to play the bouncy reset rather than fading out the
+    /// instant it's tapped. In compass mode it's never upright: the dot is
+    /// a live heading readout, always shown. Shared with `SkyRail`, which
+    /// drops the rose's rail item on the same rule.
+    var isSkyUpright: Bool {
+        !compassMode
+            && abs(renderedRotation.degrees) < 0.5
+            && _rotationTransition == nil
     }
 }
 
