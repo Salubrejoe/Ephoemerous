@@ -297,7 +297,7 @@ struct GalaxyNeighboursTile: View {
                 ForEach(Array(neighbours.enumerated()), id: \.element) { i, g in
                     if let obj = g.object {
                         if i > 0 { Divider().opacity(0.4) }
-                        GalaxyLink(object: obj) {
+                        DeepSkyLink(object: obj) {
                             HStack(spacing: 12) {
                                 POILabelView(category: obj.poiCategory, text: "", nameReveal: 0)
                                     .frame(width: 26)
@@ -327,9 +327,9 @@ struct GalaxyNeighboursTile: View {
     }
 }
 
-/// Opens another galaxy's card: pushed in the iPhone sheet, swapped in
+/// Opens another galaxy's or nebula's card: pushed in the iPhone sheet, swapped in
 /// place in the iPad panel (which has no stack) — `StarLink`'s rule.
-struct GalaxyLink<Label: View>: View {
+struct DeepSkyLink<Label: View>: View {
     @Environment(AppState.self)    private var state
     @Environment(\.detailInPanel)  private var inPanel
     let object: DeepSkyObject

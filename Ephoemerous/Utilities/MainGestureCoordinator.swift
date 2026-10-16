@@ -53,6 +53,9 @@ final class MainGestureCoordinator {
     /// Tap hit-test, supplied by the view (it owns the camera + catalogue).
     /// Called with the tap location in screen points.
     @ObservationIgnored var onTap: ((CGPoint) -> Void)?
+    /// The galaxies and nebulae whose badges the sky drew last — a tap
+    /// only finds those, so a companion hidden by its host isn't hit.
+    @ObservationIgnored var shownDeepSky: Set<String> = []
     /// Fired when a camera-manipulation gesture (pan / pinch / rotation /
     /// hold) begins — the view uses it to drop compass mode so grabbing the
     /// canvas hands control back to touch. Runs before the gesture's own

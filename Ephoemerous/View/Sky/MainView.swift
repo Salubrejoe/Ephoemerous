@@ -266,6 +266,9 @@ struct MainView: View {
                         viewSize   = geo.size
                         seedCameraHome(for: geo.size)
                     }
+                    .onChange(of: frame.starLabels.deepSky, initial: true) { _, shown in
+                        sky.shownDeepSky = shown
+                    }
             }
         }
         // Per-frame clock — drives the app's origin/date transitions (the

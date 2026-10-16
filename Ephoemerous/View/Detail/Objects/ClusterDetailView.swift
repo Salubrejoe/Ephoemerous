@@ -105,12 +105,12 @@ struct ClusterDistanceTile: View {
     var body: some View {
         DetailCard(title: String(localized: "Distance"), symbol: "ruler") {
             VStack(alignment: .leading, spacing: 6) {
-                Text(cluster.distance.map { "\(Int($0.rounded()).formatted()) ly" } ?? "—")
+                Text(cluster.lightYears.map { "\(Int($0.rounded()).formatted()) ly" } ?? "—")
                     .font(.tileValue)
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                if let ly = cluster.distance {
+                if let ly = cluster.lightYears {
                     ClusterDistanceLine(cluster: cluster, lightYears: ly)
                         .frame(maxHeight: .infinity)
                     Text(lightLine(ly))
@@ -193,9 +193,10 @@ struct ClusterDistanceLine: View {
 
             // This cluster: a soft patch, its members a little swarm in it
             // (a sunflower spiral — a dozen at one distance still read as a
-            // dozen).
+            // dozen). A nebula's patch is in its own glow.
             let cx     = x(lightYears)
-            let tint   = a.deepSkyGradient(.cluster).bottom
+            let tint   = cluster.namedNebula.map { a.nebulaPaint(a.nebulaMainPaint($0)).1 }
+                         ?? a.deepSkyGradient(.cluster).bottom
             let swarm  = marks.filter { $0.kind == .member }.count
             let spread: CGFloat = 2.7
             let r      = max(7, spread * CGFloat(Double(swarm).squareRoot()) + 4)

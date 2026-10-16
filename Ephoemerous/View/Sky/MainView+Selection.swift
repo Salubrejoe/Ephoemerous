@@ -98,9 +98,11 @@ extension MainView {
             }
 
             // The Local Group galaxies and the named nebulae — tappable
-            // once their badge shows.
+            // only where the sky drew their badge: M43 tucked under the
+            // Orion Nebula's, M32 with Andromeda off screen, aren't hit
+            // (the search sheet still finds them).
             for obj in DeepSkyCatalog.objects where obj.figure != nil {
-                consider(.deepSky(obj), gate: scale >= a.poiStyle(for: obj.poiCategory).badgeIn)
+                consider(.deepSky(obj), gate: sky.shownDeepSky.contains(obj.id))
             }
 
             let tapRadius: CGFloat = 30

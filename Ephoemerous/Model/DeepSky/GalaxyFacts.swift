@@ -104,7 +104,7 @@ extension LocalGalaxy {
 }
 
 extension DeepSkyObject {
-    /// Light-years away: the catalogue's own figure, or for a galaxy its
-    /// published distance (the catalogue holds none for them).
-    var lightYears: Double? { distance ?? galaxy?.distanceLy }
+    /// Light-years away: the catalogue's own figure, or for a galaxy or a
+    /// named nebula its published distance, where the catalogue holds none.
+    var lightYears: Double? { distance ?? galaxy?.distanceLy ?? namedNebula?.publishedDistanceLy }
 }

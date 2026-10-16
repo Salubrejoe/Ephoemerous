@@ -594,7 +594,7 @@ struct SearchSheet: View {
         case .planet:               return String(localized: "Solar system · Planet")
         case .constellation:        return String(localized: "Constellation")
         case .spacecraft:           return String(localized: "Spacecraft")
-        case .deepSky(let d):       return d.galaxy?.kindName ?? d.kindName
+        case .deepSky(let d):       return d.galaxy?.kindName ?? d.namedNebula?.kindName ?? d.kindName
         }
     }
 
