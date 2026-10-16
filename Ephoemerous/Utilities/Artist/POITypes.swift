@@ -148,8 +148,12 @@ enum NamedNebula: String, CaseIterable {
     case orion          = "M42"
     case deMairan       = "M43"
     case m78            = "M78"
+    // The two brightest star-forming clouds left — the eye's, not the
+    // camera's.
+    case carina         = "NGC 3372"
+    case lagoon         = "M8"
 
-    var category: POICategory { .deepSky(.nebula, messier: true, figure: .nebula(self)) }
+    var category: POICategory { .deepSky(.nebula, messier: rawValue.hasPrefix("M"), figure: .nebula(self)) }
 
     /// The nebula this one is drawn beside, where it's part of another.
     var host: NamedNebula? { self == .deMairan ? .orion : nil }

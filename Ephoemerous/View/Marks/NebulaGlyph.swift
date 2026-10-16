@@ -7,13 +7,15 @@ import SwiftUI
 // MARK: - NebulaShapes
 enum NebulaShapes {
 
-    enum Paint { case oxygen, ringRim, ringHole, owl, owlEye, halo, bowtie, hydrogen, magenta, starlit, dust }
+    enum Paint { case oxygen, ringRim, ringHole, owl, owlEye, halo, bowtie, hydrogen, magenta, starlit, dust,
+                      carina, lagoon, etaGlow, youngStar }
 
     /// The widest the silhouette reaches, in design units — fitted to the
     /// badge's frame.
     static func designSize(of nebula: NamedNebula) -> CGFloat {
         switch nebula {
-        case .orion:            return 16
+        case .orion, .carina:   return 16
+        case .lagoon:           return 16
         case .ring, .dumbbell:  return 14
         case .owl:              return 13
         case .littleDumbbell:   return 13
@@ -40,6 +42,8 @@ extension GlyphPainter {
         case .orion:          drawOrion(fullDetail: fullDetail)
         case .deMairan:       drawDeMairan(fullDetail: fullDetail)
         case .m78:            drawM78(fullDetail: fullDetail)
+        case .carina:         drawCarina(fullDetail: fullDetail)
+        case .lagoon:         drawLagoon(fullDetail: fullDetail)
         }
     }
 
@@ -232,5 +236,84 @@ extension GlyphPainter {
         }
         star(at: CGPoint(x: -0.4, y: -2.9), radius: 0.4)
         star(at: CGPoint(x:  1.2, y: -2.4), radius: 0.4)
+    }
+
+    // MARK: Carina (NGC 3372)
+
+    /// A great lumpy magenta cloud with a dark V of dust inside it, opening
+    /// south; Eta Carinae blazing warm at the head of the V, the dark
+    /// Keyhole beside it.
+    private mutating func drawCarina(fullDetail: Bool) {
+        let lumps = [ellipse(at: CGPoint(x:  0.0, y:  0.4), width: 13.4, height: 9.6, tilt: .degrees(-6)),
+                     ellipse(at: CGPoint(x: -3.6, y: -3.2), width: 6.6,  height: 5.4, tilt: .degrees(20)),
+                     ellipse(at: CGPoint(x:  3.6, y: -2.6), width: 5.6,  height: 4.6, tilt: .zero),
+                     ellipse(at: CGPoint(x:  4.4, y:  2.6), width: 6.0,  height: 5.0, tilt: .degrees(-15))]
+        let cloud = lumps.dropFirst().reduce(lumps[0]) { $0.union($1) }
+        let eta   = CGPoint(x: -0.8, y: -1.8)
+        let pink  = paint(.carina)
+
+        caseOutline([cloud])
+        radialFill(cloud, at: eta, width: 17, height: 16, tilt: .zero,
+                   stops: [(.white, 0), (pink.1, 0.3), (pink.0, 1)])
+        // The V, opening south from just below Eta.
+        clipped(to: cloud) { inner in
+            inner.blurred(radius: 0.35) {
+                var v = Path()
+                v.move(to: CGPoint(x: -0.6, y: -0.6))
+                v.addQuadCurve(to: CGPoint(x: -3.0, y: 4.8), control: CGPoint(x: -2.2, y: 1.6))
+                v.addLine(to: CGPoint(x: -1.4, y: 4.9))
+                v.addLine(to: CGPoint(x: -0.2, y: 1.6))
+                v.addLine(to: CGPoint(x: 1.8, y: 4.4))
+                v.addLine(to: CGPoint(x: 3.0, y: 3.8))
+                v.addQuadCurve(to: CGPoint(x: -0.6, y: -0.6), control: CGPoint(x: 1.2, y: 0.8))
+                v.closeSubpath()
+                $0.shade(v, inner.paint(.dust).0.opacity(0.7))
+                if fullDetail {
+                    // The Keyhole, the dark knot beside Eta.
+                    $0.shade($0.ellipse(at: CGPoint(x: 0.4, y: -1.7), width: 1.4, height: 1.0, tilt: .degrees(20)),
+                             inner.paint(.dust).0.opacity(0.8))
+                }
+            }
+        }
+        glow(at: eta, width: 3.0, height: 3.0, tilt: .zero, colour: paint(.etaGlow).0, peak: 0.8)
+        star(at: eta, radius: fullDetail ? 0.4 : 0.55)
+    }
+
+    // MARK: Lagoon (M8)
+
+    /// A long, lumpy salmon cloud with the dark lagoon winding through it,
+    /// widening south: the white Hourglass to the west, a young cluster's
+    /// blue stars to the east.
+    private mutating func drawLagoon(fullDetail: Bool) {
+        let lumps = [ellipse(at: CGPoint(x:  0.0, y:  0.6), width: 15.2, height: 7.6, tilt: .degrees(-8)),
+                     ellipse(at: CGPoint(x:  3.2, y: -1.2), width: 6.8,  height: 6.6, tilt: .zero),
+                     ellipse(at: CGPoint(x: -2.0, y: -1.6), width: 5.0,  height: 4.4, tilt: .degrees(10)),
+                     ellipse(at: CGPoint(x: -4.8, y:  1.8), width: 5.2,  height: 4.6, tilt: .zero)]
+        let cloud     = lumps.dropFirst().reduce(lumps[0]) { $0.union($1) }
+        let hourglass = CGPoint(x: 3.4, y: -0.6)
+        let salmon    = paint(.lagoon)
+
+        caseOutline([cloud])
+        radialFill(cloud, at: hourglass, width: 18, height: 13, tilt: .zero,
+                   stops: [(.white, 0), (salmon.1, 0.28), (salmon.0, 1)])
+        // The lagoon: a dark channel rising out of the south edge, narrowing
+        // as it winds north, gone before it reaches the far side.
+        clipped(to: cloud) { inner in
+            inner.blurred(radius: 0.35) {
+                let lane = $0.taperedBand(from: CGPoint(x: 0.2, y: -2.0), control: CGPoint(x: 1.4, y: 1.2),
+                                          to: CGPoint(x: -0.6, y: 5.2), startWidth: 0.2, endWidth: 2.6)
+                $0.shade(lane, inner.paint(.dust).0.opacity(0.65))
+            }
+        }
+        star(at: hourglass, radius: 0.4)
+        // NGC 6530, the young cluster on the eastern side.
+        let cluster = fullDetail
+            ? [CGPoint(x: -4.6, y: 0.8), CGPoint(x: -3.4, y: 1.8), CGPoint(x: -5.4, y: 2.4),
+               CGPoint(x: -3.8, y: -0.2), CGPoint(x: -2.6, y: 0.8)]
+            : [CGPoint(x: -4.4, y: 0.8), CGPoint(x: -3.2, y: 1.8)]
+        for p in cluster {
+            glow(at: p, width: 1.6, height: 1.6, tilt: .zero, colour: paint(.youngStar).1, peak: 0.8)
+            star(at: p, radius: fullDetail ? 0.2 : 0.28)
+        }
     }
 }

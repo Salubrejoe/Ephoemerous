@@ -16,13 +16,20 @@ import SwiftUI
 //   • De Mairan's (M43)    — a round pink glow hooked by a dark lane, a star
 //                            at its heart
 //   • M78                  — a blue fan of dust lit by two stars at its tip
+// And the two brightest left to the eye:
+//   • Carina (NGC 3372)    — a great magenta cloud split by a dark V, Eta
+//                            Carinae blazing at its head
+//   • Lagoon (M8)          — a long salmon cloud, a dark channel winding
+//                            through it, the white Hourglass on one side and
+//                            a young cluster's blue stars on the other
 // ▼ TWEAK the nebulae here ▼
 extension Artist {
 
     /// Badge width (pt) — the frame the silhouette is fitted into.
     func nebulaBadgeSize(_ n: NamedNebula) -> CGFloat {
         switch n {
-        case .orion:          return 17
+        case .orion, .carina: return 17
+        case .lagoon:         return 16
         case .dumbbell:       return 14
         case .ring, .owl:     return 13
         case .littleDumbbell: return 12
@@ -45,6 +52,10 @@ extension Artist {
         case .magenta:  return (p3(0.720, 0.300, 0.480), p3(1.000, 0.680, 0.760))   // De Mairan's
         case .starlit:  return (p3(0.220, 0.380, 0.780), p3(0.700, 0.840, 1.000))   // M78, dust lit blue
         case .dust:     return (p3(0.110, 0.060, 0.090), p3(0.180, 0.100, 0.130))   // dark lanes
+        case .carina:   return (p3(0.600, 0.190, 0.380), p3(0.980, 0.520, 0.700))   // Carina's magenta
+        case .lagoon:   return (p3(0.720, 0.340, 0.320), p3(1.000, 0.730, 0.620))   // the Lagoon's salmon
+        case .etaGlow:  return (p3(1.000, 0.700, 0.420), p3(1.000, 0.900, 0.760))   // Eta Carinae's warm light
+        case .youngStar:return (p3(0.700, 0.820, 1.000), p3(0.900, 0.950, 1.000))   // the Lagoon's cluster
         }
     }
 
@@ -58,6 +69,8 @@ extension Artist {
         case .orion:          return .hydrogen
         case .deMairan:       return .magenta
         case .m78:            return .starlit
+        case .carina:         return .carina
+        case .lagoon:         return .lagoon
         }
     }
 
