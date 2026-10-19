@@ -40,6 +40,24 @@ struct SkyChrome: ViewModifier {
     /// MainView, which also needs it to fit the sky.
     let hasRail: Bool
 
+    /// iPhone Duo open — flat or folded — where the rail runs down the
+    /// trailing edge of a regular-width screen.
+    private var openDuo: Bool { isRegular && hasRail }
+
+    /// Top-centre on the phone, top-trailing on iPad, top-LEADING on the
+    /// open Duo.
+    private var toolbarAlignment: Alignment {
+        if openDuo { return .topLeading }
+        return isRegular ? .topTrailing : .top
+    }
+
+    /// Folded like a book, the capsule steps over the left page to start
+    /// at the hinge — the right page carries the closed phone's layout.
+    /// Flat open, nothing extra: the screen's leading corner.
+    private var hingeLead: CGFloat {
+        app.skyFold?.maxX ?? 0
+    }
+
     /// The rail stays on the hardware's right in every language.
     @Environment(\.layoutDirection) private var layoutDirection
     private var railEdge: Edge.Set { layoutDirection == .rightToLeft ? .leading : .trailing }
@@ -90,15 +108,18 @@ struct SkyChrome: ViewModifier {
         // bottom-trailing just above the search bar — thumb territory; the
         // transient compass rose on the OPPOSITE edge so it can appear /
         // vanish without nudging the capsule. The sky's centre stays sacred.
-        .overlay(alignment: isRegular ? .topTrailing : .top) {
+        .overlay(alignment: toolbarAlignment) {
             // Regular width: top-TRAILING — bigger, because the phone's
             // 40pt bar is lost on a 13" canvas. The camera cluster takes
             // the bottom-trailing corner, in thumb territory.
             // The Duo's rail is padded off first, so the capsule centres
-            // over the sky beside it, not over the whole screen.
+            // over the sky beside it, not over the whole screen. Open, it
+            // goes top-LEADING (the trailing side is the rail's), meeting
+            // the hinge when the Duo stands like a book.
             let barHeight: CGFloat = isRegular ? Self.padBarHeight : 40
             MainToolbar(barHeight: barHeight)
                 .padding(.horizontal, isRegular ? Self.padMargin : 16)
+                .padding(.leading,    openDuo ? hingeLead : 0)
                 .padding(.top,        toolbarTop(barHeight: barHeight))
                 .padding(railEdge,    app.skyRailWidth)
         }

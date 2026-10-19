@@ -150,6 +150,13 @@ class AppState {
     // takes (0 without one). The sky sizes and centres itself on the area
     // left of it. Published by MainView; see `defaultScale(for:)`.
     var skyRailWidth: CGFloat = 0
+    // iPhone Duo folded like a book — the fold's band in screen points,
+    // nil when flat or closed. Published by MainView.
+    var skyFold: CGRect? = nil
+    // Where the sky composes itself on screen — its home zoom fits this,
+    // its home centre is this one's. Nil for the whole screen. Published by
+    // MainView (see `composedSkyFrame`).
+    var skyFrame: CGRect? = nil
     // iPhone Duo's outer front camera — its vertical centre in screen
     // points, nil where there's none to line up with. The Here / Now
     // capsule centres on it. Published by MainView.

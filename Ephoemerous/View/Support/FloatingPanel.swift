@@ -66,6 +66,9 @@ struct FloatingPanel<Content: View>: View {
     /// Duo's outer display runs the card from the leading margin to the
     /// side rail (see MainView).
     var cardWidth: CGFloat? = nil
+    /// The side the card keeps its margin from — leading on iPad, trailing
+    /// on the open iPhone Duo, beside the rail.
+    var edge: HorizontalEdge = .leading
     /// Reports how open the card is, 0 parked … 1 fully open, live through
     /// a drag — the place card's header follows it as the iPhone sheet's
     /// follows `bottomSheetTop`.
@@ -180,7 +183,7 @@ struct FloatingPanel<Content: View>: View {
             .overlay(alignment: .top) {
                 if showsDragBand { dragBand }
             }
-            .padding(.leading, Self.margin)
+            .padding(edge == .leading ? .leading : .trailing, Self.margin)
             .padding(.bottom,  Self.margin)
             .onChange(of: height, initial: true) { _, h in
                 onExpansion(min(1, max(0, (h - PanelStage.barHeight) / max(1, cap - PanelStage.barHeight))))

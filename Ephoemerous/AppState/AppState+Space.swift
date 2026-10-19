@@ -130,11 +130,13 @@ extension AppState {
     /// screen size before the clock canvas has published `canvasSize` —
     /// the SkyLab camera seeds its home / zoom floor from this at launch
     /// (see `seedCameraHome` in MainView😇).
-    /// The rail (iPhone Duo) is taken off the width first, so the horizon
-    /// fits the sky beside it rather than running under it.
+    /// On iPhone Duo the horizon fits the sky's own frame (`skyFrame`) —
+    /// beside the rail, or on the folded book's right page — rather than
+    /// the whole screen.
     func defaultScale(for size: CGSize) -> Double {
         let pad: Double = 24
-        let shorter = Swift.min(size.width - skyRailWidth, size.height)
+        let frame   = skyFrame?.size ?? size
+        let shorter = Swift.min(frame.width, frame.height)
         guard shorter > 0 else { return AstroConstants.defaultScale }
         return Swift.max(1, (shorter - 2 * pad) / 4)
     }

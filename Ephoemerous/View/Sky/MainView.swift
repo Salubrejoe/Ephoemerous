@@ -90,31 +90,88 @@ struct MainView: View {
     /// own rail.
     private var searchInPanel: Bool { isRegular || hasRail }
 
-    /// The panel's width when it isn't the iPad's fixed card: from the
-    /// leading margin to a margin short of the rail.
+    /// iPhone Duo open, flat or folded: the panel takes the TRAILING side,
+    /// beside the rail — the bottom-trailing corner the closed phone's
+    /// thumb already knows — instead of the iPad's leading corner.
+    private var panelOnTrailing: Bool { isRegular && hasRail }
+
+    /// The panel's width when it isn't the iPad's fixed card. Closed: from
+    /// the leading margin to a margin short of the rail. Folded like a book:
+    /// the iPad card, narrowed if the right page is narrower.
     private var railPanelWidth: CGFloat? {
-        guard !isRegular else { return nil }
-        return viewSize.width - app.skyRailWidth - 2 * FloatingPanel<EmptyView>.margin
+        let margin = FloatingPanel<EmptyView>.margin
+        if !isRegular {
+            return viewSize.width - app.skyRailWidth - 2 * margin
+        }
+        if panelOnTrailing, let page = app.skyFrame {
+            return min(FloatingPanel<EmptyView>.width, page.width - 2 * margin)
+        }
+        return nil
     }
 
-    /// Where the sky centres. A card lifted to medium or large covers the
-    /// leading part of the disk, so home moves trailing by half the card's
-    /// footprint — the disk sits in the middle of the uncovered sky. At
-    /// the bar, or with no card, it is the screen's middle.
+    /// Where the sky composes itself, in screen points — nil for the whole
+    /// screen:
+    ///   closed (rail, compact) — the screen beside the rail
+    ///   folded like a book     — the right page beside the rail: the closed
+    ///                            phone's sky at the closed phone's zoom,
+    ///                            with the left page as extra sky
+    ///   flat open, and every other device — the whole screen, so the sky
+    ///                            centres on the device
+    private var composedSkyFrame: CGRect? {
+        let w = viewSize.width, h = viewSize.height
+        guard hasRail, w > 0 else { return nil }
+        if isRegular, let fold = app.skyFold {
+            let x = fold.maxX
+            return CGRect(x: x, y: 0, width: max(0, w - x - app.skyRailWidth), height: h)
+        }
+        if !isRegular {
+            return CGRect(x: 0, y: 0, width: w - app.skyRailWidth, height: h)
+        }
+        return nil
+    }
+
+    /// Publish the sky's frame and re-seed the home zoom to fit it.
+    private func publishSkyFrame() {
+        let frame = composedSkyFrame
+        guard app.skyFrame != frame else { return }
+        app.skyFrame = frame
+        seedCameraHome(for: viewSize)
+    }
+
+    /// The fold's band while iPhone Duo stands like a book (a vertical
+    /// division), in screen points — nil when flat, closed, or before iOS
+    /// 27.1.
+    private func bookFold(_ proxy: GeometryProxy) -> CGRect? {
+        guard #available(iOS 27.1, *) else { return nil }
+        let origin = proxy.frame(in: .global).origin
+        return proxy.reservedRegions(kind: .division)
+            .filter(\.isActive)
+            .first { $0.frame.height > $0.frame.width }
+            .map { $0.frame.offsetBy(dx: origin.x, dy: origin.y) }
+    }
+
+    /// How far the sky slides for the panel. A card lifted to medium or
+    /// large covers one side of the disk, so home moves away from it by half
+    /// the card's footprint — the disk sits in the middle of the uncovered
+    /// sky. The iPad's card is leading, so the sky slides trailing; the
+    /// open Duo's is trailing, so it slides leading. At the bar, or with no
+    /// card, nothing.
     private var panelHome: CGSize {
         let panelUp = isRegular
             && (app.detailDestination != nil || searchPresented.wrappedValue)
             && panelStage != .bar
         guard panelUp else { return .zero }
-        let shift = FloatingPanel<EmptyView>.footprint / 2
-        return CGSize(width: layoutDirection == .rightToLeft ? -shift : shift, height: 0)
+        let shift   = FloatingPanel<EmptyView>.footprint / 2
+        let towards = panelOnTrailing ? -shift : shift
+        return CGSize(width: layoutDirection == .rightToLeft ? -towards : towards, height: 0)
     }
 
-    /// Where the sky centres, all told: the panel's shift, then half the
-    /// Duo's rail to the left, so the disk sits in the middle of the sky
-    /// beside the rail and the rail stands alone on the trailing edge.
+    /// Where the sky centres, all told: its frame's centre (beside the
+    /// Duo's rail, or on the folded book's right page), then the panel's
+    /// slide.
     private var skyHome: CGSize {
-        CGSize(width: panelHome.width - app.skyRailWidth / 2, height: panelHome.height)
+        let frameShift = app.skyFrame.map { $0.midX - viewSize.width / 2 } ?? 0
+        return CGSize(width: frameShift + panelHome.width, height: panelHome.height)
     }
 
     /// The vertical centre of the front camera the system reserves room
@@ -151,7 +208,7 @@ struct MainView: View {
         let width = hasRail ? right : 0
         guard app.skyRailWidth != width else { return }
         app.skyRailWidth = width
-        seedCameraHome(for: viewSize)
+        publishSkyFrame()
     }
 
 
@@ -380,6 +437,9 @@ struct MainView: View {
                     .onChange(of: railStatusBottom(screen), initial: true) { _, y in
                         app.skyRailStatusBottom = y
                     }
+                    .onChange(of: bookFold(screen), initial: true) { _, fold in
+                        app.skyFold = fold
+                    }
             }
             .ignoresSafeArea()
         }
@@ -413,6 +473,11 @@ struct MainView: View {
         // The card lifting or dropping moves the sky's centre with it —
         // and so does the Duo's rail arriving or leaving.
         .onChange(of: skyHome) { _, home in sky.moveHome(to: home) }
+        // The Duo opening, folding or closing re-frames the sky.
+        .onChange(of: app.skyFold) { publishSkyFrame() }
+        .onChange(of: isRegular)   { publishSkyFrame() }
+        .onChange(of: hasRail)     { publishSkyFrame() }
+        .onChange(of: viewSize)    { publishSkyFrame() }
 
 //        .alert("Return to your location?",
 //               isPresented: Bindable(app)._compassReturnHomePrompt) {
@@ -502,8 +567,10 @@ struct MainView: View {
                 .tracksBottomSheet()
         }
         // Regular width: the same two surfaces, placed rather than
-        // presented, sharing ONE card in the bottom-leading corner.
-        .overlay(alignment: .bottomLeading) {
+        // presented, sharing ONE card in the bottom-leading corner — the
+        // bottom-TRAILING one on the open Duo, beside the rail (which the
+        // safe area already keeps it clear of).
+        .overlay(alignment: panelOnTrailing ? .bottomTrailing : .bottomLeading) {
             // Same rule the sheet obeys: the panel yields while a scene
             // editor owns the screen. `searchPresented` already excludes
             // both pickers; the panel was ignoring it and left a search bar
@@ -514,6 +581,7 @@ struct MainView: View {
                               available: viewSize.height,
                               showsDragBand: app.detailDestination != nil,
                               cardWidth: railPanelWidth,
+                              edge:      panelOnTrailing ? .trailing : .leading,
                               onExpansion: { e in
                                   let v: CGFloat? = app.detailDestination == nil ? nil : e
                                   if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
