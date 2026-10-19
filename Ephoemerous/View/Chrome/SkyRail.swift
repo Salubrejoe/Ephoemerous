@@ -22,11 +22,13 @@ struct SkyRail: ViewModifier {
 
     /// The rail is up — see `readsSideRail(into:)`.
     let isActive: Bool
+    /// The Duo is open (flat or folded) rather than closed.
+    let isOpen:   Bool
 
     func body(content: Content) -> some View {
         if #available(iOS 27.1, *) {
             content.toolbar {
-                if isActive { SkyRailItems(app: app) }
+                if isActive { SkyRailItems(app: app, isOpen: isOpen) }
             }
         } else {
             content
@@ -38,15 +40,17 @@ struct SkyRail: ViewModifier {
 @available(iOS 27.1, *)
 private struct SkyRailItems: ToolbarContent {
 
-    let app: AppState
+    let app:    AppState
+    let isOpen: Bool
 
     var body: some ToolbarContent {
         // Camera toggles are noise mid-picking — same rule as the
-        // floating cluster. And they stand down under a place card: the
-        // floating cluster rides a sheet's top edge, but the rail can't,
-        // and the card's own rail (✕, share) takes that corner.
+        // floating cluster. Closed, they also stand down under a place
+        // card: the cluster sits at the rail's foot, which the card's own
+        // rail (✕, Find, share) takes over. Open, the cluster is at the
+        // rail's TOP, clear of the card, so it stays.
         if !app.isShowingDatePicker && !app.isShowingLocationPicker
-            && app.detailDestination == nil {
+            && (isOpen || app.detailDestination == nil) {
             cameraGroup
         }
         if !app.isSkyUpright {
@@ -58,9 +62,11 @@ private struct SkyRailItems: ToolbarContent {
     /// capsule now. Custom views, so they keep the flip's long-press into
     /// Look and the accent tint that says "engaged".
     private var cameraGroup: some ToolbarContent {
-        // Bottom of the rail — thumb territory, as the floating capsule
-        // sits bottom-trailing everywhere else.
-        ToolbarItemGroup(placement: .bottomBar) {
+        // Closed: the rail's foot — thumb territory, as the floating
+        // capsule sits bottom-trailing everywhere else. Open: the top, under
+        // the clock and battery, leaving the bottom-trailing corner to the
+        // search card and the place card.
+        ToolbarItemGroup(placement: isOpen ? .topBarTrailing : .bottomBar) {
             if app.canShowOrloj {
                 OrlojButton(bare: true)
             }

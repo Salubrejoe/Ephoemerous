@@ -69,6 +69,10 @@ struct FloatingPanel<Content: View>: View {
     /// The side the card keeps its margin from — leading on iPad, trailing
     /// on the open iPhone Duo, beside the rail.
     var edge: HorizontalEdge = .leading
+    /// Sky left above an open card — the status bar and a breath by
+    /// default; the open Duo passes the rail's status block, so a card in
+    /// the trailing corner opens up to just under the clock.
+    var topClearance: CGFloat = 44
     /// Reports how open the card is, 0 parked … 1 fully open, live through
     /// a drag — the place card's header follows it as the iPhone sheet's
     /// follows `bottomSheetTop`.
@@ -124,11 +128,8 @@ struct FloatingPanel<Content: View>: View {
     /// The card sits beside the sky, not over it, so there's no reason to
     /// stop short.
     private var cap: CGFloat {
-        max(200, available - Self.margin - Self.topClearance)
+        max(200, available - Self.margin - topClearance)
     }
-
-    /// Sky left above an open card — the status bar and a breath.
-    private static var topClearance: CGFloat { 44 }
 
     private var dragging: Bool { drag != 0 }
 

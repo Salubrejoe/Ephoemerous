@@ -620,6 +620,7 @@ struct MainView: View {
                               showsDragBand: app.detailDestination != nil,
                               cardWidth: railPanelWidth,
                               edge:      panelOnTrailing ? .trailing : .leading,
+                              topClearance: panelOnTrailing ? (app.skyRailStatusBottom ?? 44) + 8 : 44,
                               onExpansion: { e in
                                   let v: CGFloat? = app.detailDestination == nil ? nil : e
                                   if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
@@ -647,6 +648,10 @@ struct MainView: View {
                 // edge-to-edge) — otherwise it floats a home-indicator higher
                 // and the two corners no longer share a baseline.
                 .ignoresSafeArea(.container, edges: .bottom)
+                // Open Duo: into the true bottom-trailing corner, like the
+                // place card — the rail's foot is empty now its cluster
+                // sits at the top.
+                .ignoresSafeArea(.container, edges: panelOnTrailing ? .trailing : [])
                 .transition(.opacity)
                 #if DEBUG
                 // Screenshot seeding: `-searchOpen` opens the iPad card

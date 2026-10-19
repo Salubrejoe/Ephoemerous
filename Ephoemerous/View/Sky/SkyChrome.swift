@@ -163,7 +163,7 @@ struct SkyChrome: ViewModifier {
             }
         }
         // iPhone Duo: the same controls, as rail items.
-        .modifier(SkyRail(isActive: hasRail))
+        .modifier(SkyRail(isActive: hasRail, isOpen: openDuo))
         // Re-resolve the locality name whenever the rounded origin changes.
         // Here, not on the capsule, so it keeps running while the rail
         // stands in for the capsule.
