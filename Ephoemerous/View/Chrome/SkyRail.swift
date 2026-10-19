@@ -46,9 +46,8 @@ private struct SkyRailItems: ToolbarContent {
     var body: some ToolbarContent {
         // Camera toggles are noise mid-picking — same rule as the
         // floating cluster. Closed, they also stand down under a place
-        // card: the cluster sits at the rail's foot, which the card's own
-        // rail (✕, Find, share) takes over. Open, the cluster is at the
-        // rail's TOP, clear of the card, so it stays.
+        // card: the card's own rail (✕, Find, share) takes the rail's foot.
+        // Open, the card is the iPad's leading panel, so the cluster stays.
         if !app.isShowingDatePicker && !app.isShowingLocationPicker
             && (isOpen || app.detailDestination == nil) {
             cameraGroup
@@ -62,11 +61,9 @@ private struct SkyRailItems: ToolbarContent {
     /// capsule now. Custom views, so they keep the flip's long-press into
     /// Look and the accent tint that says "engaged".
     private var cameraGroup: some ToolbarContent {
-        // Closed: the rail's foot — thumb territory, as the floating
-        // capsule sits bottom-trailing everywhere else. Open: the top, under
-        // the clock and battery, leaving the bottom-trailing corner to the
-        // search card and the place card.
-        ToolbarItemGroup(placement: isOpen ? .topBarTrailing : .bottomBar) {
+        // The rail's foot — thumb territory, as the floating capsule sits
+        // bottom-trailing everywhere else.
+        ToolbarItemGroup(placement: .bottomBar) {
             if app.canShowOrloj {
                 OrlojButton(bare: true)
             }

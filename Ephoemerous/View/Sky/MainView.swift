@@ -90,36 +90,15 @@ struct MainView: View {
     /// own rail.
     private var searchInPanel: Bool { isRegular || hasRail }
 
-    /// iPhone Duo open, flat or folded: the panel takes the TRAILING side,
-    /// beside the rail — the bottom-trailing corner the closed phone's
-    /// thumb already knows — instead of the iPad's leading corner.
-    private var panelOnTrailing: Bool { isRegular && hasRail }
+    /// The place card lives in the floating panel in regular width — the
+    /// iPad, and the open iPhone Duo, which takes the iPad's layout.
+    private var detailInPanel: Bool { isRegular }
 
-    /// The place card lives in the floating panel — iPad only. The open
-    /// Duo keeps the closed phone's SHEET, placed trailing, where the
-    /// system gives it the same side rail (✕ / Find / share), so the card
-    /// is one card in every pose.
-    private var detailInPanel: Bool { isRegular && !hasRail }
-
-    /// The open Duo's place-card sheet: 40% of the screen — the tiles keep
-    /// ~300pt beside the sheet's own rail; a third left them narrower than
-    /// the closed phone's. ▼ TWEAK ▼
-    private var trailingSheetWidth: CGFloat {
-        max(0, viewSize.width * 0.4)
-    }
-
-    /// The panel's width when it isn't the iPad's fixed card. Closed: from
-    /// the leading margin to a margin short of the rail. Folded like a book:
-    /// the iPad card, narrowed if the right page is narrower.
+    /// The panel's width when it isn't the iPad's fixed card: on the closed
+    /// Duo, from the leading margin to a margin short of the rail.
     private var railPanelWidth: CGFloat? {
-        let margin = FloatingPanel<EmptyView>.margin
-        if !isRegular {
-            return viewSize.width - app.skyRailWidth - 2 * margin
-        }
-        if panelOnTrailing, let page = app.skyFrame {
-            return min(FloatingPanel<EmptyView>.width, page.width - 2 * margin)
-        }
-        return nil
+        guard !isRegular else { return nil }
+        return viewSize.width - app.skyRailWidth - 2 * FloatingPanel<EmptyView>.margin
     }
 
     /// Where the sky composes itself, in screen points — nil for the whole
@@ -166,31 +145,16 @@ struct MainView: View {
     }
 
     /// How far the sky slides for the panel. A card lifted to medium or
-    /// large covers one side of the disk, so home moves away from it by half
-    /// the card's footprint — the disk sits in the middle of the uncovered
-    /// sky. The iPad's card is leading, so the sky slides trailing; the
-    /// open Duo's is trailing, so it slides leading. At the bar, or with no
-    /// card, nothing.
+    /// large covers the leading part of the disk, so home moves trailing by
+    /// half the card's footprint — the disk sits in the middle of the
+    /// uncovered sky. At the bar, or with no card, nothing.
     private var panelHome: CGSize {
-        guard cardUp else { return .zero }
-        let cardWidth = panelOnTrailing && app.detailDestination != nil
-            ? trailingSheetWidth
-            : FloatingPanel<EmptyView>.footprint
-        let shift   = cardWidth / 2
-        let towards = panelOnTrailing ? -shift : shift
-        return CGSize(width: layoutDirection == .rightToLeft ? -towards : towards, height: 0)
-    }
-
-    /// A card covers part of the sky: the panel lifted past its bar, or —
-    /// on the open Duo — the trailing place-card sheet lifted past its
-    /// header.
-    private var cardUp: Bool {
-        guard isRegular else { return false }
-        if panelOnTrailing, app.detailDestination != nil {
-            return detailDetent != detailHeaderDetent
-        }
-        return (app.detailDestination != nil || searchPresented.wrappedValue)
+        let panelUp = isRegular
+            && (app.detailDestination != nil || searchPresented.wrappedValue)
             && panelStage != .bar
+        guard panelUp else { return .zero }
+        let shift = FloatingPanel<EmptyView>.footprint / 2
+        return CGSize(width: layoutDirection == .rightToLeft ? -shift : shift, height: 0)
     }
 
     /// Where the sky centres, all told: its frame's centre (beside the
@@ -580,10 +544,6 @@ struct MainView: View {
                 .interactiveDismissDisabled()
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.visible)
-                // Open Duo: beside the rail, where the closed phone's card
-                // sat — and where the system gives a sheet its own rail.
-                .modifier(TrailingSheetPlacement(isActive: panelOnTrailing,
-                                                 width:    trailingSheetWidth))
                 .tracksBottomSheet()
                 .onAppear {
                     detailDetent = .fraction(1.0 / 3.0)
@@ -605,10 +565,8 @@ struct MainView: View {
                 .tracksBottomSheet()
         }
         // Regular width: the same two surfaces, placed rather than
-        // presented, sharing ONE card in the bottom-leading corner — the
-        // bottom-TRAILING one on the open Duo, beside the rail (which the
-        // safe area already keeps it clear of).
-        .overlay(alignment: panelOnTrailing ? .bottomTrailing : .bottomLeading) {
+        // presented, sharing ONE card in the bottom-leading corner.
+        .overlay(alignment: .bottomLeading) {
             // Same rule the sheet obeys: the panel yields while a scene
             // editor owns the screen. `searchPresented` already excludes
             // both pickers; the panel was ignoring it and left a search bar
@@ -619,8 +577,6 @@ struct MainView: View {
                               available: viewSize.height,
                               showsDragBand: app.detailDestination != nil,
                               cardWidth: railPanelWidth,
-                              edge:      panelOnTrailing ? .trailing : .leading,
-                              topClearance: panelOnTrailing ? (app.skyRailStatusBottom ?? 44) + 8 : 44,
                               onExpansion: { e in
                                   let v: CGFloat? = app.detailDestination == nil ? nil : e
                                   if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
@@ -648,10 +604,6 @@ struct MainView: View {
                 // edge-to-edge) — otherwise it floats a home-indicator higher
                 // and the two corners no longer share a baseline.
                 .ignoresSafeArea(.container, edges: .bottom)
-                // Open Duo: into the true bottom-trailing corner, like the
-                // place card — the rail's foot is empty now its cluster
-                // sits at the top.
-                .ignoresSafeArea(.container, edges: panelOnTrailing ? .trailing : [])
                 .transition(.opacity)
                 #if DEBUG
                 // Screenshot seeding: `-searchOpen` opens the iPad card
@@ -787,36 +739,6 @@ struct MainView: View {
                                   || app._perspectiveMorphTransition != nil
                                   || app._lookTransition             != nil
                                   || app.compassMode)
-    }
-}
-
-// MARK: - TrailingSheetPlacement
-// The open iPhone Duo places the place-card sheet on the trailing side,
-// beside the rail — the system then gives it a vertical bar, the same side
-// rail it has on the closed phone. iOS 27+; elsewhere nothing.
-private struct TrailingSheetPlacement: ViewModifier {
-    let isActive: Bool
-    /// 40% of the screen — the system's own width ran to two thirds.
-    let width:    CGFloat
-
-    func body(content: Content) -> some View {
-        if #available(iOS 27.0, *), isActive {
-            content
-                .presentationPlacement(.trailing)
-                .presentationSizing(FixedWidthSizing(width: width))
-        } else {
-            content
-        }
-    }
-}
-
-/// A sheet of a set width; its height is left to the detents.
-private struct FixedWidthSizing: PresentationSizing {
-    let width: CGFloat
-
-    func proposedSize(for root: PresentationSizingRoot,
-                      context: PresentationSizingContext) -> ProposedViewSize {
-        ProposedViewSize(width: width, height: nil)
     }
 }
 
