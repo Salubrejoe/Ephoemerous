@@ -18,13 +18,9 @@ struct ClusterDetailView: View {
     @Environment(AppState.self) var state
     let cluster: DeepSkyObject
 
-    /// "Open cluster · M45", "Open cluster · Caldwell 41".
-    private var subtitle: String { "\(cluster.kindName) · \(cluster.designation)" }
-
     var body: some View {
         PlaceSheet(object:   .deepSky(cluster),
                    title:    cluster.label,
-                   subtitle: subtitle,
                    leading:  .share) {
             tiles
         } actions: {

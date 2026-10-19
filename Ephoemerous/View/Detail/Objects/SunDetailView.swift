@@ -15,8 +15,7 @@ struct SunDetailView: View {
 
     var body: some View {
         PlaceSheet(object:   .sun,
-                   title:    Strings.Bodies.sun,
-                   subtitle: String(localized: "Our star · a yellow dwarf")) {
+                   title:    Strings.Bodies.sun) {
             tiles
         } actions: {
             PlaceActionRow { FindAction(solo: true) }

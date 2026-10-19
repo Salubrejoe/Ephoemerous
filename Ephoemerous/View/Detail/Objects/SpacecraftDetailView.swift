@@ -23,7 +23,6 @@ struct SpacecraftDetailView: View {
     var body: some View {
         PlaceSheet(object:   .spacecraft(craft),
                    title:    craft.displayName,
-                   subtitle: craft.portrait,
                    leading:  .button(.resetClock, { state.commitPickedObservationDate(.now) })) {
             if state.isObservationLive {
                 TimelineView(.periodic(from: .now, by: 1)) { tick in tiles(at: tick.date) }

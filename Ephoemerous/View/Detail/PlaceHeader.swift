@@ -8,8 +8,11 @@ import LoreKit
 // rather than swapping layouts:
 //
 //   {share}     TITLE      {✕}
-//              α Persei
 //          (the object's sky)
+//
+// A card pushed from another (a star from its constellation's roster) has
+// a back button leading of share: {‹}{share}  TITLE  {✕}. The title
+// centres on the whole row either way, never on the gap between buttons.
 //
 // Pulled all the way up the title is big with headroom above it; scrolling
 // the body eases the header back toward its resting size. Folded to the
@@ -26,10 +29,11 @@ struct PlaceHeader: View {
 
     let object:    SkyObject
     let title:     String
-    /// Under the title when the sheet is open — a star's designation.
-    let subtitle:  String
     /// The toolbar's leading button — Share by default.
     var leading:   Leading = .share
+    /// Back to the card this one was pushed from — nil for a card opened
+    /// on its own. Drawn leading of `leading`.
+    var onBack:    (() -> Void)? = nil
     let onDismiss: () -> Void
     /// iPhone Duo's outer display: the sheet's rail carries share (see
     /// `PlaceRail`), and the row is the Duo's own — see `railRow`.
@@ -38,8 +42,8 @@ struct PlaceHeader: View {
     /// Where the row's top sits on screen — the rail row aims its title at
     /// the camera's line from here. Independent of the row's own padding.
     @State private var rowTopOnScreen: CGFloat?
-    /// The rail row's title block (title + subtitle) and the title line
-    /// alone — measured, so the block centres on ✕ and the title on the
+    /// The rail row's title block (title, or title + status line folded)
+    /// and the title line alone — measured, so the block centres on ✕ and the title on the
     /// camera without guessing line heights. Neither moves with its padding.
     @State private var railBlockHeight: CGFloat = 0
     @State private var railTitleHeight: CGFloat = 0
@@ -77,37 +81,51 @@ struct PlaceHeader: View {
 
     // MARK: Toolbar row
 
-    /// {share} TITLE {✕} — the title centred on the buttons' own row, its
-    /// subtitle hung beneath.
+    /// {‹}{share} TITLE {✕} — the title centred on the ROW, not on the gap
+    /// between the buttons: a back button on one side only would otherwise
+    /// push it off centre. Both sides keep clear of the wider button group.
     private func toolbar(_ e: CGFloat) -> some View {
         let a    = Artist.shared
-        let size = titleSize(e)
-        return HStack(alignment: .top) {
-            switch leading {
-            case .share:                     share
-            case .button(let symbol, let action): CircleIconButton(symbol: symbol, action: action)
+        let side = Self.buttonSize * CGFloat(onBack == nil ? 1 : 2)
+                 + (onBack == nil ? 0 : Self.buttonGap)
+        return ZStack(alignment: .top) {
+            titleBlock(e)
+                .frame(maxWidth: .infinity, minHeight: Self.buttonSize)
+                .padding(.horizontal, side + Self.buttonGap)
+                .padding(.top, collapsed ? 2 : a.placeTitleHeadroom * e)
+            HStack(alignment: .top, spacing: Self.buttonGap) {
+                if let onBack { CircleIconButton(symbol: .chevronBackward, action: onBack) }
+                leadingButton
+                Spacer(minLength: 0)
+                CircleIconButton(symbol: .xmark, action: onDismiss)
             }
-            VStack(spacing: 2) {
-                Text(title)
-                    .font(.system(size: size, weight: .bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                if collapsed {
-                    SkyStatusLine(object: object)
-                } else {
-                    Text(subtitle)
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, collapsed ? 2 : a.placeTitleHeadroom * e + 4)
-            CircleIconButton(symbol: .xmark, action: onDismiss)
         }
         .padding(.horizontal, 16)
         .padding(.top, collapsed ? 12 : 14)
     }
+
+    /// The title, over the live status line when folded. Open, the title
+    /// stands alone, centred on the buttons' row.
+    private func titleBlock(_ e: CGFloat) -> some View {
+        VStack(spacing: 2) {
+            Text(title)
+                .font(.system(size: titleSize(e), weight: .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            if collapsed { SkyStatusLine(object: object) }
+        }
+    }
+
+    @ViewBuilder private var leadingButton: some View {
+        switch leading {
+        case .share:                          share
+        case .button(let symbol, let action): CircleIconButton(symbol: symbol, action: action)
+        }
+    }
+
+    /// Header button diameter (`CircleIconLabel`) and the gap between two.
+    private static var buttonSize: CGFloat { 44 }
+    private static var buttonGap:  CGFloat { 8 }
 
     // MARK: Rail row (iPhone Duo)
 
@@ -117,7 +135,7 @@ struct PlaceHeader: View {
     ///
     ///   folded  — title over the status line, centred in the bar and set
     ///             in from the capsule's curve; ✕ centred at its end
-    ///   resting — title and subtitle centred, as a pair, on ✕
+    ///   resting — the title centred on ✕
     ///   raised  — the title rides up to the front camera's line (the sky's
     ///             Here / Now line); ✕ steps down clear of the clock
     ///
@@ -136,14 +154,7 @@ struct PlaceHeader: View {
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
                         railTitleHeight = h
                     }
-                if collapsed {
-                    SkyStatusLine(object: object)
-                } else {
-                    Text(subtitle)
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                if collapsed { SkyStatusLine(object: object) }
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
                 railBlockHeight = h
@@ -154,7 +165,7 @@ struct PlaceHeader: View {
             // Room for ✕ beside the block, so a long title can't run under it.
             .padding(.trailing, closeInset + a.placeRailButton + 12)
             .frame(height: collapsed ? a.placeFoldedHeight : nil)
-            // Open, a full grid gap under the subtitle — the scroll's top
+            // Open, a full grid gap under the title — the scroll's top
             // edge — so header to first tile matches tile to tile.
             .padding(.bottom, collapsed ? 0 : a.detailGridSpacing)
             // ✕ FLOATS over the row rather than standing in it: raised, it

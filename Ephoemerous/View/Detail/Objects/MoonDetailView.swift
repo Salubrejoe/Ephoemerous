@@ -18,8 +18,7 @@ struct MoonDetailView: View {
 
     var body: some View {
         PlaceSheet(object:   .moon,
-                   title:    Strings.Bodies.moon,
-                   subtitle: phase.name) {
+                   title:    Strings.Bodies.moon) {
             tiles
         } actions: {
             PlaceActionRow { FindAction(solo: true) }

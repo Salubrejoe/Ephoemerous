@@ -16,8 +16,7 @@ struct PlanetDetailView: View {
 
     var body: some View {
         PlaceSheet(object:   .planet(planet),
-                   title:    planet.displayName,
-                   subtitle: planet.mythology) {
+                   title:    planet.displayName) {
             tiles
         } actions: {
             PlaceActionRow { FindAction(solo: true) }

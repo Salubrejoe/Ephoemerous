@@ -22,14 +22,10 @@ struct NebulaDetailView: View {
     /// leading corner becomes the way back instead of Share.
     var showsBackChevron: Bool = false
 
-    /// "Planetary nebula · M57", "Emission nebula · NGC 3372".
-    private var subtitle: String { "\(nebula.kindName) · \(object.designation)" }
-
     var body: some View {
         PlaceSheet(object:   .deepSky(object),
                    title:    object.label,
-                   subtitle: subtitle,
-                   leading:  showsBackChevron ? .button(.chevronBackward, { dismiss() }) : .share) {
+                   onBack:   showsBackChevron ? { dismiss() } : nil) {
             tiles
         } actions: {
             PlaceActionRow {

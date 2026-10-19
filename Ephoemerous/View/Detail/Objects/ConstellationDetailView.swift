@@ -25,17 +25,10 @@ struct ConstellationDetailView: View {
     /// The catasterism tile is opt-in: off until the Story button asks.
     @State private var showStory = false
 
-    /// What it depicts and its IAU abbreviation — "Hero · Ori".
-    private var subtitle: String {
-        let entity = Artist.shared.constellationEntity(of: constellation).localizedName
-        return "\(entity) · \(constellation.rawValue)"
-    }
-
     var body: some View {
         PlaceSheet(object:   .constellation(constellation),
                    title:    constellation.localizedName,
-                   subtitle: subtitle,
-                   leading:  showsBackChevron ? .button(.chevronBackward, { dismiss() }) : .share,
+                   onBack:   showsBackChevron ? { dismiss() } : nil,
                    heroScale: Artist.shared.constellationHeroScale) {
             tiles
         } actions: {

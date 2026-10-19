@@ -18,8 +18,9 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
 
     let object:   SkyObject
     let title:    String
-    let subtitle: String
     var leading:  PlaceHeader.Leading = .share
+    /// Back to the card this one was pushed from (see `PlaceHeader`).
+    var onBack:   (() -> Void)? = nil
     var heroScale: CGFloat = 1
     @ViewBuilder let tiles:   () -> Tiles
     @ViewBuilder let actions: () -> Actions
@@ -43,8 +44,8 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
         VStack(spacing: 0) {
             PlaceHeader(object:    object,
                         title:     title,
-                        subtitle:  subtitle,
                         leading:   leading,
+                        onBack:    onBack,
                         onDismiss: { state.dismissDetail() },
                         railed:    railed)
                 // Above the scroll: the Duo's ✕ floats below the header's
@@ -65,7 +66,7 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                                 .padding(.horizontal, 16)
                                 // The Duo's header carries the whole grid gap
                                 // itself (see `railRow`), so the scroll's top
-                                // edge sits a grid gap under the subtitle.
+                                // edge sits a grid gap under the title.
                                 .padding(.top, railed ? 0 : 4)
                                 .padding(.bottom, 24)
                         }

@@ -22,8 +22,7 @@ struct StarDetailView: View {
     var body: some View {
         PlaceSheet(object:   .star(star),
                    title:    star.displayName,
-                   subtitle: star.designation,
-                   leading:  showsBackChevron ? .button(.chevronBackward, { dismiss() }) : .share) {
+                   onBack:   showsBackChevron ? { dismiss() } : nil) {
             tiles
         } actions: {
             PlaceActionRow {

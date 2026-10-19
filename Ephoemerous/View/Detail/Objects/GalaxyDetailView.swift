@@ -24,17 +24,10 @@ struct GalaxyDetailView: View {
     /// leading corner becomes the way back instead of Share.
     var showsBackChevron: Bool = false
 
-    /// "Barred spiral galaxy · M31", "Magellanic spiral galaxy · Dorado".
-    private var subtitle: String {
-        let place = object.isMessier ? object.id : (object.constellation?.localizedName ?? object.id)
-        return "\(galaxy.kindName) · \(place)"
-    }
-
     var body: some View {
         PlaceSheet(object:   .deepSky(object),
                    title:    object.label,
-                   subtitle: subtitle,
-                   leading:  showsBackChevron ? .button(.chevronBackward, { dismiss() }) : .share) {
+                   onBack:   showsBackChevron ? { dismiss() } : nil) {
             tiles
         } actions: {
             PlaceActionRow {
