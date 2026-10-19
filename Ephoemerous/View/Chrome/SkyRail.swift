@@ -2,11 +2,11 @@ import SwiftUI
 
 // MARK: - SkyRail
 // iPhone Duo's side rail. On the outer display — and the inner one in
-// landscape — the system stacks bars down the trailing edge, under the
-// clock and the Dynamic Island. The sky's floating chrome moves INTO that
-// rail as system toolbar items, so the system can keep it clear of the
-// camera, share the column with Live Activities, overflow what won't fit
-// and nudge it off the fold. Everywhere else this adds nothing and
+// landscape — the system stacks bars down one side, under the clock and
+// the Dynamic Island: the trailing edge in portrait, either in landscape.
+// The sky's floating chrome moves INTO that rail as system toolbar items,
+// so the system can keep it clear of the camera, share the column with
+// Live Activities, overflow what won't fit and nudge it off the fold. Everywhere else this adds nothing and
 // `SkyChrome` floats the usual glass.
 //
 // The Here / Now capsule stays a floating capsule over the sky — its
@@ -22,13 +22,14 @@ struct SkyRail: ViewModifier {
 
     /// The rail is up — see `readsSideRail(into:)`.
     let isActive: Bool
-    /// The Duo is open (flat or folded) rather than closed.
-    let isOpen:   Bool
+    /// The place card floats in the panel (the open Duo, the closed one
+    /// in landscape) rather than a sheet with a rail of its own.
+    let cardInPanel: Bool
 
     func body(content: Content) -> some View {
         if #available(iOS 27.1, *) {
             content.toolbar {
-                if isActive { SkyRailItems(app: app, isOpen: isOpen) }
+                if isActive { SkyRailItems(app: app, cardInPanel: cardInPanel) }
             }
         } else {
             content
@@ -40,16 +41,16 @@ struct SkyRail: ViewModifier {
 @available(iOS 27.1, *)
 private struct SkyRailItems: ToolbarContent {
 
-    let app:    AppState
-    let isOpen: Bool
+    let app:         AppState
+    let cardInPanel: Bool
 
     var body: some ToolbarContent {
         // Camera toggles are noise mid-picking — same rule as the
-        // floating cluster. Closed, they also stand down under a place
-        // card: the card's own rail (✕, Find, share) takes the rail's foot.
-        // Open, the card is the iPad's leading panel, so the cluster stays.
+        // floating cluster. They also stand down under a place card in a
+        // sheet: the card's own rail (✕, Find, share) takes the rail's foot.
+        // A card in the floating panel leaves the rail alone, so they stay.
         if !app.isShowingDatePicker && !app.isShowingLocationPicker
-            && (isOpen || app.detailDestination == nil) {
+            && (cardInPanel || app.detailDestination == nil) {
             cameraGroup
         }
         if !app.isSkyUpright {
@@ -90,10 +91,21 @@ extension View {
     /// Writes whether iPhone Duo's side rail is up into `hasRail` — true
     /// when the system can lay bars vertically here, false on every other
     /// device and pose (and before iOS 27.1).
-    @ViewBuilder
     func readsSideRail(into hasRail: Binding<Bool>) -> some View {
+        readsSideRail { hasRail.wrappedValue = $0 != nil }
+    }
+
+    /// Writes the edge iPhone Duo's side rail runs down into `edge` — the
+    /// trailing edge in portrait; in landscape whichever side the system
+    /// picks for the way the phone is turned. Nil where there's no rail.
+    func readsSideRailEdge(into edge: Binding<HorizontalEdge?>) -> some View {
+        readsSideRail { edge.wrappedValue = $0 }
+    }
+
+    @ViewBuilder
+    private func readsSideRail(_ write: @escaping (HorizontalEdge?) -> Void) -> some View {
         if #available(iOS 27.1, *) {
-            modifier(SideRailReader(hasRail: hasRail))
+            modifier(SideRailReader(write: write))
         } else {
             self
         }
@@ -104,11 +116,9 @@ extension View {
 private struct SideRailReader: ViewModifier {
 
     @Environment(\.toolbarVerticalEdge) private var edge
-    @Binding var hasRail: Bool
+    let write: (HorizontalEdge?) -> Void
 
     func body(content: Content) -> some View {
-        content.onChange(of: edge, initial: true) { _, edge in
-            hasRail = edge != nil
-        }
+        content.onChange(of: edge, initial: true) { _, edge in write(edge) }
     }
 }

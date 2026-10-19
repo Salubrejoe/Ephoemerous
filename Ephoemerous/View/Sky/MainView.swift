@@ -80,25 +80,45 @@ struct MainView: View {
     /// The trailing side flips under right-to-left, and the card with it.
     @Environment(\.layoutDirection) private var layoutDirection
 
-    /// iPhone Duo's side rail is up — see `readsSideRail(into:)`.
-    @State private var hasRail = false
+    /// The edge iPhone Duo's side rail runs down, nil where there's none —
+    /// see `readsSideRailEdge(into:)`.
+    @State private var railSide: HorizontalEdge? = nil
+    private var hasRail: Bool { railSide != nil }
+
+    /// A short screen — the closed Duo turned to landscape.
+    @Environment(\.verticalSizeClass) private var vSize
+    private var isShort: Bool { vSize == .compact }
 
     /// Search floats in the panel rather than a sheet: regular width, and
     /// iPhone Duo's outer display, where a system sheet runs under the rail
     /// and the panel can stop at it — so the rail runs top to bottom alone.
-    /// The place card stays a sheet there: its share / ✕ ride the sheet's
-    /// own rail.
     private var searchInPanel: Bool { isRegular || hasRail }
 
     /// The place card lives in the floating panel in regular width — the
-    /// iPad, and the open iPhone Duo, which takes the iPad's layout.
-    private var detailInPanel: Bool { isRegular }
+    /// iPad, and the open iPhone Duo, which takes the iPad's layout — and on
+    /// the closed Duo in landscape, where a sheet would cover the whole
+    /// short screen. Closed in portrait it's a sheet, its share / ✕ riding
+    /// the sheet's own rail.
+    private var detailInPanel: Bool { isRegular || (hasRail && isShort) }
 
-    /// The panel's width when it isn't the iPad's fixed card: on the closed
-    /// Duo, from the leading margin to a margin short of the rail.
+    /// The panel's width when it isn't the iPad's fixed card, on the closed
+    /// Duo: in portrait, from the margin to a margin short of the rail; in
+    /// landscape, half the sky beside the rail, as Maps' landscape card.
     private var railPanelWidth: CGFloat? {
         guard !isRegular else { return nil }
-        return viewSize.width - app.skyRailWidth - 2 * FloatingPanel<EmptyView>.margin
+        let sky = viewSize.width - app.skyRailWidth
+        if isShort { return min(FloatingPanel<EmptyView>.width, sky / 2) }
+        return sky - 2 * FloatingPanel<EmptyView>.margin
+    }
+
+    /// The side the panel floats on: leading, unless the rail took it —
+    /// then the other, so the panel and the rail's cluster mirror each
+    /// other whichever way the closed Duo is turned.
+    private var panelEdge: HorizontalEdge { railSide == .leading ? .trailing : .leading }
+
+    /// The rail is on the screen's physical left.
+    private var railOnLeft: Bool {
+        (railSide == .leading) != (layoutDirection == .rightToLeft)
     }
 
     /// Where the sky composes itself, in screen points — nil for the whole
@@ -119,7 +139,8 @@ struct MainView: View {
             return CGRect(x: fold.midX - page / 2, y: 0, width: page, height: h)
         }
         if !isRegular {
-            return CGRect(x: 0, y: 0, width: w - app.skyRailWidth, height: h)
+            return CGRect(x: railOnLeft ? app.skyRailWidth : 0, y: 0,
+                          width: w - app.skyRailWidth, height: h)
         }
         return nil
     }
@@ -213,19 +234,21 @@ struct MainView: View {
     }
 
     /// How far the sky slides for the panel. A card lifted to large covers
-    /// the leading part of the disk, so home moves trailing by half the
-    /// card's footprint — the disk sits in the middle of the uncovered sky.
-    /// At medium the card keeps to the lower half and the comfort zone
-    /// stays clear above it, so nothing — nor at the bar, nor folded like a
+    /// its side of the disk, so home moves the other way by half the card's
+    /// footprint — the disk sits in the middle of the uncovered sky. At
+    /// medium the card keeps to the lower half and the comfort zone stays
+    /// clear above it, so nothing — nor at the bar, nor folded like a
     /// laptop, where the card keeps below the hinge.
     private var panelHome: CGSize {
-        let panelUp = isRegular
+        let panelUp = (isRegular || (hasRail && isShort))
             && (app.detailDestination != nil || searchPresented.wrappedValue)
             && panelStage == .large
             && app.skyLaptopFold == nil
         guard panelUp else { return .zero }
-        let shift = FloatingPanel<EmptyView>.footprint / 2
-        return CGSize(width: layoutDirection == .rightToLeft ? -shift : shift, height: 0)
+        let margin    = FloatingPanel<EmptyView>.margin
+        let footprint = (railPanelWidth ?? FloatingPanel<EmptyView>.width) + margin
+        let onLeft    = (panelEdge == .leading) != (layoutDirection == .rightToLeft)
+        return CGSize(width: (onLeft ? 1 : -1) * footprint / 2, height: 0)
     }
 
     /// Where the sky centres, all told: its frame's centre (beside the
@@ -261,13 +284,13 @@ struct MainView: View {
             .max()
     }
 
-    /// Publish the rail's width from the safe area it carves out. The rail
-    /// stays on the hardware's right in every language, so it's read off
-    /// whichever edge is physically right. The camera's home zoom is
-    /// re-seeded, since the horizon now fits a narrower sky.
+    /// Publish the rail's width from the safe area it carves out, on the
+    /// edge the system put it. The camera's home zoom is re-seeded, since
+    /// the horizon now fits a narrower sky.
     private func publishRailWidth(_ insets: EdgeInsets) {
-        let right = layoutDirection == .rightToLeft ? insets.leading : insets.trailing
-        let width = hasRail ? right : 0
+        let inset = railSide == .leading ? insets.leading : insets.trailing
+        let width = hasRail ? inset : 0
+        if let railSide, app.skyRailEdge != railSide { app.skyRailEdge = railSide }
         guard app.skyRailWidth != width else { return }
         app.skyRailWidth = width
         publishSkyFrame()
@@ -478,8 +501,8 @@ struct MainView: View {
       // corners. The sky's own layers carry the depth now.
       .background(Artist.shared.canvasBackground)
         .preferredColorScheme(.dark)
-        .modifier(SkyChrome(viewSize: viewSize, hasRail: hasRail))
-        .readsSideRail(into: $hasRail)
+        .modifier(SkyChrome(viewSize: viewSize, hasRail: hasRail, cardInPanel: detailInPanel))
+        .readsSideRailEdge(into: $railSide)
         .ignoresSafeArea()
         // The rail's width, measured where the safe area still counts —
         // the sky itself ignores it, so its own geometry reports no insets.
@@ -489,7 +512,12 @@ struct MainView: View {
                     .onChange(of: safe.safeAreaInsets, initial: true) { _, insets in
                         publishRailWidth(insets)
                     }
-                    .onChange(of: hasRail) { publishRailWidth(safe.safeAreaInsets) }
+                    .onChange(of: railSide) {
+                        publishRailWidth(safe.safeAreaInsets)
+                        // The closed Duo turns; the open one and other
+                        // iPhones may not — see `OrientationLock`.
+                        OrientationLock.refresh()
+                    }
             }
         }
         // The front camera, measured over the WHOLE screen — it sits
@@ -642,8 +670,9 @@ struct MainView: View {
                 .tracksBottomSheet()
         }
         // Regular width: the same two surfaces, placed rather than
-        // presented, sharing ONE card in the bottom-leading corner.
-        .overlay(alignment: .bottomLeading) {
+        // presented, sharing ONE card in a bottom corner — the leading one,
+        // or the trailing one when the closed Duo's rail took the leading.
+        .overlay(alignment: panelEdge == .leading ? .bottomLeading : .bottomTrailing) {
             // Same rule the sheet obeys: the panel yields while a scene
             // editor owns the screen. `searchPresented` already excludes
             // both pickers; the panel was ignoring it and left a search bar
@@ -655,6 +684,8 @@ struct MainView: View {
                               showsDragBand: app.detailDestination != nil,
                               cardWidth: railPanelWidth,
                               topInset: panelTopInset,
+                              edge: panelEdge,
+                              hasMedium: !isShort,
                               onExpansion: { e in
                                   panelExpansion = e
                                   publishPanelExpansion()

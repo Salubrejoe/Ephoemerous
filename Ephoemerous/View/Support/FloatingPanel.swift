@@ -70,6 +70,13 @@ struct FloatingPanel<Content: View>: View {
     /// portrait stops it under the centred Here / Now capsule, or under the
     /// hinge when folded (see MainView).
     var topInset: CGFloat? = nil
+    /// The side the card floats on — leading, except on the closed Duo
+    /// turned so its rail runs down the leading edge (see MainView).
+    var edge: HorizontalEdge = .leading
+    /// Whether the card stops at medium on its way up. A short screen (the
+    /// closed Duo in landscape) has no room for a half card — it goes from
+    /// the bar straight to full height, as Maps' landscape card.
+    var hasMedium: Bool = true
     /// Reports how far past medium the card is, 0 at medium and below … 1
     /// fully open, live through a drag — the place card's header and
     /// picture follow it as the iPhone sheet's follow `bottomSheetTop`.
@@ -137,7 +144,8 @@ struct FloatingPanel<Content: View>: View {
     /// iPhone's medium detent. Never taller than `cap` — folded like a
     /// laptop the cap IS the lower half, and medium and large meet.
     private var medium: CGFloat {
-        min(cap, max(PanelStage.barHeight, available / 2 - Self.margin))
+        guard hasMedium else { return cap }
+        return min(cap, max(PanelStage.barHeight, available / 2 - Self.margin))
     }
 
     /// A stage's resting height.
@@ -217,8 +225,8 @@ struct FloatingPanel<Content: View>: View {
             .overlay(alignment: .top) {
                 if showsDragBand { dragBand }
             }
-            .padding(.leading, Self.margin)
-            .padding(.bottom,  Self.margin)
+            .padding(edge == .leading ? .leading : .trailing, Self.margin)
+            .padding(.bottom, Self.margin)
             .onChange(of: height, initial: true) { _, h in
                 onExpansion(cap - medium < 1 ? 0 : min(1, max(0, (h - medium) / (cap - medium))))
             }

@@ -41,9 +41,9 @@ struct SkyChrome: ViewModifier {
     /// MainView, which also needs it to fit the sky.
     let hasRail: Bool
 
-    /// iPhone Duo open — flat or folded — where the rail runs down the
-    /// trailing edge of a regular-width screen.
-    private var openDuo: Bool { isRegular && hasRail }
+    /// The place card floats in the panel rather than a sheet — the rail
+    /// keeps the camera cluster under it (see `SkyRail`).
+    let cardInPanel: Bool
 
     /// iPhone Duo's inner display in portrait: the hinge runs across the
     /// screen and the status bar's clock holds the top-trailing corner, so
@@ -61,9 +61,9 @@ struct SkyChrome: ViewModifier {
     /// panel stops below it where the two would meet (see MainView).
     static var padToolbarBottom: CGFloat { padToolbarTop + padBarHeight }
 
-    /// The rail stays on the hardware's right in every language.
-    @Environment(\.layoutDirection) private var layoutDirection
-    private var railEdge: Edge.Set { layoutDirection == .rightToLeft ? .leading : .trailing }
+    /// The side the Duo's rail runs down — the system's pick, in layout
+    /// terms (see `AppState.skyRailEdge`).
+    private var railEdge: Edge.Set { app.skyRailEdge == .leading ? .leading : .trailing }
 
     /// The floating panel's inset from the screen edge — chrome on the
     /// same edge lines up with it. Mirrors `FloatingPanel.margin`.
@@ -83,13 +83,23 @@ struct SkyChrome: ViewModifier {
     /// The capsule's drop from the top. On iPhone Duo's outer display it
     /// lines up with the front camera — its centre on the camera's — so the
     /// top row reads as one band with the camera and the rail.
+    /// Turned to landscape the camera sits at one end of the rail — at the
+    /// top, the capsule still meets its line; at the bottom it can't, and
+    /// the capsule keeps the top edge's own inset.
     private func toolbarTop(barHeight: CGFloat) -> CGFloat {
         if isRegular { return Self.padToolbarTop }
         if hasRail, let cameraMidY = app.skyCameraMidY {
-            return max(0, cameraMidY - barHeight / 2)
+            return cameraMidY < Self.cameraBand ? max(0, cameraMidY - barHeight / 2)
+                                                : Self.railToolbarTop
         }
         return Self.phoneToolbarTop
     }
+
+    /// How low the camera may sit and still set the capsule's line.
+    private static var cameraBand: CGFloat { 100 }
+    /// The capsule's drop on the Duo's outer display when the camera isn't
+    /// up there with it. ▼ TWEAK ▼
+    private static var railToolbarTop: CGFloat { 16 }
 
     /// Bottom padding so a floating control rides the frontmost sheet's top
     /// edge (published live in `app.bottomSheetTop`), a `gap` above it.
@@ -164,7 +174,7 @@ struct SkyChrome: ViewModifier {
             }
         }
         // iPhone Duo: the same controls, as rail items.
-        .modifier(SkyRail(isActive: hasRail, isOpen: openDuo))
+        .modifier(SkyRail(isActive: hasRail, cardInPanel: cardInPanel))
         // Re-resolve the locality name whenever the rounded origin changes.
         // Here, not on the capsule, so it keeps running while the rail
         // stands in for the capsule.
@@ -175,7 +185,7 @@ struct SkyChrome: ViewModifier {
 #if DEBUG
 #Preview("Chrome over the sky") {
     Artist.shared.canvasBackground
-        .modifier(SkyChrome(viewSize: CGSize(width: 390, height: 844), hasRail: false))
+        .modifier(SkyChrome(viewSize: CGSize(width: 390, height: 844), hasRail: false, cardInPanel: false))
         .environment(AppState())
 }
 #endif

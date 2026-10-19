@@ -14,6 +14,8 @@ import WidgetKit
 struct EphoemerousApp: App {
     @State private var state: AppState
     @Environment(\.scenePhase) private var scenePhase
+    /// Which ways each window may turn — see `OrientationLock`.
+    @UIApplicationDelegateAdaptor(OrientationLock.self) private var orientationLock
 
     init() {
         let state = AppState()
@@ -55,6 +57,7 @@ struct EphoemerousApp: App {
             // can't inject taps), for App Store captures. Remove freely.
             #if DEBUG
             .task { await seedScreenshotState() }
+            .task { await OrientationLock.seedLandscape() }
             // Badge design bench — see `BadgeGallery`.
             .overlay {
                 if ProcessInfo.processInfo.arguments.contains("-badgeGallery") { BadgeGallery() }

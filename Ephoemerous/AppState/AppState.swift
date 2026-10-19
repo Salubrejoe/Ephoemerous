@@ -150,6 +150,9 @@ class AppState {
     // takes (0 without one). The sky sizes and centres itself on the area
     // left of it. Published by MainView; see `defaultScale(for:)`.
     var skyRailWidth: CGFloat = 0
+    // The edge that rail runs down, in layout terms — trailing in portrait,
+    // the system's pick in landscape. Published by MainView.
+    var skyRailEdge: HorizontalEdge = .trailing
     // iPhone Duo folded like a book — the fold's band in screen points,
     // nil when flat or closed. Published by MainView.
     var skyFold: CGRect? = nil
