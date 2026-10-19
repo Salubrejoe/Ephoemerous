@@ -117,6 +117,19 @@ struct MainView: View {
         CGSize(width: panelHome.width - app.skyRailWidth / 2, height: panelHome.height)
     }
 
+    /// The vertical centre of the front camera the system reserves room
+    /// for (iPhone Duo's outer display), in screen points — nil without
+    /// one, or before iOS 27.1. The occlusions also include the rail's
+    /// status block; the camera is the smallest of them.
+    private func frontCameraMidY(_ proxy: GeometryProxy) -> CGFloat? {
+        guard #available(iOS 27.1, *) else { return nil }
+        let originY = proxy.frame(in: .global).minY
+        return proxy.reservedRegions(kind: .occlusion)
+            .filter(\.isActive)
+            .min { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height }
+            .map { originY + $0.frame.midY }
+    }
+
     /// Publish the rail's width from the safe area it carves out. The rail
     /// stays on the hardware's right in every language, so it's read off
     /// whichever edge is physically right. The camera's home zoom is
@@ -343,6 +356,17 @@ struct MainView: View {
                     }
                     .onChange(of: hasRail) { publishRailWidth(safe.safeAreaInsets) }
             }
+        }
+        // The front camera, measured over the WHOLE screen — it sits
+        // outside the safe area, where a safe-area reader can't see it.
+        .background {
+            GeometryReader { screen in
+                Color.clear
+                    .onChange(of: frontCameraMidY(screen), initial: true) { _, y in
+                        app.skyCameraMidY = y
+                    }
+            }
+            .ignoresSafeArea()
         }
         // LOOK mode: holding the phone overhead, belly down, arms it (the
         // ring draws itself); lowering it before the ring closes cancels.

@@ -128,6 +128,7 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
         // Duo's rail, which IS where the sheet's bar lives.
         .toolbar(railed ? .automatic : .hidden, for: .navigationBar)
         .modifier(PlaceRail(isActive:  railed,
+                            collapsed: collapsed,
                             object:    object,
                             title:     title,
                             leading:   leading,

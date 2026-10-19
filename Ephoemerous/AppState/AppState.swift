@@ -150,6 +150,10 @@ class AppState {
     // takes (0 without one). The sky sizes and centres itself on the area
     // left of it. Published by MainView; see `defaultScale(for:)`.
     var skyRailWidth: CGFloat = 0
+    // iPhone Duo's outer front camera — its vertical centre in screen
+    // points, nil where there's none to line up with. The Here / Now
+    // capsule centres on it. Published by MainView.
+    var skyCameraMidY: CGFloat? = nil
 
     // MARK: - Star state  (logic → AppState+Stars.swift)
     // Persisted to iCloud on every change via the didSet — keeping

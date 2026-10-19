@@ -42,8 +42,11 @@ private struct SkyRailItems: ToolbarContent {
 
     var body: some ToolbarContent {
         // Camera toggles are noise mid-picking — same rule as the
-        // floating cluster.
-        if !app.isShowingDatePicker && !app.isShowingLocationPicker {
+        // floating cluster. And they stand down under a place card: the
+        // floating cluster rides a sheet's top edge, but the rail can't,
+        // and the card's own rail (✕, share) takes that corner.
+        if !app.isShowingDatePicker && !app.isShowingLocationPicker
+            && app.detailDestination == nil {
             cameraGroup
         }
         if !app.isSkyUpright {
@@ -55,7 +58,9 @@ private struct SkyRailItems: ToolbarContent {
     /// capsule now. Custom views, so they keep the flip's long-press into
     /// Look and the accent tint that says "engaged".
     private var cameraGroup: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarTrailing) {
+        // Bottom of the rail — thumb territory, as the floating capsule
+        // sits bottom-trailing everywhere else.
+        ToolbarItemGroup(placement: .bottomBar) {
             if app.canShowOrloj {
                 OrlojButton(bare: true)
             }

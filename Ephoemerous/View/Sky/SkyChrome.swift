@@ -49,10 +49,26 @@ struct SkyChrome: ViewModifier {
     private static let padMargin: CGFloat = 16
     /// The iPad's Here / Now capsule height. ▼ TWEAK ▼
     private static let padBarHeight: CGFloat = 52
-    /// The capsule sits as far from the bottom edge as from the trailing
-    /// one — the same margin the panel keeps on its two edges — so the
-    /// bottom row reads as one even inset, panel and pill on one baseline.
-    private static var padToolbarBottom: CGFloat { padMargin }
+    /// Regular width: the camera cluster sits as far from the bottom edge
+    /// as from the trailing one — the margin the panel keeps on its two
+    /// edges — so the bottom row reads as one even inset.
+    private static var padClusterBottom: CGFloat { padMargin }
+    /// Regular width: the Here / Now capsule's drop from the top edge,
+    /// clear of the status bar. ▼ TWEAK ▼
+    private static var padToolbarTop: CGFloat { 40 }
+    /// Compact: the capsule's drop from the top edge. ▼ TWEAK ▼
+    private static var phoneToolbarTop: CGFloat { 64 }
+
+    /// The capsule's drop from the top. On iPhone Duo's outer display it
+    /// lines up with the front camera — its centre on the camera's — so the
+    /// top row reads as one band with the camera and the rail.
+    private func toolbarTop(barHeight: CGFloat) -> CGFloat {
+        if isRegular { return Self.padToolbarTop }
+        if hasRail, let cameraMidY = app.skyCameraMidY {
+            return max(0, cameraMidY - barHeight / 2)
+        }
+        return Self.phoneToolbarTop
+    }
 
     /// Bottom padding so a floating control rides the frontmost sheet's top
     /// edge (published live in `app.bottomSheetTop`), a `gap` above it.
@@ -74,20 +90,19 @@ struct SkyChrome: ViewModifier {
         // bottom-trailing just above the search bar — thumb territory; the
         // transient compass rose on the OPPOSITE edge so it can appear /
         // vanish without nudging the capsule. The sky's centre stays sacred.
-        .overlay(alignment: isRegular ? .bottomTrailing : .top) {
-            // Regular width: bottom-TRAILING, on the panel's margin and
-            // centred on its parked bar, so the two bottom corners read as
-            // one row of chrome — and bigger, because the phone's 40pt bar
-            // is lost on a 13" canvas.
+        .overlay(alignment: isRegular ? .topTrailing : .top) {
+            // Regular width: top-TRAILING — bigger, because the phone's
+            // 40pt bar is lost on a 13" canvas. The camera cluster takes
+            // the bottom-trailing corner, in thumb territory.
             // The Duo's rail is padded off first, so the capsule centres
             // over the sky beside it, not over the whole screen.
-            MainToolbar(barHeight: isRegular ? Self.padBarHeight : 40)
+            let barHeight: CGFloat = isRegular ? Self.padBarHeight : 40
+            MainToolbar(barHeight: barHeight)
                 .padding(.horizontal, isRegular ? Self.padMargin : 16)
-                .padding(.top,        isRegular ? 0 : 64)
-                .padding(.bottom,     isRegular ? Self.padToolbarBottom : 0)
+                .padding(.top,        toolbarTop(barHeight: barHeight))
                 .padding(railEdge,    app.skyRailWidth)
         }
-        .overlay(alignment: isRegular ? .topTrailing : .bottomTrailing) {
+        .overlay(alignment: .bottomTrailing) {
             // Hidden while a scene editor is up — camera-mode toggles are
             // noise mid-picking, and the floating date crown owns the
             // bottom stage.
@@ -95,13 +110,12 @@ struct SkyChrome: ViewModifier {
                 let lift = sheetLift(gap: 12, rest: 114)
                 CameraClusterCapsule()
                     .padding(.trailing, 16)
-                    // Regular: top-trailing, 64pt down — the corner the
-                    // context capsule left for the bottom edge. Compact: rides
+                    // Regular: bottom-trailing on the panel's margin, the
+                    // corner the capsule left for the top. Compact: rides
                     // the frontmost sheet's top edge — rests above the
                     // search bar (114) and rises 1:1 as the sheet expands.
                     // ▼ TWEAK the rest / gap here ▼
-                    .padding(.top,    isRegular ? 64 : 0)
-                    .padding(.bottom, isRegular ? 0  : lift)
+                    .padding(.bottom, isRegular ? Self.padClusterBottom : lift)
                     // A sheet PRESENTING publishes its top edge once, not
                     // per-frame like a drag — animate the lift so the pill
                     // glides to meet it instead of snapping. Drag frames

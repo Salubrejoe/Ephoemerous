@@ -24,11 +24,14 @@ struct CompassModeButton: View {
     private let faceSize: CGFloat = 44
 
     var body: some View {
-        // No gyro → nothing to follow; don't offer the control at all.
-        if MotionService.shared.isAvailable {
+        // No gyro → nothing to follow; don't offer the control at all —
+        // except in the simulator, where it stands in (inert) so layouts
+        // look like the device's.
+        if isOffered {
             let on = state.compassMode
 
             let button = Button {
+                guard MotionService.shared.isAvailable else { return }
                 haptic.impactOccurred()
                 state.toggleCompassMode()
             } label: {
@@ -58,6 +61,19 @@ struct CompassModeButton: View {
                 ).interactive(), in: .circle)
             }
         }
+    }
+}
+
+extension CompassModeButton {
+    /// Shown where there's a heading to follow — and always in the
+    /// simulator, as an inert stand-in, so the cluster's layout can be
+    /// judged there.
+    private var isOffered: Bool {
+        #if targetEnvironment(simulator)
+        true
+        #else
+        MotionService.shared.isAvailable
+        #endif
     }
 }
 

@@ -3,10 +3,13 @@ import LoreKit
 
 // MARK: - PlaceRail
 // A place card's share / ✕ on iPhone Duo's outer display, where a sheet's
-// bar runs down the side rail like the sky's (see `SkyRail`). The HIG's
-// rail order: Close at the top, the card's actions after it. A pushed card
-// (a star opened from its constellation's roster) gets the system's own
-// Back button there, so the header's chevron isn't repeated.
+// bar runs down the side rail like the sky's (see `SkyRail`). Close at the
+// top; the card's own action at the BOTTOM, where it sits concentric with
+// the device's corner, well clear of ✕. Folded to its header the card is
+// too short for both — the system would fold them into a "…" — so only ✕
+// stays. A pushed card (a star opened from its constellation's roster)
+// gets the system's own Back button there, so the header's chevron isn't
+// repeated.
 //
 // The action row (Pin / Find / …) stays in the card — those are the
 // card's own buttons, with words, and words stay horizontal.
@@ -15,6 +18,8 @@ struct PlaceRail: ViewModifier {
     @Environment(AppState.self) private var state
 
     let isActive:  Bool
+    /// The card is folded to its header — ✕ alone.
+    let collapsed: Bool
     let object:    SkyObject
     let title:     String
     let leading:   PlaceHeader.Leading
@@ -27,8 +32,10 @@ struct PlaceRail: ViewModifier {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close", systemImage: LoreSymbol.xmark.rawValue, action: onDismiss)
                     }
-                    ToolbarItem(placement: .primaryAction) {
-                        leadingItem
+                    if !collapsed {
+                        ToolbarItem(placement: .bottomBar) {
+                            leadingItem
+                        }
                     }
                 }
             }
