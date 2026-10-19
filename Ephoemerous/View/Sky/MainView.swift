@@ -101,6 +101,12 @@ struct MainView: View {
     /// is one card in every pose.
     private var detailInPanel: Bool { isRegular && !hasRail }
 
+    /// The open Duo's place-card sheet: half the screen, a margin short of
+    /// the middle — the hinge, when folded.
+    private var trailingSheetWidth: CGFloat {
+        max(0, viewSize.width / 2 - FloatingPanel<EmptyView>.margin)
+    }
+
     /// The panel's width when it isn't the iPad's fixed card. Closed: from
     /// the leading margin to a margin short of the rail. Folded like a book:
     /// the iPad card, narrowed if the right page is narrower.
@@ -118,17 +124,19 @@ struct MainView: View {
     /// Where the sky composes itself, in screen points — nil for the whole
     /// screen:
     ///   closed (rail, compact) — the screen beside the rail
-    ///   folded like a book     — the right page beside the rail: the closed
-    ///                            phone's sky at the closed phone's zoom,
-    ///                            with the left page as extra sky
+    ///   folded like a book     — a right page's width, centred on the
+    ///                            hinge: the closed phone's zoom, with more
+    ///                            sky either side
     ///   flat open, and every other device — the whole screen, so the sky
     ///                            centres on the device
     private var composedSkyFrame: CGRect? {
         let w = viewSize.width, h = viewSize.height
         guard hasRail, w > 0 else { return nil }
         if isRegular, let fold = app.skyFold {
-            let x = fold.maxX
-            return CGRect(x: x, y: 0, width: max(0, w - x - app.skyRailWidth), height: h)
+            // The closed phone's zoom — a right page's width — centred on
+            // the hinge: no jump in scale, just more sky on either side.
+            let page = max(0, w - fold.maxX - app.skyRailWidth)
+            return CGRect(x: fold.midX - page / 2, y: 0, width: page, height: h)
         }
         if !isRegular {
             return CGRect(x: 0, y: 0, width: w - app.skyRailWidth, height: h)
@@ -141,7 +149,7 @@ struct MainView: View {
         let frame = composedSkyFrame
         guard app.skyFrame != frame else { return }
         app.skyFrame = frame
-        seedCameraHome(for: viewSize)
+        seedCameraHome(for: viewSize, animated: true)
     }
 
     /// The fold's band while iPhone Duo stands like a book (a vertical
@@ -164,7 +172,10 @@ struct MainView: View {
     /// card, nothing.
     private var panelHome: CGSize {
         guard cardUp else { return .zero }
-        let shift   = FloatingPanel<EmptyView>.footprint / 2
+        let cardWidth = panelOnTrailing && app.detailDestination != nil
+            ? trailingSheetWidth
+            : FloatingPanel<EmptyView>.footprint
+        let shift   = cardWidth / 2
         let towards = panelOnTrailing ? -shift : shift
         return CGSize(width: layoutDirection == .rightToLeft ? -towards : towards, height: 0)
     }
@@ -233,13 +244,17 @@ struct MainView: View {
     /// reseed it (the `isNorthOut` onChange). NorthOUT frames itself, so
     /// it's left alone; and only a camera still resting at its old home is
     /// moved — a user zoom survives a resize.
-    private func seedCameraHome(for size: CGSize) {
+    /// `animated` glides the zoom to its new home instead of snapping —
+    /// for a reframe the user watches happen (the Duo opening, folding,
+    /// closing), not the silent seed at launch.
+    private func seedCameraHome(for size: CGSize, animated: Bool = false) {
         guard !app.isNorthOut else { return }
         let wasHome = abs(sky.scale - sky.defaultScale) < 0.5
         let target  = app.defaultScale(for: size)
         sky.minScale     = northInMinScale(defaultScale: target)
         sky.defaultScale = target
-        if wasHome { sky.scale = target }
+        guard wasHome else { return }
+        if animated { sky.glide(to: target) } else { sky.scale = target }
     }
 
     /// NorthIN zoom floor. Compact: home itself — no pulling back past the
@@ -393,7 +408,7 @@ struct MainView: View {
                         app.syncInterfaceOrientation()
                         sky.center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                         viewSize   = geo.size
-                        seedCameraHome(for: geo.size)
+                        seedCameraHome(for: geo.size, animated: true)
                     }
                     .onChange(of: frame.starLabels.deepSky, initial: true) { _, shown in
                         sky.shownDeepSky = shown
@@ -453,7 +468,10 @@ struct MainView: View {
                         app.skyRailStatusBottom = y
                     }
                     .onChange(of: bookFold(screen), initial: true) { _, fold in
-                        app.skyFold = fold
+                        // Animated, so the chrome that follows the fold (the
+                        // Here / Now capsule, the panel) glides to its new
+                        // place as the Duo folds or flattens.
+                        withAnimation(.smooth(duration: 0.45)) { app.skyFold = fold }
                     }
             }
             .ignoresSafeArea()
@@ -563,7 +581,8 @@ struct MainView: View {
                 .presentationDragIndicator(.visible)
                 // Open Duo: beside the rail, where the closed phone's card
                 // sat — and where the system gives a sheet its own rail.
-                .modifier(TrailingSheetPlacement(isActive: panelOnTrailing))
+                .modifier(TrailingSheetPlacement(isActive: panelOnTrailing,
+                                                 width:    trailingSheetWidth))
                 .tracksBottomSheet()
                 .onAppear {
                     detailDetent = .fraction(1.0 / 3.0)
@@ -771,13 +790,27 @@ struct MainView: View {
 // rail it has on the closed phone. iOS 27+; elsewhere nothing.
 private struct TrailingSheetPlacement: ViewModifier {
     let isActive: Bool
+    /// Half the screen — the system's own width ran to two thirds.
+    let width:    CGFloat
 
     func body(content: Content) -> some View {
         if #available(iOS 27.0, *), isActive {
-            content.presentationPlacement(.trailing)
+            content
+                .presentationPlacement(.trailing)
+                .presentationSizing(FixedWidthSizing(width: width))
         } else {
             content
         }
+    }
+}
+
+/// A sheet of a set width; its height is left to the detents.
+private struct FixedWidthSizing: PresentationSizing {
+    let width: CGFloat
+
+    func proposedSize(for root: PresentationSizingRoot,
+                      context: PresentationSizingContext) -> ProposedViewSize {
+        ProposedViewSize(width: width, height: nil)
     }
 }
 
