@@ -212,16 +212,16 @@ struct MainView: View {
         if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
     }
 
-    /// How far the sky slides for the panel. A card lifted to medium or
-    /// large covers the leading part of the disk, so home moves trailing by
-    /// half the card's footprint — the disk sits in the middle of the
-    /// uncovered sky. At the bar, or with no card, nothing — nor folded
-    /// like a laptop, where the card keeps below the hinge and leaves the
-    /// upper half whole.
+    /// How far the sky slides for the panel. A card lifted to large covers
+    /// the leading part of the disk, so home moves trailing by half the
+    /// card's footprint — the disk sits in the middle of the uncovered sky.
+    /// At medium the card keeps to the lower half and the comfort zone
+    /// stays clear above it, so nothing — nor at the bar, nor folded like a
+    /// laptop, where the card keeps below the hinge.
     private var panelHome: CGSize {
         let panelUp = isRegular
             && (app.detailDestination != nil || searchPresented.wrappedValue)
-            && panelStage != .bar
+            && panelStage == .large
             && app.skyLaptopFold == nil
         guard panelUp else { return .zero }
         let shift = FloatingPanel<EmptyView>.footprint / 2
@@ -696,11 +696,17 @@ struct MainView: View {
         // zone — one place, so the two paths behave identically.
         .onChange(of: app.detailDestination) { _, obj in
             if let obj { panIntoComfortZone(obj) }
-            // The card arriving in the panel should be readable without a
-            // drag; leaving it parks the panel back at the search bar.
+            // The card arrives at medium, as the iPhone's does — a swipe up
+            // for the whole card; leaving it parks the panel back at the
+            // search bar.
             if detailInPanel {
+                var arrival = PanelStage.medium
+                #if DEBUG
+                // Screenshot seeding: `-detailLarge` opens the card fully.
+                if ProcessInfo.processInfo.arguments.contains("-detailLarge") { arrival = .large }
+                #endif
                 withAnimation(.snappy(duration: 0.32)) {
-                    panelStage = obj == nil ? .bar : .large
+                    panelStage = obj == nil ? .bar : arrival
                 }
             }
             publishPanelExpansion()

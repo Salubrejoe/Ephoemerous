@@ -10,10 +10,9 @@ import SwiftUI
 // horizontal position is not configurable in SwiftUI or UIKit, so a
 // bottom-LEADING card can only be a view the app places itself.
 //
-// The three cases exist for the SHEET's detent set. The panel has only two
-// visual states — parked, or open — and `medium` / `large` both mean open
-// there, so `SearchSheet`'s existing "typing lifts to medium, focus lifts
-// to large" logic keeps working unchanged in both presentations.
+// The panel holds all three, as the sheet does: parked at the bar, medium
+// — its top at the screen's middle, where a place card opens — and large,
+// nearly the full height. A swipe moves one stage at a time.
 enum PanelStage: CaseIterable {
     case bar, medium, large
 
@@ -42,8 +41,8 @@ enum PanelStage: CaseIterable {
 // container and swap their CONTENTS, which is what Maps does and what the
 // existing `searchPresented` / `detailDestination` swap already models.
 //
-// HEIGHT is two explicit stages — parked at `PanelStage.barHeight`, or
-// open to `cap` — with the drag interpolating between them. Sizing the
+// HEIGHT is three explicit stages — parked at `PanelStage.barHeight`,
+// `medium`, or open to `cap` — with the drag interpolating between them. Sizing the
 // open card to its CONTENT is still wanted; see `height` for what has
 // already been tried and why it failed.
 struct FloatingPanel<Content: View>: View {
@@ -71,9 +70,9 @@ struct FloatingPanel<Content: View>: View {
     /// portrait stops it under the centred Here / Now capsule, or under the
     /// hinge when folded (see MainView).
     var topInset: CGFloat? = nil
-    /// Reports how open the card is, 0 parked … 1 fully open, live through
-    /// a drag — the place card's header follows it as the iPhone sheet's
-    /// follows `bottomSheetTop`.
+    /// Reports how far past medium the card is, 0 at medium and below … 1
+    /// fully open, live through a drag — the place card's header and
+    /// picture follow it as the iPhone sheet's follow `bottomSheetTop`.
     var onExpansion: (CGFloat) -> Void = { _ in }
     @ViewBuilder var content: Content
 
@@ -134,6 +133,40 @@ struct FloatingPanel<Content: View>: View {
 
     private var dragging: Bool { drag != 0 }
 
+    /// The medium stage: the card's top at the screen's middle, as the
+    /// iPhone's medium detent. Never taller than `cap` — folded like a
+    /// laptop the cap IS the lower half, and medium and large meet.
+    private var medium: CGFloat {
+        min(cap, max(PanelStage.barHeight, available / 2 - Self.margin))
+    }
+
+    /// A stage's resting height.
+    private func restHeight(_ stage: PanelStage) -> CGFloat {
+        switch stage {
+        case .bar:    PanelStage.barHeight
+        case .medium: medium
+        case .large:  cap
+        }
+    }
+
+    /// The stage one swipe away, up or down — skipping a stage that rests
+    /// at the same height, so no swipe is ever spent on nothing.
+    private func neighbour(of current: PanelStage, up: Bool) -> PanelStage {
+        let all   = PanelStage.allCases
+        let order = up ? all : all.reversed()
+        let here  = restHeight(current)
+        let start = order.firstIndex(of: current)! + 1
+        return order[start...].first { restHeight($0) != here } ?? current
+    }
+
+    /// Settle a released drag: past the threshold, one stage that way.
+    private func settle(_ translation: CGFloat) {
+        guard abs(translation) > Self.dragThreshold else { return }
+        withAnimation(.snappy(duration: 0.32)) {
+            stage = neighbour(of: stage, up: translation < 0)
+        }
+    }
+
     /// ONE height, computed, with no branching anywhere near it.
     ///
     /// The previous pass swapped between `.frame(height:)` and
@@ -160,8 +193,7 @@ struct FloatingPanel<Content: View>: View {
     /// trailing `Spacer`s to stand down in a panel, which is a change in
     /// those views, not in this container.
     private var height: CGFloat {
-        let rest = stage.isOpen ? cap : PanelStage.barHeight
-        return min(cap, max(PanelStage.barHeight, rest - drag))
+        min(cap, max(PanelStage.barHeight, restHeight(stage) - drag))
     }
 
     var body: some View {
@@ -188,7 +220,7 @@ struct FloatingPanel<Content: View>: View {
             .padding(.leading, Self.margin)
             .padding(.bottom,  Self.margin)
             .onChange(of: height, initial: true) { _, h in
-                onExpansion(min(1, max(0, (h - PanelStage.barHeight) / max(1, cap - PanelStage.barHeight))))
+                onExpansion(cap - medium < 1 ? 0 : min(1, max(0, (h - medium) / (cap - medium))))
             }
     }
 
@@ -207,13 +239,7 @@ struct FloatingPanel<Content: View>: View {
                     .updating($drag) { value, state, _ in
                         state = value.translation.height
                     }
-                    .onEnded { value in
-                        let d = value.translation.height
-                        withAnimation(.snappy(duration: 0.32)) {
-                            if d < -Self.dragThreshold { stage = .large }
-                            if d >  Self.dragThreshold { stage = .bar }
-                        }
-                    }
+                    .onEnded { value in settle(value.translation.height) }
             )
     }
 
@@ -237,13 +263,7 @@ struct FloatingPanel<Content: View>: View {
                     .updating($drag) { value, state, _ in
                         state = value.translation.height
                     }
-                    .onEnded { value in
-                        let d = value.translation.height
-                        withAnimation(.snappy(duration: 0.32)) {
-                            if d < -Self.dragThreshold { stage = .large }
-                            if d >  Self.dragThreshold { stage = .bar }
-                        }
-                    }
+                    .onEnded { value in settle(value.translation.height) }
             )
             .padding(.horizontal, Self.headerInset + Self.buttonSize + 8)
     }
