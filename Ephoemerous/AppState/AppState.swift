@@ -153,6 +153,13 @@ class AppState {
     // iPhone Duo folded like a book — the fold's band in screen points,
     // nil when flat or closed. Published by MainView.
     var skyFold: CGRect? = nil
+    // iPhone Duo's hinge running ACROSS the screen — the inner display held
+    // in portrait — its band in screen points, flat or folded. Nil on every
+    // other device and pose. Published by MainView.
+    var skyHingeAcross: CGRect? = nil
+    // The same hinge while the Duo stands folded like a laptop, nil when
+    // it's flat. Published by MainView.
+    var skyLaptopFold: CGRect? = nil
     // Where the sky composes itself on screen — its home zoom fits this,
     // its home centre is this one's. Nil for the whole screen. Published by
     // MainView (see `composedSkyFrame`).

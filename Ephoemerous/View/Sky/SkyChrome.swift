@@ -14,7 +14,8 @@ import SwiftUI
 // display in landscape): the camera cluster and the rose move INTO that
 // rail as system toolbar items — see `SkyRail` — and their floating
 // versions stand down. The Here / Now capsule stays a capsule (words stay
-// horizontal), centred over the sky beside the rail.
+// horizontal), centred over the sky beside the rail. The inner display in
+// portrait centres it over the whole screen, clear of the status bar.
 //
 // A modifier rather than lines in `MainView.body` because it is a
 // self-contained layer with its own placement rules — and because the body
@@ -44,12 +45,21 @@ struct SkyChrome: ViewModifier {
     /// trailing edge of a regular-width screen.
     private var openDuo: Bool { isRegular && hasRail }
 
+    /// iPhone Duo's inner display in portrait: the hinge runs across the
+    /// screen and the status bar's clock holds the top-trailing corner, so
+    /// the capsule centres over the whole screen instead.
+    private var hingeAcross: Bool { isRegular && app.skyHingeAcross != nil }
+
     /// Top-centre on the phone, top-trailing in regular width — the iPad,
     /// and the open Duo, which takes the iPad's layout (padded clear of
-    /// its rail).
+    /// its rail) — except across the Duo's hinge, top-centre again.
     private var toolbarAlignment: Alignment {
-        isRegular ? .topTrailing : .top
+        isRegular && !hingeAcross ? .topTrailing : .top
     }
+
+    /// The Here / Now capsule's bottom edge in regular width — the floating
+    /// panel stops below it where the two would meet (see MainView).
+    static var padToolbarBottom: CGFloat { padToolbarTop + padBarHeight }
 
     /// The rail stays on the hardware's right in every language.
     @Environment(\.layoutDirection) private var layoutDirection
@@ -112,7 +122,7 @@ struct SkyChrome: ViewModifier {
             MainToolbar(barHeight: barHeight)
                 .padding(.horizontal, isRegular ? Self.padMargin : 16)
                 .padding(.top,        toolbarTop(barHeight: barHeight))
-                .padding(railEdge,    app.skyRailWidth)
+                .padding(railEdge,    hingeAcross ? 0 : app.skyRailWidth)
         }
         .overlay(alignment: .bottomTrailing) {
             // Hidden while a scene editor is up — camera-mode toggles are

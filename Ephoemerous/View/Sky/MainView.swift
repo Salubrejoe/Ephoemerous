@@ -144,14 +144,51 @@ struct MainView: View {
             .map { $0.frame.offsetBy(dx: origin.x, dy: origin.y) }
     }
 
+    /// The hinge running across the screen — iPhone Duo's inner display in
+    /// portrait, flat or folded — in screen points. Nil on every other
+    /// device and pose, or before iOS 27.1.
+    private func hingeAcross(_ proxy: GeometryProxy) -> CGRect? {
+        guard #available(iOS 27.1, *) else { return nil }
+        let origin = proxy.frame(in: .global).origin
+        return proxy.reservedRegions(kind: .division, options: .includeInactive)
+            .first { $0.frame.width > $0.frame.height }
+            .map { $0.frame.offsetBy(dx: origin.x, dy: origin.y) }
+    }
+
+    /// The same hinge while the Duo stands folded like a laptop — nil when
+    /// it's flat.
+    private func laptopFold(_ proxy: GeometryProxy) -> CGRect? {
+        guard #available(iOS 27.1, *) else { return nil }
+        let origin = proxy.frame(in: .global).origin
+        return proxy.reservedRegions(kind: .division)
+            .filter(\.isActive)
+            .first { $0.frame.width > $0.frame.height }
+            .map { $0.frame.offsetBy(dx: origin.x, dy: origin.y) }
+    }
+
+    /// Sky the panel leaves above itself, all the way up — nil for the
+    /// panel's own, under the status bar:
+    ///   folded like a laptop — the hinge and a margin: the card is the
+    ///                          lower half, the upper half is all sky
+    ///   inner portrait, flat — the centred Here / Now capsule and a margin
+    private var panelTopInset: CGFloat? {
+        let margin = FloatingPanel<EmptyView>.margin
+        if let fold = app.skyLaptopFold { return fold.maxY + margin }
+        if isRegular && app.skyHingeAcross != nil { return SkyChrome.padToolbarBottom + margin }
+        return nil
+    }
+
     /// How far the sky slides for the panel. A card lifted to medium or
     /// large covers the leading part of the disk, so home moves trailing by
     /// half the card's footprint — the disk sits in the middle of the
-    /// uncovered sky. At the bar, or with no card, nothing.
+    /// uncovered sky. At the bar, or with no card, nothing — nor folded
+    /// like a laptop, where the card keeps below the hinge and leaves the
+    /// upper half whole.
     private var panelHome: CGSize {
         let panelUp = isRegular
             && (app.detailDestination != nil || searchPresented.wrappedValue)
             && panelStage != .bar
+            && app.skyLaptopFold == nil
         guard panelUp else { return .zero }
         let shift = FloatingPanel<EmptyView>.footprint / 2
         return CGSize(width: layoutDirection == .rightToLeft ? -shift : shift, height: 0)
@@ -438,6 +475,12 @@ struct MainView: View {
                         // place as the Duo folds or flattens.
                         withAnimation(.smooth(duration: 0.45)) { app.skyFold = fold }
                     }
+                    .onChange(of: hingeAcross(screen), initial: true) { _, hinge in
+                        withAnimation(.smooth(duration: 0.45)) { app.skyHingeAcross = hinge }
+                    }
+                    .onChange(of: laptopFold(screen), initial: true) { _, fold in
+                        withAnimation(.smooth(duration: 0.45)) { app.skyLaptopFold = fold }
+                    }
             }
             .ignoresSafeArea()
         }
@@ -577,6 +620,7 @@ struct MainView: View {
                               available: viewSize.height,
                               showsDragBand: app.detailDestination != nil,
                               cardWidth: railPanelWidth,
+                              topInset: panelTopInset,
                               onExpansion: { e in
                                   let v: CGFloat? = app.detailDestination == nil ? nil : e
                                   if app.detailPanelExpansion != v { app.detailPanelExpansion = v }

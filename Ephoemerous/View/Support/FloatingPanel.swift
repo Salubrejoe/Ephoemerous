@@ -66,6 +66,11 @@ struct FloatingPanel<Content: View>: View {
     /// Duo's outer display runs the card from the leading margin to the
     /// side rail (see MainView).
     var cardWidth: CGFloat? = nil
+    /// Sky to leave above the card when it's all the way up, in place of
+    /// the status bar's `topClearance` — iPhone Duo's inner display in
+    /// portrait stops it under the centred Here / Now capsule, or under the
+    /// hinge when folded (see MainView).
+    var topInset: CGFloat? = nil
     /// Reports how open the card is, 0 parked … 1 fully open, live through
     /// a drag — the place card's header follows it as the iPhone sheet's
     /// follows `bottomSheetTop`.
@@ -121,7 +126,7 @@ struct FloatingPanel<Content: View>: View {
     /// The card sits beside the sky, not over it, so there's no reason to
     /// stop short.
     private var cap: CGFloat {
-        max(200, available - Self.margin - Self.topClearance)
+        max(200, available - Self.margin - (topInset ?? Self.topClearance))
     }
 
     /// Sky left above an open card — the status bar and a breath.
