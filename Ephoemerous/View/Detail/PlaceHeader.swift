@@ -22,6 +22,7 @@ struct PlaceHeader: View {
 
     @Environment(AppState.self)  private var state
     @Environment(\.detailCollapsed) private var collapsed
+    @Environment(\.layoutDirection) private var layoutDirection
 
     let object:    SkyObject
     let title:     String
@@ -83,13 +84,34 @@ struct PlaceHeader: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, collapsed ? 2 : a.placeTitleHeadroom * e + 4)
+            .padding(.top, collapsed ? 2 : titleHeadroom(e, size: size))
             if showsButtons {
                 CircleIconButton(symbol: .xmark, action: onDismiss)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.top, collapsed ? 12 : 14)
+        .padding(.top, collapsed ? 12 : Self.rowTop)
+        .modifier(CentredOnBar(isActive: collapsed && !showsButtons,
+                               railWidth: state.skyRailWidth,
+                               railEdge:  layoutDirection == .rightToLeft ? .leading : .trailing))
+    }
+
+    /// The row's drop from the card's top edge, open.
+    private static let rowTop: CGFloat = 14
+
+    /// Room above the title as the sheet rises. On iPhone Duo's rail
+    /// (share / ✕ aside) the fully raised title lands with its centre on
+    /// the front camera's line — the sky's Here / Now capsule's line —
+    /// instead of under the standard headroom.
+    private func titleHeadroom(_ e: CGFloat, size: CGFloat) -> CGFloat {
+        let standard = Artist.shared.placeTitleHeadroom * e + 4
+        guard !showsButtons,
+              let cameraMidY = state.skyCameraMidY,
+              let sheetTop   = state.bottomSheetTop
+        else { return standard }
+        // A bold line runs ~1.2× its point size; its centre is half that.
+        let onCameraLine = cameraMidY - sheetTop - Self.rowTop - size * 0.6
+        return 4 + (max(0, onCameraLine) - 4) * e
     }
 
     private var share: some View {
@@ -102,6 +124,28 @@ struct PlaceHeader: View {
         .buttonStyle(.plain)
     }
 
+}
+
+// MARK: - CentredOnBar
+// The folded card on iPhone Duo's outer display: its ✕ rides the sheet's
+// rail, so the card's own content stops short of it and the title centred
+// on what was left — off-centre on the bar. This lets the row run under
+// the rail and pads the rail's width back on BOTH sides, so the title
+// centres on the whole bar and still never reaches ✕.
+private struct CentredOnBar: ViewModifier {
+    let isActive:  Bool
+    let railWidth: CGFloat
+    let railEdge:  Edge.Set
+
+    func body(content: Content) -> some View {
+        if isActive {
+            content
+                .padding(.horizontal, railWidth)
+                .ignoresSafeArea(.container, edges: railEdge)
+        } else {
+            content
+        }
+    }
 }
 
 // MARK: - Knobs
