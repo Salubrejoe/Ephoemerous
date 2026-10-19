@@ -9,8 +9,7 @@ import LoreKit
 //   [          TYPE  (wide)          ]   the HR diagram, the Sun in the spotlight
 //   [  POSITION    ][     SIZE       ]
 //
-// No Remember (the Sun isn't favourited) and no Find — no one should go
-// hunting the Sun through a phone.
+// No Remember (the Sun isn't favourited). Find, like every other card.
 struct SunDetailView: View {
     @Environment(AppState.self) var state
 
@@ -20,7 +19,7 @@ struct SunDetailView: View {
                    subtitle: String(localized: "Our star · a yellow dwarf")) {
             tiles
         } actions: {
-            EmptyView()
+            PlaceActionRow { FindAction(solo: true) }
         }
     }
 

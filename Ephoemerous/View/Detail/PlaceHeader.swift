@@ -154,6 +154,9 @@ struct PlaceHeader: View {
             // Room for ✕ beside the block, so a long title can't run under it.
             .padding(.trailing, closeInset + a.placeRailButton + 12)
             .frame(height: collapsed ? a.placeFoldedHeight : nil)
+            // Open, a full grid gap under the subtitle — the scroll's top
+            // edge — so header to first tile matches tile to tile.
+            .padding(.bottom, collapsed ? 0 : a.detailGridSpacing)
             // ✕ FLOATS over the row rather than standing in it: raised, it
             // steps down below the clock, and in the row it made the header
             // that tall — a blank band between the title and the tiles.
@@ -255,6 +258,8 @@ struct PlaceHero: View {
     /// How much taller than the standard picture this object's is — a
     /// constellation's header IS its figure, with names, so it gets room.
     var scale:  CGFloat = 1
+    /// The grid's scroll — the picture shrinks away as the tiles rise.
+    let scroll: PlaceScroll
 
     var body: some View {
         let a      = Artist.shared
@@ -273,11 +278,26 @@ struct PlaceHero: View {
                                              .init(color: .black, location: 0.25)],
                                      startPoint: .top, endPoint: .bottom))
                 .opacity(Double(reveal))
-                // Fades as it scrolls off under the title — a visual
-                // transition only, so it can't push back on the scroll.
-                .scrollTransition(.interactive, axis: .vertical) { hero, phase in
-                    hero.opacity(1 + min(0, phase.value))
-                }
+                .modifier(ShrinksIntoScroll(scroll: scroll, height: height))
         }
+    }
+}
+
+// MARK: - ShrinksIntoScroll
+// The picture scales down to nothing as the grid scrolls up — the same
+// move it makes when the sheet lowers — instead of sliding under the title
+// and being cut flat by it. Scaled from its BOTTOM in step with the scroll,
+// its top edge stays put at the scroll's top while it shrinks, so the
+// title never cuts it. A visual effect only, so it can't push back on the
+// scroll; and its own small view, so a scroll tick redraws just this.
+private struct ShrinksIntoScroll: ViewModifier {
+    let scroll: PlaceScroll
+    let height: CGFloat
+
+    func body(content: Content) -> some View {
+        let left = max(0, 1 - max(0, scroll.y) / max(1, height))
+        content
+            .scaleEffect(left, anchor: .bottom)
+            .opacity(Double(left))
     }
 }

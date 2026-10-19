@@ -59,11 +59,14 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                 ZStack(alignment: .top) {
                     ScrollView {
                         VStack(spacing: 0) {
-                            PlaceHero(object: object, scale: heroScale)
+                            PlaceHero(object: object, scale: heroScale, scroll: scroll)
                             Color.clear.frame(height: rowHeight)
                             tiles()
                                 .padding(.horizontal, 16)
-                                .padding(.top, 4)
+                                // The Duo's header carries the whole grid gap
+                                // itself (see `railRow`), so the scroll's top
+                                // edge sits a grid gap under the subtitle.
+                                .padding(.top, railed ? 0 : 4)
                                 .padding(.bottom, 24)
                         }
                     }
@@ -129,6 +132,8 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
         }
         // The bar stays hidden — the header is the bar — except on the
         // Duo's rail, which IS where the sheet's bar lives.
+        // On the Duo's rail Find is a rail item, not a button in the card.
+        .environment(\.placeFindInRail, railed)
         .toolbar(railed ? .automatic : .hidden, for: .navigationBar)
         .modifier(PlaceRail(isActive:  railed,
                             collapsed: collapsed,

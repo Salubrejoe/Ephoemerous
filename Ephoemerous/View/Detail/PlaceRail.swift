@@ -12,7 +12,9 @@ import LoreKit
 // the rail, so the header's chevron isn't repeated.
 //
 // The action row (Pin / Find / …) stays in the card — those are the
-// card's own buttons, with words, and words stay horizontal.
+// card's own buttons, with words, and words stay horizontal — except Find,
+// a single glyph that's the same job on every card, which rides the rail
+// above share.
 struct PlaceRail: ViewModifier {
 
     @Environment(AppState.self) private var state
@@ -27,17 +29,24 @@ struct PlaceRail: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 27.1, *) {
             content.toolbar {
-                if isActive {
-                    if !collapsed {
-                        ToolbarItem(placement: .bottomBar) {
-                            leadingItem
-                        }
+                if isActive && !collapsed {
+                    ToolbarItemGroup(placement: .bottomBar) {
+                        findItem
+                        leadingItem
                     }
                 }
             }
         } else {
             content
         }
+    }
+
+    /// Find — the window onto the object, for every card. Dimmed, not
+    /// hidden, where it can't work (away from Here, or no motion), so the
+    /// rail keeps its shape.
+    private var findItem: some View {
+        Button("Find", systemImage: "scope", action: state.enterLook)
+            .disabled(!state.canLook)
     }
 
     /// The header's leading job, as a rail item — the postcard, or the

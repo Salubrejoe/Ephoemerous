@@ -129,8 +129,11 @@ struct FindAction: View {
     /// The row's only button: hidden, not dimmed, when it can't work.
     var solo: Bool = false
 
+    /// iPhone Duo: Find lives in the sheet's rail instead (`PlaceRail`).
+    @Environment(\.placeFindInRail) private var inRail
+
     var body: some View {
-        if solo && !state.canLook {
+        if inRail || (solo && !state.canLook) {
             EmptyView()
         } else {
             PlaceActionButton(title:   String(localized: "Find"),
@@ -140,6 +143,12 @@ struct FindAction: View {
             }
         }
     }
+}
+
+extension EnvironmentValues {
+    /// True when a place card's Find rides iPhone Duo's rail, so the
+    /// card's own Find button stands down.
+    @Entry var placeFindInRail: Bool = false
 }
 
 // MARK: - Story
