@@ -101,10 +101,11 @@ struct MainView: View {
     /// is one card in every pose.
     private var detailInPanel: Bool { isRegular && !hasRail }
 
-    /// The open Duo's place-card sheet: half the screen, a margin short of
-    /// the middle — the hinge, when folded.
+    /// The open Duo's place-card sheet: 40% of the screen — the tiles keep
+    /// ~300pt beside the sheet's own rail; a third left them narrower than
+    /// the closed phone's. ▼ TWEAK ▼
     private var trailingSheetWidth: CGFloat {
-        max(0, viewSize.width / 2 - FloatingPanel<EmptyView>.margin)
+        max(0, viewSize.width * 0.4)
     }
 
     /// The panel's width when it isn't the iPad's fixed card. Closed: from
@@ -790,7 +791,7 @@ struct MainView: View {
 // rail it has on the closed phone. iOS 27+; elsewhere nothing.
 private struct TrailingSheetPlacement: ViewModifier {
     let isActive: Bool
-    /// Half the screen — the system's own width ran to two thirds.
+    /// 40% of the screen — the system's own width ran to two thirds.
     let width:    CGFloat
 
     func body(content: Content) -> some View {
