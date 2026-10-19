@@ -95,6 +95,12 @@ struct MainView: View {
     /// thumb already knows — instead of the iPad's leading corner.
     private var panelOnTrailing: Bool { isRegular && hasRail }
 
+    /// The place card lives in the floating panel — iPad only. The open
+    /// Duo keeps the closed phone's SHEET, placed trailing, where the
+    /// system gives it the same side rail (✕ / Find / share), so the card
+    /// is one card in every pose.
+    private var detailInPanel: Bool { isRegular && !hasRail }
+
     /// The panel's width when it isn't the iPad's fixed card. Closed: from
     /// the leading margin to a margin short of the rail. Folded like a book:
     /// the iPad card, narrowed if the right page is narrower.
@@ -157,13 +163,22 @@ struct MainView: View {
     /// open Duo's is trailing, so it slides leading. At the bar, or with no
     /// card, nothing.
     private var panelHome: CGSize {
-        let panelUp = isRegular
-            && (app.detailDestination != nil || searchPresented.wrappedValue)
-            && panelStage != .bar
-        guard panelUp else { return .zero }
+        guard cardUp else { return .zero }
         let shift   = FloatingPanel<EmptyView>.footprint / 2
         let towards = panelOnTrailing ? -shift : shift
         return CGSize(width: layoutDirection == .rightToLeft ? -towards : towards, height: 0)
+    }
+
+    /// A card covers part of the sky: the panel lifted past its bar, or —
+    /// on the open Duo — the trailing place-card sheet lifted past its
+    /// header.
+    private var cardUp: Bool {
+        guard isRegular else { return false }
+        if panelOnTrailing, app.detailDestination != nil {
+            return detailDetent != detailHeaderDetent
+        }
+        return (app.detailDestination != nil || searchPresented.wrappedValue)
+            && panelStage != .bar
     }
 
     /// Where the sky centres, all told: its frame's centre (beside the
@@ -457,7 +472,7 @@ struct MainView: View {
         // A place card pulled down past its grid's top folds to its title.
         .onChange(of: app.detailCollapseRequest) {
             withAnimation(.snappy(duration: 0.32)) {
-                if isRegular { panelStage = .bar } else { detailDetent = detailHeaderDetent }
+                if detailInPanel { panelStage = .bar } else { detailDetent = detailHeaderDetent }
             }
         }
         .onChange(of: app.isLooking) { _, looking in
@@ -546,6 +561,9 @@ struct MainView: View {
                 .interactiveDismissDisabled()
                 .presentationBackgroundInteraction(.enabled)
                 .presentationDragIndicator(.visible)
+                // Open Duo: beside the rail, where the closed phone's card
+                // sat — and where the system gives a sheet its own rail.
+                .modifier(TrailingSheetPlacement(isActive: panelOnTrailing))
                 .tracksBottomSheet()
                 .onAppear {
                     detailDetent = .fraction(1.0 / 3.0)
@@ -575,7 +593,7 @@ struct MainView: View {
             // editor owns the screen. `searchPresented` already excludes
             // both pickers; the panel was ignoring it and left a search bar
             // floating over the date crown.
-            if (isRegular && app.detailDestination != nil)
+            if (detailInPanel && app.detailDestination != nil)
                 || (searchInPanel && searchPresented.wrappedValue) {
                 FloatingPanel(stage: $panelStage,
                               available: viewSize.height,
@@ -625,7 +643,7 @@ struct MainView: View {
             if let obj { panIntoComfortZone(obj) }
             // The card arriving in the panel should be readable without a
             // drag; leaving it parks the panel back at the search bar.
-            if isRegular {
+            if detailInPanel {
                 withAnimation(.snappy(duration: 0.32)) {
                     panelStage = obj == nil ? .bar : .large
                 }
@@ -708,12 +726,18 @@ struct MainView: View {
                 set: { _ in })
     }
 
-    /// Likewise the detail sheet: in regular width the panel hosts the
-    /// place card, so the sheet host is starved of its item. The SETTER
-    /// stays live so dismissal still clears the selection either way.
+    /// Likewise the detail sheet: where the panel hosts the place card
+    /// (iPad), the sheet host is starved of its item. The SETTER stays live
+    /// so a real dismissal clears the selection — but NOT the dismissal the
+    /// starving itself causes: when the window widens (the Duo opening, an
+    /// iPad window stretched) the sheet goes away because the panel took
+    /// the card, and writing that nil back dropped the selection.
     private var detailSheetItem: Binding<SkyObject?> {
-        Binding(get: { isRegular ? nil : app.detailDestination },
-                set: { app.detailDestination = $0 })
+        Binding(get: { detailInPanel ? nil : app.detailDestination },
+                set: { new in
+                    if new == nil && detailInPanel { return }
+                    app.detailDestination = new
+                })
     }
 
     private var searchPresented: Binding<Bool> {
@@ -738,6 +762,22 @@ struct MainView: View {
                                   || app._perspectiveMorphTransition != nil
                                   || app._lookTransition             != nil
                                   || app.compassMode)
+    }
+}
+
+// MARK: - TrailingSheetPlacement
+// The open iPhone Duo places the place-card sheet on the trailing side,
+// beside the rail — the system then gives it a vertical bar, the same side
+// rail it has on the closed phone. iOS 27+; elsewhere nothing.
+private struct TrailingSheetPlacement: ViewModifier {
+    let isActive: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 27.0, *), isActive {
+            content.presentationPlacement(.trailing)
+        } else {
+            content
+        }
     }
 }
 
