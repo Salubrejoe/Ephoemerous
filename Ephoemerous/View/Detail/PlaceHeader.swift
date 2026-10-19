@@ -38,6 +38,11 @@ struct PlaceHeader: View {
     /// Where the row's top sits on screen — the rail row aims its title at
     /// the camera's line from here. Independent of the row's own padding.
     @State private var rowTopOnScreen: CGFloat?
+    /// The rail row's title block (title + subtitle) and the title line
+    /// alone — measured, so the block centres on ✕ and the title on the
+    /// camera without guessing line heights. Neither moves with its padding.
+    @State private var railBlockHeight: CGFloat = 0
+    @State private var railTitleHeight: CGFloat = 0
 
     /// What sits in the toolbar's leading corner.
     enum Leading {
@@ -110,25 +115,27 @@ struct PlaceHeader: View {
     /// line with the tiles, and ✕ drawn here rather than in the rail, so it
     /// can sit concentric with the card's corner:
     ///
-    ///   folded  — title over the status line, centred in the bar; ✕
-    ///             centred at the capsule's end
-    ///   resting — the title on ✕'s line, its subtitle beneath
+    ///   folded  — title over the status line, centred in the bar and set
+    ///             in from the capsule's curve; ✕ centred at its end
+    ///   resting — title and subtitle centred, as a pair, on ✕
     ///   raised  — the title rides up to the front camera's line (the sky's
     ///             Here / Now line); ✕ steps down clear of the clock
     ///
+    /// Open, the block lines up with the tiles' CONTENT, not their edge.
     /// The row runs under the sheet's rail column, so ✕ measures its inset
     /// from the card's real edge.
     private func railRow(_ e: CGFloat) -> some View {
         let a = Artist.shared
-        return HStack(alignment: collapsed ? .center : .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
+        let closeInset = collapsed ? a.placeFoldedHeight / 2 - a.placeRailButton / 2
+                                   : a.placeRailInset
+        return VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: titleSize(e), weight: .bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    // Open, the title's line is ✕'s height, so "on ✕'s
-                    // line" and "on the camera's line" mean centre to centre.
-                    .frame(height: collapsed ? nil : a.placeRailButton, alignment: .leading)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
+                        railTitleHeight = h
+                    }
                 if collapsed {
                     SkyStatusLine(object: object)
                 } else {
@@ -138,15 +145,23 @@ struct PlaceHeader: View {
                         .lineLimit(1)
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
+                railBlockHeight = h
+            }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, collapsed ? 0 : railTitleTop(e))
-            CircleIconButton(symbol: .xmark, action: onDismiss)
-                .padding(.top, collapsed ? 0 : railCloseTop)
-        }
-        .padding(.leading,  a.placeRailInset)
-        .padding(.trailing, collapsed ? a.placeFoldedHeight / 2 - a.placeRailButton / 2
-                                      : a.placeRailInset)
-        .frame(height: collapsed ? a.placeFoldedHeight : nil)
+            .padding(.leading,  collapsed ? a.placeFoldedLeading : a.placeRailTitleLeading)
+            // Room for ✕ beside the block, so a long title can't run under it.
+            .padding(.trailing, closeInset + a.placeRailButton + 12)
+            .frame(height: collapsed ? a.placeFoldedHeight : nil)
+            // ✕ FLOATS over the row rather than standing in it: raised, it
+            // steps down below the clock, and in the row it made the header
+            // that tall — a blank band between the title and the tiles.
+            .overlay(alignment: collapsed ? .trailing : .topTrailing) {
+                CircleIconButton(symbol: .xmark, action: onDismiss)
+                    .padding(.top,      collapsed ? 0 : railCloseTop)
+                    .padding(.trailing, closeInset)
+            }
         .ignoresSafeArea(.container, edges: layoutDirection == .rightToLeft ? .leading : .trailing)
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { top in
             rowTopOnScreen = top
@@ -163,15 +178,17 @@ struct PlaceHeader: View {
         return max(inset, statusBottom + 8 - rowTop)
     }
 
-    /// The title line's drop from the card's top: on ✕'s line at rest,
-    /// gliding to the camera's line as the card rises.
+    /// The title block's drop from the card's top: centred on ✕ at rest,
+    /// gliding until the title line sits on the camera's line as the card
+    /// rises.
     private func railTitleTop(_ e: CGFloat) -> CGFloat {
-        let onClose = Artist.shared.placeRailInset
+        let closeMid = railCloseTop + Artist.shared.placeRailButton / 2
+        let onClose  = max(0, closeMid - railBlockHeight / 2)
         guard let cameraMidY = state.skyCameraMidY,
               let rowTop     = rowTopOnScreen
         else { return onClose }
-        let onCamera = cameraMidY - rowTop - Artist.shared.placeRailButton / 2
-        return onClose + (max(0, onCamera) - onClose) * e
+        let onCamera = max(0, cameraMidY - rowTop - railTitleHeight / 2)
+        return onClose + (onCamera - onClose) * e
     }
 
     private var share: some View {
@@ -200,6 +217,12 @@ extension Artist {
     var placeRailButton:     CGFloat { 44 }
     /// The folded card's height — the header detent (see MainView).
     var placeFoldedHeight:   CGFloat { 70 }
+    /// The open card's title block lines up with the tiles' content: the
+    /// grid's 16 plus a tile's own 14.
+    var placeRailTitleLeading: CGFloat { 16 + detailCardPadding }
+    /// The folded bar's title block, set in from the capsule's curve.
+    /// ▼ TWEAK ▼
+    var placeFoldedLeading:  CGFloat { 26 }
     /// The object's picture under the title — its height at rest, what it
     /// gains as the sheet rises, and what scrolling the body takes back.
     var placeHeroHeight:     CGFloat { 100 }

@@ -47,16 +47,25 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                         leading:   leading,
                         onDismiss: { state.dismissDetail() },
                         railed:    railed)
+                // Above the scroll: the Duo's ✕ floats below the header's
+                // own frame when the card is raised (see `railRow`).
+                .zIndex(1)
             if !collapsed {
-                let heroH = Artist.shared.placeHeroBlockHeight(reveal: state.detailSheetExpansion,
-                                                              scale:  heroScale)
+                // No picture on iPhone Duo's rail: the raised title already
+                // stands on the camera's line, and the picture under it read
+                // as a blank band between header and tiles.
+                let heroH = railed ? 0
+                                   : Artist.shared.placeHeroBlockHeight(reveal: state.detailSheetExpansion,
+                                                                       scale:  heroScale)
                 // The action row floats over the scroll view (see
                 // `StickyPlaceActions`); the scroll content just leaves it a
                 // gap under the picture.
                 ZStack(alignment: .top) {
                     ScrollView {
                         VStack(spacing: 0) {
-                            PlaceHero(object: object, scale: heroScale)
+                            if !railed {
+                                PlaceHero(object: object, scale: heroScale)
+                            }
                             Color.clear.frame(height: rowHeight)
                             tiles()
                                 .padding(.horizontal, 16)
