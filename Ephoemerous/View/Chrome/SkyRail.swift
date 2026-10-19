@@ -9,9 +9,10 @@ import SwiftUI
 // and nudge it off the fold. Everywhere else this adds nothing and
 // `SkyChrome` floats the usual glass.
 //
-// Top to bottom, the way the HIG orders a rail:
-//   • where / when — the Here / Now capsule's pills as symbols (bars keep
-//     text horizontal), with their go-back chips beside them
+// The Here / Now capsule stays a floating capsule over the sky — its
+// words are the point, and words stay horizontal.
+//
+// Top to bottom:
 //   • the camera cluster — Orloj, projection flip, compass mode
 //   • the compass rose — Apple's own example of a custom view that earns a
 //     place in the rail
@@ -40,7 +41,6 @@ private struct SkyRailItems: ToolbarContent {
     let app: AppState
 
     var body: some ToolbarContent {
-        sceneGroup
         // Camera toggles are noise mid-picking — same rule as the
         // floating cluster.
         if !app.isShowingDatePicker && !app.isShowingLocationPicker {
@@ -49,28 +49,6 @@ private struct SkyRailItems: ToolbarContent {
         if !app.isSkyUpright {
             rose
         }
-    }
-
-    /// Where and when — the capsule's two pills as symbols, flanked by
-    /// their go-back chips when the scene has drifted off Here / Now. The
-    /// labels still carry the words: the system shows them in the overflow
-    /// menu and reads them to VoiceOver.
-    private var sceneGroup: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            if app.isAwayFromHere {
-                Button("Back to Here", systemImage: "location.fill", action: app.goToDeviceLocation)
-            }
-            Button(action: app.toggleLocationPicker) {
-                Label(app.placeLabel, systemImage: "mappin.and.ellipse")
-            }
-            Button(action: app.toggleDatePicker) {
-                Label(app.timeLabel, systemImage: "calendar")
-            }
-            if app.isAwayFromNow {
-                Button("Back to Now", systemImage: "clock.arrow.circlepath", action: app.returnToNow)
-            }
-        }
-        .visibilityPriority(.high)
     }
 
     /// The camera capsule's buttons, bare — the rail's glass is their

@@ -80,6 +80,9 @@ struct MainView: View {
     /// The trailing side flips under right-to-left, and the card with it.
     @Environment(\.layoutDirection) private var layoutDirection
 
+    /// iPhone Duo's side rail is up — see `readsSideRail(into:)`.
+    @State private var hasRail = false
+
     /// Where the sky centres. A card lifted to medium or large covers the
     /// leading part of the disk, so home moves trailing by half the card's
     /// footprint — the disk sits in the middle of the uncovered sky. At
@@ -91,6 +94,25 @@ struct MainView: View {
         guard panelUp else { return .zero }
         let shift = FloatingPanel<EmptyView>.footprint / 2
         return CGSize(width: layoutDirection == .rightToLeft ? -shift : shift, height: 0)
+    }
+
+    /// Where the sky centres, all told: the panel's shift, then half the
+    /// Duo's rail to the left, so the disk sits in the middle of the sky
+    /// beside the rail and the rail stands alone on the trailing edge.
+    private var skyHome: CGSize {
+        CGSize(width: panelHome.width - app.skyRailWidth / 2, height: panelHome.height)
+    }
+
+    /// Publish the rail's width from the safe area it carves out. The rail
+    /// stays on the hardware's right in every language, so it's read off
+    /// whichever edge is physically right. The camera's home zoom is
+    /// re-seeded, since the horizon now fits a narrower sky.
+    private func publishRailWidth(_ insets: EdgeInsets) {
+        let right = layoutDirection == .rightToLeft ? insets.leading : insets.trailing
+        let width = hasRail ? right : 0
+        guard app.skyRailWidth != width else { return }
+        app.skyRailWidth = width
+        seedCameraHome(for: viewSize)
     }
 
 
@@ -294,8 +316,20 @@ struct MainView: View {
       // corners. The sky's own layers carry the depth now.
       .background(Artist.shared.canvasBackground)
         .preferredColorScheme(.dark)
-        .modifier(SkyChrome(viewSize: viewSize))
+        .modifier(SkyChrome(viewSize: viewSize, hasRail: hasRail))
+        .readsSideRail(into: $hasRail)
         .ignoresSafeArea()
+        // The rail's width, measured where the safe area still counts —
+        // the sky itself ignores it, so its own geometry reports no insets.
+        .background {
+            GeometryReader { safe in
+                Color.clear
+                    .onChange(of: safe.safeAreaInsets, initial: true) { _, insets in
+                        publishRailWidth(insets)
+                    }
+                    .onChange(of: hasRail) { publishRailWidth(safe.safeAreaInsets) }
+            }
+        }
         // LOOK mode: holding the phone overhead, belly down, arms it (the
         // ring draws itself); lowering it before the ring closes cancels.
         .onChange(of: MotionService.shared.raisedToSky) { _, raised in
@@ -323,8 +357,9 @@ struct MainView: View {
             sky.restAtHome()
             sky.scale  = sky.defaultScale
         }
-        // The card lifting or dropping moves the sky's centre with it.
-        .onChange(of: panelHome) { _, home in sky.moveHome(to: home) }
+        // The card lifting or dropping moves the sky's centre with it —
+        // and so does the Duo's rail arriving or leaving.
+        .onChange(of: skyHome) { _, home in sky.moveHome(to: home) }
 
 //        .alert("Return to your location?",
 //               isPresented: Bindable(app)._compassReturnHomePrompt) {

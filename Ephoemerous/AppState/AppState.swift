@@ -146,6 +146,10 @@ class AppState {
     // Transient — true once the device's first location fix has been adopted
     // as the origin. Not persisted. See AppState+Location.swift.
     var _didAdoptDeviceLocation: Bool = false
+    // iPhone Duo's side rail — how much of the screen's right edge it
+    // takes (0 without one). The sky sizes and centres itself on the area
+    // left of it. Published by MainView; see `defaultScale(for:)`.
+    var skyRailWidth: CGFloat = 0
 
     // MARK: - Star state  (logic → AppState+Stars.swift)
     // Persisted to iCloud on every change via the didSet — keeping

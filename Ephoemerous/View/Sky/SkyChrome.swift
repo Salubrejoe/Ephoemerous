@@ -11,9 +11,10 @@ import SwiftUI
 // and vanish without nudging the capsule. The sky's centre stays sacred.
 //
 // iPhone Duo, where the system keeps a side rail (outer display, inner
-// display in landscape): the capsule, the camera cluster and the rose move
-// INTO that rail as system toolbar items — see `SkyRail`. The floating
-// versions stand down so nothing is drawn twice.
+// display in landscape): the camera cluster and the rose move INTO that
+// rail as system toolbar items — see `SkyRail` — and their floating
+// versions stand down. The Here / Now capsule stays a capsule (words stay
+// horizontal), centred over the sky beside the rail.
 //
 // A modifier rather than lines in `MainView.body` because it is a
 // self-contained layer with its own placement rules — and because the body
@@ -33,10 +34,15 @@ struct SkyChrome: ViewModifier {
     @Environment(\.horizontalSizeClass) private var hSize
     private var isRegular: Bool { hSize == .regular }
 
-    /// iPhone Duo's side rail is up — the chrome lives in it instead of
-    /// floating over the sky. False everywhere else, including the Duo's
-    /// inner display in portrait, which keeps horizontal bars.
-    @State private var hasRail = false
+    /// iPhone Duo's side rail is up — the camera chrome lives in it instead
+    /// of floating over the sky. False everywhere else, including the Duo's
+    /// inner display in portrait, which keeps horizontal bars. Read by
+    /// MainView, which also needs it to fit the sky.
+    let hasRail: Bool
+
+    /// The rail stays on the hardware's right in every language.
+    @Environment(\.layoutDirection) private var layoutDirection
+    private var railEdge: Edge.Set { layoutDirection == .rightToLeft ? .leading : .trailing }
 
     /// The floating panel's inset from the screen edge — chrome on the
     /// same edge lines up with it. Mirrors `FloatingPanel.margin`.
@@ -73,12 +79,13 @@ struct SkyChrome: ViewModifier {
             // centred on its parked bar, so the two bottom corners read as
             // one row of chrome — and bigger, because the phone's 40pt bar
             // is lost on a 13" canvas.
-            if !hasRail {
-                MainToolbar(barHeight: isRegular ? Self.padBarHeight : 40)
-                    .padding(.horizontal, isRegular ? Self.padMargin : 16)
-                    .padding(.top,        isRegular ? 0 : 64)
-                    .padding(.bottom,     isRegular ? Self.padToolbarBottom : 0)
-            }
+            // The Duo's rail is padded off first, so the capsule centres
+            // over the sky beside it, not over the whole screen.
+            MainToolbar(barHeight: isRegular ? Self.padBarHeight : 40)
+                .padding(.horizontal, isRegular ? Self.padMargin : 16)
+                .padding(.top,        isRegular ? 0 : 64)
+                .padding(.bottom,     isRegular ? Self.padToolbarBottom : 0)
+                .padding(railEdge,    app.skyRailWidth)
         }
         .overlay(alignment: isRegular ? .topTrailing : .bottomTrailing) {
             // Hidden while a scene editor is up — camera-mode toggles are
@@ -122,7 +129,6 @@ struct SkyChrome: ViewModifier {
         }
         // iPhone Duo: the same controls, as rail items.
         .modifier(SkyRail(isActive: hasRail))
-        .readsSideRail(into: $hasRail)
         // Re-resolve the locality name whenever the rounded origin changes.
         // Here, not on the capsule, so it keeps running while the rail
         // stands in for the capsule.
@@ -133,7 +139,7 @@ struct SkyChrome: ViewModifier {
 #if DEBUG
 #Preview("Chrome over the sky") {
     Artist.shared.canvasBackground
-        .modifier(SkyChrome(viewSize: CGSize(width: 390, height: 844)))
+        .modifier(SkyChrome(viewSize: CGSize(width: 390, height: 844), hasRail: false))
         .environment(AppState())
 }
 #endif
