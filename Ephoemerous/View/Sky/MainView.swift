@@ -178,6 +178,23 @@ struct MainView: View {
         return nil
     }
 
+    /// How open the floating panel is, 0 parked … 1 all the way up — for
+    /// search and the place card alike (see `publishPanelExpansion`).
+    @State private var panelExpansion: CGFloat = 0
+
+    /// Hand the panel's expansion to the place card, which grows its picture
+    /// in with it. Republished when a card ARRIVES too: picked from the
+    /// search list, it lands in a panel that's already up, the panel's
+    /// height never changes, and the picture waited for a drag to appear.
+    /// Folded like a laptop, the half-height card is the medium sheet —
+    /// no picture.
+    private func publishPanelExpansion() {
+        let showing = detailInPanel && app.detailDestination != nil
+        let e       = app.skyLaptopFold == nil ? panelExpansion : 0
+        let v: CGFloat? = showing ? e : nil
+        if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
+    }
+
     /// How far the sky slides for the panel. A card lifted to medium or
     /// large covers the leading part of the disk, so home moves trailing by
     /// half the card's footprint — the disk sits in the middle of the
@@ -622,8 +639,8 @@ struct MainView: View {
                               cardWidth: railPanelWidth,
                               topInset: panelTopInset,
                               onExpansion: { e in
-                                  let v: CGFloat? = app.detailDestination == nil ? nil : e
-                                  if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
+                                  panelExpansion = e
+                                  publishPanelExpansion()
                               }) {
                     if let obj = app.detailDestination {
                         DetailHost(obj: obj, stacked: false)
@@ -668,9 +685,10 @@ struct MainView: View {
                 withAnimation(.snappy(duration: 0.32)) {
                     panelStage = obj == nil ? .bar : .large
                 }
-                if obj == nil { app.detailPanelExpansion = nil }
             }
+            publishPanelExpansion()
         }
+        .onChange(of: app.skyLaptopFold) { publishPanelExpansion() }
         // Leaving compass mode → freeze the live heading into the committed
         // `sky.rotation`, so the camera (which now reads `sky.rotation`
         // again) shows the same orientation the heading left — no jump.
