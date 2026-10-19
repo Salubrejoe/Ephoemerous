@@ -2,14 +2,14 @@ import SwiftUI
 import LoreKit
 
 // MARK: - PlaceRail
-// A place card's share / ✕ on iPhone Duo's outer display, where a sheet's
-// bar runs down the side rail like the sky's (see `SkyRail`). Close at the
-// top; the card's own action at the BOTTOM, where it sits concentric with
-// the device's corner, well clear of ✕. Folded to its header the card is
-// too short for both — the system would fold them into a "…" — so only ✕
-// stays. A pushed card (a star opened from its constellation's roster)
-// gets the system's own Back button there, so the header's chevron isn't
-// repeated.
+// A place card's share on iPhone Duo's outer display, where a sheet's bar
+// runs down the side rail like the sky's (see `SkyRail`) — at the BOTTOM,
+// concentric with the device's corner. ✕ is drawn by the header instead
+// (see `PlaceHeader.railRow`): the rail decides its own items' positions,
+// and ✕ has to sit concentric with the CARD's corner. Folded, the card is
+// too short for share, so it stands down. A pushed card (a star opened
+// from its constellation's roster) gets the system's own Back button in
+// the rail, so the header's chevron isn't repeated.
 //
 // The action row (Pin / Find / …) stays in the card — those are the
 // card's own buttons, with words, and words stay horizontal.
@@ -18,20 +18,16 @@ struct PlaceRail: ViewModifier {
     @Environment(AppState.self) private var state
 
     let isActive:  Bool
-    /// The card is folded to its header — ✕ alone.
+    /// The card is folded to its header — no room for share.
     let collapsed: Bool
     let object:    SkyObject
     let title:     String
     let leading:   PlaceHeader.Leading
-    let onDismiss: () -> Void
 
     func body(content: Content) -> some View {
         if #available(iOS 27.1, *) {
             content.toolbar {
                 if isActive {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close", systemImage: LoreSymbol.xmark.rawValue, action: onDismiss)
-                    }
                     if !collapsed {
                         ToolbarItem(placement: .bottomBar) {
                             leadingItem

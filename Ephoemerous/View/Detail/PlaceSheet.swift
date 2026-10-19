@@ -46,7 +46,7 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                         subtitle:  subtitle,
                         leading:   leading,
                         onDismiss: { state.dismissDetail() },
-                        showsButtons: !railed)
+                        railed:    railed)
             if !collapsed {
                 let heroH = Artist.shared.placeHeroBlockHeight(reveal: state.detailSheetExpansion,
                                                               scale:  heroScale)
@@ -131,8 +131,7 @@ struct PlaceSheet<Tiles: View, Actions: View>: View {
                             collapsed: collapsed,
                             object:    object,
                             title:     title,
-                            leading:   leading,
-                            onDismiss: { state.dismissDetail() }))
+                            leading:   leading))
         .readsSideRail(into: $hasRail)
     }
 }

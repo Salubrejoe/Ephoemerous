@@ -154,6 +154,10 @@ class AppState {
     // points, nil where there's none to line up with. The Here / Now
     // capsule centres on it. Published by MainView.
     var skyCameraMidY: CGFloat? = nil
+    // The bottom of the rail's status block (clock, Wi-Fi, Dynamic Island)
+    // in screen points — a place card's ✕ steps down below it as the card
+    // rises. Published by MainView.
+    var skyRailStatusBottom: CGFloat? = nil
 
     // MARK: - Star state  (logic → AppState+Stars.swift)
     // Persisted to iCloud on every change via the didSet — keeping

@@ -130,6 +130,18 @@ struct MainView: View {
             .map { originY + $0.frame.midY }
     }
 
+    /// The bottom of the lowest region the system reserves at the top of
+    /// the rail — its status block, which grows with Live Activities — in
+    /// screen points. Nil without one, or before iOS 27.1.
+    private func railStatusBottom(_ proxy: GeometryProxy) -> CGFloat? {
+        guard #available(iOS 27.1, *) else { return nil }
+        let originY = proxy.frame(in: .global).minY
+        return proxy.reservedRegions(kind: .occlusion)
+            .filter(\.isActive)
+            .map { originY + $0.frame.maxY }
+            .max()
+    }
+
     /// Publish the rail's width from the safe area it carves out. The rail
     /// stays on the hardware's right in every language, so it's read off
     /// whichever edge is physically right. The camera's home zoom is
@@ -364,6 +376,9 @@ struct MainView: View {
                 Color.clear
                     .onChange(of: frontCameraMidY(screen), initial: true) { _, y in
                         app.skyCameraMidY = y
+                    }
+                    .onChange(of: railStatusBottom(screen), initial: true) { _, y in
+                        app.skyRailStatusBottom = y
                     }
             }
             .ignoresSafeArea()
