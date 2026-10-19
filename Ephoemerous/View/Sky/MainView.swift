@@ -83,6 +83,20 @@ struct MainView: View {
     /// iPhone Duo's side rail is up — see `readsSideRail(into:)`.
     @State private var hasRail = false
 
+    /// Search floats in the panel rather than a sheet: regular width, and
+    /// iPhone Duo's outer display, where a system sheet runs under the rail
+    /// and the panel can stop at it — so the rail runs top to bottom alone.
+    /// The place card stays a sheet there: its share / ✕ ride the sheet's
+    /// own rail.
+    private var searchInPanel: Bool { isRegular || hasRail }
+
+    /// The panel's width when it isn't the iPad's fixed card: from the
+    /// leading margin to a margin short of the rail.
+    private var railPanelWidth: CGFloat? {
+        guard !isRegular else { return nil }
+        return viewSize.width - app.skyRailWidth - 2 * FloatingPanel<EmptyView>.margin
+    }
+
     /// Where the sky centres. A card lifted to medium or large covers the
     /// leading part of the disk, so home moves trailing by half the card's
     /// footprint — the disk sits in the middle of the uncovered sky. At
@@ -455,10 +469,12 @@ struct MainView: View {
             // editor owns the screen. `searchPresented` already excludes
             // both pickers; the panel was ignoring it and left a search bar
             // floating over the date crown.
-            if isRegular, app.detailDestination != nil || searchPresented.wrappedValue {
+            if (isRegular && app.detailDestination != nil)
+                || (searchInPanel && searchPresented.wrappedValue) {
                 FloatingPanel(stage: $panelStage,
                               available: viewSize.height,
                               showsDragBand: app.detailDestination != nil,
+                              cardWidth: railPanelWidth,
                               onExpansion: { e in
                                   let v: CGFloat? = app.detailDestination == nil ? nil : e
                                   if app.detailPanelExpansion != v { app.detailPanelExpansion = v }
@@ -581,7 +597,7 @@ struct MainView: View {
     /// content lives in the floating panel, so the sheet must not present
     /// as well or the app would carry two search fields.
     private var searchSheetPresented: Binding<Bool> {
-        Binding(get: { !isRegular && searchPresented.wrappedValue },
+        Binding(get: { !searchInPanel && searchPresented.wrappedValue },
                 set: { _ in })
     }
 

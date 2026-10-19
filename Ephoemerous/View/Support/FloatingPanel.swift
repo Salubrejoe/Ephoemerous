@@ -62,6 +62,10 @@ struct FloatingPanel<Content: View>: View {
     /// keyboard. Search carries the swipe itself instead, as a
     /// `simultaneousGesture` on the field, so tap and swipe coexist.
     var showsDragBand: Bool = true
+    /// A width of its own, in place of the iPad's fixed `width` — iPhone
+    /// Duo's outer display runs the card from the leading margin to the
+    /// side rail (see MainView).
+    var cardWidth: CGFloat? = nil
     /// Reports how open the card is, 0 parked … 1 fully open, live through
     /// a drag — the place card's header follows it as the iPhone sheet's
     /// follows `bottomSheetTop`.
@@ -73,7 +77,7 @@ struct FloatingPanel<Content: View>: View {
     static var width: CGFloat { 380 }
 
     /// Inset from the screen's leading and bottom edges.
-    private static var margin: CGFloat { 16 }
+    static var margin: CGFloat { 16 }
 
     /// How much of the screen's width the card takes, margin included —
     /// the sky centres in what's left (see `MainView.panelHome`).
@@ -164,7 +168,7 @@ struct FloatingPanel<Content: View>: View {
             if !showsDragBand { grabber }
             content
         }
-            .frame(width: Self.width, height: height, alignment: .top)
+            .frame(width: cardWidth ?? Self.width, height: height, alignment: .top)
             .clipShape(shape)
             // REGULAR, not clear. Clear glass let the sky through so
             // completely that the card had no edge — over a busy field of
