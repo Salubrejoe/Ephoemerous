@@ -12,7 +12,8 @@ import SwiftUI
 //
 // The panel holds all three, as the sheet does: parked at the bar, medium
 // — its top at the screen's middle, where a place card opens — and large,
-// nearly the full height. A swipe moves one stage at a time.
+// nearly the full height. A swipe moves at least one stage; a card carried
+// or flung further rests at the stage nearest where it was headed.
 enum PanelStage: CaseIterable {
     case bar, medium, large
 
@@ -97,6 +98,12 @@ struct FloatingPanel<Content: View>: View {
     /// How far a drag must travel before it changes stage.
     private static var dragThreshold: CGFloat { 44 }
 
+    /// The fastest a released card may launch into its settle, in distances
+    /// left to travel per second. Past ~12 the snappy spring starts to throw
+    /// the card beyond its rest, under the status bar or the screen's foot.
+    /// ▼ TWEAK ▼
+    private static var maximumCarry: CGFloat { 12 }
+
     /// The header's own inset from the card edge — `DetailHeader`'s 6 + 10.
     private static var headerInset: CGFloat { 16 }
 
@@ -119,13 +126,26 @@ struct FloatingPanel<Content: View>: View {
                          style: .continuous)
     }
 
-    /// Live drag, in points, positive DOWN. `@GestureState` rather than
-    /// `@State`: it resets itself when the gesture ends, so a cancelled or
-    /// interrupted drag can't strand the card at an offset height.
-    @GestureState private var drag: CGFloat = 0
-    // Measured in GLOBAL space: the handle rides the card's top edge, so a
-    // local translation shrinks as the card does and the height chased
-    // its own tail — a slow drag jittered up and down.
+    /// What holds the card away from its stage's rest height.
+    private enum Hold: Equatable {
+        /// A finger on the handle, holding the card at this height.
+        case finger(CGFloat)
+        /// A released card gliding to a new stage, at that stage's height,
+        /// until the stage itself comes back through the binding.
+        case landing(CGFloat)
+    }
+
+    /// nil at rest, when the stage alone sets the height (see `settle`).
+    @State private var hold: Hold? = nil
+    // The drag is measured in GLOBAL space: the handle rides the card's
+    // top edge, so a local translation shrinks as the card does and the
+    // height chased its own tail — a slow drag jittered up and down.
+
+    /// A finger is on the handle. A `@GestureState`, so it clears itself
+    /// however the gesture ends: a CANCELLED drag, which never reaches
+    /// `onEnded`, is caught by `releaseIfCancelled` and eased home rather
+    /// than stranding the card at the finger's height.
+    @GestureState private var touching = false
 
     /// The tallest the card may grow: (nearly) the full height of the
     /// screen, like Maps' card pulled up — search and the place card alike.
@@ -137,8 +157,6 @@ struct FloatingPanel<Content: View>: View {
 
     /// Sky left above an open card — the status bar and a breath.
     private static var topClearance: CGFloat { 44 }
-
-    private var dragging: Bool { drag != 0 }
 
     /// The medium stage: the card's top at the screen's middle, as the
     /// iPhone's medium detent. Never taller than `cap` — folded like a
@@ -167,15 +185,82 @@ struct FloatingPanel<Content: View>: View {
         return order[start...].first { restHeight($0) != here } ?? current
     }
 
-    /// Settle a released drag: past the threshold, one stage that way.
-    private func settle(_ translation: CGFloat) {
-        guard abs(translation) > Self.dragThreshold else { return }
-        withAnimation(.snappy(duration: 0.32)) {
-            stage = neighbour(of: stage, up: translation < 0)
+    /// The stage resting nearest a height. Ties keep the current stage, so
+    /// two stages at one height (medium and large, folded) never swap.
+    private func nearestStage(to h: CGFloat) -> PanelStage {
+        PanelStage.allCases.reduce(stage) { best, s in
+            abs(restHeight(s) - h) < abs(restHeight(best) - h) ? s : best
         }
     }
 
-    /// ONE height, computed, with no branching anywhere near it.
+    /// Where a released card comes to rest: the stage nearest the height
+    /// the finger was carrying it to, with its speed projected on, so a
+    /// flick counts and a card lifted all the way up stays up. A drag past
+    /// the threshold moves at least one stage, so a short deliberate swipe
+    /// still does what it always did.
+    private func restingStage(after value: DragGesture.Value) -> PanelStage {
+        let projected = restHeight(stage) - value.predictedEndTranslation.height
+        let nearest   = nearestStage(to: projected)
+        let swiped    = abs(value.translation.height) > Self.dragThreshold
+        guard swiped, restHeight(nearest) == restHeight(stage) else { return nearest }
+        return neighbour(of: stage, up: value.translation.height < 0)
+    }
+
+    /// The settle spring, launched at the finger's own speed so the card
+    /// doesn't stall at the moment it's let go. SwiftUI reads the initial
+    /// velocity in distances-left-to-travel per second.
+    private func settleAnimation(from: CGFloat, to: CGFloat, speed: CGFloat) -> Animation {
+        let distance = to - from
+        let carry    = abs(distance) < 1 ? 0 : speed / distance
+        let capped   = min(Self.maximumCarry, max(-Self.maximumCarry, carry))
+        return .interpolatingSpring(.snappy(duration: 0.32), initialVelocity: capped)
+    }
+
+    /// Settle a released drag: the card glides from under the finger
+    /// straight to its new stage's height, and the place card's title and
+    /// picture, which follow `onExpansion`, glide with it.
+    ///
+    /// The landing height is set HERE, in the panel's own state, rather
+    /// than left to the new stage. `stage` belongs to MainView, and the
+    /// panel redraws from its own state a beat before the parent hands the
+    /// new stage down: computed from `stage`, that redraw used the stage
+    /// the card was dragged FROM. The card snapped back to it and then
+    /// sprang to the new one: the jump on release. (A `@GestureState`
+    /// drag made it worse, cleared with no animation at all.)
+    private func settle(_ value: DragGesture.Value) {
+        let target = restingStage(after: value)
+        let spring = settleAnimation(from:  height(dragged: value.translation.height),
+                                     to:    restHeight(target),
+                                     speed: -value.velocity.height)
+        withAnimation(spring) {
+            hold  = target == stage ? nil : .landing(restHeight(target))
+            stage = target
+        }
+    }
+
+    /// The new stage has come down from MainView: it rests where the
+    /// landing card already is, so the stage can take over the height.
+    private func land() {
+        guard case .landing = hold else { return }
+        hold = nil
+    }
+
+    /// A drag the system took away (another gesture, an alert) never
+    /// reaches `onEnded`, so the finger's hold would stay. Ease it home.
+    private func releaseIfCancelled(_ touching: Bool) {
+        guard !touching, case .finger = hold else { return }
+        withAnimation(.snappy(duration: 0.32)) { hold = nil }
+    }
+
+    /// The handle's drag — the grabber's and the header band's alike.
+    private var handleDrag: some Gesture {
+        DragGesture(minimumDistance: 2, coordinateSpace: .global)
+            .updating($touching) { _, state, _ in state = true }
+            .onChanged { value in hold = .finger(height(dragged: value.translation.height)) }
+            .onEnded   { value in settle(value) }
+    }
+
+    /// ONE height, computed — a value, never a branch in the view tree.
     ///
     /// The previous pass swapped between `.frame(height:)` and
     /// `.frame(maxHeight:)` through an if/else in a ViewModifier. An
@@ -201,7 +286,15 @@ struct FloatingPanel<Content: View>: View {
     /// trailing `Spacer`s to stand down in a panel, which is a change in
     /// those views, not in this container.
     private var height: CGFloat {
-        min(cap, max(PanelStage.barHeight, restHeight(stage) - drag))
+        switch hold {
+        case .finger(let h), .landing(let h): h
+        case nil:                             restHeight(stage)
+        }
+    }
+
+    /// The card's height with the current stage dragged by `offset`.
+    private func height(dragged offset: CGFloat) -> CGFloat {
+        min(cap, max(PanelStage.barHeight, restHeight(stage) - offset))
     }
 
     var body: some View {
@@ -230,6 +323,8 @@ struct FloatingPanel<Content: View>: View {
             .onChange(of: height, initial: true) { _, h in
                 onExpansion(cap - medium < 1 ? 0 : min(1, max(0, (h - medium) / (cap - medium))))
             }
+            .onChange(of: stage)    { land() }
+            .onChange(of: touching) { _, now in releaseIfCancelled(now) }
     }
 
     /// The visible handle, for the surfaces that have no header band to
@@ -242,13 +337,7 @@ struct FloatingPanel<Content: View>: View {
             .frame(maxWidth: .infinity)
             .frame(height: 16)
             .contentShape(Rectangle())
-            .highPriorityGesture(
-                DragGesture(minimumDistance: 2, coordinateSpace: .global)
-                    .updating($drag) { value, state, _ in
-                        state = value.translation.height
-                    }
-                    .onEnded { value in settle(value.translation.height) }
-            )
+            .highPriorityGesture(handleDrag)
     }
 
     /// The handle is the header band BETWEEN the two buttons — no separate
@@ -266,13 +355,7 @@ struct FloatingPanel<Content: View>: View {
             // area is the inner region only and the buttons keep their
             // corners.
             .contentShape(Rectangle())
-            .highPriorityGesture(
-                DragGesture(minimumDistance: 2, coordinateSpace: .global)
-                    .updating($drag) { value, state, _ in
-                        state = value.translation.height
-                    }
-                    .onEnded { value in settle(value.translation.height) }
-            )
+            .highPriorityGesture(handleDrag)
             .padding(.horizontal, Self.headerInset + Self.buttonSize + 8)
     }
 }
