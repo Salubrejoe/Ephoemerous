@@ -148,6 +148,9 @@ struct MainView: View {
     /// portrait, flat or folded — in screen points. Nil on every other
     /// device and pose, or before iOS 27.1.
     private func hingeAcross(_ proxy: GeometryProxy) -> CGRect? {
+        #if DEBUG
+        if let fake = fakeLaptopFold(proxy) { return fake }
+        #endif
         guard #available(iOS 27.1, *) else { return nil }
         let origin = proxy.frame(in: .global).origin
         return proxy.reservedRegions(kind: .division, options: .includeInactive)
@@ -158,6 +161,9 @@ struct MainView: View {
     /// The same hinge while the Duo stands folded like a laptop — nil when
     /// it's flat.
     private func laptopFold(_ proxy: GeometryProxy) -> CGRect? {
+        #if DEBUG
+        if let fake = fakeLaptopFold(proxy) { return fake }
+        #endif
         guard #available(iOS 27.1, *) else { return nil }
         let origin = proxy.frame(in: .global).origin
         return proxy.reservedRegions(kind: .division)
@@ -165,6 +171,17 @@ struct MainView: View {
             .first { $0.frame.width > $0.frame.height }
             .map { $0.frame.offsetBy(dx: origin.x, dy: origin.y) }
     }
+
+    #if DEBUG
+    /// Screenshot seeding: `-laptopFold` stands any screen up like a folded
+    /// Duo, a hinge band across its middle — the simulator only captures
+    /// the Duo's outer display, so the pose is checked on an iPad instead.
+    private func fakeLaptopFold(_ proxy: GeometryProxy) -> CGRect? {
+        guard ProcessInfo.processInfo.arguments.contains("-laptopFold") else { return nil }
+        let size = proxy.size
+        return CGRect(x: 0, y: size.height / 2 - 10, width: size.width, height: 20)
+    }
+    #endif
 
     /// Sky the panel leaves above itself, all the way up — nil for the
     /// panel's own, under the status bar:
