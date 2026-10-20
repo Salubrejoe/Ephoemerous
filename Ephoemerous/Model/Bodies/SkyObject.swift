@@ -53,7 +53,7 @@ enum SkyObject: Identifiable, Hashable {
         case .spacecraft(let c):
             return "\(c.displayName) \(c.fullName) \(c.rawValue) spacecraft satellite telescope station".lowercased()
         case .deepSky(let d):
-            return "\(d.label) \(d.id) \(d.catalog) \(d.kindName)".lowercased()
+            return "\(d.label) \(d.id) \(d.designation) \(d.catalog) \(d.kindName)".lowercased()
         }
     }
 }

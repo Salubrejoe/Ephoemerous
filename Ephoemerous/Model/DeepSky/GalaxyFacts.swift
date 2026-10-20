@@ -11,9 +11,10 @@ extension LocalGalaxy {
     /// The Milky Way's D25 diameter, the yardstick every size is held to.
     static let milkyWayDiameterLy: Double = 87_400
 
-    /// Light-years from us.
+    /// Light-years from us — for our own galaxy, to its centre.
     var distanceLy: Double {
         switch self {
+        case .milkyWay:   return 26_670
         case .lmc:        return 163_000
         case .smc:        return 203_700
         case .m32:        return 2_490_000
@@ -32,6 +33,7 @@ extension LocalGalaxy {
         case .smc:        return 18_900
         case .m110:       return 17_050
         case .m32:        return 8_000
+        case .milkyWay:   return Self.milkyWayDiameterLy
         }
     }
 
@@ -44,6 +46,7 @@ extension LocalGalaxy {
         case .m110:       return String(localized: "Dwarf elliptical galaxy")
         case .lmc:        return String(localized: "Magellanic spiral galaxy")
         case .smc:        return String(localized: "Dwarf irregular galaxy")
+        case .milkyWay:   return String(localized: "Barred spiral galaxy")
         }
     }
 
@@ -56,6 +59,7 @@ extension LocalGalaxy {
         case .m110:       return "E5 pec"
         case .lmc:        return "SB(s)m"
         case .smc:        return "SB(s)m pec"
+        case .milkyWay:   return "SBbc"
         }
     }
 
@@ -65,6 +69,7 @@ extension LocalGalaxy {
         case .triangulum: return String(localized: "About 40 billion")
         case .lmc:        return String(localized: "About 20 billion")
         case .smc:        return String(localized: "About 3 billion")
+        case .milkyWay:   return String(localized: "100 to 400 billion")
         case .m32, .m110: return nil
         }
     }
@@ -74,7 +79,7 @@ extension LocalGalaxy {
         switch self {
         case .m32, .m110: return String(localized: "Andromeda")
         case .lmc, .smc:  return String(localized: "The Milky Way")
-        case .andromeda, .triangulum: return nil
+        case .andromeda, .triangulum, .milkyWay: return nil
         }
     }
 
@@ -82,6 +87,7 @@ extension LocalGalaxy {
     var standing: String? {
         switch self {
         case .andromeda:  return String(localized: "The largest")
+        case .milkyWay:   return String(localized: "Second largest")
         case .triangulum: return String(localized: "Third largest")
         default:          return nil
         }
@@ -96,11 +102,16 @@ extension LocalGalaxy {
         case .m110:       return "M110"
         case .lmc:        return String(localized: "LMC")
         case .smc:        return String(localized: "SMC")
+        case .milkyWay:   return String(localized: "Milky Way")
         }
     }
 
     /// Its catalogue entry, for the neighbours list and its own card.
     var object: DeepSkyObject? { DeepSkyCatalog.objects.first { $0.id == rawValue } }
+
+    /// What its width is held against: the Milky Way, or for the Milky Way
+    /// itself, Andromeda.
+    var yardstick: LocalGalaxy { self == .milkyWay ? .andromeda : .milkyWay }
 }
 
 extension DeepSkyObject {

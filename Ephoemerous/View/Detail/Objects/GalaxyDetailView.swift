@@ -64,7 +64,7 @@ struct GalaxyDetailView: View {
             FactsTile(title:  String(localized: "Galaxy"),
                       symbol: "hurricane",
                       stats:  galaxy.stats)
-            GalaxyNeighboursTile(neighbours: LocalGalaxy.allCases
+            GalaxyNeighboursTile(neighbours: LocalGalaxy.neighbours
                 .filter { $0 != galaxy }
                 .sorted { $0.distanceLy < $1.distanceLy })
         }
@@ -90,8 +90,13 @@ extension LocalGalaxy {
         return rows
     }
 
-    /// "About 1.7 times the Milky Way's width", "About a third of …".
+    /// "About 1.7 times the Milky Way's width", "About a third of …" —
+    /// and on our own galaxy's card, against Andromeda.
     var widthPhrase: String {
+        if self == .milkyWay {
+            let r = diameterLy / LocalGalaxy.andromeda.diameterLy
+            return String(localized: "About \(Int((r * 10).rounded()) * 10)% of Andromeda's width")
+        }
         let r = diameterLy / Self.milkyWayDiameterLy
         if r >= 1.25 {
             return String(localized: "About \(r, format: .number.precision(.fractionLength(1))) times the Milky Way's width")
@@ -153,7 +158,7 @@ struct GalaxyDistanceLine: View {
             let x     = { (ly: Double) in inset + CGFloat(ly / Self.reach) * (w - inset * 2) }
             // Nearest first, alternating above and below, so the
             // Andromeda family (four within 400,000 ly) stays apart.
-            let order = LocalGalaxy.allCases.sorted { $0.distanceLy < $1.distanceLy }
+            let order = LocalGalaxy.neighbours.sorted { $0.distanceLy < $1.distanceLy }
             ZStack(alignment: .topLeading) {
                 Canvas { ctx, _ in
                     var line = Path()
@@ -167,11 +172,6 @@ struct GalaxyDistanceLine: View {
                         tick.addLine(to: CGPoint(x: tx, y: axis + 3))
                         ctx.stroke(tick, with: .color(.secondary.opacity(0.5)), lineWidth: 1)
                     }
-                    // The Milky Way, where we are: a small disc and bulge.
-                    let mw = CGRect(x: inset - 6, y: axis - 2, width: 12, height: 4)
-                    ctx.fill(Path(ellipseIn: mw), with: .color(.white.opacity(0.7)))
-                    ctx.fill(Path(ellipseIn: CGRect(x: inset - 2.5, y: axis - 2.5, width: 5, height: 5)),
-                             with: .color(Artist.shared.galaxyPaint(.bulge).1))
                     // Stems from the line to each badge.
                     for (i, g) in order.enumerated() {
                         let up = i % 2 == 0
@@ -181,6 +181,12 @@ struct GalaxyDistanceLine: View {
                         ctx.stroke(stem, with: .color(.secondary.opacity(g == galaxy ? 0.8 : 0.35)), lineWidth: 1)
                     }
                 }
+                // The Milky Way, where we are — its own badge, at the start.
+                POILabelView(category:   LocalGalaxy.milkyWay.category,
+                             text:       "",
+                             nameReveal: 0,
+                             sizeScale:  Self.otherScale)
+                    .position(x: inset, y: axis)
                 ForEach(Array(order.enumerated()), id: \.element) { i, g in
                     let own = g == galaxy
                     POILabelView(category:   g.category,
@@ -223,32 +229,20 @@ struct GalaxyAcrossTile: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 GeometryReader { geo in
-                    // One scale for both, so they're true to each other: the
-                    // ring fits the height, and so does a round galaxy;
-                    // Andromeda's thin disc may run wider.
+                    // One scale for both, so they're true to each other:
+                    // the yardstick fits the height, and so does a round
+                    // galaxy; Andromeda's thin disc may run wider.
+                    let yard   = galaxy.yardstick
                     let h      = geo.size.height
                     let reach  = galaxy == .andromeda ? geo.size.width * 0.4 : h * 0.85
-                    let perLy  = min(h / LocalGalaxy.milkyWayDiameterLy, reach / galaxy.diameterLy)
-                    let milky  = LocalGalaxy.milkyWayDiameterLy * perLy
-                    // A silhouette spans about 85% of its badge's frame
-                    // (the casing's margin), so the frame runs that much
-                    // wider for the drawn galaxy to come out true.
-                    let own    = max(10, galaxy.diameterLy * perLy) / 0.85
-                    let badge  = Artist.shared.poiStyle(for: galaxy.category).badgeSize
+                    let perLy  = min(h / yard.diameterLy, reach / galaxy.diameterLy)
                     HStack(alignment: .center, spacing: 18) {
-                        POILabelView(category:   galaxy.category,
-                                     text:       "",
-                                     nameReveal: 0,
-                                     richDetail: own > 30,
-                                     sizeScale:  own / badge)
-                            .frame(width: own, height: geo.size.height)
-                        // The yardstick, not the subject: a quiet ring the
-                        // Milky Way's width, as the Earth is beside a planet.
-                        Circle()
-                            .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                            .background(Circle().fill(Color.white.opacity(0.06)))
-                            .frame(width: milky, height: milky)
-                        Text("Milky Way")
+                        GalaxyToScale(galaxy: galaxy, across: galaxy.diameterLy * perLy, height: h)
+                        // The yardstick, not the subject: quieter, as the
+                        // Earth is beside a planet.
+                        GalaxyToScale(galaxy: yard, across: yard.diameterLy * perLy, height: h)
+                            .opacity(0.55)
+                        Text(yard.shortName)
                             .font(.tileTick)
                             .foregroundStyle(.tertiary)
                             .fixedSize()
@@ -263,6 +257,27 @@ struct GalaxyAcrossTile: View {
                     .minimumScaleFactor(0.7)
             }
         }
+    }
+}
+
+/// A galaxy's badge drawn `across` points wide — its true width at the
+/// tile's scale. A silhouette spans about 85% of its badge's frame (the
+/// casing's margin), so the frame runs that much wider for the drawn
+/// galaxy to come out true.
+private struct GalaxyToScale: View {
+    let galaxy: LocalGalaxy
+    let across: CGFloat
+    let height: CGFloat
+
+    var body: some View {
+        let frame = max(10, across) / 0.85
+        let badge = Artist.shared.poiStyle(for: galaxy.category).badgeSize
+        POILabelView(category:   galaxy.category,
+                     text:       "",
+                     nameReveal: 0,
+                     richDetail: frame > 30,
+                     sizeScale:  frame / badge)
+            .frame(width: frame, height: height)
     }
 }
 

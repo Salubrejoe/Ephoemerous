@@ -149,7 +149,25 @@ enum DeepSkyCatalog {
     static let objects: [DeepSkyObject] = {
         guard let url  = Bundle.main.url(forResource: "deepsky", withExtension: "json"),
               let data = try? Data(contentsOf: url),
-              let file = try? JSONDecoder().decode(File.self, from: data) else { return [] }
-        return file.objects
+              let file = try? JSONDecoder().decode(File.self, from: data) else { return [DeepSkyObject.galacticCentre] }
+        return file.objects + [DeepSkyObject.galacticCentre]
     }()
+}
+
+extension DeepSkyObject {
+    /// Our own galaxy, pinned where its centre lies — Sagittarius A*, the
+    /// black hole the whole disc turns round. Not in OpenNGC; added here.
+    static let galacticCentre = DeepSkyObject(
+        id:       LocalGalaxy.milkyWay.rawValue,
+        catalog:  "Sgr A*",
+        name:     String(localized: "Milky Way Centre"),
+        kind:     .galaxy,
+        ra:       266.416_83,
+        dec:      -29.007_81,
+        major:    nil,
+        minor:    nil,
+        angle:    nil,
+        mag:      nil,
+        const:    "Sgr",
+        distance: nil)
 }

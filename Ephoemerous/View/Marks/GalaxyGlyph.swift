@@ -11,17 +11,20 @@ import SwiftUI
 //   • M32 / M110 — ellipticals: a compact oval, a tall soft one
 //   • LMC / SMC  — clouds: a lumpy body round a bright bar; a slanted bean
 //                  with its Wing
+//   • Milky Way  — face-on: a golden bar, the two great arms off its ends
+//                  and two lesser between, the Sun a bead (promoted pin)
 
 // MARK: - GalaxyShapes
 enum GalaxyShapes {
 
-    enum Paint { case disc, warm, bulge, armDisc, arm, core, elliptical, dwarf, cloud, smallCloud, bar, nebula }
+    enum Paint { case disc, warm, bulge, armDisc, arm, core, elliptical, dwarf, cloud, smallCloud, bar, nebula,
+                      homeDisc, homeArm }
 
     /// The widest the silhouette reaches, in design units — fitted to the
     /// badge's frame.
     static func designSize(of galaxy: LocalGalaxy) -> CGFloat {
         switch galaxy {
-        case .andromeda, .triangulum, .lmc: return 16
+        case .andromeda, .triangulum, .lmc, .milkyWay: return 16
         case .smc:                          return 13
         case .m110:                         return 11
         case .m32:                          return 9
@@ -40,6 +43,14 @@ enum GalaxyShapes {
     static let triangulumTilt:   Angle   = .degrees(-24)
     /// How much the disc is foreshortened — it's seen about 55° from face-on.
     static let triangulumSquash: CGFloat = 0.70
+
+    // MARK: Milky Way  ▼ TWEAK ▼
+    /// The bar runs about 27° from the Sun–centre line.
+    static let milkyWayBar:    Angle   = .degrees(-27)
+    /// The disc's radius, and where the Sun sits on it: 26,700 of about
+    /// 50,000 light-years out, below the middle as the maps draw it.
+    static let milkyWayRadius: CGFloat = 7.8
+    static let milkyWaySun:    CGPoint = CGPoint(x: 0.6, y: 4.1)
 }
 
 // MARK: - Drawing
@@ -53,6 +64,7 @@ extension GlyphPainter {
         case .m110:       drawM110(fullDetail: fullDetail)
         case .lmc:        drawLMC(fullDetail: fullDetail)
         case .smc:        drawSMC(fullDetail: fullDetail)
+        case .milkyWay:   drawMilkyWay(fullDetail: fullDetail)
         }
     }
 
@@ -248,6 +260,70 @@ extension GlyphPainter {
             // NGC 346, at the bar's north-eastern end.
             knot(at: CGPoint(x: -1.7, y: -3.2), radius: 0.7)
         }
+    }
+
+    // MARK: The Milky Way
+
+    /// Face-on — the view nobody has: a dusky disc, the two great arms
+    /// (Scutum–Centaurus and Perseus) wound out of the bar's ends, the two
+    /// lesser (Norma and Sagittarius) fainter between them, a golden bar
+    /// across the middle. Promoted, the Sun appears as a bead on its spur.
+    private mutating func drawMilkyWay(fullDetail: Bool) {
+        let r    = GalaxyShapes.milkyWayRadius
+        let disc = Path(ellipseIn: CGRect(x: -r, y: -r, width: r * 2, height: r * 2))
+        caseOutline([disc])
+        fill(disc, paint(.homeDisc))
+        glow(width: r * 1.9, height: r * 1.9, tilt: .zero, colour: paint(.homeArm).0, peak: 0.3)
+        clipped(to: disc) { inner in
+            let lesser = inner.paint(.homeArm)
+            for arm in 0..<2 {
+                inner.fill(inner.milkyWayArm(phase: CGFloat(arm) * .pi + .pi / 2, root: 0.7, tip: 0.3),
+                           (lesser.0.opacity(0.45), lesser.1.opacity(0.45)), over: disc.boundingRect)
+            }
+            for arm in 0..<2 {
+                inner.fill(inner.milkyWayArm(phase: CGFloat(arm) * .pi, root: 1.3, tip: 0.45),
+                           inner.paint(.homeArm), over: disc.boundingRect)
+            }
+        }
+        let tilt = GalaxyShapes.milkyWayBar
+        glow(width: 7.4, height: 4.4, tilt: tilt, colour: paint(.bulge).1, peak: 0.9)
+        let bar = capsule(at: .zero, length: 5.6, thickness: 2.0, tilt: tilt)
+        blurred(radius: 0.35) { $0.fill(bar, paint(.bulge)) }
+        glow(width: 2.6, height: 2.6, tilt: .zero, colour: paint(.core).1, peak: 1)
+        if fullDetail {
+            star(at: GalaxyShapes.milkyWaySun, radius: 0.42)
+        }
+    }
+
+    /// One arm: a band along a logarithmic spiral from the bar's end out
+    /// to the rim, `root` thick at the bar, `tip` at the edge — face-on.
+    private func milkyWayArm(phase: CGFloat, root: CGFloat, tip: CGFloat) -> Path {
+        let samples = 36
+        let turn: CGFloat  = 1.8 * .pi
+        let inner: CGFloat = 2.6, outer = GalaxyShapes.milkyWayRadius + 0.6
+        let start = CGFloat(GalaxyShapes.milkyWayBar.radians) + phase
+        func centre(_ t: CGFloat) -> CGPoint {
+            let theta = t * turn
+            let rho   = inner * exp(log(outer / inner) / turn * theta)
+            return CGPoint(x: rho * cos(theta + start), y: rho * sin(theta + start))
+        }
+        var left = [CGPoint](), right = [CGPoint]()
+        for i in 0...samples {
+            let t      = CGFloat(i) / CGFloat(samples)
+            let p      = centre(t)
+            let ahead  = centre(min(1, t + 0.01))
+            let behind = centre(max(0, t - 0.01))
+            let dx = ahead.x - behind.x, dy = ahead.y - behind.y
+            let len  = max(0.0001, sqrt(dx * dx + dy * dy))
+            let half = (root * (1 - t) + tip * t) / 2
+            let n    = CGPoint(x: -dy / len * half, y: dx / len * half)
+            left.append(CGPoint(x: p.x + n.x, y: p.y + n.y))
+            right.append(CGPoint(x: p.x - n.x, y: p.y - n.y))
+        }
+        var path = Path()
+        path.addLines(left + right.reversed())
+        path.closeSubpath()
+        return path
     }
 
     // MARK: Paint

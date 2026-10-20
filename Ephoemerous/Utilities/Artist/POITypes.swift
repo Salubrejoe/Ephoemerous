@@ -108,10 +108,10 @@ enum DeepSkyFigure: Equatable {
     case nebula(NamedNebula)
 }
 
-/// The six galaxies on the sky — the Local Group members you can point at.
-/// Like the planets, each wears its own badge (see `GalaxyFace`): the same
-/// diamond outline as every galaxy, with what makes it ITSELF drawn inside.
-/// Raw values are the `DeepSkyObject` ids.
+/// The galaxies on the sky — the six Local Group members you can point at,
+/// and our own, pinned where its centre lies in Sagittarius. Like the
+/// planets, each wears its own badge (see `GalaxyGlyph`). Raw values are
+/// the `DeepSkyObject` ids.
 enum LocalGalaxy: String, CaseIterable {
     case andromeda  = "M31"
     case triangulum = "M33"
@@ -119,6 +119,13 @@ enum LocalGalaxy: String, CaseIterable {
     case m110       = "M110"
     case lmc        = "ESO056-115"
     case smc        = "NGC 292"
+    /// The Milky Way, at Sagittarius A* — not in the catalogue file; see
+    /// `DeepSkyObject.galacticCentre`.
+    case milkyWay   = "MW"
+
+    /// The six we look OUT at — the distance line's and the roster's cast.
+    /// Our own galaxy is where those lines start, not a stop on them.
+    static let neighbours: [LocalGalaxy] = allCases.filter { $0 != .milkyWay }
 
     /// Its badge, wherever one is drawn without the catalogue entry to hand.
     var category: POICategory {

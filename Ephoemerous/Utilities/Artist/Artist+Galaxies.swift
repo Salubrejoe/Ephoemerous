@@ -11,6 +11,8 @@ import SwiftUI
 //   • M110       — a taller oval whose isophotes twist
 //   • LMC        — a lumpy cloud with a bright bar and the pink Tarantula
 //   • SMC        — a slanted bean with its Wing
+//   • Milky Way  — face-on, as no one has ever seen it: a golden bar, two
+//                  great arms and two lesser, the Sun a bead on the way out
 // Andromeda's two companions are old-star ellipticals, so they take the
 // colour of its bulge; the Clouds share a slate.
 // ▼ TWEAK the galaxies here ▼
@@ -27,6 +29,7 @@ extension Artist {
         case .smc:        return 15
         case .m110:       return 12
         case .m32:        return 10.5
+        case .milkyWay:   return 19
         }
     }
 
@@ -46,6 +49,8 @@ extension Artist {
         case .smallCloud:return (p3(0.430, 0.570, 0.620), p3(0.860, 0.950, 0.940))   // the Small, a touch greener
         case .bar:       return (p3(0.820, 0.880, 0.970), p3(1.000, 1.000, 1.000))   // the Clouds' bars
         case .nebula:    return (p3(0.900, 0.300, 0.500), p3(1.000, 0.600, 0.750))   // hydrogen pink
+        case .homeDisc:  return (p3(0.180, 0.200, 0.420), p3(0.330, 0.360, 0.640))   // the Milky Way's dusky disc
+        case .homeArm:   return (p3(0.640, 0.700, 0.960), p3(0.930, 0.950, 1.000))   // its arms, milk-white blue
         }
     }
 
@@ -58,6 +63,7 @@ extension Artist {
         case .m110:       return .dwarf
         case .lmc:        return .cloud
         case .smc:        return .smallCloud
+        case .milkyWay:   return .homeArm
         }
     }
 

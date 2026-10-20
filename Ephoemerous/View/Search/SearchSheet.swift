@@ -514,10 +514,18 @@ struct SearchSheet: View {
                     }
                 }
             }
+            ForEach(deepSkyResults, id: \.title) { group in
+                Section(group.title) {
+                    ForEach(group.objects) { obj in
+                        resultRow(for: obj)
+                    }
+                }
+            }
             if solarResults.isEmpty
                 && spacecraftResults.isEmpty
                 && constellationResults.isEmpty
-                && starResults.isEmpty {
+                && starResults.isEmpty
+                && deepSkyResults.isEmpty {
                 Section {
                     Text("No matches for \"\(searchText)\".")
                         .font(.footnote)
@@ -630,6 +638,15 @@ struct SearchSheet: View {
             .map    { SkyObject.star($0) }
             .filter { $0.searchTokens.contains(query) }
         return Array(matches.prefix(50))
+    }
+
+    /// Galaxies, clusters and nebulae — the browse chips' own lists,
+    /// matched like everything else; only the groups with a hit.
+    private var deepSkyResults: [(title: String, objects: [SkyObject])] {
+        [BrowseChip.galaxies, .clusters, .nebulae].compactMap { chip in
+            let hits = SkyCatalog.deepSky(chip).filter { $0.searchTokens.contains(query) }
+            return hits.isEmpty ? nil : (chip.title, hits)
+        }
     }
 
     // MARK: Actions

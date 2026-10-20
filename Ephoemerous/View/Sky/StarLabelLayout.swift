@@ -173,7 +173,10 @@ struct StarLabelLayout {
             }
         }
 
-        placeDeepSky(DeepSkyCatalog.objects.filter { $0.badgeKind != .cluster })
+        // Only what wears its own silhouette — the galaxies and the named
+        // nebulae. The rest of the catalogue isn't indexed, so it gets no
+        // badge (the open clusters are their names, placed above).
+        placeDeepSky(DeepSkyCatalog.objects.filter { $0.figure != nil })
 
         // 4 · Constellation names, the whisper voice — last, so they give
         // way to every mark above and to each other. Alphabetical, so the

@@ -290,15 +290,20 @@ struct SkyCatalog {
             return [.sun, .moon] + Planet.all.map { .planet($0) }
         case .spacecraft:
             return Spacecraft.allCases.map { .spacecraft($0) }
-        // Deep sky — only what's been drawn so far: the Local Group
-        // galaxies, the clusters on the sky, the nebulae with their own
-        // silhouette.
-        case .galaxies:
-            return DeepSkyCatalog.objects.filter { $0.galaxy != nil }.map { .deepSky($0) }
-        case .clusters:
-            return DeepSkyCatalog.objects.filter(\.isShownCluster).map { .deepSky($0) }
-        case .nebulae:
-            return DeepSkyCatalog.objects.filter { $0.namedNebula != nil }.map { .deepSky($0) }
+        case .galaxies, .clusters, .nebulae:
+            return Self.deepSky(chip)
+        }
+    }
+
+    /// Deep sky — only what's been drawn so far: the Local Group galaxies
+    /// and our own, the clusters on the sky, the nebulae with their own
+    /// silhouette. Shared with the typed search's results.
+    static func deepSky(_ chip: BrowseChip) -> [SkyObject] {
+        switch chip {
+        case .galaxies: DeepSkyCatalog.objects.filter { $0.galaxy != nil }.map { .deepSky($0) }
+        case .clusters: DeepSkyCatalog.objects.filter(\.isShownCluster).map { .deepSky($0) }
+        case .nebulae:  DeepSkyCatalog.objects.filter { $0.namedNebula != nil }.map { .deepSky($0) }
+        default:        []
         }
     }
 
