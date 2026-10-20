@@ -31,7 +31,9 @@ struct SunDetailView: View {
         let facts  = BodyFacts.sun
         return DetailGridLayout(rows: [1, 2, 1, 2]) {
             BodyDistanceTile(currentKm: PlanetPosition.sunDistanceAU(date: date) * BodyFacts.kmPerAU,
-                             range:     facts.nearestKm ... facts.farthestKm)
+                             range:     facts.nearestKm ... facts.farthestKm,
+                             subject:   .sun,
+                             date:      date)
             RiseSetTile(status: status, path: path)
             DaylightTile(path: path)
             DetailCard(title: String(localized: "Type"), symbol: "thermometer.medium") {

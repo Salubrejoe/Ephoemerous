@@ -33,7 +33,9 @@ struct PlanetDetailView: View {
         if let facts = BodyFacts.planet(planet) {
             DetailGridLayout(rows: [1, 2, 1, 2]) {
                 BodyDistanceTile(currentKm: PlanetPosition.distanceAU(planet, date: date).map { $0 * BodyFacts.kmPerAU },
-                                 range:     facts.nearestKm ... facts.farthestKm)
+                                 range:     facts.nearestKm ... facts.farthestKm,
+                                 subject:   .planet(planet),
+                                 date:      date)
                 RiseSetTile(status: status, path: path)
                 BrightnessTile(magnitude: planet.baseMagnitude)
                 OrbitTile(planet: planet, facts: facts, date: date)

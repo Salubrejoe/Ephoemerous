@@ -35,7 +35,9 @@ struct MoonDetailView: View {
             MoonPhaseTile(phase: phase, fraction: MoonPosition.illuminatedFraction(for: date), date: date)
             RiseSetTile(status: status, path: path)
             BodyDistanceTile(currentKm: MoonPosition.distanceKm(for: date),
-                             range:     facts.nearestKm ... facts.farthestKm)
+                             range:     facts.nearestKm ... facts.farthestKm,
+                             subject:   .moon,
+                             date:      date)
             PositionTile(raHours: ra / 15, decDegrees: dec)
             SizeTile(facts: facts, color: Artist.shared.poiStyle(for: .moon).gradientTop)
         }

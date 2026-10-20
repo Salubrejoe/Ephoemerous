@@ -108,13 +108,6 @@ extension LocalGalaxy {
         default: return String(localized: "Under a tenth of the Milky Way's width")
         }
     }
-
-    /// "The light you see left it 2.5 million years ago."
-    var lightPhrase: String {
-        distanceLy >= 1_000_000
-        ? String(localized: "The light you see left it \(distanceLy / 1_000_000, format: .number.precision(.fractionLength(1))) million years ago.")
-        : String(localized: "The light you see left it \(Int((distanceLy / 1_000).rounded()) * 1_000, format: .number) years ago.")
-    }
 }
 
 // MARK: - Distance (wide)
@@ -135,11 +128,6 @@ struct GalaxyDistanceTile: View {
                     .minimumScaleFactor(0.6)
                 GalaxyDistanceLine(galaxy: galaxy)
                     .frame(maxHeight: .infinity)
-                Text(galaxy.lightPhrase)
-                    .font(.tileLine)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
             }
         }
     }

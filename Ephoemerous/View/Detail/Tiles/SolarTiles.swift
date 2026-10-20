@@ -14,15 +14,20 @@ private extension Font {
 }
 
 // MARK: Distance
-// How far it is today, between the nearest and farthest it ever gets — a
-// planet swings from one side of the Sun to the other; the Moon from
-// perigee to apogee. Tap to cycle km → AU → light-time.
+// How far it is today, on a line out from the Earth with the rest of the
+// solar system where it stands tonight — the stars' and galaxies' grammar.
+// Log scale: the Moon a breath from us, Neptune at the far end. The stretch
+// of line it sweeps across the year is lit, and the plain line names it.
+// Tap to cycle km → AU → light-time.
 struct BodyDistanceTile: View {
 
     /// Distance from Earth now, km.
     let currentKm: Double?
-    /// The swing, km — `nil` hides the bar (a spacecraft has none).
+    /// The swing, km — `nil` hides the line (a spacecraft has none).
     var range:     ClosedRange<Double>? = nil
+    /// The body the line is about, and when.
+    var subject:   SkyObject?           = nil
+    var date:      Date                 = .now
 
     @AppStorage("detail.bodyDistanceUnit") private var unit: BodyDistanceUnit = .kilometres
 
@@ -35,11 +40,17 @@ struct BodyDistanceTile: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .contentTransition(.numericText())
-                if let range, let now = currentKm {
-                    SwingBar(range: range, now: now, unit: unit)
-                        .frame(height: 34)
+                if let range, let subject {
+                    SolarLine(subject: subject, range: range, date: date)
+                        .frame(maxHeight: .infinity)
+                    Text("Swings from \(unit.text(range.lowerBound)) to \(unit.text(range.upperBound))")
+                        .font(.tileLine)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                } else {
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
             }
         }
         .contentShape(.rect)
@@ -49,32 +60,110 @@ struct BodyDistanceTile: View {
     }
 }
 
-/// Nearest ←—●——→ farthest, today's distance as the dot.
-private struct SwingBar: View {
-    let range: ClosedRange<Double>
-    let now:   Double
-    let unit:  BodyDistanceUnit
+/// The line itself: the Earth at the left, ticks at 0.01 / 0.1 / 1 / 10 AU,
+/// the Moon, the Sun and the planets as quiet dots in their own colours,
+/// this body's sweep lit and the body itself in full.
+private struct SolarLine: View {
+
+    let subject: SkyObject
+    let range:   ClosedRange<Double>
+    let date:    Date
+
+    /// The line's reach, log AU: just inside the Moon to just past Neptune.
+    private static let domain = (lo: log10(0.0018), hi: log10(36.0))
+    private static let ticks: [Double] = [0.01, 0.1, 1, 10]
+
+    /// Everything on the line, where it is tonight — AU from Earth.
+    private var bodies: [(body: SkyObject, au: Double)] {
+        var all: [(SkyObject, Double)] = [
+            (.moon, MoonPosition.distanceKm(for: date) / BodyFacts.kmPerAU),
+            (.sun,  PlanetPosition.sunDistanceAU(date: date))
+        ]
+        for p in Planet.all {
+            if let au = PlanetPosition.distanceAU(p, date: date) { all.append((.planet(p), au)) }
+        }
+        return all
+    }
+
+    private static func color(_ body: SkyObject) -> Color {
+        let a = Artist.shared
+        switch body {
+        case .sun:           return a.palette.sun.bottom
+        case .moon:          return a.poiStyle(for: .moon).gradientTop
+        case .planet(let p): return a.planetGradient(p).top
+        default:             return .white
+        }
+    }
+
+    private static func isSame(_ a: SkyObject, _ b: SkyObject) -> Bool {
+        switch (a, b) {
+        case (.sun, .sun), (.moon, .moon):            true
+        case (.planet(let p), .planet(let q)):        p == q
+        default:                                      false
+        }
+    }
 
     var body: some View {
+        let bodies = bodies
         Canvas { ctx, size in
-            let bar = CGRect(x: 0, y: 4, width: size.width, height: 6)
-            ctx.fill(Path(roundedRect: bar, cornerRadius: 3), with: .color(.white.opacity(0.18)))
-            let t = (now - range.lowerBound) / (range.upperBound - range.lowerBound)
-            let x = CGFloat(max(0, min(1, t))) * size.width
-            ctx.fill(Path(roundedRect: CGRect(x: 0, y: bar.minY, width: x, height: bar.height), cornerRadius: 3),
-                     with: .color(.white.opacity(0.55)))
-            ctx.fill(Path(ellipseIn: CGRect(x: x - 6, y: bar.midY - 6, width: 12, height: 12)),
-                     with: .color(Artist.shared.canvasBackground))
-            ctx.stroke(Path(ellipseIn: CGRect(x: x - 5, y: bar.midY - 5, width: 10, height: 10)),
-                       with: .color(.white), lineWidth: 2)
-            // A wide tile names the ends; a square one has room for the
-            // numbers alone.
-            let wide = size.width > 250
-            let near = unit.short(range.lowerBound), far = unit.short(range.upperBound)
-            ctx.draw(Text(wide ? "Nearest \(near)" : near).font(.tileTick).foregroundStyle(.tertiary),
-                     at: CGPoint(x: 0, y: bar.maxY + 4), anchor: .topLeading)
-            ctx.draw(Text(wide ? "Farthest \(far)" : far).font(.tileTick).foregroundStyle(.tertiary),
-                     at: CGPoint(x: size.width, y: bar.maxY + 4), anchor: .topTrailing)
+            let a     = Artist.shared
+            let y     = size.height * 0.5
+            let inset: CGFloat = 8
+            func x(_ au: Double) -> CGFloat {
+                let d = Self.domain
+                let t = (max(d.lo, min(d.hi, log10(au))) - d.lo) / (d.hi - d.lo)
+                return inset + CGFloat(t) * (size.width - inset * 2)
+            }
+
+            var line = Path()
+            line.move(to: CGPoint(x: inset, y: y))
+            line.addLine(to: CGPoint(x: size.width - inset, y: y))
+            ctx.stroke(line, with: .color(.white.opacity(0.25)), lineWidth: 1)
+
+            // The line, from the Earth outward.
+            let earth = Color(red: 0.45, green: 0.65, blue: 1)
+            ctx.fill(Path(ellipseIn: CGRect(x: inset - 3.5, y: y - 3.5, width: 7, height: 7)),
+                     with: .color(earth.opacity(0.8)))
+            ctx.draw(Text("Earth").font(.tileTick).foregroundStyle(.tertiary),
+                     at: CGPoint(x: 0, y: y + 12), anchor: .topLeading)
+
+            for tick in Self.ticks {
+                let tx = x(tick)
+                var t = Path()
+                t.move(to: CGPoint(x: tx, y: y - 3))
+                t.addLine(to: CGPoint(x: tx, y: y + 3))
+                ctx.stroke(t, with: .color(.white.opacity(0.35)), lineWidth: 1)
+                guard tx > 40 else { continue }   // don't crowd "Earth"
+                // The line's scale is AU whatever the unit above.
+                let label = tick == Self.ticks.last ? "\(tick.formatted()) AU" : tick.formatted()
+                ctx.draw(Text(label).font(.tileTick).foregroundStyle(.tertiary),
+                         at: CGPoint(x: tx, y: y + 12), anchor: .top)
+            }
+
+            // Its sweep — the stretch of line it covers over the years.
+            let own   = Self.color(subject)
+            let lo    = x(range.lowerBound / BodyFacts.kmPerAU)
+            let hi    = max(lo + 4, x(range.upperBound / BodyFacts.kmPerAU))
+            ctx.fill(Path(roundedRect: CGRect(x: lo, y: y - 2.5, width: hi - lo, height: 5), cornerRadius: 2.5),
+                     with: .color(own.opacity(0.45)))
+
+            // The others — quiet dots in their own colours.
+            for (b, au) in bodies where !Self.isSame(b, subject) {
+                let p = CGPoint(x: x(au), y: y)
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 2.5, y: p.y - 2.5, width: 5, height: 5)),
+                         with: .color(Self.color(b).opacity(0.7)))
+            }
+
+            // This body — its own colour, a touch bigger, a soft halo.
+            if let here = bodies.first(where: { Self.isSame($0.body, subject) }) {
+                let p = CGPoint(x: x(here.au), y: y)
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 10, y: p.y - 10, width: 20, height: 20)),
+                         with: .radialGradient(Gradient(colors: [own.opacity(0.5), .clear]),
+                                               center: p, startRadius: 0, endRadius: 10))
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - 5, y: p.y - 5, width: 10, height: 10)), with: .color(own))
+                ctx.stroke(Path(ellipseIn: CGRect(x: p.x - 5, y: p.y - 5, width: 10, height: 10)),
+                           with: .color(a.poiBadgeCasing), lineWidth: 1)
+            }
         }
     }
 }
@@ -96,9 +185,6 @@ enum BodyDistanceUnit: String, CaseIterable {
         case .lightTime:         Self.lightTime(km)
         }
     }
-
-    /// The compact form for the bar's ends.
-    func short(_ km: Double) -> String { text(km) }
 
     /// Kilometres in words past a million — "228 million km" reads, a
     /// nine-digit number doesn't.
